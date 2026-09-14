@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1fa2ff"/><stop offset="1" stop-color="#0b4fbf"/></linearGradient>
+    <clipPath id="c"><rect width="128" height="128" rx="28"/></clipPath>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#g)"/>
+  <g clip-path="url(#c)">
+    <!-- magnifier ring doubling as a water ripple -->
+    <circle cx="56" cy="56" r="30" fill="none" stroke="#ffffff" stroke-width="9"/>
+    <path d="M78 78 L104 104" stroke="#ffffff" stroke-width="12" stroke-linecap="round"/>
+    <!-- duck inside the lens -->
+    <g transform="translate(56 58) scale(1.08)">
+      <ellipse cx="0" cy="6" rx="16" ry="10" fill="#ffd23f"/>
+      <path d="M14 3 L26 -6 L20 8 Z" fill="#ffd23f"/>
+      <circle cx="-9" cy="-8" r="9" fill="#ffd23f"/>
+      <path d="M-16 -7 L-30 -3 L-16 -1 Z" fill="#ff8c1a"/>
+      <circle cx="-8" cy="-10" r="1.8" fill="#0b4fbf"/>
+    </g>
+  </g>
+</svg>

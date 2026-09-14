@@ -1,0 +1,19 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowOidcUsersToAssume",
+      "Effect": "Allow",
+      "Principal": { "Federated": "arn:aws:iam::123456789012:oidc-provider/accounts.google.com" },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "accounts.google.com:aud": "YOUR-OAUTH-CLIENT-ID.apps.googleusercontent.com"
+        },
+        "StringLike": {
+          "accounts.google.com:email": "*@example.com"
+        }
+      }
+    }
+  ]
+}

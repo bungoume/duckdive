@@ -1,0 +1,43 @@
+{
+  "name": "duckdive",
+  "private": true,
+  "version": "0.1.1",
+  "description": "Search and visualize log files from S3, HTTPS URLs or local disk, in the browser",
+  "license": "MIT",
+  "homepage": "https://github.com/bungoume/duckdive",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bungoume/duckdive.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bungoume/duckdive/issues"
+  },
+  "type": "module",
+  "scripts": {
+    "prepare:assets": "node scripts/prepare-duckdb.mjs && node scripts/third-party-licenses.mjs",
+    "icons": "node scripts/make-icons.mjs",
+    "prebuild": "npm run prepare:assets",
+    "build": "tsc --noEmit && vite build",
+    "dev": "npm run prepare:assets && vite build --watch",
+    "typecheck": "tsc --noEmit",
+    "pack": "node scripts/pack.mjs",
+    "test:e2e": "node e2e/smoke.mjs",
+    "test:cache": "node e2e/cache.mjs",
+    "screenshots": "node e2e/screenshots.mjs",
+    "test": "DDV_EXTRA_HOSTS=\"http://localhost/*\" npm run build && node e2e/smoke.mjs && node e2e/cache.mjs"
+  },
+  "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.32.0",
+    "@observablehq/plot": "^0.6.17",
+    "pako": "^2.1.0",
+    "preact": "^10.29.8"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.6",
+    "@types/chrome": "^0.2.9",
+    "@types/pako": "^2.0.4",
+    "playwright": "^1.63.0",
+    "typescript": "^5.6.0",
+    "vite": "^8.2.2"
+  }
+}

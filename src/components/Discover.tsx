@@ -1,0 +1,205 @@
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import type { TimeRange } from '../datemath';
+import { formatLocal } from '../datemath';
+import type { Field } from '../fields';
+import { findField } from '../fields';
+import { compileSearch, fetchCount, fetchDocs, fetchHistogram, type Bucket, type Doc } from '../queries';
+import { INTERVALS, autoInterval, intervalByKey, newId, type Filter, type Interval } from '../sql';
+import type { DiscoverState, SearchState } from '../state';
+import { DocTable } from './DocTable';
+import { FieldSidebar } from './FieldSidebar';
+import { FilterBar } from './FilterBar';
+import { Histogram, fillBuckets } from './Histogram';
+import { DiagnosePanel } from './DiagnosePanel';
+import { QueryBar } from './QueryBar';
+import { QueryCancelled, getQueryLog } from '../duck';
+
+/** Errors that smell like damaged file bytes get a pointer to the cache controls. */
+function withCacheHint(msg: string): string {
+  return /gzip|zstd|magic|corrupt|Parquet file|invalid/i.test(msg)
+    ? `${msg}\n\nUse "Find the failing file" below to locate and inspect the file DuckDB rejects. If the cache is suspected: Data source → Local range cache → "Clear cache" or untick "Enable range cache".`
+    : msg;
+}
+
+const PAGE = 100;
+
+export function Discover(props: {
+  fields: Field[];
+  timeField: Field | null;
+  timeExpr: string | null;
+  search: SearchState;
+  discover: DiscoverState;
+  onSearch: (s: SearchState) => void;
+  onDiscover: (d: DiscoverState) => void;
+  onVisualizeField: (f: Field) => void;
+  onBusy: (b: boolean) => void;
+  /** true while the file list is being re-resolved: skip queries against the stale view */
+  paused?: boolean;
+}) {
+  const { fields, timeExpr, search, discover } = props;
+  const compiled = useMemo(() => compileSearch(search, fields, timeExpr), [search, fields, timeExpr]);
+  const interval: Interval | null = useMemo(() => {
+    if (!compiled.from || !compiled.to) return null;
+    return discover.interval === 'auto' ? autoInterval(compiled.from, compiled.to) : (intervalByKey(discover.interval) ?? autoInterval(compiled.from, compiled.to));
+  }, [compiled, discover.interval]);
+
+  const [count, setCount] = useState<number | null>(null);
+  const [buckets, setBuckets] = useState<Bucket[]>([]);
+  const [docs, setDocs] = useState<Doc[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const [showSql, setShowSql] = useState(false);
+  const runId = useRef(0);
+
+  const sortKey = JSON.stringify(discover.sort);
+  const colKey = JSON.stringify(discover.columns);
+
+  useEffect(() => {
+    if (compiled.error || props.paused) return;
+    const id = ++runId.current;
+    setBusy(true);
+    props.onBusy(true);
+    setError(null);
+    const t0 = performance.now();
+    (async () => {
+      try {
+        const [n, b, d] = await Promise.all([
+          fetchCount(compiled.where),
+          timeExpr && interval ? fetchHistogram(compiled.where, timeExpr, interval) : Promise.resolve([]),
+          fetchDocs(compiled.where, timeExpr, fields, discover.sort, discover.columns, PAGE, 0),
+        ]);
+        if (id !== runId.current) return;
+        setCount(n);
+        setBuckets(b);
+        setDocs(d);
+        setElapsed(performance.now() - t0);
+      } catch (e) {
+        if (id === runId.current && !(e instanceof QueryCancelled)) setError(withCacheHint(String(e)));
+      } finally {
+        if (id === runId.current) {
+          setBusy(false);
+          props.onBusy(false);
+        }
+      }
+    })();
+  }, [compiled.where, compiled.error, interval?.key, sortKey, colKey, timeExpr, props.paused]);
+
+  const loadMore = async () => {
+    setBusy(true);
+    try {
+      const more = await fetchDocs(compiled.where, timeExpr, fields, discover.sort, discover.columns, PAGE, docs.length);
+      setDocs([...docs, ...more]);
+    } catch (e) {
+      if (!(e instanceof QueryCancelled)) setError(withCacheHint(String(e)));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const setFilters = (filters: Filter[]) => props.onSearch({ ...search, filters });
+  const addFilter = (field: string, value: string | null, negate: boolean) => {
+    const f = findField(fields, field);
+    if (!f) return;
+    const fl: Filter = value === null ? { id: newId(), field: f.name, op: 'does_not_exist', negate } : { id: newId(), field: f.name, op: 'is', value, negate };
+    setFilters([...search.filters, fl]);
+  };
+  const addExists = (field: string) => {
+    const f = findField(fields, field);
+    if (f) setFilters([...search.filters, { id: newId(), field: f.name, op: 'exists' }]);
+  };
+  const toggleColumn = (name: string) => {
+    const cols = discover.columns.includes(name) ? discover.columns.filter((c) => c !== name) : [...discover.columns, name];
+    props.onDiscover({ ...discover, columns: cols });
+  };
+  const onSort = (field: string) => {
+    const cur = discover.sort.find((s) => s.field === field);
+    const dir = cur ? (cur.dir === 'desc' ? 'asc' : 'desc') : 'desc';
+    props.onDiscover({ ...discover, sort: [{ field, dir }] });
+  };
+  const onBrush = (from: Date, to: Date) => props.onSearch({ ...search, range: { from: from.toISOString(), to: to.toISOString() } });
+  const submit = (query: string, range: TimeRange) => props.onSearch({ ...search, query, range });
+
+  const filled = useMemo(() => (interval && compiled.from && compiled.to ? fillBuckets(buckets, compiled.from, compiled.to, interval) : buckets), [buckets, interval, compiled]);
+  const lastSql = getQueryLog()[0]?.sql;
+
+  return (
+    <div class="page">
+      <div class="topbar">
+        <QueryBar query={search.query} range={search.range} error={compiled.error ?? error} busy={busy} onSubmit={submit} />
+        <DiagnosePanel error={error} />
+        <FilterBar filters={search.filters} fields={fields} onChange={setFilters} />
+      </div>
+      {busy && <div class="loading-bar" />}
+      <div class="discover">
+        <FieldSidebar fields={fields} selected={discover.columns} where={compiled.where} mode="discover" onToggleColumn={toggleColumn} onAddFilter={addFilter} onVisualize={props.onVisualizeField} />
+        <div class="main">
+          <div class="hits">
+            <span class="n">{count === null ? '…' : count.toLocaleString()}</span>
+            <span>hits</span>
+            <span class="meta">
+              {elapsed ? `${Math.round(elapsed)} ms` : ''}
+              {compiled.from && compiled.to ? ` · ${formatLocal(compiled.from)} → ${formatLocal(compiled.to)}` : ''}
+            </span>
+            <span style="flex:1" />
+            <button class="sql-toggle" onClick={() => setShowSql(!showSql)}>
+              {showSql ? 'hide SQL' : 'show SQL'}
+            </button>
+          </div>
+          {showSql && (
+            <div style="padding:0 16px">
+              <div class="sql-box">{lastSql}</div>
+            </div>
+          )}
+          {timeExpr && interval && compiled.from && compiled.to && (
+            <div class="chart-panel">
+              <div class="chart-head">
+                <span>
+                  {props.timeField?.name} per {interval.label.toLowerCase()} · drag to zoom
+                </span>
+                <select class="input" style="width:auto;padding:2px 6px;font-size:12px" value={discover.interval} onChange={(e) => props.onDiscover({ ...discover, interval: (e.target as HTMLSelectElement).value })}>
+                  <option value="auto">Auto</option>
+                  {INTERVALS.map((iv) => (
+                    <option value={iv.key}>{iv.label}</option>
+                  ))}
+                </select>
+              </div>
+              <Histogram buckets={filled} interval={interval} from={compiled.from} to={compiled.to} onBrush={onBrush} />
+            </div>
+          )}
+          <div class="doc-wrap">
+            {docs.length === 0 && !busy ? (
+              <div class="empty">
+                <h3>No results match your search criteria</h3>
+                <p>Expand the time range or adjust the query and filters.</p>
+              </div>
+            ) : (
+              <>
+                <DocTable
+                  docs={docs}
+                  fields={fields}
+                  columns={discover.columns}
+                  hasTime={!!timeExpr}
+                  timeFieldName={props.timeField?.name ?? null}
+                  sort={discover.sort}
+                  onSort={onSort}
+                  onRemoveColumn={toggleColumn}
+                  onToggleColumn={toggleColumn}
+                  onFilter={addFilter}
+                  onExists={addExists}
+                />
+                {count !== null && docs.length < count && (
+                  <div class="load-more">
+                    <button class="btn" onClick={loadMore} disabled={busy}>
+                      Load more ({docs.length.toLocaleString()} of {count.toLocaleString()})
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
