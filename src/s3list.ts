@@ -5,7 +5,7 @@
 
 import type { AwsCredentials } from './auth';
 import { t as tr } from './i18n';
-import { LIST_CONCURRENCY, fetchWithTimeout, mapLimit, throwIfAborted } from './net';
+import { CancelledError, LIST_CONCURRENCY, fetchWithTimeout, mapLimit, throwIfAborted } from './net';
 import type { S3Config } from './state';
 
 /** Optional cancellation / progress hooks for a listing. */
@@ -487,7 +487,7 @@ export async function resolveS3Patterns(
   let skippedByFilter = 0;
   const seen = new Set<string>();
   // Expand every pattern first (date tokens → one concrete pattern per prefix) …
-  const jobs: { cap: ReturnType<typeof captureRegex>; concrete: string }[] = [];
+  const jobs: { cap: ReturnType<typeof captureRegex>; concrete: string; wild: boolean }[] = [];
   // Selected token values become literals in the listing prefix (fewer, narrower listings);
   // anything not substituted is still enforced by the value filter below.
   const filters: Record<string, string[]> = { ...selections };
@@ -497,21 +497,31 @@ export async function resolveS3Patterns(
     for (const sub of substituteTokens(original, selections)) {
       const pat = namedToGlob(sub);
       const concrete = HAS_DATE_TOKEN.test(pat) ? (range ? expandDateTokens(pat, range.from, range.to) : []) : [pat];
-      for (const c of concrete) jobs.push({ cap, concrete: c });
+      for (const c of concrete) jobs.push({ cap, concrete: c, wild: HAS_WILDCARD.test(c) });
     }
   }
-  // … then list the prefixes in parallel; the merge below keeps the pattern order.
+  // … then list the prefixes in parallel; the merge below keeps the pattern order. A literal key
+  // is listed too (one request) so that its size / ETag seed the cache and gzip re-packing; when
+  // that listing is denied the key is still used as it is, since reading it needs no ListBucket.
   let done = 0;
   opts.onProgress?.(0, jobs.length);
-  const listed = await mapLimit(jobs, LIST_CONCURRENCY, async ({ concrete }) => {
-    const found = HAS_WILDCARD.test(concrete) && parseS3Url(concrete) ? await expandS3Glob(concrete, s3, creds, opts.signal) : null;
+  const listed = await mapLimit(jobs, LIST_CONCURRENCY, async ({ concrete, wild }) => {
+    let found: S3Object[] | null = null;
+    if (parseS3Url(concrete)) {
+      try {
+        found = await expandS3Glob(concrete, s3, creds, opts.signal);
+      } catch (e) {
+        if (wild || e instanceof CancelledError) throw e;
+        console.warn(`listing ${concrete} failed; using the key without metadata`, e);
+      }
+    }
     opts.onProgress?.(++done, jobs.length);
     return found;
   });
-  jobs.forEach(({ cap, concrete }, j) => {
+  jobs.forEach(({ cap, concrete, wild }, j) => {
     const found = listed[j];
     if (!found) {
-      if (!HAS_WILDCARD.test(concrete) && !seen.has(concrete)) {
+      if (!wild && !seen.has(concrete)) {
         seen.add(concrete);
         urls.push(concrete);
       }
@@ -522,7 +532,8 @@ export async function resolveS3Patterns(
       const u = `s3://${bucket}/${o.key}`;
       if (seen.has(u)) continue;
       seen.add(u);
-      if (!withinRange(o.key, range)) {
+      // a key the user typed out is never dropped by the name-timestamp heuristic
+      if (wild && !withinRange(o.key, range)) {
         skippedByTime++;
         continue;
       }
