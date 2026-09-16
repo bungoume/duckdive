@@ -133,11 +133,11 @@ export function newId(): string {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function valueLiteral(f: Field, v: string): string {
+/** SQL literal for a filter value; null when the value cannot be compared with the field (a word against a number). */
+function valueLiteral(f: Field, v: string): string | null {
   if (f.kind === 'number') {
     const n = Number(v);
-    if (Number.isFinite(n)) return String(n);
-    return lit(v);
+    return Number.isFinite(n) ? String(n) : null;
   }
   if (f.kind === 'boolean') return v.toLowerCase() === 'true' ? 'TRUE' : 'FALSE';
   if (f.kind === 'date') return `TRY_CAST(${lit(v)} AS TIMESTAMP)`;
@@ -158,19 +158,30 @@ export function filterToSQL(fl: Filter, fields: Field[]): string | null {
     const f = findField(fields, fl.field);
     if (!f) return null;
     const e = fieldCompareExpr(f);
+    // values that cannot be compared with the field match nothing (and "is not" then matches everything)
+    const one = (v: string | undefined) => (v === undefined ? null : valueLiteral(f, v));
+    const many = (vs: string[] | undefined) => (vs ?? []).map((v) => valueLiteral(f, v)).filter((x): x is string => x !== null);
     switch (fl.op) {
-      case 'is':
-        sql = fl.value === null || fl.value === undefined || fl.value === '__null__' ? `${e} IS NULL` : `${e} = ${valueLiteral(f, fl.value)}`;
+      case 'is': {
+        const v = one(fl.value);
+        sql = fl.value === null || fl.value === undefined || fl.value === '__null__' ? `${e} IS NULL` : v === null ? 'FALSE' : `${e} = ${v}`;
         break;
-      case 'is_not':
-        sql = `NOT (${e} = ${valueLiteral(f, fl.value ?? '')})`;
+      }
+      case 'is_not': {
+        const v = one(fl.value ?? '');
+        sql = v === null ? 'TRUE' : `NOT (${e} = ${v})`;
         break;
-      case 'is_one_of':
-        sql = `${e} IN (${(fl.values ?? []).map((v) => valueLiteral(f, v)).join(', ')})`;
+      }
+      case 'is_one_of': {
+        const vs = many(fl.values);
+        sql = vs.length ? `${e} IN (${vs.join(', ')})` : 'FALSE';
         break;
-      case 'is_not_one_of':
-        sql = `${e} NOT IN (${(fl.values ?? []).map((v) => valueLiteral(f, v)).join(', ')})`;
+      }
+      case 'is_not_one_of': {
+        const vs = many(fl.values);
+        sql = vs.length ? `${e} NOT IN (${vs.join(', ')})` : 'TRUE';
         break;
+      }
       case 'exists':
         sql = `${f.expr} IS NOT NULL`;
         break;
@@ -179,8 +190,10 @@ export function filterToSQL(fl: Filter, fields: Field[]): string | null {
         break;
       case 'between': {
         const parts: string[] = [];
-        if (fl.from) parts.push(`${e} >= ${valueLiteral(f, fl.from)}`);
-        if (fl.to) parts.push(`${e} < ${valueLiteral(f, fl.to)}`);
+        const lo = one(fl.from || undefined);
+        const hi = one(fl.to || undefined);
+        if (lo !== null) parts.push(`${e} >= ${lo}`);
+        if (hi !== null) parts.push(`${e} < ${hi}`);
         sql = parts.length ? parts.join(' AND ') : 'TRUE';
         break;
       }

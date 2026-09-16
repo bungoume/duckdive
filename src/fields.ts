@@ -116,7 +116,11 @@ function expandStruct(prefixName: string, prefixExpr: string, column: string, du
   }
 }
 
-/** JSON columns: sample keys to expose sub-fields of object columns. */
+/**
+ * JSON columns: sample keys to expose sub-fields of object columns. This runs at connect time and
+ * reads data (up to 500 non-null values), so for JSON-typed columns over HTTP a connect is not
+ * listing-only; fixed layouts without JSON columns keep that guarantee.
+ */
 async function expandJson(view: string, col: string, out: Field[]) {
   const expr = quoteIdent(col);
   try {

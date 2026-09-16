@@ -46,6 +46,8 @@ export function Discover(props: {
   const [count, setCount] = useState<number | null>(null);
   const [buckets, setBuckets] = useState<Bucket[]>([]);
   const [docs, setDocs] = useState<Doc[]>([]);
+  // bumped for every fresh result (not for "load more"): the table's expanded rows are reset with it
+  const [resultSeq, setResultSeq] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
@@ -73,6 +75,7 @@ export function Discover(props: {
         setCount(n);
         setBuckets(b);
         setDocs(d);
+        setResultSeq((s) => s + 1);
         setElapsed(performance.now() - t0);
       } catch (e) {
         if (id === runId.current && !(e instanceof QueryCancelled)) setError(withCacheHint(String(e)));
@@ -176,6 +179,7 @@ export function Discover(props: {
             ) : (
               <>
                 <DocTable
+                  key={resultSeq}
                   docs={docs}
                   fields={fields}
                   columns={discover.columns}

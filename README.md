@@ -86,7 +86,7 @@ AWS log delivery sometimes writes gzip files as several concatenated members, wh
 
 ### Large listings
 
-Connecting to ten thousand files costs only the listing; no per-file requests are made. If more files than the threshold (default 1000) or more than 512 MB match, the extension stops and asks before creating the view. A second check before each query counts files that have nothing in the cache yet and shows the expected download.
+Connecting to ten thousand files costs only the listing; no per-file requests are made (except for JSON-typed columns, whose keys are sampled from up to 500 values at connect time, and for JSON sources, which DuckDB binds with `union_by_name`). If more files than the threshold (default 1000) or more than 512 MB match, the extension stops and asks before creating the view. A second check before each query counts files that have nothing in the cache yet and shows the expected download.
 
 ### Hosts
 
