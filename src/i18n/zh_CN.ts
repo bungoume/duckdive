@@ -342,6 +342,8 @@ export const zh_CN: Messages = {
   'flt.menu.delete': '🗑 删除',
   'flt.addButton': '+ 添加筛选',
   'flt.clearAll': '全部清除',
+  'flt.untrusted': '此链接包含 {n} 个不是在此浏览器中编写的自定义 SQL 过滤器。它们已被禁用:请逐个打开、检查 SQL,仅在信任发送者时启用(过滤器可以读取本扩展的 S3 凭证并访问网络)。',
+  'flt.menu.trust': '启用(我已检查此 SQL)',
   'flt.desc.between': '{from} 到 {to}',
 
   // ---- query bar ----

@@ -119,6 +119,8 @@ The query bar uses Lucene syntax.
 
 Special characters are escaped with `\`. `term~2` and `term^3` are accepted and ignored. Struct columns are addressed with dots (`geo.country`); JSON columns are sampled for keys and exposed the same way (`extra.user_id`). "show SQL" displays the generated statement.
 
+Filters of the type "custom SQL" run verbatim inside DuckDB. Because the URL carries the filters, a link from someone else could contain SQL that reads this extension's S3 credentials or reaches the network; such filters are restored disabled and marked with ⚠ until you open them, read the SQL and enable them (SQL written or reviewed in this browser is remembered in `localStorage`, key `ddv.trustedSql`).
+
 ## Range cache
 
 `src/worker/duckdb-cache-worker.ts` wraps the duckdb-wasm worker and replaces its `XMLHttpRequest`. Range requests are aligned to chunks (1 MB by default) and stored in one append-only file in OPFS with a JSON index. Chunks are dropped when the object's ETag changes. Presigned-URL parameters are excluded from the cache key. DuckDB extensions are cached too, so later starts work offline. Only one tab can hold the cache at a time; a second tab runs without it.

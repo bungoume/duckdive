@@ -344,6 +344,8 @@ export const en = {
   'flt.menu.delete': '🗑 Delete',
   'flt.addButton': '+ Add filter',
   'flt.clearAll': 'Clear all',
+  'flt.untrusted': 'This link carries {n} custom SQL filter(s) that were not written in this browser. They are disabled: open each one, check the SQL and enable it only if you trust the sender (a filter can read this extension\'s S3 credentials and reach the network).',
+  'flt.menu.trust': 'Enable (I checked this SQL)',
   'flt.desc.between': '{from} to {to}',
 
   // ---- query bar ----

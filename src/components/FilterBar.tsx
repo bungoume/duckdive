@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks';
 import { t } from '../i18n';
 import type { Field } from '../fields';
 import { describeFilter, newId, type Filter, type FilterOp } from '../sql';
+import { trustSql } from '../trust';
 import { Popover } from './ui';
 
 function FilterEditor(props: { fields: Field[]; initial?: Filter; onSave: (f: Filter) => void; onCancel: () => void }) {
@@ -96,10 +97,18 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
   const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const update = (id: string, patch: Partial<Filter>) => props.onChange(props.filters.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+  const replace = (id: string, nf: Filter) => props.onChange(props.filters.map((f) => (f.id === id ? nf : f)));
   const remove = (id: string) => props.onChange(props.filters.filter((f) => f.id !== id));
+  /** A custom SQL filter saved from the editor was written (or reviewed) here: remember it as trusted. */
+  const saved = (f: Filter): Filter => {
+    if (f.op === 'query' && f.sql) trustSql(f.sql);
+    return f;
+  };
+  const untrusted = props.filters.filter((f) => f.untrusted).length;
 
   return (
     <div class="filterbar">
+      {untrusted > 0 && <div class="alert warn filter-untrusted" style="flex-basis:100%;margin:0">{t('flt.untrusted', { n: untrusted })}</div>}
       {props.filters.map((f) => (
         <Popover
           open={menu === f.id || editing === f.id}
@@ -108,7 +117,7 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
             setEditing(null);
           }}
           button={
-            <span class={'pill' + (f.negate ? ' negate' : '') + (f.disabled ? ' disabled' : '')} title={describeFilter(f)}>
+            <span class={'pill' + (f.negate ? ' negate' : '') + (f.disabled ? ' disabled' : '') + (f.untrusted ? ' untrusted' : '')} title={describeFilter(f)}>
               <span class="txt" style="cursor:pointer" onClick={() => setMenu(menu === f.id ? null : f.id)}>
                 {describeFilter({ ...f, negate: false })}
               </span>
@@ -124,7 +133,7 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
               initial={f}
               onCancel={() => setEditing(null)}
               onSave={(nf) => {
-                update(f.id, nf);
+                replace(f.id, saved(nf));
                 setEditing(null);
               }}
             />
@@ -146,14 +155,26 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
               >
                 {f.negate ? t('flt.menu.include') : t('flt.menu.exclude')}
               </button>
-              <button
-                onClick={() => {
-                  update(f.id, { disabled: !f.disabled });
-                  setMenu(null);
-                }}
-              >
-                {f.disabled ? t('flt.menu.reenable') : t('flt.menu.disable')}
-              </button>
+              {f.untrusted ? (
+                <button
+                  onClick={() => {
+                    const { untrusted: _u, disabled: _d, ...rest } = f;
+                    replace(f.id, saved(rest));
+                    setMenu(null);
+                  }}
+                >
+                  {t('flt.menu.trust')}
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    update(f.id, { disabled: !f.disabled });
+                    setMenu(null);
+                  }}
+                >
+                  {f.disabled ? t('flt.menu.reenable') : t('flt.menu.disable')}
+                </button>
+              )}
               <button
                 onClick={() => {
                   remove(f.id);
@@ -171,7 +192,7 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
           fields={props.fields}
           onCancel={() => setAdding(false)}
           onSave={(f) => {
-            props.onChange([...props.filters, f]);
+            props.onChange([...props.filters, saved(f)]);
             setAdding(false);
           }}
         />

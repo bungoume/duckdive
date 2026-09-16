@@ -96,6 +96,8 @@ export interface Filter {
   sql?: string;
   /** Label for custom filters */
   label?: string;
+  /** Custom SQL that came from a URL and was not written in this browser: kept disabled until reviewed */
+  untrusted?: boolean;
 }
 
 export function newId(): string {

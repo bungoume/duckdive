@@ -342,6 +342,8 @@ export const ko: Messages = {
   'flt.menu.delete': '🗑 삭제',
   'flt.addButton': '+ 필터 추가',
   'flt.clearAll': '모두 지우기',
+  'flt.untrusted': '이 링크에는 이 브라우저에서 작성되지 않은 사용자 지정 SQL 필터 {n}개가 포함되어 있습니다. 비활성화되어 있습니다. 각 필터를 열어 SQL을 확인하고 보낸 사람을 신뢰할 수 있는 경우에만 활성화하세요(필터는 이 확장 프로그램의 S3 자격 증명을 읽고 네트워크에 접근할 수 있습니다).',
+  'flt.menu.trust': '활성화 (SQL을 확인함)',
   'flt.desc.between': '{from} ~ {to}',
 
   // ---- query bar ----

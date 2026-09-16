@@ -2,6 +2,7 @@ import { DEFAULT_OIDC, type OidcConfig } from './auth';
 import type { FormatId } from './formats';
 import type { TimeRange } from './datemath';
 import type { Filter } from './sql';
+import { isTrustedSql } from './trust';
 
 export type AppPage = 'discover' | 'visualize' | 'source' | 'settings';
 
@@ -118,6 +119,29 @@ function b64decode(s: string): string {
   return decodeURIComponent(escape(atob(t + '='.repeat((4 - (t.length % 4)) % 4))));
 }
 
+/**
+ * Filters carried by a URL. Anything malformed is dropped. Custom SQL filters run verbatim inside
+ * DuckDB, so SQL that was not written in this browser (a link someone sent) is restored disabled
+ * and marked untrusted; FilterBar lets the user review and enable it.
+ */
+function sanitizeFilters(raw: unknown): Filter[] {
+  if (!Array.isArray(raw)) return [];
+  const out: Filter[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const f = item as Filter;
+    if (typeof f.id !== 'string' || typeof f.op !== 'string') continue;
+    if (f.op !== 'query') {
+      out.push(f);
+      continue;
+    }
+    const sql = typeof f.sql === 'string' ? f.sql : '';
+    const { untrusted: _u, ...rest } = f;
+    out.push(isTrustedSql(sql) ? { ...rest, sql } : { ...rest, sql, disabled: true, untrusted: true });
+  }
+  return out;
+}
+
 export function readUrlState(): UrlState {
   const h = location.hash.replace(/^#\/?/, '');
   const [pageRaw, qs] = h.split('?');
@@ -136,7 +160,7 @@ export function readUrlState(): UrlState {
   }
   return {
     page,
-    search: { ...DEFAULT_SEARCH, ...(st.search ?? {}) },
+    search: { ...DEFAULT_SEARCH, ...(st.search ?? {}), filters: sanitizeFilters(st.search?.filters) },
     discover: { ...DEFAULT_DISCOVER, ...(st.discover ?? {}) },
     vis: { ...DEFAULT_VIS, ...(st.vis ?? {}) },
   };

@@ -69,6 +69,8 @@ code, .mono { font-family: var(--k-mono); font-size: 12px; }
 .pill.negate { border-color: var(--k-danger); background: #fdf1f0; }
 .pill.negate .txt::before { content: 'NOT '; font-weight: 700; color: var(--k-danger); }
 .pill.disabled { opacity: 0.55; text-decoration: line-through; }
+.pill.untrusted { border-color: #f5d98b; background: #fff6e0; text-decoration: none; }
+.pill.untrusted .txt::before { content: '⚠ '; }
 .pill button { border: 0; background: transparent; padding: 0 2px; color: var(--k-text-subdued); font-size: 12px; }
 .pill button:hover { color: var(--k-text); }
 .filterbar .add { color: var(--k-primary); background: transparent; border: 0; font-size: 12px; padding: 2px 6px; }

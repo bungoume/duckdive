@@ -342,6 +342,8 @@ export const es: Messages = {
   'flt.menu.delete': '🗑 Eliminar',
   'flt.addButton': '+ Añadir filtro',
   'flt.clearAll': 'Limpiar todo',
+  'flt.untrusted': 'Este enlace contiene {n} filtro(s) SQL personalizado(s) que no se escribieron en este navegador. Están desactivados: abre cada uno, revisa el SQL y actívalo solo si confías en el remitente (un filtro puede leer las credenciales S3 de esta extensión y acceder a la red).',
+  'flt.menu.trust': 'Activar (he revisado este SQL)',
   'flt.desc.between': '{from} a {to}',
 
   // ---- query bar ----

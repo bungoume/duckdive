@@ -342,6 +342,8 @@ export const ja: Messages = {
   'flt.menu.delete': '🗑 削除',
   'flt.addButton': '+ フィルタを追加',
   'flt.clearAll': 'すべてクリア',
+  'flt.untrusted': 'このリンクには、このブラウザで作成されていないカスタム SQL フィルタが {n} 件含まれています。無効化してあります。各フィルタを開いて SQL を確認し、送信元を信頼できる場合のみ有効にしてください(フィルタはこの拡張機能の S3 認証情報を読み取り、ネットワークにアクセスできます)。',
+  'flt.menu.trust': '有効にする(SQL を確認した)',
   'flt.desc.between': '{from} 〜 {to}',
 
   // ---- query bar ----
