@@ -15,6 +15,8 @@ import { CancelledError } from './net';
 import { DataProtocol, getDB, initDuckDB, query } from './duck';
 import './cache';
 import { getCredentials, isUsable, loadCredentials, secondsUntilExpiry, type AwsCredentials } from './auth';
+import { expose } from './debug';
+import { forgetSecrets, storeSecrets, withSecrets } from './secrets';
 import { applyS3, capturedColumns, requiredOrigins, type TimeWindow, type ValueFilters } from './datasource';
 import { resolveRange } from './datemath';
 import { ensureHostPermissions } from './permissions';
@@ -153,12 +155,13 @@ export function App() {
       if (stale()) return null;
       // The user already accepted this file set: do not ask again at query time.
       if (confirmedLarge) gateAck.current = a.files.join('\n');
-      globalThis.window.__ddv = { ...(globalThis.window.__ddv ?? {}), attached: a };
+      expose({ attached: a });
       setDiagnoseContext(cfg.kind === 'url' ? { files: a.files, fileSizes: a.fileSizes, format: cfg.format } : null);
       setAttached(a);
       const saved = { ...cfg, timeField: a.timeField?.name ?? null };
       setSource(saved);
       saveSource(saved);
+      void storeSecrets(saved);
       setHistory(rememberSource(saved));
       return a;
     } catch (e) {
@@ -178,7 +181,8 @@ export function App() {
    * Load a remembered source and connect to it. The time range and query are kept; filters,
    * columns, sorts and chart fields that name a field the new source does not have are dropped.
    */
-  const switchSource = async (cfg: SourceConfig) => {
+  const switchSource = async (entry: SourceConfig) => {
+    const cfg = await withSecrets(entry);
     setSource(cfg);
     setSwitchSeq((n) => n + 1);
     const a = await connect(cfg, [], true);
@@ -199,7 +203,10 @@ export function App() {
       },
     }));
   };
-  const forget = (key: string) => setHistory(forgetSource(key));
+  const forget = (key: string) => {
+    setHistory(forgetSource(key));
+    void forgetSecrets(key);
+  };
 
   /** Abandon the running connect. Only listing / login can be cut short; a DuckDB step runs on. */
   const cancelConnect = () => {
@@ -215,10 +222,15 @@ export function App() {
   useEffect(() => {
     (async () => {
       try {
+        // the saved source carries no secrets; this session's (if any) are added before the form shows it
+        const cfg = await withSecrets(loadSource());
+        if (cfg !== source) {
+          setSource(cfg);
+          setSwitchSeq((n) => n + 1);
+        }
         await initDuckDB();
-        window.__ddv = { ...(window.__ddv ?? {}), query, cancelAllQueries, registerFileURL: (name: string, url: string) => getDB().registerFileURL(name, url, DataProtocol.HTTP, false) };
+        expose({ query, cancelAllQueries, registerFileURL: (name: string, url: string) => getDB().registerFileURL(name, url, DataProtocol.HTTP, false) });
         setReady(true);
-        const cfg = loadSource();
         if (cfg.kind === 'local') {
           setUrl((u) => ({ ...u, page: 'source' }));
           return;
@@ -281,7 +293,7 @@ export function App() {
     setGate({ status: 'ok' });
   };
   const paused = attaching || gate.status !== 'ok';
-  globalThis.window.__ddv = { ...(globalThis.window.__ddv ?? {}), gate };
+  expose({ gate });
 
   // Refresh temporary credentials before they expire and push them into DuckDB.
   useEffect(() => {

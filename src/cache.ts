@@ -1,4 +1,5 @@
 // Page-side client for the range cache living inside the DuckDB worker (src/worker/duckdb-cache-worker.ts).
+import { expose } from './debug';
 
 export interface CacheStats {
   requests: number;
@@ -125,9 +126,4 @@ export function fmtBytes(n: number): string {
   return `${n.toFixed(i === 0 ? 0 : 1)} ${u[i]}`;
 }
 
-declare global {
-  interface Window {
-    __ddv?: Record<string, unknown>;
-  }
-}
-window.__ddv = { ...(window.__ddv ?? {}), cacheStats, cacheFiles, cacheClear, cachePurge, cacheSetConfig, storageEstimate, cachePing, cacheCompact, cacheSeed };
+expose({ cacheStats, cacheFiles, cacheClear, cachePurge, cacheSetConfig, storageEstimate, cachePing, cacheCompact, cacheSeed });

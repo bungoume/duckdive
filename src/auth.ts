@@ -3,6 +3,7 @@
 //   STS AssumeRoleWithWebIdentity (unsigned call) → temporary S3 credentials.
 
 import { fetchWithTimeout } from './net';
+import { expose } from './debug';
 import { isExtension } from './permissions';
 
 export interface OidcConfig {
@@ -197,4 +198,4 @@ export async function getCredentials(cfg: OidcConfig, allowInteractive: boolean)
   }
 }
 
-window.__ddv = { ...(window.__ddv ?? {}), assumeRoleWithWebIdentity, buildAuthUrl, loadCredentials, storeCredentials };
+expose({ assumeRoleWithWebIdentity, buildAuthUrl, loadCredentials, storeCredentials });

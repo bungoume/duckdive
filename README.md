@@ -20,6 +20,7 @@ npm install
 npm run build      # writes dist/
 npm run pack       # writes release/duckdive-<version>.zip
 npm run icons      # regenerates icons and store images from assets/logo.svg
+npm run build:e2e  # build with the test hooks and localhost allowed (for the e2e tests and screenshots)
 ```
 
 Open `chrome://extensions`, enable Developer mode, choose "Load unpacked" and select `dist/`. The toolbar button opens the app. `npm run dev` rebuilds `dist/` on every change; reload the extension afterwards.
@@ -53,7 +54,7 @@ The Data source page accepts one of:
 
 ### Recent sources
 
-Every successful connect to an S3 / HTTPS or demo source is remembered (up to 20, newest first, in this browser's `localStorage` under `ddv.sources`, including any access keys and chosen pattern values). The drop-down in the header switches between them from any page; the Data source page lists them with Connect and Remove buttons. Two configurations are the same entry when their destination matches (kind, URL lines, endpoint, region, URL style and authentication mode); name, format and time field are updated in place. Switching keeps the time range and the query, and drops filters, columns, sorts and chart fields that name a field the new source does not have. Local-file sources are not remembered because the browser cannot store the files.
+Every successful connect to an S3 / HTTPS or demo source is remembered (up to 20, newest first, in this browser's `localStorage` under `ddv.sources`, including the access key ID and chosen pattern values; secret keys are kept for the browser session only, see Authentication). The drop-down in the header switches between them from any page; the Data source page lists them with Connect and Remove buttons. Two configurations are the same entry when their destination matches (kind, URL lines, endpoint, region, URL style and authentication mode); name, format and time field are updated in place. Switching keeps the time range and the query, and drops filters, columns, sorts and chart fields that name a field the new source does not have. Local-file sources are not remembered because the browser cannot store the files.
 
 ### Patterns
 
@@ -97,7 +98,7 @@ Leaving the endpoint empty produces `https://<bucket>.s3.amazonaws.com/<key>`. A
 
 Sign in (OIDC) → STS is the intended mode. Create an OAuth client at your identity provider with `https://kohchgcbcmdcoondpjoiaccfkhadkpki.chromiumapp.org/` as the redirect URI (`response_type=id_token` must be allowed). Register the provider in IAM and create a role that trusts it; see `docs/iam-role-trust-policy.json` and `docs/README.md`. Enter the authorization endpoint, client ID and role ARN on the Data source page. Temporary credentials live in `chrome.storage.session` and are refreshed ten minutes before they expire.
 
-Access key mode stores an IAM user's keys in the extension's localStorage. Use a read-only policy. None is for public buckets and presigned URLs.
+Access key mode keeps the access key ID with the source configuration and the secret access key / session token in `chrome.storage.session` only, i.e. in memory until the browser closes; after a restart the Data source page shows the key ID and asks for the secret again. Use a read-only policy. None is for public buckets and presigned URLs.
 
 ## Query syntax
 
@@ -130,12 +131,13 @@ duckdb-wasm downloads whole HTTP files by default. `src/duck.ts` opens the datab
 ## Tests
 
 ```
-npm test               # builds with localhost allowed, then runs both suites
+npm test               # builds with localhost allowed and the test hooks, then runs both suites
+npm run build:e2e      # that build alone (VITE_DDV_DEBUG=1, http://localhost/* allowed)
 node e2e/smoke.mjs     # Discover and Visualize on the demo dataset
 node e2e/cache.mjs     # permissions, OPFS persistence, SigV4 and STS against a local range server
 ```
 
-`e2e/cache.mjs` needs the `duckdb` CLI to generate fixtures. Both use Playwright's headless Chromium with the built extension loaded. The tests assert English text, so `e2e/ext-context.mjs` pins the UI language to English before the page loads; set `DDV_LANG=ja` (or another language id) to run `npm run screenshots` in that language.
+`e2e/cache.mjs` needs the `duckdb` CLI to generate fixtures. Both use Playwright's headless Chromium with the built extension loaded and drive the app through `window.__ddv`, hooks that exist only in dev builds and in builds made with `VITE_DDV_DEBUG=1` (`src/debug.ts`); a store build publishes nothing on the page. The tests assert English text, so `e2e/ext-context.mjs` pins the UI language to English before the page loads; set `DDV_LANG=ja` (or another language id) to run `npm run screenshots` (after `npm run build:e2e`) in that language.
 
 ## Layout
 

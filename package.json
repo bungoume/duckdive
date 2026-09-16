@@ -18,13 +18,14 @@
     "icons": "node scripts/make-icons.mjs",
     "prebuild": "npm run prepare:assets",
     "build": "tsc --noEmit && vite build",
-    "dev": "npm run prepare:assets && vite build --watch",
+    "dev": "npm run prepare:assets && VITE_DDV_DEBUG=1 vite build --watch",
+    "build:e2e": "VITE_DDV_DEBUG=1 DDV_EXTRA_HOSTS=\"http://localhost/*\" npm run build",
     "typecheck": "tsc --noEmit",
     "pack": "node scripts/pack.mjs",
     "test:e2e": "node e2e/smoke.mjs",
     "test:cache": "node e2e/cache.mjs",
     "screenshots": "node e2e/screenshots.mjs",
-    "test": "DDV_EXTRA_HOSTS=\"http://localhost/*\" npm run build && node e2e/smoke.mjs && node e2e/cache.mjs"
+    "test": "npm run build:e2e && node e2e/smoke.mjs && node e2e/cache.mjs"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.32.0",

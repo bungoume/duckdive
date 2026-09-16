@@ -2,6 +2,7 @@
 // the attached file list with count(*) queries, then inspects the raw bytes of each culprit through
 // the same read path (read_blob → httpfs → range cache) so the report shows what DuckDB actually saw.
 import { cacheStats, type CacheLogEntry } from './cache';
+import { expose } from './debug';
 import { t } from './i18n';
 import { viewSelect } from './datasource';
 import { QueryCancelled, query } from './duck';
@@ -199,9 +200,4 @@ export async function diagnoseFiles(onProgress: (msg: string) => void, maxFailin
   return report;
 }
 
-declare global {
-  interface Window {
-    __ddv?: Record<string, unknown>;
-  }
-}
-window.__ddv = { ...(window.__ddv ?? {}), diagnoseFiles, inspectGzip };
+expose({ diagnoseFiles, inspectGzip });

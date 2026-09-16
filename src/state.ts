@@ -217,9 +217,15 @@ export function loadSource(): SourceConfig {
   return DEFAULT_SOURCE;
 }
 
+/** `cfg` without the static S3 secrets (they are kept for the session only, see src/secrets.ts). */
+export function stripSecrets(cfg: SourceConfig): SourceConfig {
+  if (!cfg.s3.secretAccessKey && !cfg.s3.sessionToken) return cfg;
+  return { ...cfg, s3: { ...cfg.s3, secretAccessKey: '', sessionToken: '' } };
+}
+
 export function saveSource(s: SourceConfig) {
   try {
-    localStorage.setItem(LS_SOURCE, JSON.stringify(s));
+    localStorage.setItem(LS_SOURCE, JSON.stringify(stripSecrets(s)));
   } catch {
     /* ignore */
   }
@@ -310,7 +316,7 @@ export function rememberSource(cfg: SourceConfig, now = new Date()): SourceHisto
   const key = sourceKey(cfg);
   const cur = loadSourceHistory();
   if (!key) return cur;
-  const list = [{ key, lastUsed: now.toISOString(), config: cfg }, ...cur.filter((e) => e.key !== key)].slice(0, SOURCE_HISTORY_MAX);
+  const list = [{ key, lastUsed: now.toISOString(), config: stripSecrets(cfg) }, ...cur.filter((e) => e.key !== key)].slice(0, SOURCE_HISTORY_MAX);
   storeSourceHistory(list);
   return list;
 }

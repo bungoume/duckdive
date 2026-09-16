@@ -8,6 +8,7 @@
 // complete in the range cache. DuckDB then reads the cached copy and never sees a member
 // boundary. Single-member objects are stored as they are, so later queries are local too.
 import { cacheComplete, cacheStore, cacheStats } from './cache';
+import { expose } from './debug';
 import NormalizeWorker from './worker/gz-normalize-worker?worker';
 
 export interface NormalizeFile {
@@ -56,12 +57,7 @@ export async function normalizationAvailable(): Promise<{ ok: boolean; reason: s
   }
 }
 
-declare global {
-  interface Window {
-    __ddv?: Record<string, unknown>;
-  }
-}
-window.__ddv = { ...(window.__ddv ?? {}), normalizeGzipFiles };
+expose({ normalizeGzipFiles });
 
 export async function normalizeGzipFiles(
   files: NormalizeFile[],
