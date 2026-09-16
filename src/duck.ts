@@ -1,5 +1,5 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
-import { CACHE_CHANNEL } from './cache';
+import { cacheWorkerPort } from './cache';
 import CacheWorker from './worker/duckdb-cache-worker?worker';
 
 export type Row = Record<string, unknown>;
@@ -11,8 +11,11 @@ let initPromise: Promise<void> | null = null;
 export async function initDuckDB(): Promise<void> {
   if (initPromise) return initPromise;
   initPromise = (async () => {
-    // The worker wraps the stock duckdb-wasm worker (public/duckdb/) with the OPFS range cache.
-    const worker = new CacheWorker({ name: CACHE_CHANNEL });
+    // The worker wraps the stock duckdb-wasm worker (public/duckdb/) with the OPFS range cache;
+    // its first message hands over the page's end of the cache control channel (src/cache.ts).
+    const worker = new CacheWorker();
+    const port = cacheWorkerPort();
+    worker.postMessage({ type: 'ddv-cache-port' }, [port]);
     const logger = new duckdb.VoidLogger();
     db = new duckdb.AsyncDuckDB(logger, worker);
     await db.instantiate(new URL('/duckdb/duckdb-eh.wasm', location.href).href);

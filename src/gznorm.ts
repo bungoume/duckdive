@@ -94,9 +94,11 @@ export async function normalizeGzipFiles(
                 } else {
                   try {
                     const note = !r.gzip ? 'not-gzip' : r.inflateError ? `inflate-error:${r.inflateError.slice(0, 60)}` : r.members !== undefined ? `members:${r.members}` : undefined;
-                    await cacheStore({ url: f.url, etag: f.etag || r.etag || '', lastModified: f.lastModified, bytes: r.bytes, repacked: !!r.repacked, origSize: r.origSize ?? r.bytes.byteLength, note });
+                    // the buffer is transferred to the cache worker (detached afterwards): read its size first
+                    const origSize = r.origSize ?? r.bytes.byteLength;
+                    await cacheStore({ url: f.url, etag: f.etag || r.etag || '', lastModified: f.lastModified, bytes: r.bytes, repacked: !!r.repacked, origSize, note });
                     result.fetched++;
-                    result.bytes += r.origSize ?? r.bytes.byteLength;
+                    result.bytes += origSize;
                     if (r.repacked) result.repacked++;
                   } catch (e) {
                     result.failed.push({ url: f.url, error: `cache store failed: ${String(e)}` });

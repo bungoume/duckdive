@@ -47,11 +47,24 @@ export interface CachedFile {
   repacked?: number;
 }
 
-/** One channel per page, so several app tabs never answer each other's requests. */
-export const CACHE_CHANNEL = `ddv-cache-${Math.random().toString(36).slice(2)}`;
-const channel = new BroadcastChannel(CACHE_CHANNEL);
+/**
+ * The control channel is a MessageChannel: this page keeps one port, the other one is handed
+ * to the DuckDB worker (duck.ts, `cacheWorkerPort()`) as its first message. Messages posted
+ * before the worker listens are queued by the port, and large payloads (a whole object for
+ * `store`) are transferred instead of copied.
+ */
+const { port1: port, port2: workerPort } = new MessageChannel();
+let portHandedOver = false;
+
+/** The worker's end of the channel; transfer it to the worker exactly once. */
+export function cacheWorkerPort(): MessagePort {
+  if (portHandedOver) throw new Error('cache worker port already handed over');
+  portHandedOver = true;
+  return workerPort;
+}
+
 const waiting = new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout> }>();
-channel.onmessage = (ev) => {
+port.onmessage = (ev) => {
   const d = ev.data as { id?: string; ok?: boolean; error?: string };
   if (!d?.id) return;
   const w = waiting.get(d.id);
@@ -62,7 +75,7 @@ channel.onmessage = (ev) => {
   else w.resolve(d);
 };
 
-function send<T>(msg: Record<string, unknown>, timeoutMs = 5000): Promise<T> {
+function send<T>(msg: Record<string, unknown>, timeoutMs = 5000, transfer: Transferable[] = []): Promise<T> {
   const id = Math.random().toString(36).slice(2);
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -70,7 +83,7 @@ function send<T>(msg: Record<string, unknown>, timeoutMs = 5000): Promise<T> {
       reject(new Error('cache worker did not answer'));
     }, timeoutMs);
     waiting.set(id, { resolve: resolve as (v: unknown) => void, reject, timer });
-    channel.postMessage({ id, ...msg });
+    port.postMessage({ id, ...msg }, transfer);
   });
 }
 
@@ -85,8 +98,8 @@ export interface SeedFile {
 }
 /** Hand listing metadata to the cache worker so DuckDB's per-file HEADs are answered locally. */
 export const cacheSeed = (files: SeedFile[]) => send<{ seeded: number }>({ type: 'seed', files }, 60000);
-/** Store a complete copy of an object (fetched by the page); `repacked` marks a re-compressed gzip. */
-export const cacheStore = (f: { url: string; etag: string; lastModified?: string; bytes: ArrayBuffer; repacked: boolean; origSize: number; note?: string }) => send<{ chunks: number }>({ type: 'store', ...f }, 60000);
+/** Store a complete copy of an object (fetched by the page); `repacked` marks a re-compressed gzip. The buffer is transferred, not copied. */
+export const cacheStore = (f: { url: string; etag: string; lastModified?: string; bytes: ArrayBuffer; repacked: boolean; origSize: number; note?: string }) => send<{ chunks: number }>({ type: 'store', ...f }, 60000, [f.bytes]);
 /** URLs among `files` that are already completely cached with the same ETag. */
 export const cacheComplete = (files: { url: string; etag: string }[]) => send<{ complete: string[] }>({ type: 'complete', files }, 30000);
 export const cacheStats = () => send<{ stats: CacheStats; config: CacheConfig; opfsError: string | null }>({ type: 'stats' });

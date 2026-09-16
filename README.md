@@ -124,7 +124,7 @@ Filters of the type "custom SQL" run verbatim inside DuckDB. Because the URL car
 
 ## Range cache
 
-`src/worker/duckdb-cache-worker.ts` wraps the duckdb-wasm worker and replaces its `XMLHttpRequest`. Range requests are aligned to chunks (1 MB by default) and stored in one append-only file in OPFS with a JSON index. Chunks are dropped when the object's ETag changes. Presigned-URL parameters are excluded from the cache key. DuckDB extensions are cached too, so later starts work offline. Only one tab can hold the cache at a time; a second tab runs without it.
+`src/worker/duckdb-cache-worker.ts` wraps the duckdb-wasm worker and replaces its `XMLHttpRequest`; the page controls the cache over a `MessagePort` handed to the worker as its first message (`src/cache.ts`), so re-packed gzip copies are transferred rather than copied. Range requests are aligned to chunks (1 MB by default) and stored in one append-only file in OPFS with a JSON index. Chunks are dropped when the object's ETag changes. Presigned-URL parameters are excluded from the cache key. DuckDB extensions are cached too, so later starts work offline. Only one tab can hold the cache at a time; a second tab runs without it.
 
 duckdb-wasm downloads whole HTTP files by default. `src/duck.ts` opens the database with `reliableHeadRequests: true` and `allowFullHTTPReads: false` to force range reads.
 

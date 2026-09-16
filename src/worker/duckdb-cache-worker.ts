@@ -8,8 +8,8 @@
  * downloads chunks that were never read. It then loads the stock duckdb-wasm
  * worker bundle with importScripts(), so DuckDB itself is unmodified.
  *
- * The page talks to the cache through a BroadcastChannel ('ddv-cache'):
- * stats / files / config / clear / purge.
+ * The page talks to the cache over a MessagePort that arrives as the worker's first message
+ * (src/cache.ts): stats / files / config / clear / purge / seed / store / complete.
  */
 
 declare function importScripts(...urls: string[]): void;
@@ -127,6 +127,11 @@ let root: FileSystemDirectoryHandle | null = null;
 let dir: FileSystemDirectoryHandle | null = null;
 let opfsError: string | null = null;
 let indexSaveTimer: ReturnType<typeof setTimeout> | null = null;
+/** when the index first became dirty since the last save (0 = clean) */
+let indexDirtySince = 0;
+/** the index is written this soon after a change, or at the latest this long after the first unsaved one */
+const INDEX_SAVE_DEBOUNCE_MS = 300;
+const INDEX_SAVE_MAX_DELAY_MS = 5000;
 
 function log(entry: Omit<LogEntry, 't'>): LogEntry {
   const e: LogEntry = { t: Date.now(), ...entry };
@@ -273,15 +278,26 @@ async function openExt(rec: ExtEntry): Promise<void> {
   return rec.opening;
 }
 
+/**
+ * Save the index shortly after the last change. A steady stream of chunk writes would keep
+ * postponing a plain debounce, and a tab that dies meanwhile leaves every chunk written since
+ * the last save unreferenced (wasted slab space), so the delay is capped as well.
+ */
 function scheduleSaveIndex() {
   if (!dir) return;
+  const now = Date.now();
+  if (!indexDirtySince) indexDirtySince = now;
   if (indexSaveTimer) clearTimeout(indexSaveTimer);
-  indexSaveTimer = setTimeout(saveIndex, 300);
+  const delay = Math.max(0, Math.min(INDEX_SAVE_DEBOUNCE_MS, indexDirtySince + INDEX_SAVE_MAX_DELAY_MS - now));
+  indexSaveTimer = setTimeout(saveIndex, delay);
 }
 
 /** Persist the chunk map (only files that actually hold data; seeded metadata is transient). */
 async function saveIndex() {
   if (!dir) return;
+  if (indexSaveTimer) clearTimeout(indexSaveTimer);
+  indexSaveTimer = null;
+  indexDirtySince = 0;
   const index: Index = { version: INDEX_VERSION, slabSize, wasted, files: {}, ext: {}, config: { ...config } };
   for (const [k, e] of files) {
     if (!e.chunks.size) continue;
@@ -927,11 +943,10 @@ class CachingXHR {
 
 // ---------- control channel ----------
 
-const channel = new BroadcastChannel(self.name || 'ddv-cache');
-channel.onmessage = async (ev) => {
-  const { id, type, ...rest } = (ev.data ?? {}) as { id: string; type: string; [k: string]: unknown };
+/** Serve one control request from the page; `reply` answers it on the same port. */
+async function handleControl(data: unknown, reply: (payload: Record<string, unknown>) => void) {
+  const { id, type, ...rest } = (data ?? {}) as { id: string; type: string; [k: string]: unknown };
   if (!id || !type) return;
-  const reply = (payload: Record<string, unknown>) => channel.postMessage({ id, ...payload });
   try {
     switch (type) {
       case 'stats': {
@@ -1030,21 +1045,35 @@ channel.onmessage = async (ev) => {
   } catch (e) {
     reply({ ok: false, error: String(e) });
   }
-};
+}
+
+function attachControlPort(port: MessagePort) {
+  port.onmessage = (ev) => {
+    const id = (ev.data as { id?: string } | null)?.id;
+    void handleControl(ev.data, (payload) => port.postMessage({ id, ...payload }));
+  };
+}
 
 // ---------- boot ----------
 
-// Buffer messages from the page until the duckdb-wasm worker has installed its handler.
+// The page's first message carries the control port; everything else is duckdb-wasm traffic,
+// buffered until the duckdb-wasm worker bundle has installed its own onmessage handler.
+const isPortMessage = (ev: MessageEvent) => (ev.data as { type?: string } | null)?.type === 'ddv-cache-port' && ev.ports.length > 0;
 const buffered: MessageEvent[] = [];
 self.onmessage = (ev: MessageEvent) => {
-  buffered.push(ev);
+  if (isPortMessage(ev)) attachControlPort(ev.ports[0]);
+  else buffered.push(ev);
 };
 
 (async () => {
   await initOpfs();
   (self as unknown as { XMLHttpRequest: unknown }).XMLHttpRequest = CachingXHR;
   importScripts(new URL('/duckdb/duckdb-browser-eh.worker.js', self.location.href).href);
-  const handler = self.onmessage as ((ev: MessageEvent) => void) | null;
-  for (const ev of buffered) handler?.(ev);
+  const duck = self.onmessage as ((ev: MessageEvent) => void) | null;
+  self.onmessage = (ev: MessageEvent) => {
+    if (isPortMessage(ev)) attachControlPort(ev.ports[0]);
+    else duck?.(ev);
+  };
+  for (const ev of buffered) duck?.(ev);
   buffered.length = 0;
 })();
