@@ -2,11 +2,12 @@
 
 A Chrome extension that searches and charts log files. It reads Parquet, CSV and JSON from S3 or S3-compatible storage, from HTTPS URLs, or from local files, and queries them in the browser. Nothing is sent anywhere else.
 
-Three pages:
+Four pages:
 
 - Discover: query bar, time histogram, document table, field sidebar, filter pills.
 - Visualize: area, line, bar, table and metric charts with date histograms, break-downs and top values. Clicking a chart adds a filter or zooms the time range.
 - Data source: where the files are, how they are formatted, which field is the time, and how to authenticate.
+- Settings: UI language, date format, time zone, scaled date format for histogram buckets, first day of the week, and the time picker's quick ranges.
 
 ## Why an extension
 
@@ -25,6 +26,22 @@ Open `chrome://extensions`, enable Developer mode, choose "Load unpacked" and se
 
 The extension ID is `kohchgcbcmdcoondpjoiaccfkhadkpki`. The manifest carries the Web Store's public key so an unpacked build gets the same ID; `npm run pack` removes the key from the zip because the store rejects it.
 
+## Languages
+
+The UI is available in English, Japanese, Simplified Chinese, Korean, German, French and Spanish. The language follows Chrome's UI language on first start and can be changed on the Settings page; the choice is kept in this browser (`localStorage`, key `ddv.lang`). English is the fallback for unknown locales.
+
+Strings live in `src/i18n/<lang>.ts`, one flat dictionary per language typed against `src/i18n/en.ts`, so a missing key is a compile error. `t('key', { n })` fills `{n}` placeholders; `tx()` does the same when a placeholder is a JSX node. The extension name and store description come from `public/_locales/<lang>/messages.json` (each description must stay within the store's 132-character limit; `npm run pack` checks it). To add a language: copy `en.ts`, register it in `src/i18n/index.ts` (`LANGS` and the dictionary table) and add a `_locales` folder. Field names, SQL, pattern examples, DuckDB / STS error messages, the diagnose report's technical verdicts and the Visualize panel's function vocabulary (Function, Minimum interval, Date histogram / Top values / Intervals, Count / Sum / Average / … ) stay in English on purpose.
+
+## Settings
+
+The Settings page keeps preferences in this browser (`localStorage`, key `ddv.settings`); "Reset to defaults" removes them.
+
+- Date format: a moment-style pattern (`YYYY-MM-DDTHH:mm:ss.SSS` by default) for every displayed date. Tokens: `YYYY YY MMMM MMM MM M DD D dddd ddd d HH H hh h mm m ss s SSS SS S A a Z ZZ X x`, `[text]` for literals.
+- Time zone: an IANA name; empty means the browser's zone. It applies to displayed dates, the absolute time picker and date-math rounding (`now/d` is midnight in that zone). Date tokens in S3 patterns stay in UTC.
+- Scaled date format: `[ISO 8601 duration, pattern]` pairs. Chart tooltips and table cells of date histograms use the pattern of the largest duration not above the bucket size (`""` covers sub-second buckets). Axis labels are not configurable: ticks sit on wall-clock boundaries of the display time zone, are spaced so that they never overlap, and show only what the visible range needs (no date within a single day, no year within a single year, no time for daily and longer steps).
+- Day of week: the first day of the week for `now/w` and weekly buckets (Monday by default).
+- Time filter quick ranges: `{"from", "to", "display"}` entries in date-math syntax for the time picker's "Commonly used" list. Without `display` the label is generated in the UI language.
+
 ## Data sources
 
 The Data source page accepts one of:
@@ -33,6 +50,10 @@ The Data source page accepts one of:
 - `https://...` URLs (presigned or served through CloudFront)
 - local Parquet, CSV or JSON files (read through the File API, never uploaded)
 - a built-in demo dataset
+
+### Recent sources
+
+Every successful connect to an S3 / HTTPS or demo source is remembered (up to 20, newest first, in this browser's `localStorage` under `ddv.sources`, including any access keys and chosen pattern values). The drop-down in the header switches between them from any page; the Data source page lists them with Connect and Remove buttons. Two configurations are the same entry when their destination matches (kind, URL lines, endpoint, region, URL style and authentication mode); name, format and time field are updated in place. Switching keeps the time range and the query, and drops filters, columns, sorts and chart fields that name a field the new source does not have. Local-file sources are not remembered because the browser cannot store the files.
 
 ### Patterns
 
@@ -112,7 +133,7 @@ node e2e/smoke.mjs     # Discover and Visualize on the demo dataset
 node e2e/cache.mjs     # permissions, OPFS persistence, SigV4 and STS against a local range server
 ```
 
-`e2e/cache.mjs` needs the `duckdb` CLI to generate fixtures. Both use Playwright's headless Chromium with the built extension loaded.
+`e2e/cache.mjs` needs the `duckdb` CLI to generate fixtures. Both use Playwright's headless Chromium with the built extension loaded. The tests assert English text, so `e2e/ext-context.mjs` pins the UI language to English before the page loads; set `DDV_LANG=ja` (or another language id) to run `npm run screenshots` in that language.
 
 ## Layout
 

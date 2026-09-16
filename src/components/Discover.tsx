@@ -4,7 +4,8 @@ import { formatLocal } from '../datemath';
 import type { Field } from '../fields';
 import { findField } from '../fields';
 import { compileSearch, fetchCount, fetchDocs, fetchHistogram, type Bucket, type Doc } from '../queries';
-import { INTERVALS, autoInterval, intervalByKey, newId, type Filter, type Interval } from '../sql';
+import { INTERVALS, autoInterval, intervalByKey, intervalLabel, newId, type Filter, type Interval } from '../sql';
+import { t } from '../i18n';
 import type { DiscoverState, SearchState } from '../state';
 import { DocTable } from './DocTable';
 import { FieldSidebar } from './FieldSidebar';
@@ -16,9 +17,7 @@ import { QueryCancelled, getQueryLog } from '../duck';
 
 /** Errors that smell like damaged file bytes get a pointer to the cache controls. */
 function withCacheHint(msg: string): string {
-  return /gzip|zstd|magic|corrupt|Parquet file|invalid/i.test(msg)
-    ? `${msg}\n\nUse "Find the failing file" below to locate and inspect the file DuckDB rejects. If the cache is suspected: Data source → Local range cache → "Clear cache" or untick "Enable range cache".`
-    : msg;
+  return /gzip|zstd|magic|corrupt|Parquet file|invalid/i.test(msg) ? t('disc.cacheHint', { error: msg, button: t('diag.find'), clear: t('cache.clear'), enable: t('cache.enable') }) : msg;
 }
 
 const PAGE = 100;
@@ -136,14 +135,14 @@ export function Discover(props: {
         <div class="main">
           <div class="hits">
             <span class="n">{count === null ? '…' : count.toLocaleString()}</span>
-            <span>hits</span>
+            <span>{t('disc.hits')}</span>
             <span class="meta">
               {elapsed ? `${Math.round(elapsed)} ms` : ''}
               {compiled.from && compiled.to ? ` · ${formatLocal(compiled.from)} → ${formatLocal(compiled.to)}` : ''}
             </span>
             <span style="flex:1" />
             <button class="sql-toggle" onClick={() => setShowSql(!showSql)}>
-              {showSql ? 'hide SQL' : 'show SQL'}
+              {showSql ? t('disc.hideSql') : t('disc.showSql')}
             </button>
           </div>
           {showSql && (
@@ -155,12 +154,12 @@ export function Discover(props: {
             <div class="chart-panel">
               <div class="chart-head">
                 <span>
-                  {props.timeField?.name} per {interval.label.toLowerCase()} · drag to zoom
+                  {t('disc.perInterval', { field: props.timeField?.name ?? '', interval: intervalLabel(interval).toLowerCase() })}
                 </span>
                 <select class="input" style="width:auto;padding:2px 6px;font-size:12px" value={discover.interval} onChange={(e) => props.onDiscover({ ...discover, interval: (e.target as HTMLSelectElement).value })}>
-                  <option value="auto">Auto</option>
+                  <option value="auto">{t('common.auto')}</option>
                   {INTERVALS.map((iv) => (
-                    <option value={iv.key}>{iv.label}</option>
+                    <option value={iv.key}>{intervalLabel(iv)}</option>
                   ))}
                 </select>
               </div>
@@ -170,8 +169,8 @@ export function Discover(props: {
           <div class="doc-wrap">
             {docs.length === 0 && !busy ? (
               <div class="empty">
-                <h3>No results match your search criteria</h3>
-                <p>Expand the time range or adjust the query and filters.</p>
+                <h3>{t('disc.empty.title')}</h3>
+                <p>{t('disc.empty.text')}</p>
               </div>
             ) : (
               <>
@@ -191,7 +190,7 @@ export function Discover(props: {
                 {count !== null && docs.length < count && (
                   <div class="load-more">
                     <button class="btn" onClick={loadMore} disabled={busy}>
-                      Load more ({docs.length.toLocaleString()} of {count.toLocaleString()})
+                      {t('disc.loadMore', { shown: docs.length.toLocaleString(), total: count.toLocaleString() })}
                     </button>
                   </div>
                 )}

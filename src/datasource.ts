@@ -1,4 +1,5 @@
 import type { AwsCredentials } from './auth';
+import { t } from './i18n';
 import { cacheSeed, fmtBytes, type SeedFile } from './cache';
 import { normalizationAvailable, normalizeGzipFiles, type NormalizeFile } from './gznorm';
 import { DataProtocol, exec, getDB, query } from './duck';
@@ -129,7 +130,7 @@ export async function applyS3(cfg: SourceConfig, creds: AwsCredentials | null = 
     try {
       await exec(`SET ${k}=${lit(v)}`);
     } catch (e) {
-      throw new Error(`Failed to apply S3 setting ${k}: ${String(e)}`);
+      throw new Error(t('src.applyFailed', { key: k, error: String(e) }));
     }
   }
 }
@@ -149,11 +150,11 @@ export async function discoverVariables(cfg: SourceConfig, creds: AwsCredentials
   const lines = sourceUrls(cfg).filter((u) => u.startsWith('s3://') && namedTokens(u).length);
   if (!lines.length) return { values: {}, listedFiles: 0 };
   const placeholder = lines.find((u) => /<[a-z-]+>/i.test(u));
-  if (placeholder) throw new Error(`The URL still contains the placeholder ${/<[a-z-]+>/i.exec(placeholder)![0]}; replace every <…> with the real value`);
-  if (lines.some((u) => HAS_DATE_TOKEN.test(u)) && !range) throw new Error('The URL uses date tokens; a time range is required');
+  if (placeholder) throw new Error(t('src.placeholder', { placeholder: /<[a-z-]+>/i.exec(placeholder)![0] }));
+  if (lines.some((u) => HAS_DATE_TOKEN.test(u)) && !range) throw new Error(t('src.dateNeedsRange'));
   return discoverTokenValues(lines, cfg.s3, cfg.authMode === 'none' ? null : creds ?? staticCreds(cfg), range, {
     signal: opts.signal,
-    onProgress: (done, total) => opts.onProgress?.(`Listing values… ${done} / ${total}`, 'list'),
+    onProgress: (done, total) => opts.onProgress?.(t('src.listingValues', { done, total }), 'list'),
   });
 }
 
@@ -170,7 +171,7 @@ export async function resolveFiles(cfg: SourceConfig, creds: AwsCredentials | nu
   const placeholder = lines.find((u) => /<[a-z-]+>/i.test(u));
   if (placeholder) {
     const m = /<[a-z-]+>/i.exec(placeholder)![0];
-    throw new Error(`The URL still contains the placeholder ${m}; replace every <…> with the real value (account ID, region, load balancer name)`);
+    throw new Error(t('src.placeholderLong', { placeholder: m }));
   }
   const s3Patterns = lines.filter((u) => u.startsWith('s3://'));
   const others = lines.filter((u) => !u.startsWith('s3://'));
@@ -186,7 +187,7 @@ export async function resolveFiles(cfg: SourceConfig, creds: AwsCredentials | nu
     const u = namedToGlob(u0);
     const concrete = HAS_DATE_TOKEN.test(u) ? (range ? expandDateTokens(u, range.from, range.to) : []) : [u];
     patterns += concrete.length;
-    if (concrete.some((c) => HAS_WILDCARD.test(c))) throw new Error(`Wildcards are only supported for s3:// URLs (no listing API for ${u})`);
+    if (concrete.some((c) => HAS_WILDCARD.test(c))) throw new Error(t('src.wildcardS3Only', { url: u }));
     out.push(...concrete);
     sizes.push(...concrete.map(() => null));
   }
@@ -200,7 +201,7 @@ export async function resolveFiles(cfg: SourceConfig, creds: AwsCredentials | nu
       valueFilters,
       {
         signal: opts.signal,
-        onProgress: (done, total) => opts.onProgress?.(total > 1 ? `Listing files… ${done} / ${total} prefixes` : 'Listing files…', 'list'),
+        onProgress: (done, total) => opts.onProgress?.(total > 1 ? t('src.listingPrefixes', { done, total }) : t('src.listingFiles'), 'list'),
       },
       cfg.tokenValues ?? {},
     );
@@ -265,34 +266,34 @@ export async function attachSource(cfg: SourceConfig, localFiles: File[] = [], c
   let warning: string | null = null;
   const notesExtra: string[] = [];
   if (cfg.kind === 'demo') {
-    progress('Generating demo data…', 'db');
+    progress(t('src.demo.progress'), 'db');
     await createDemoTable();
     await exec(`CREATE OR REPLACE VIEW ${VIEW} AS SELECT * FROM demo_logs`);
-    description = 'Demo dataset (synthetic web access logs, generated in-browser)';
+    description = t('src.demo.description');
   } else if (cfg.kind === 'local') {
-    if (!localFiles.length) throw new Error('No local files selected');
+    if (!localFiles.length) throw new Error(t('src.local.none'));
     const db = getDB();
     const names: string[] = [];
-    progress('Registering local files…', 'db');
+    progress(t('src.local.progress'), 'db');
     for (const f of localFiles) {
       await db.registerFileHandle(f.name, f, DataProtocol.BROWSER_FILEREADER, true);
       names.push(f.name);
     }
     await exec(`CREATE OR REPLACE VIEW ${VIEW} AS ${viewSelect(resolveFormat(cfg.format, names), names, null)}`);
-    description = `${names.length} local file(s): ${names.slice(0, 3).join(', ')}${names.length > 3 ? '…' : ''}`;
+    description = t('src.local.description', { n: names.length, names: names.slice(0, 3).join(', '), more: names.length > 3 ? '…' : '' });
     files = names;
   } else {
     const lines = sourceUrls(cfg);
-    if (!lines.length) throw new Error('No URLs configured');
+    if (!lines.length) throw new Error(t('src.noUrls'));
     // List first: it runs on the page and can be cancelled; DuckDB is only touched afterwards.
-    progress('Listing files…', 'list');
+    progress(t('src.listingFiles'), 'list');
     const resolved = await resolveFiles(cfg, creds, range, valueFilters, opts);
     throwIfAborted(opts.signal);
     if (!resolved.urls.length) {
       throw new Error(
         isRangeDependent(cfg) && !range
-          ? 'The URL uses date tokens; a time range is required'
-          : `No files matched ${lines.join(', ')}${range ? ` in ${range.from.toISOString()} → ${range.to.toISOString()}` : ''}`,
+          ? t('src.dateNeedsRange')
+          : t('src.noMatch', { patterns: lines.join(', '), range: range ? t('src.noMatch.range', { from: range.from.toISOString(), to: range.to.toISOString() }) : '' }),
       );
     }
     files = resolved.urls;
@@ -303,7 +304,7 @@ export async function attachSource(cfg: SourceConfig, localFiles: File[] = [], c
     // Ask before touching DuckDB when the source is large: from here on, steps cannot be cancelled.
     const threshold = cfg.maxFiles || DEFAULT_MAX_FILES;
     if (opts.confirmLarge && (files.length > threshold || (totalBytes !== null && totalBytes > LARGE_BYTES))) {
-      progress(`Waiting for confirmation (${files.length} files)…`, 'list');
+      progress(t('src.waiting', { n: files.length }), 'list');
       const ok = await opts.confirmLarge({ files: files.length, bytes: totalBytes, threshold });
       if (!ok) throw new CancelledError();
       throwIfAborted(opts.signal);
@@ -312,7 +313,7 @@ export async function attachSource(cfg: SourceConfig, localFiles: File[] = [], c
     // Seed the range cache with size / ETag from the listing so DuckDB's per-file HEADs
     // (one per file, per bind) are answered locally instead of hitting S3.
     if (resolved.seeds.length) {
-      progress(`Registering ${resolved.seeds.length} file(s) with the cache…`, 'list');
+      progress(t('src.seeding', { n: resolved.seeds.length }), 'list');
       try {
         await cacheSeed(resolved.seeds);
       } catch (e) {
@@ -325,7 +326,7 @@ export async function attachSource(cfg: SourceConfig, localFiles: File[] = [], c
     if (gzSeeds.length) {
       const avail = await normalizationAvailable();
       if (!avail.ok) {
-        notesExtra.push(`gzip files are read directly by DuckDB (${avail.reason}); concatenated gzip objects may fail or lose rows`);
+        notesExtra.push(t('src.gzDirect', { reason: avail.reason }));
       } else {
         const effCreds = cfg.authMode === 'none' ? null : (creds ?? staticCreds(cfg));
         const region = cfg.s3.region || '';
@@ -338,15 +339,15 @@ export async function attachSource(cfg: SourceConfig, localFiles: File[] = [], c
           const signed = await signObjectGet(t, key, region, effCreds);
           list.push({ url: s.url, fetchUrl: signed.url, headers: signed.headers, etag: s.etag, size: s.size, lastModified: s.lastModified });
         }
-        progress(`Fetching ${list.length} gzip file(s)…`, 'list');
+        progress(t('src.fetchingGz', { n: list.length }), 'list');
         try {
           const r = await normalizeGzipFiles(list, {
             signal: opts.signal,
-            onProgress: (done, total, bytes) => opts.onProgress?.(`Fetching gzip files… ${done} / ${total} (${fmtBytes(bytes)} downloaded)`, 'list'),
+            onProgress: (done, total, bytes) => opts.onProgress?.(t('src.fetchingGzProgress', { done, total, bytes: fmtBytes(bytes) }), 'list'),
           });
           throwIfAborted(opts.signal);
-          if (r.repacked) notesExtra.push(`${r.repacked} concatenated gzip file(s) re-packed for DuckDB`);
-          if (r.failed.length) notesExtra.push(`${r.failed.length} gzip file(s) could not be fetched (read directly by DuckDB): ${r.failed[0].error}`);
+          if (r.repacked) notesExtra.push(t('src.repacked', { n: r.repacked }));
+          if (r.failed.length) notesExtra.push(t('src.gzFailed', { n: r.failed.length, error: r.failed[0].error }));
         } catch (e) {
           throwIfAborted(opts.signal);
           if (e instanceof DOMException && e.name === 'AbortError') throw new CancelledError();
@@ -354,19 +355,20 @@ export async function attachSource(cfg: SourceConfig, localFiles: File[] = [], c
         }
       }
     }
-    progress(`Creating view over ${files.length} file(s)…`, 'db');
+    progress(t('src.creatingView', { n: files.length }), 'db');
     if (lines.some((u) => u.startsWith('s3://'))) await applyS3(cfg, creds);
     await exec(`CREATE OR REPLACE VIEW ${VIEW} AS ${viewSelect(resolveFormat(cfg.format, files), files, captures.length ? captureSelect(cfg) : null)}`);
     const expanded = resolved.patterns > 1 || files.length !== lines.length || resolved.skippedByTime > 0 || resolved.skippedByFilter > 0;
     const notes: string[] = [...notesExtra];
-    if (resolved.skippedByTime) notes.push(`${resolved.skippedByTime} skipped by the timestamp in their name`);
-    if (resolved.skippedByFilter) notes.push(`${resolved.skippedByFilter} skipped by filters on ${captures.join(', ')}`);
+    if (resolved.skippedByTime) notes.push(t('src.skippedByTime', { n: resolved.skippedByTime }));
+    if (resolved.skippedByFilter) notes.push(t('src.skippedByFilter', { n: resolved.skippedByFilter, names: captures.join(', ') }));
     const skipped = notes.length ? ` (${notes.join('; ')})` : '';
     const size = totalBytes !== null ? `, ${(totalBytes / 1048576).toFixed(totalBytes < 10 * 1048576 ? 1 : 0)} MB` : '';
-    description = expanded ? `${files.length} file(s)${size} matched ${lines.length} pattern(s)${skipped}: ${files[0]}${files.length > 1 ? ' …' : ''}` : `${files.length} URL(s): ${files[0]}${files.length > 1 ? ' …' : ''}`;
+    const more = files.length > 1 ? ' …' : '';
+    description = expanded ? t('src.description.matched', { n: files.length, size, patterns: lines.length, notes: skipped, first: files[0], more }) : t('src.description.urls', { n: files.length, first: files[0], more });
   }
 
-  progress('Reading schema…', 'db');
+  progress(t('src.readingSchema'), 'db');
   const fields = await introspectFields(VIEW);
   let timeField: Field | null = null;
   if (cfg.timeField) {
@@ -392,7 +394,7 @@ export async function attachSource(cfg: SourceConfig, localFiles: File[] = [], c
   // (all Parquet footers, or a full scan of text formats); Discover counts per time range.
   let rowCount: number | null = null;
   if (cfg.kind !== 'url') {
-    progress('Counting rows…', 'db');
+    progress(t('src.counting'), 'db');
     try {
       const r = await query(`SELECT count(*)::DOUBLE AS n FROM ${VIEW}`);
       rowCount = Number(r.rows[0]?.n ?? 0);

@@ -1,0 +1,14 @@
+{
+  "appName": {
+    "message": "Duckdive",
+    "description": "Extension name"
+  },
+  "appDesc": {
+    "message": "在浏览器中搜索和可视化 S3、HTTPS URL 或本地磁盘上的日志文件。数据不会离开您的计算机。",
+    "description": "Extension description (max 132 characters)"
+  },
+  "actionTitle": {
+    "message": "打开 Duckdive",
+    "description": "Tooltip of the toolbar button"
+  }
+}

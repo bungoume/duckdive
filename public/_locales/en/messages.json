@@ -1,0 +1,14 @@
+{
+  "appName": {
+    "message": "Duckdive",
+    "description": "Extension name"
+  },
+  "appDesc": {
+    "message": "Search and visualize log files from S3, HTTPS URLs or local disk, in the browser. Nothing leaves your machine.",
+    "description": "Extension description (max 132 characters)"
+  },
+  "actionTitle": {
+    "message": "Open Duckdive",
+    "description": "Tooltip of the toolbar button"
+  }
+}

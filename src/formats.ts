@@ -11,12 +11,12 @@
 // file only; JSON keeps union_by_name because its keys legitimately differ between files.
 
 import { lit } from './sql';
+import { t, type MsgKey } from './i18n';
 
 export type FormatId = 'auto' | 'parquet' | 'csv' | 'json' | 'alb' | 'cloudfront' | 'cloudtrail' | 'flowlogs' | 's3access' | 'ltsv' | 'cwlexport' | 'lines';
 
 export interface FormatDef {
   id: FormatId;
-  label: string;
   /** table function over the file list */
   reader: (list: string, withFilename: boolean) => string;
   /** extra SELECT expressions (start with ", ") */
@@ -71,25 +71,22 @@ const S3ACCESS_COLUMNS: [string, string][] = [
 const LTSV_EXPR = `to_json(map_from_entries(list_transform(string_split(line, chr(9)), x -> struct_pack(key := split_part(x, ':', 1), value := x[length(split_part(x, ':', 1)) + 2:]))))`;
 
 export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
-  parquet: { id: 'parquet', label: 'Parquet', reader: (l, f) => `read_parquet(${l}${fn(f)})` },
-  csv: { id: 'csv', label: 'CSV / TSV / text (auto-detect)', reader: (l, f) => `read_csv_auto(${l}${fn(f)})`, detect: /\.(csv|tsv|log|txt)(\.gz|\.zst)?$/ },
+  parquet: { id: 'parquet', reader: (l, f) => `read_parquet(${l}${fn(f)})` },
+  csv: { id: 'csv', reader: (l, f) => `read_csv_auto(${l}${fn(f)})`, detect: /\.(csv|tsv|log|txt)(\.gz|\.zst)?$/ },
   json: {
     id: 'json',
-    label: 'JSON / NDJSON',
     reader: (l, f) => `read_json_auto(${l}, union_by_name = true${fn(f)})`,
     // by extension, or by the delivery paths of AWS services that write JSON lines as *.log.gz
     detect: /\.(json|jsonl|ndjson)(\.gz|\.zst)?$|\/(WAFLogs|vpcdnsquerylogs|network-firewall)\//,
   },
   alb: {
     id: 'alb',
-    label: 'AWS ALB access log (.log.gz)',
     reader: (l, f) => csvFixed(l, f, ALB_COLUMNS, `delim = ' ', quote = '"', escape = '"', timestampformat = '%Y-%m-%dT%H:%M:%S.%fZ'`),
     timeField: 'time',
     detect: /\/elasticloadbalancing\//,
   },
   cloudfront: {
     id: 'cloudfront',
-    label: 'CloudFront standard log (.gz, TSV)',
     reader: (l, f) => csvFixed(l, f, CLOUDFRONT_COLUMNS, `delim = '\t', quote = '', escape = '', skip = 2`),
     select: `, (date || ' ' || time)::TIMESTAMP AS "timestamp"`,
     timeField: 'timestamp',
@@ -97,7 +94,6 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
   },
   cloudtrail: {
     id: 'cloudtrail',
-    label: 'CloudTrail (.json.gz)',
     reader: (l, f) => `read_json_auto(${l}, union_by_name = true, maximum_object_size = 268435456${fn(f)})`,
     // one row per Record; the filename (if requested) is carried along
     wrap: (inner) => `SELECT rec.*, * EXCLUDE (rec) FROM (SELECT unnest(Records) AS rec, * EXCLUDE (Records) FROM (${inner}))`,
@@ -106,14 +102,12 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
   },
   flowlogs: {
     id: 'flowlogs',
-    label: 'VPC Flow Logs (.log.gz, with header)',
     reader: (l, f) => `read_csv_auto(${l}, delim = ' ', header = true${fn(f)})`,
     timeField: 'start',
     detect: /\/vpcflowlogs\//,
   },
   s3access: {
     id: 's3access',
-    label: 'S3 server access log',
     reader: (l, f) => csvFixed(l, f, S3ACCESS_COLUMNS, `delim = ' ', quote = '"', escape = '"'`),
     select: `, try_strptime(time1[2:] || ' ' || time2[:-2], '%d/%b/%Y:%H:%M:%S %z')::TIMESTAMP AS "timestamp"`,
     timeField: 'timestamp',
@@ -121,14 +115,12 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
   },
   ltsv: {
     id: 'ltsv',
-    label: 'LTSV (label:value, tab separated)',
     reader: (l, f) => `read_csv(${l}, delim = E'\\x01', quote = '', escape = '', header = false, auto_detect = false, null_padding = true, strict_mode = false, columns = {'line': 'VARCHAR'}${fn(f)})`,
     select: `, ${LTSV_EXPR} AS log`,
     detect: /\.ltsv(\.gz|\.zst)?$/,
   },
   cwlexport: {
     id: 'cwlexport',
-    label: 'CloudWatch Logs export (timestamp + message lines)',
     reader: (l, f) => `read_csv(${l}, delim = E'\\x01', quote = '', escape = '', header = false, auto_detect = false, null_padding = true, strict_mode = false, columns = {'line': 'VARCHAR'}${fn(f)})`,
     // "2026-09-11T00:00:00.000Z message…": the leading ISO timestamp becomes the time field
     select: `, TRY_CAST(split_part(line, ' ', 1) AS TIMESTAMP) AS "timestamp", line[length(split_part(line, ' ', 1)) + 2:] AS message`,
@@ -136,15 +128,16 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
   },
   lines: {
     id: 'lines',
-    label: 'Plain text (one row per line)',
     reader: (l, f) => `read_csv(${l}, delim = E'\\x01', quote = '', escape = '', header = false, auto_detect = false, null_padding = true, strict_mode = false, columns = {'line': 'VARCHAR'}${fn(f)})`,
   },
 };
 
-export const FORMAT_OPTIONS: { id: FormatId; label: string }[] = [
-  { id: 'auto', label: 'Auto (by path / extension)' },
-  ...(['parquet', 'csv', 'json', 'alb', 'cloudfront', 'cloudtrail', 'flowlogs', 's3access', 'ltsv', 'cwlexport', 'lines'] as const).map((id) => ({ id, label: FORMATS[id].label })),
-];
+/** Display name of a format in the UI language. */
+export function formatLabel(id: FormatId): string {
+  return t(`fmt.${id}` as MsgKey);
+}
+
+export const FORMAT_IDS: FormatId[] = ['auto', 'parquet', 'csv', 'json', 'alb', 'cloudfront', 'cloudtrail', 'flowlogs', 's3access', 'ltsv', 'cwlexport', 'lines'];
 
 export function detectFormat(urls: string[]): Exclude<FormatId, 'auto'> {
   const first = urls[0] ?? '';
@@ -166,110 +159,88 @@ export function resolveFormat(format: FormatId, urls: string[]): FormatDef {
 
 export interface Template {
   id: string;
-  label: string;
   format: FormatId;
   /** pattern with <bucket> (and optional <prefix>) placeholders the user must replace */
   urls: string;
-  note: string;
+}
+
+/** Display name / explanatory note of a template in the UI language (keys tpl.<id>.label / .note). */
+export function templateLabel(tp: Template): string {
+  return t(`tpl.${tp.id}.label` as MsgKey);
+}
+export function templateNote(tp: Template): string {
+  return t(`tpl.${tp.id}.note` as MsgKey);
 }
 
 export const TEMPLATES: Template[] = [
   {
     id: 'alb',
-    label: 'ALB access logs',
     format: 'alb',
     urls: 's3://<bucket>/AWSLogs/{account}/elasticloadbalancing/{region}/{yyyy}/{MM}/{dd}/{account}_elasticloadbalancing_{region}_app.{alb}.*.log.gz',
-    note: 'account / region / alb become columns; filter on alb to read one load balancer only. Add your bucket prefix before AWSLogs if you configured one.',
   },
   {
     id: 'alb-parquet',
-    label: 'ALB access logs converted to Parquet (scripts/alb-to-parquet.sh)',
     format: 'parquet',
     urls: 's3://<bucket>/<prefix>/{alb}/dt={yyyy}-{MM}-{dd}/hour={HH}/*.parquet',
-    note: 'Hourly Parquet written by scripts/alb-to-parquet.sh: <prefix>/<alb>/dt=YYYY-MM-DD/hour=HH/data.parquet. dt and hour become partition columns; drop "{alb}/" if the destination already names one load balancer.',
   },
   {
     id: 'nlb',
-    label: 'NLB access logs',
     format: 'csv',
     urls: 's3://<bucket>/AWSLogs/{account}/elasticloadbalancing/{region}/{yyyy}/{MM}/{dd}/{account}_elasticloadbalancing_{region}_net.{nlb}.*.log.gz',
-    note: 'TLS listener logs only (space separated, auto-detected). Pick the time field manually if needed.',
   },
   {
     id: 'cloudfront',
-    label: 'CloudFront logs',
     format: 'cloudfront',
     urls: 's3://<bucket>/<prefix>/{distribution}.{yyyy}-{MM}-{dd}-{HH}.*.gz',
-    note: 'Legacy standard logs (TSV with #Fields header). Remove "<prefix>/" if logs sit at the bucket root. A "timestamp" column is derived from date + time.',
   },
   {
     id: 'cloudtrail',
-    label: 'CloudTrail',
     format: 'cloudtrail',
     urls: 's3://<bucket>/AWSLogs/{account}/CloudTrail/{region}/{yyyy}/{MM}/{dd}/{account}_CloudTrail_{region}_*.json.gz',
-    note: 'One row per Record (eventTime, eventSource, eventName, userIdentity, requestParameters, …). For organization trails add the org id: AWSLogs/o-xxxx/{account}/…',
   },
   {
     id: 'flowlogs',
-    label: 'VPC Flow Logs',
     format: 'flowlogs',
     urls: 's3://<bucket>/AWSLogs/{account}/vpcflowlogs/{region}/{yyyy}/{MM}/{dd}/{account}_vpcflowlogs_{region}_{flow_log_id}_*.log.gz',
-    note: 'Text with header (custom formats work too). "start" (epoch seconds) is used as the time field.',
   },
   {
     id: 'flowlogs-parquet',
-    label: 'VPC Flow Logs (Parquet, Hive-compatible prefixes)',
     format: 'parquet',
     urls: 's3://<bucket>/AWSLogs/aws-account-id={account}/aws-service=vpc/aws-region={region}/year={yyyy}/month={MM}/day={dd}/hour={HH}/*.log.parquet',
-    note: 'Flow logs delivered as Parquet with "Hive-compatible S3 prefixes" and hourly partitions. Without the Hive option the layout is AWSLogs/{account}/vpcflowlogs/{region}/{yyyy}/{MM}/{dd}/{HH}/*.log.parquet. "start" (epoch seconds) is the time field.',
   },
   {
     id: 'waf',
-    label: 'WAF logs (S3 delivery)',
     format: 'json',
     urls: 's3://<bucket>/AWSLogs/{account}/WAFLogs/{region}/{webacl}/{yyyy}/{MM}/{dd}/{HH}/*/{account}_waflogs_{region}_{webacl}_*.log.gz',
-    note: 'JSON lines, one per request; "timestamp" (epoch milliseconds) is the time field. Web ACLs in front of CloudFront use "cloudfront" as the region.',
   },
   {
     id: 'netfw',
-    label: 'Network Firewall logs',
     format: 'json',
     urls: 's3://<bucket>/AWSLogs/{account}/network-firewall/{log_type}/{region}/{firewall}/{yyyy}/{MM}/{dd}/{HH}/*.log.gz',
-    note: 'log_type is "alert" or "flow" (filter on it, or write the name instead of {log_type}). JSON lines; "event_timestamp" (epoch seconds) is the time field.',
   },
   {
     id: 'r53resolver',
-    label: 'Route 53 Resolver query logs',
     format: 'json',
     urls: 's3://<bucket>/AWSLogs/{account}/vpcdnsquerylogs/{vpc}/{yyyy}/{MM}/{dd}/{vpc}_vpcdnsquerylogs_{account}_*.log.gz',
-    note: 'JSON lines, one per DNS query; "query_timestamp" is the time field.',
   },
   {
     id: 's3access',
-    label: 'S3 server access logs',
     format: 's3access',
     urls: 's3://<bucket>/<prefix>/{yyyy}-{MM}-{dd}-{HH}-*',
-    note: 'Non-partitioned layout: <prefix>YYYY-MM-DD-HH-MM-SS-UniqueString. For date-based partitioning use <prefix>/{account}/{region}/{source_bucket}/{yyyy}/{MM}/{dd}/{yyyy}-{MM}-{dd}-{HH}-*. A "timestamp" column is derived.',
   },
   {
     id: 'firehose',
-    label: 'Kinesis Data Firehose delivery (default prefix)',
     format: 'json',
     urls: 's3://<bucket>/<prefix>/{yyyy}/{MM}/{dd}/{HH}/*',
-    note: 'The default YYYY/MM/DD/HH prefix used by Firehose (CloudWatch Logs subscriptions, EventBridge, WAF via Firehose, …). Records are read as JSON, with or without newlines between them. Choose the time field by hand if it is not detected.',
   },
   {
     id: 'cwlexport',
-    label: 'CloudWatch Logs export to S3',
     format: 'cwlexport',
     urls: 's3://<bucket>/<prefix>/<task-id>/**',
-    note: 'Files written by "Export data to Amazon S3" (create-export-task): one folder per log stream, lines of "timestamp message". The leading timestamp becomes the time field, the rest is "message".',
   },
   {
     id: 'ssm',
-    label: 'SSM session / command logs',
     format: 'lines',
     urls: 's3://<bucket>/<prefix>/**',
-    note: 'Session Manager transcripts and Run Command stdout/stderr are unstructured: every line becomes a row with its file name in _file. No time field.',
   },
 ];

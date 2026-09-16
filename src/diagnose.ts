@@ -2,6 +2,7 @@
 // the attached file list with count(*) queries, then inspects the raw bytes of each culprit through
 // the same read path (read_blob → httpfs → range cache) so the report shows what DuckDB actually saw.
 import { cacheStats, type CacheLogEntry } from './cache';
+import { t } from './i18n';
 import { viewSelect } from './datasource';
 import { QueryCancelled, query } from './duck';
 import { resolveFormat, type FormatId } from './formats';
@@ -162,7 +163,7 @@ async function inspectFile(file: string, listedSize: number | null, error: strin
  * per failing file.
  */
 export async function diagnoseFiles(onProgress: (msg: string) => void, maxFailing = 3): Promise<DiagnoseReport> {
-  if (!ctx) throw new Error('No source attached');
+  if (!ctx) throw new Error(t('diag.noSource'));
   const { files, fileSizes, format } = ctx;
   const report: DiagnoseReport = { startedAt: new Date().toISOString(), totalFiles: files.length, queries: 0, allReadable: false, failing: [], truncated: false, requestLog: [] };
   const found: { file: string; error: string }[] = [];
@@ -172,7 +173,7 @@ export async function diagnoseFiles(onProgress: (msg: string) => void, maxFailin
       return;
     }
     report.queries++;
-    onProgress(`Reading ${idx.length} file(s) (query ${report.queries}, ${found.length} culprit(s) so far)…`);
+    onProgress(t('diag.progress.reading', { n: idx.length, query: report.queries, found: found.length }));
     const err = await readError(format, idx.map((i) => files[i]));
     if (!err) return;
     if (idx.length === 1) {
@@ -186,7 +187,7 @@ export async function diagnoseFiles(onProgress: (msg: string) => void, maxFailin
   await search(files.map((_, i) => i));
   report.allReadable = found.length === 0 && report.queries === 1;
   for (const f of found) {
-    onProgress(`Inspecting ${f.file}…`);
+    onProgress(t('diag.progress.inspecting', { file: f.file }));
     report.failing.push(await inspectFile(f.file, fileSizes[files.indexOf(f.file)] ?? null, f.error));
   }
   try {

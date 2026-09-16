@@ -1,4 +1,8 @@
 import * as Plot from '@observablehq/plot';
+import { t, useLang } from '../i18n';
+import { formatBucket } from '../datefmt';
+import { useSettings } from '../settings';
+import { timeAxis } from '../ticks';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Bucket } from '../queries';
 import type { Interval } from '../sql';
@@ -18,6 +22,9 @@ export function Histogram(props: { buckets: Bucket[]; interval: Interval; from: 
   const [brush, setBrush] = useState<{ x0: number; x1: number } | null>(null);
   const drag = useRef<{ start: number; svg: SVGSVGElement; plot: any } | null>(null);
   const [width, setWidth] = useState(800);
+  // the axis label is baked into the plot: rebuild it when the language changes
+  const lang = useLang();
+  const settings = useSettings();
 
   useEffect(() => {
     if (!ref.current) return;
@@ -30,14 +37,18 @@ export function Histogram(props: { buckets: Bucket[]; interval: Interval; from: 
     const el = ref.current;
     if (!el) return;
     const data = props.buckets.map((b) => ({ t: new Date(b.t), t2: new Date(b.t + props.interval.ms), c: b.c }));
+    const marginLeft = 50;
+    const marginRight = 20;
+    const axis = timeAxis(props.from, props.to, width - marginLeft - marginRight, props.interval.ms);
     const plot = Plot.plot({
       width,
       height: props.height ?? 160,
-      marginLeft: 50,
+      marginLeft,
+      marginRight,
       marginBottom: 28,
       style: { fontSize: '11px', background: 'transparent', overflow: 'visible' },
-      x: { type: 'time', domain: [props.from, props.to], label: null, grid: false, tickFormat: undefined },
-      y: { label: 'Count', grid: true, nice: true, tickFormat: (d: number) => (d >= 1000 ? `${(d / 1000).toFixed(d >= 10000 ? 0 : 1)}k` : String(d)) },
+      x: { type: 'time', domain: [props.from, props.to], label: null, grid: false, ticks: axis.ticks, tickFormat: axis.tickFormat },
+      y: { label: t('hist.count'), grid: true, nice: true, tickFormat: (d: number) => (d >= 1000 ? `${(d / 1000).toFixed(d >= 10000 ? 0 : 1)}k` : String(d)) },
       marks: [
         Plot.rectY(data, { x1: 't', x2: 't2', y: 'c', fill: '#54b399', inset: 1, insetLeft: 0.5, insetRight: 0.5 }),
         Plot.ruleY([0]),
@@ -46,7 +57,7 @@ export function Histogram(props: { buckets: Bucket[]; interval: Interval; from: 
           Plot.pointerX({
             x: 't',
             y: 'c',
-            title: (d: any) => `${d.t.toLocaleString()}\n${d.c.toLocaleString()} records`,
+            title: (d: any) => `${formatBucket(d.t, props.interval.ms)}\n${t('hist.records', { n: d.c.toLocaleString() })}`,
           }),
         ),
       ],
@@ -54,7 +65,7 @@ export function Histogram(props: { buckets: Bucket[]; interval: Interval; from: 
     // Plot renders in UTC for type 'utc'; shift to local time display by using local scale instead
     el.replaceChildren(plot);
     return () => plot.remove();
-  }, [props.buckets, props.interval, props.from, props.to, width]);
+  }, [props.buckets, props.interval, props.from, props.to, width, lang, settings]);
 
   const onDown = (e: PointerEvent) => {
     const el = ref.current;

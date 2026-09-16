@@ -1,10 +1,12 @@
 import { QueryCancelled } from '../duck';
+import { formatDate } from '../datefmt';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { TimeRange } from '../datemath';
 import type { Field } from '../fields';
 import { findField } from '../fields';
 import { OTHER, compileSearch, fetchVis, metricLabel, type VisResult } from '../queries';
-import { INTERVALS, autoInterval, intervalByKey, newId, type Filter, type Interval } from '../sql';
+import { INTERVALS, autoInterval, intervalByKey, intervalLabel, newId, type Filter, type Interval } from '../sql';
+import { t, type MsgKey } from '../i18n';
 import { loadSavedVis, storeSavedVis, type ChartType, type MetricAgg, type MetricDef, type SavedVis, type SearchState, type VisState } from '../state';
 import { Chart, DataTable, MetricTiles, type ChartPick } from './Chart';
 import { FieldSidebar } from './FieldSidebar';
@@ -12,25 +14,27 @@ import { FilterBar } from './FilterBar';
 import { DiagnosePanel } from './DiagnosePanel';
 import { QueryBar } from './QueryBar';
 
-const CHARTS: { id: ChartType; label: string; icon: string }[] = [
-  { id: 'area', label: 'Area', icon: '⛰' },
-  { id: 'line', label: 'Line', icon: '📈' },
-  { id: 'bar', label: 'Bar', icon: '📊' },
-  { id: 'table', label: 'Table', icon: '▦' },
-  { id: 'metric', label: 'Metric', icon: '🔢' },
+const CHARTS: { id: ChartType; icon: string }[] = [
+  { id: 'area', icon: '⛰' },
+  { id: 'line', icon: '📈' },
+  { id: 'bar', icon: '📊' },
+  { id: 'table', icon: '▦' },
+  { id: 'metric', icon: '🔢' },
 ];
+const chartLabel = (id: ChartType) => t(`vis.chart.${id}` as MsgKey);
 
-const AGGS: { id: MetricAgg; label: string; needsField: boolean }[] = [
-  { id: 'count', label: 'Count', needsField: false },
-  { id: 'sum', label: 'Sum', needsField: true },
-  { id: 'avg', label: 'Average', needsField: true },
-  { id: 'min', label: 'Minimum', needsField: true },
-  { id: 'max', label: 'Maximum', needsField: true },
-  { id: 'median', label: 'Median', needsField: true },
-  { id: 'p95', label: '95th percentile', needsField: true },
-  { id: 'p99', label: '99th percentile', needsField: true },
-  { id: 'unique', label: 'Unique count', needsField: true },
+const AGGS: { id: MetricAgg; needsField: boolean }[] = [
+  { id: 'count', needsField: false },
+  { id: 'sum', needsField: true },
+  { id: 'avg', needsField: true },
+  { id: 'min', needsField: true },
+  { id: 'max', needsField: true },
+  { id: 'median', needsField: true },
+  { id: 'p95', needsField: true },
+  { id: 'p99', needsField: true },
+  { id: 'unique', needsField: true },
 ];
+const aggLabel = (id: MetricAgg) => t(`vis.agg.${id}` as MsgKey);
 
 function DropZone(props: { onDrop: (name: string) => void; children: preact.ComponentChildren; filled: boolean }) {
   const [over, setOver] = useState(false);
@@ -57,7 +61,7 @@ function DropZone(props: { onDrop: (name: string) => void; children: preact.Comp
 function FieldSelect(props: { fields: Field[]; value: string | null; onChange: (v: string | null) => void; allow?: (f: Field) => boolean; placeholder?: string }) {
   return (
     <select class="input" value={props.value ?? ''} onChange={(e) => props.onChange((e.target as HTMLSelectElement).value || null)}>
-      <option value="">{props.placeholder ?? 'Select a field'}</option>
+      <option value="">{props.placeholder ?? t('vis.selectField')}</option>
       {props.fields.filter((f) => f.kind !== 'object' && (!props.allow || props.allow(f))).map((f) => (
         <option value={f.name}>{f.name}</option>
       ))}
@@ -67,9 +71,7 @@ function FieldSelect(props: { fields: Field[]; value: string | null; onChange: (
 
 /** Errors that smell like damaged file bytes get a pointer to the cache controls. */
 function withCacheHint(msg: string): string {
-  return /gzip|zstd|magic|corrupt|Parquet file|invalid/i.test(msg)
-    ? `${msg}\n\nUse "Find the failing file" below to locate and inspect the file DuckDB rejects. If the cache is suspected: Data source → Local range cache → "Clear cache" or untick "Enable range cache".`
-    : msg;
+  return /gzip|zstd|magic|corrupt|Parquet file|invalid/i.test(msg) ? t('disc.cacheHint', { error: msg, button: t('diag.find'), clear: t('cache.clear'), enable: t('cache.enable') }) : msg;
 }
 
 export function Visualize(props: {
@@ -170,7 +172,7 @@ export function Visualize(props: {
   };
 
   const save = () => {
-    const title = vis.title.trim() || `Visualization ${saved.length + 1}`;
+    const title = vis.title.trim() || t('vis.visualizationN', { n: saved.length + 1 });
     const existing = saved.find((s) => s.title === title);
     const item: SavedVis = { id: existing?.id ?? newId(), title, savedAt: new Date().toISOString(), vis: { ...vis, title }, search };
     const list = existing ? saved.map((s) => (s.id === existing.id ? item : s)) : [...saved, item];
@@ -190,13 +192,13 @@ export function Visualize(props: {
 
   const xLabel =
     vis.x.kind === 'date_histogram'
-      ? `${vis.x.field ?? props.timeField?.name ?? 'time'} per ${interval?.label.toLowerCase() ?? ''}`
+      ? t('vis.xLabel.date', { field: vis.x.field ?? props.timeField?.name ?? t('vis.time'), interval: interval ? intervalLabel(interval).toLowerCase() : '' })
       : vis.x.kind === 'terms'
-        ? `Top ${vis.x.size} values of ${vis.x.field ?? '?'}`
+        ? t('vis.xLabel.terms', { n: vis.x.size, field: vis.x.field ?? '?' })
         : vis.x.kind === 'histogram'
-          ? `${vis.x.field ?? '?'} (bucket ${vis.x.interval})`
+          ? t('vis.xLabel.hist', { field: vis.x.field ?? '?', size: vis.x.interval })
           : '';
-  const gLabel = vis.breakdown.field ? `Top ${vis.breakdown.size} values of ${vis.breakdown.field}` : null;
+  const gLabel = vis.breakdown.field ? t('vis.xLabel.terms', { n: vis.breakdown.size, field: vis.breakdown.field }) : null;
 
   return (
     <div class="page">
@@ -212,12 +214,12 @@ export function Visualize(props: {
           <div class="canvas">
             <div class="vis-panel">
               <div class="row" style="margin-bottom:8px">
-                <input class="input" style="font-weight:600;flex:1" placeholder="Untitled visualization" value={vis.title} onInput={(e) => setVis({ title: (e.target as HTMLInputElement).value })} />
+                <input class="input" style="font-weight:600;flex:1" placeholder={t('vis.untitled')} value={vis.title} onInput={(e) => setVis({ title: (e.target as HTMLInputElement).value })} />
                 <button class="btn small" onClick={() => setShowSql(!showSql)}>
-                  {showSql ? 'Hide SQL' : 'Show SQL'}
+                  {showSql ? t('vis.hideSql') : t('vis.showSql')}
                 </button>
                 <button class="btn primary small" onClick={save}>
-                  Save
+                  {t('common.save')}
                 </button>
               </div>
               {showSql && result && <div class="sql-box" style="margin-bottom:8px">{result.sql}</div>}
@@ -227,28 +229,28 @@ export function Visualize(props: {
                 <>
                   {result.xKind === 'none' ? (
                     <div class="empty">
-                      <h3>Choose a horizontal axis</h3>
-                      <p>Drag a field onto "Horizontal axis" or pick one in the panel on the right.</p>
+                      <h3>{t('vis.chooseAxis.title')}</h3>
+                      <p>{t('vis.chooseAxis.text', { axis: t('vis.xAxis') })}</p>
                     </div>
                   ) : (
                     <Chart result={result} metrics={vis.metrics} chart={vis.chart} onBrush={onBrush} onPick={onPick} height={380} />
                   )}
-                  {result.groups.length > 0 && vis.metrics.length > 1 && <div class="legend-note">With a breakdown, the chart shows the first metric only. Switch to Table to see all metrics.</div>}
+                  {result.groups.length > 0 && vis.metrics.length > 1 && <div class="legend-note">{t('vis.breakdownNote')}</div>}
                 </>
               )}
-              {!result && !error && <div class="empty">Loading…</div>}
+              {!result && !error && <div class="empty">{t('common.loading')}</div>}
             </div>
           </div>
         </div>
         <div class="config">
           <div class="cfg-section">
-            <div class="head">Visualization type</div>
+            <div class="head">{t('vis.type')}</div>
             <div class="body">
               <div class="chart-types">
                 {CHARTS.map((c) => (
-                  <button class={vis.chart === c.id ? 'active' : ''} onClick={() => setVis({ chart: c.id })} title={c.label}>
+                  <button class={vis.chart === c.id ? 'active' : ''} onClick={() => setVis({ chart: c.id })} title={chartLabel(c.id)}>
                     <span class="ic">{c.icon}</span>
-                    {c.label}
+                    {chartLabel(c.id)}
                   </button>
                 ))}
               </div>
@@ -258,41 +260,41 @@ export function Visualize(props: {
           {vis.chart !== 'metric' && (
             <div class="cfg-section">
               <div class="head">
-                Horizontal axis
+                {t('vis.xAxis')}
                 {vis.x.kind !== 'none' && (
                   <button class="btn ghost small" onClick={() => setX({ kind: 'none', field: null })}>
-                    clear
+                    {t('vis.clear')}
                   </button>
                 )}
               </div>
               <div class="body">
                 <DropZone filled={vis.x.kind !== 'none'} onDrop={dropX}>
                   <span class="lbl">
-                    {vis.x.kind === 'none' ? 'Drop a field here' : xLabel}
-                    <span class="sub">{vis.x.kind === 'none' ? 'or pick one below' : vis.x.kind.replace('_', ' ')}</span>
+                    {vis.x.kind === 'none' ? t('vis.dropHere') : xLabel}
+                    <span class="sub">{vis.x.kind === 'none' ? t('vis.orPickBelow') : t(`vis.sub.${vis.x.kind}` as MsgKey)}</span>
                   </span>
                 </DropZone>
                 <div class="field-row">
-                  <label>Function</label>
+                  <label>{t('vis.function')}</label>
                   <select class="input" value={vis.x.kind} onChange={(e) => setX({ kind: (e.target as HTMLSelectElement).value as VisState['x']['kind'] })}>
                     <option value="none">–</option>
-                    <option value="date_histogram">Date histogram</option>
-                    <option value="terms">Top values</option>
-                    <option value="histogram">Intervals (numeric histogram)</option>
+                    <option value="date_histogram">{t('vis.fn.dateHistogram')}</option>
+                    <option value="terms">{t('vis.fn.terms')}</option>
+                    <option value="histogram">{t('vis.fn.histogram')}</option>
                   </select>
                 </div>
                 {vis.x.kind === 'date_histogram' && (
                   <>
                     <div class="field-row">
-                      <label>Field</label>
-                      <FieldSelect fields={fields} value={vis.x.field} onChange={(v) => setX({ field: v })} allow={(f) => f.kind === 'date'} placeholder={`(time field: ${props.timeField?.name ?? 'none'})`} />
+                      <label>{t('common.field')}</label>
+                      <FieldSelect fields={fields} value={vis.x.field} onChange={(v) => setX({ field: v })} allow={(f) => f.kind === 'date'} placeholder={t('vis.timeFieldPlaceholder', { name: props.timeField?.name ?? t('common.none') })} />
                     </div>
                     <div class="field-row">
-                      <label>Minimum interval</label>
+                      <label>{t('vis.minInterval')}</label>
                       <select class="input" value={vis.x.interval} onChange={(e) => setX({ interval: (e.target as HTMLSelectElement).value })}>
-                        <option value="auto">Auto</option>
+                        <option value="auto">{t('common.auto')}</option>
                         {INTERVALS.map((iv) => (
-                          <option value={iv.key}>{iv.label}</option>
+                          <option value={iv.key}>{intervalLabel(iv)}</option>
                         ))}
                       </select>
                     </div>
@@ -301,26 +303,26 @@ export function Visualize(props: {
                 {vis.x.kind === 'terms' && (
                   <>
                     <div class="field-row">
-                      <label>Field</label>
+                      <label>{t('common.field')}</label>
                       <FieldSelect fields={fields} value={vis.x.field} onChange={(v) => setX({ field: v })} />
                     </div>
                     <div class="row">
                       <div class="field-row" style="flex:1">
-                        <label>Number of values</label>
+                        <label>{t('vis.numValues')}</label>
                         <input class="input" type="number" min={1} max={500} value={vis.x.size} onInput={(e) => setX({ size: Number((e.target as HTMLInputElement).value) || 10 })} />
                       </div>
                       <div class="field-row" style="flex:1">
-                        <label>Rank by</label>
+                        <label>{t('vis.rankBy')}</label>
                         <select class="input" value={vis.x.orderBy} onChange={(e) => setX({ orderBy: (e.target as HTMLSelectElement).value as 'metric' | 'alpha' })}>
                           <option value="metric">{metricLabel(vis.metrics[0])}</option>
-                          <option value="alpha">Alphabetical</option>
+                          <option value="alpha">{t('vis.alphabetical')}</option>
                         </select>
                       </div>
                       <div class="field-row" style="width:90px">
-                        <label>Direction</label>
+                        <label>{t('vis.direction')}</label>
                         <select class="input" value={vis.x.orderDir} onChange={(e) => setX({ orderDir: (e.target as HTMLSelectElement).value as 'asc' | 'desc' })}>
-                          <option value="desc">Desc</option>
-                          <option value="asc">Asc</option>
+                          <option value="desc">{t('vis.desc')}</option>
+                          <option value="asc">{t('vis.asc')}</option>
                         </select>
                       </div>
                     </div>
@@ -329,11 +331,11 @@ export function Visualize(props: {
                 {vis.x.kind === 'histogram' && (
                   <>
                     <div class="field-row">
-                      <label>Field</label>
+                      <label>{t('common.field')}</label>
                       <FieldSelect fields={fields} value={vis.x.field} onChange={(v) => setX({ field: v })} allow={(f) => f.kind === 'number'} />
                     </div>
                     <div class="field-row">
-                      <label>Bucket size</label>
+                      <label>{t('vis.bucketSize')}</label>
                       <input class="input" type="number" min={0} step="any" value={vis.x.interval === 'auto' ? 10 : vis.x.interval} onInput={(e) => setX({ interval: (e.target as HTMLInputElement).value })} />
                     </div>
                   </>
@@ -344,9 +346,9 @@ export function Visualize(props: {
 
           <div class="cfg-section">
             <div class="head">
-              {vis.chart === 'metric' ? 'Metrics' : 'Vertical axis'}
+              {vis.chart === 'metric' ? t('vis.metrics') : t('vis.yAxis')}
               <button class="btn ghost small" onClick={() => addMetric()}>
-                + Add
+                {t('vis.add')}
               </button>
             </div>
             <div class="body">
@@ -358,10 +360,10 @@ export function Visualize(props: {
                       <DropZone filled={true} onDrop={(name) => dropY(name, m.id)}>
                         <span class="lbl">
                           {metricLabel(m)}
-                          <span class="sub">drop a field to change</span>
+                          <span class="sub">{t('vis.dropToChange')}</span>
                         </span>
                         {vis.metrics.length > 1 && (
-                          <button class="x" onClick={() => removeMetric(m.id)} title="Remove">
+                          <button class="x" onClick={() => removeMetric(m.id)} title={t('common.remove')}>
                             ✕
                           </button>
                         )}
@@ -369,14 +371,14 @@ export function Visualize(props: {
                       <div class="row">
                         <select class="input" value={m.agg} onChange={(e) => setMetric(m.id, { agg: (e.target as HTMLSelectElement).value as MetricAgg })}>
                           {AGGS.map((a) => (
-                            <option value={a.id}>{a.label}</option>
+                            <option value={a.id}>{aggLabel(a.id)}</option>
                           ))}
                         </select>
                         {agg.needsField && (
                           <FieldSelect fields={fields} value={m.field} onChange={(v) => setMetric(m.id, { field: v })} allow={(f) => (m.agg === 'unique' ? true : f.kind === 'number')} />
                         )}
                       </div>
-                      <input class="input" placeholder="Custom label" value={m.label ?? ''} onInput={(e) => setMetric(m.id, { label: (e.target as HTMLInputElement).value || undefined })} />
+                      <input class="input" placeholder={t('vis.customLabel')} value={m.label ?? ''} onInput={(e) => setMetric(m.id, { label: (e.target as HTMLInputElement).value || undefined })} />
                     </div>
                   </div>
                 );
@@ -386,29 +388,29 @@ export function Visualize(props: {
 
           <div class="cfg-section">
             <div class="head">
-              Break down by
+              {t('vis.breakdown')}
               {vis.breakdown.field && (
                 <button class="btn ghost small" onClick={() => setBreakdown({ field: null })}>
-                  clear
+                  {t('vis.clear')}
                 </button>
               )}
             </div>
             <div class="body">
               <DropZone filled={!!vis.breakdown.field} onDrop={dropG}>
                 <span class="lbl">
-                  {vis.breakdown.field ? gLabel : 'Drop a field here'}
-                  <span class="sub">top values</span>
+                  {vis.breakdown.field ? gLabel : t('vis.dropHere')}
+                  <span class="sub">{t('vis.topValues')}</span>
                 </span>
               </DropZone>
               <FieldSelect fields={fields} value={vis.breakdown.field} onChange={(v) => setBreakdown({ field: v })} />
               {vis.breakdown.field && (
                 <div class="row">
                   <div class="field-row" style="flex:1">
-                    <label>Number of values</label>
+                    <label>{t('vis.numValues')}</label>
                     <input class="input" type="number" min={1} max={50} value={vis.breakdown.size} onInput={(e) => setBreakdown({ size: Number((e.target as HTMLInputElement).value) || 5 })} />
                   </div>
                   <label class="row" style="margin-top:14px">
-                    <input type="checkbox" checked={vis.breakdown.other} onChange={(e) => setBreakdown({ other: (e.target as HTMLInputElement).checked })} /> Group remaining as "Other"
+                    <input type="checkbox" checked={vis.breakdown.other} onChange={(e) => setBreakdown({ other: (e.target as HTMLInputElement).checked })} /> {t('vis.groupOther')}
                   </label>
                 </div>
               )}
@@ -416,16 +418,16 @@ export function Visualize(props: {
           </div>
 
           <div class="cfg-section">
-            <div class="head">Saved visualizations</div>
+            <div class="head">{t('vis.saved')}</div>
             <div class="body">
-              {saved.length === 0 && <div class="hint">Nothing saved yet. Saved items live in this browser (localStorage).</div>}
+              {saved.length === 0 && <div class="hint">{t('vis.nothingSaved')}</div>}
               <div class="saved-list">
                 {saved.map((s) => (
                   <div class="item">
-                    <span class="t" onClick={() => load(s)} title={new Date(s.savedAt).toLocaleString()}>
+                    <span class="t" onClick={() => load(s)} title={formatDate(new Date(s.savedAt))}>
                       {s.title}
                     </span>
-                    <button class="btn ghost small danger" onClick={() => del(s.id)} title="Delete">
+                    <button class="btn ghost small danger" onClick={() => del(s.id)} title={t('common.delete')}>
                       ✕
                     </button>
                   </div>

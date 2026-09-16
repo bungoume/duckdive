@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
+import { t } from '../i18n';
 import type { Field } from '../fields';
 import { fetchTopValues, type TopValue } from '../queries';
 import { FieldIcon } from './ui';
@@ -70,7 +71,7 @@ export function FieldSidebar(props: {
               props.onToggleColumn!(f.name);
             }}
           >
-            {isSel ? 'remove' : 'add'}
+            {isSel ? t('fs.remove') : t('fs.add')}
           </button>
         )}
         {open === f.name && (
@@ -80,17 +81,17 @@ export function FieldSidebar(props: {
               <span class="hint">{f.duckType}</span>
             </div>
             {f.kind === 'object' ? (
-              <div class="hint">Object field. Expand its sub-fields from the list.</div>
+              <div class="hint">{t('fs.objectField')}</div>
             ) : (
               <>
-                <h4>Top 5 values{tops ? ` in ${tops.total.toLocaleString()} records` : ''}</h4>
-                {loading && <div class="hint">Loading…</div>}
+                <h4>{t('fs.top5')}{tops ? t('fs.inRecords', { n: tops.total.toLocaleString() }) : ''}</h4>
+                {loading && <div class="hint">{t('common.loading')}</div>}
                 {tops &&
                   tops.values.map((v) => (
                     <div class="topval">
                       <div>
-                        <div class="v mono" title={v.value ?? '(null)'}>
-                          {v.value === null ? <i>(null)</i> : v.value === '' ? <i>(empty)</i> : v.value}
+                        <div class="v mono" title={v.value ?? t('common.null')}>
+                          {v.value === null ? <i>{t('common.null')}</i> : v.value === '' ? <i>{t('common.empty')}</i> : v.value}
                         </div>
                         <div class="bar">
                           <div style={{ width: `${Math.round(v.pct * 100)}%` }} />
@@ -98,16 +99,16 @@ export function FieldSidebar(props: {
                       </div>
                       <span class="hint">{(v.pct * 100).toFixed(1)}%</span>
                       <span class="pm">
-                        <button title="Filter for value" onClick={() => props.onAddFilter(f.name, v.value, false)}>
+                        <button title={t('doc.filterFor')} onClick={() => props.onAddFilter(f.name, v.value, false)}>
                           +
                         </button>
-                        <button title="Filter out value" onClick={() => props.onAddFilter(f.name, v.value, true)}>
+                        <button title={t('doc.filterOut')} onClick={() => props.onAddFilter(f.name, v.value, true)}>
                           −
                         </button>
                       </span>
                     </div>
                   ))}
-                {tops && !tops.values.length && <div class="hint">No values in the current time range.</div>}
+                {tops && !tops.values.length && <div class="hint">{t('fs.noValues')}</div>}
               </>
             )}
             {props.onVisualize && f.kind !== 'object' && (
@@ -119,7 +120,7 @@ export function FieldSidebar(props: {
                     props.onVisualize!(f);
                   }}
                 >
-                  Visualize
+                  {t('fs.visualize')}
                 </button>
               </div>
             )}
@@ -132,23 +133,23 @@ export function FieldSidebar(props: {
   return (
     <div class="sidebar">
       <div class="search">
-        <input placeholder="Search field names" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />
+        <input placeholder={t('fs.search')} value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />
       </div>
       <div class="list">
         {props.mode === 'discover' && selected.length > 0 && (
           <>
             <div class="group">
-              <span>Selected fields</span>
+              <span>{t('fs.selected')}</span>
               <span>{selected.length}</span>
             </div>
             {selected.map(renderItem)}
           </>
         )}
         <div class="group">
-          <span>Available fields</span>
+          <span>{t('fs.available')}</span>
           <span>
-            <button class="sql-toggle" onClick={() => setShowTypes(!showTypes)} title="Toggle type icons">
-              {showTypes ? 'types' : 'types off'}
+            <button class="sql-toggle" onClick={() => setShowTypes(!showTypes)} title={t('fs.toggleTypes')}>
+              {showTypes ? t('fs.types') : t('fs.typesOff')}
             </button>{' '}
             {available.length}
           </span>

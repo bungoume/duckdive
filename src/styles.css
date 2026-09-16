@@ -35,6 +35,8 @@ code, .mono { font-family: var(--k-mono); font-size: 12px; }
 .header nav button { border: 0; background: transparent; padding: 6px 12px; border-radius: 4px; color: var(--k-text-subdued); font-weight: 500; }
 .header nav button.active { color: var(--k-primary); background: #e6f0ff; }
 .header .spacer { flex: 1; }
+.header .src-select { width: auto; max-width: 260px; height: 26px; padding: 0 6px; font-size: 12px; }
+.source-history tr.current td { background: #e6f0ff; }
 .header .status { font-size: 12px; color: var(--k-text-subdued); display: flex; align-items: center; gap: 8px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--k-success); display: inline-block; }
 .dot.busy { background: var(--k-warning); animation: pulse 1s infinite; }
@@ -239,7 +241,8 @@ kbd { font-family: var(--k-mono); font-size: 11px; border: 1px solid var(--k-bor
 
 /* data source templates */
 .template-box { background: #f3efff; border: 1px solid #c9b8f5; border-radius: var(--k-radius); padding: 10px 12px; margin-bottom: 10px; }
-.template-title { font-weight: 600; color: #4b2ab3; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+.settings-json { min-height: 180px; font-size: 12px; white-space: pre; }
+.template-title { white-space: nowrap; font-weight: 600; color: #4b2ab3; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
 .alert.warn { background: #fff6e0; color: #7a4d00; border: 1px solid #f5d98b; }
 
 .connect-confirm { border-width: 2px; }

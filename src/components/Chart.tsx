@@ -1,6 +1,9 @@
 import * as Plot from '@observablehq/plot';
+import { t, useLang } from '../i18n';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { formatLocal } from '../datemath';
+import { formatBucket, formatDate } from '../datefmt';
+import { useSettings } from '../settings';
+import { timeAxis } from '../ticks';
 import { OTHER, metricLabel, type VisResult } from '../queries';
 import type { ChartType, MetricDef } from '../state';
 import { fmtNum } from './ui';
@@ -92,6 +95,9 @@ export function Chart(props: {
     bands: Map<string, { s: string; y0: number; y1: number; v: number }[]>;
   }>({ plot: null, stacked: false, isTime: false, isBand: false, ivMs: 0, xs: [], series: [], bands: new Map() });
   const highlighted = useRef<Element | null>(null);
+  // axis / legend labels are baked into the plot: rebuild it when the language changes
+  const lang = useLang();
+  const settings = useSettings();
 
   useEffect(() => {
     if (!ref.current) return;
@@ -111,7 +117,7 @@ export function Chart(props: {
       range: series.map((s, i) => (s === OTHER ? '#98a2b3' : PALETTE[i % PALETTE.length])),
       legend: series.length > 1 || props.result.groups.length > 0,
     };
-    const yLabel = props.result.groups.length ? metricLabel(props.metrics[0]) : props.metrics.length === 1 ? metricLabel(props.metrics[0]) : 'Value';
+    const yLabel = props.result.groups.length ? metricLabel(props.metrics[0]) : props.metrics.length === 1 ? metricLabel(props.metrics[0]) : t('chart.value');
     const marks: unknown[] = [Plot.ruleY([0])];
     const ivMs = props.result.interval?.ms ?? 0;
     const stacked = props.chart === 'area' || props.chart === 'bar';
@@ -140,17 +146,29 @@ export function Chart(props: {
         list.push({ s, y0, y1: stacked ? y0 + d.y : d.y, v: d.y });
       }
     }
+    // time axis: wall-clock aligned ticks that fit the plot width, labelled as briefly as the range allows
+    const marginLeft = 56;
+    const marginRight = 20;
+    let xTime: Record<string, unknown> = { type: 'time', label: null, grid: false, tickFormat: (d: Date) => formatBucket(d, ivMs) };
+    if (isTime && xDomain.length) {
+      const ts = xDomain as Date[];
+      const t0 = ts[0];
+      const t1 = new Date(ts[ts.length - 1].getTime() + (props.chart === 'bar' ? ivMs : 0));
+      const axis = timeAxis(t0, t1, width - marginLeft - marginRight, ivMs);
+      xTime = { type: 'time', domain: [t0, t1], label: null, grid: false, ticks: axis.ticks, tickFormat: axis.tickFormat };
+    }
     let plot: (HTMLElement | SVGSVGElement) & { remove(): void };
     try {
       plot = Plot.plot({
         width,
         height: props.height ?? 360,
-        marginLeft: 56,
+        marginLeft,
+        marginRight,
         marginBottom: isBand ? 60 : 30,
         style: { fontSize: '11px', background: 'transparent', overflow: 'visible' },
         color,
         x: isTime
-          ? { type: 'time', label: null, grid: false }
+          ? xTime
           : isBand
             ? { domain: xDomain as string[], label: null, tickRotate: xDomain.length > 8 ? -30 : 0 }
             : { label: null },
@@ -166,7 +184,7 @@ export function Chart(props: {
       console.error('chart render failed', e);
       const div = document.createElement('div');
       div.className = 'chart-error';
-      div.textContent = `Chart rendering failed: ${String(e)}`;
+      div.textContent = t('chart.renderFailed', { error: String(e) });
       el.replaceChildren(div);
       model.current.plot = null;
       return;
@@ -176,7 +194,7 @@ export function Chart(props: {
     highlighted.current = null;
     setHover(null);
     return () => plot.remove();
-  }, [props.result, props.metrics, props.chart, width]);
+  }, [props.result, props.metrics, props.chart, width, lang, settings]);
 
   /** The plot's own <svg> (with a legend, Plot renders small swatch svgs before it). */
   const chartSvg = (): SVGSVGElement | null => {
@@ -340,7 +358,7 @@ export function Chart(props: {
     if (d0 instanceof Date && d1 instanceof Date && !isNaN(d0.getTime())) props.onBrush(d0, d1);
   };
 
-  const fmtX = (x: Date | string | number) => (x instanceof Date ? formatLocal(x) : String(x));
+  const fmtX = (x: Date | string | number) => (x instanceof Date ? formatBucket(x, props.result.interval?.ms ?? 0) : String(x));
   const tipLeft = hover ? Math.min(hover.px + 12, width - 260) : 0;
   const tipTop = hover ? Math.max(0, hover.py - 10) : 0;
   const hasBreakdown = props.result.groups.length > 0;
@@ -360,13 +378,13 @@ export function Chart(props: {
         <div class="chart-tip" style={{ left: tipLeft, top: tipTop }}>
           <div class="chart-tip-x">
             {fmtX(hover.x)}
-            {hover.isTime && hover.intervalMs ? ` – ${formatLocal(new Date((hover.x as Date).getTime() + hover.intervalMs))}` : ''}
+            {hover.isTime && hover.intervalMs ? ` – ${formatBucket(new Date((hover.x as Date).getTime() + hover.intervalMs), hover.intervalMs)}` : ''}
           </div>
           <div class="chart-tip-row">
             <span class="chart-tip-key">{hasBreakdown ? hover.series : hover.series}</span>
             <span class="chart-tip-val">{fmtNum(hover.value)}</span>
           </div>
-          {props.onPick && <div class="chart-tip-hint">{hasBreakdown && hover.series !== OTHER ? 'click to filter by this value' : props.result.xKind === 'terms' ? 'click to filter by this value' : hover.isTime ? 'click to zoom into this bucket' : ''}</div>}
+          {props.onPick && <div class="chart-tip-hint">{(hasBreakdown && hover.series !== OTHER) || props.result.xKind === 'terms' ? t('chart.clickFilter') : hover.isTime ? t('chart.clickZoom') : ''}</div>}
         </div>
       )}
     </div>
@@ -417,9 +435,9 @@ export function DataTable(props: { result: VisResult; metrics: MetricDef[]; xLab
   return (
     <div>
       <div class="row" style="justify-content:space-between;margin-bottom:6px">
-        <span class="hint">{rows.length.toLocaleString()} rows</span>
+        <span class="hint">{t('chart.rows', { n: rows.length.toLocaleString() })}</span>
         <button class="btn small" onClick={csv}>
-          Download CSV
+          {t('chart.downloadCsv')}
         </button>
       </div>
       <div style="overflow:auto;max-height:70vh">
@@ -438,7 +456,7 @@ export function DataTable(props: { result: VisResult; metrics: MetricDef[]; xLab
             {rows.map((row) => (
               <tr>
                 {row.map((c, i) => {
-                  if (isDateCell(i) && typeof c === 'number') return <td>{formatLocal(new Date(c))}</td>;
+                  if (isDateCell(i) && typeof c === 'number') return <td>{r.interval ? formatBucket(new Date(c), r.interval.ms) : formatDate(new Date(c))}</td>;
                   const isNum = typeof c === 'number';
                   return <td class={isNum ? 'num' : ''}>{isNum ? fmtNum(c) : String(c)}</td>;
                 })}

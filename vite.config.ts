@@ -13,17 +13,19 @@ const extraHosts = (process.env.DDV_EXTRA_HOSTS ?? '')
 /** MV3 manifest, generated at build time so the version stays in sync with package.json. */
 const manifest = {
   manifest_version: 3,
-  name: 'Duckdive',
+  // Localized through public/_locales/<lang>/messages.json (Chrome picks the UI language; en is the fallback).
+  name: '__MSG_appName__',
   version: pkg.version,
-  // The Chrome Web Store caps this at 132 characters.
-  description: 'Search and visualize log files from S3, HTTPS URLs or local disk, in the browser. Nothing leaves your machine.',
+  // The Chrome Web Store caps the description at 132 characters (scripts/pack.mjs checks every locale).
+  description: '__MSG_appDesc__',
+  default_locale: 'en',
   minimum_chrome_version: '116',
   // Public key of the Chrome Web Store item, so unpacked (dev) builds get the same extension ID
   // (kohchgcbcmdcoondpjoiaccfkhadkpki) and the OIDC redirect URL https://kohchgcbcmdcoondpjoiaccfkhadkpki.chromiumapp.org/
   // as the store build. scripts/pack.mjs strips it from the uploaded zip (the store rejects "key").
   key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArgh8WQbJmwPI8reODpywYBayQ/Z1Bxs3eJsiBOqQR8Kx2s9VdD29Az/3J4d4xaEy+J/Yh3+lYMguCaQmuMJpcqnOYeAtUBV2MX+kUnFb41kCDcma2JVggcFOEpS+0PIN7fmvXDfohHZa4APBAmDAtMKRgA+hOpkpNl6fTMTLl4jEU6hnV/+csswNSJ5g32XP3JSJHuGnVaMbTtIVYjrgWeE6A4aJ7pXKdDNvbyIvnIun6zMrjqJDOjhgJYOGUKXqutm0ZDt0DG+zuQAQz2Ewp1QM7noRQ/jkZwEL2G6/l91Hs6hANFyM1rBnCd6SP8QZEDbdwz31NAM14LQ5oUhxxQIDAQAB',
   icons: { 16: 'icons/icon-16.png', 32: 'icons/icon-32.png', 48: 'icons/icon-48.png', 128: 'icons/icon-128.png' },
-  action: { default_title: 'Open Duckdive', default_icon: { 16: 'icons/icon-16.png', 32: 'icons/icon-32.png' } },
+  action: { default_title: '__MSG_actionTitle__', default_icon: { 16: 'icons/icon-16.png', 32: 'icons/icon-32.png' } },
   background: { service_worker: 'background.js', type: 'module' },
   permissions: ['storage', 'identity', 'unlimitedStorage'],
   // AWS endpoints (S3 in every region, STS) are granted up front; anything else

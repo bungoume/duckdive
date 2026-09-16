@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
+import { t } from '../i18n';
 import { fmtBytes } from '../cache';
 import { FILE_ERROR, canDiagnose, diagnoseFiles, type DiagnoseReport } from '../diagnose';
 import { QueryCancelled } from '../duck';
@@ -23,7 +24,7 @@ export function DiagnosePanel(props: { error: string | null }) {
     try {
       setReport(await diagnoseFiles(setProgress));
     } catch (e) {
-      setFailed(e instanceof QueryCancelled ? 'Cancelled (the source was reconnected)' : String(e));
+      setFailed(e instanceof QueryCancelled ? t('diag.cancelled') : String(e));
     } finally {
       setRunning(false);
     }
@@ -42,21 +43,20 @@ export function DiagnosePanel(props: { error: string | null }) {
     <div class="diagnose">
       <div class="row">
         <button class="btn small" disabled={running} onClick={run}>
-          {running ? 'Finding the failing file…' : 'Find the failing file'}
+          {running ? t('diag.finding') : t('diag.find')}
         </button>
-        <span class="hint">{running ? progress : 'Bisects the attached files with count(*) queries and inspects the bytes of each culprit (about two full scans per culprit).'}</span>
+        <span class="hint">{running ? progress : t('diag.hint')}</span>
       </div>
       {failed && <div class="alert error">{failed}</div>}
       {report && (
         <div class="diagnose-report">
           {report.allReadable ? (
             <div class="alert ok">
-              All {report.totalFiles} file(s) read fine with count(*) just now. The failure is either transient (a bad answer from the network or the cache: see the request log under
-              Data source → Local range cache) or specific to the failing query.
+              {t('diag.allOk', { n: report.totalFiles })}
             </div>
           ) : (
             <div class="alert warn">
-              {report.failing.length} failing file(s) found in {report.queries} queries{report.truncated ? ' (stopped after the first few)' : ''}.
+              {t('diag.failing', { n: report.failing.length, queries: report.queries, truncated: report.truncated ? t('diag.truncated') : '' })}
             </div>
           )}
           {report.failing.map((f) => (
@@ -67,28 +67,34 @@ export function DiagnosePanel(props: { error: string | null }) {
               <table class="kv">
                 <tbody>
                   <tr>
-                    <td>size</td>
+                    <td>{t('diag.size')}</td>
                     <td>
-                      listed {f.listedSize === null ? '?' : fmtBytes(f.listedSize)} / read {f.readSize === null ? '?' : fmtBytes(f.readSize)}
-                      {f.listedSize !== null && f.readSize !== null && f.listedSize !== f.readSize ? ' (MISMATCH: the object changed since it was listed)' : ''}
+                      {t('diag.sizeText', { listed: f.listedSize === null ? '?' : fmtBytes(f.listedSize), read: f.readSize === null ? '?' : fmtBytes(f.readSize) })}
+                      {f.listedSize !== null && f.readSize !== null && f.listedSize !== f.readSize ? t('diag.mismatch') : ''}
                     </td>
                   </tr>
                   <tr>
-                    <td>first bytes</td>
+                    <td>{t('diag.firstBytes')}</td>
                     <td class="mono">{f.head ?? '?'}</td>
                   </tr>
                   {f.gzip && (
                     <tr>
                       <td>gzip</td>
                       <td>
-                        magic {f.gzip.magicOk ? 'ok' : 'BAD'}, method {f.gzip.method}, flags 0x{f.gzip.flags.toString(16)}, trailer ISIZE {f.gzip.isize.toLocaleString()}, browser inflated{' '}
-                        {f.gzip.inflated === null ? `failed (${f.gzip.inflateError})` : `${f.gzip.inflated.toLocaleString()} bytes`}, members {f.gzip.members || `? (${f.gzip.membersError})`}
+                        {t('diag.gzipText', {
+                          magic: f.gzip.magicOk ? t('diag.ok') : t('diag.bad'),
+                          method: f.gzip.method,
+                          flags: f.gzip.flags.toString(16),
+                          isize: f.gzip.isize.toLocaleString(),
+                          inflated: f.gzip.inflated === null ? t('diag.inflateFailed', { error: f.gzip.inflateError }) : t('diag.bytes', { n: f.gzip.inflated.toLocaleString() }),
+                          members: f.gzip.members || `? (${f.gzip.membersError})`,
+                        })}
                       </td>
                     </tr>
                   )}
                   {f.gzip && (
                     <tr>
-                      <td>verdict</td>
+                      <td>{t('diag.verdict')}</td>
                       <td>
                         <b>{f.gzip.verdict}</b>
                       </td>
@@ -106,9 +112,9 @@ export function DiagnosePanel(props: { error: string | null }) {
           ))}
           <div class="row">
             <button class="btn small" onClick={copy}>
-              {copied ? 'Copied' : 'Copy report (JSON)'}
+              {copied ? t('diag.copied') : t('diag.copyReport')}
             </button>
-            <span class="hint">Includes the matching lines of the worker request log ({report.requestLog.length}).</span>
+            <span class="hint">{t('diag.includes', { n: report.requestLog.length })}</span>
           </div>
           <textarea class="input mono diag-json" readOnly value={json} />
         </div>

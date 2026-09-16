@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks';
+import { t } from '../i18n';
 import type { Field } from '../fields';
 import { describeFilter, newId, type Filter, type FilterOp } from '../sql';
 import { Popover } from './ui';
@@ -13,23 +14,23 @@ function FilterEditor(props: { fields: Field[]; initial?: Filter; onSave: (f: Fi
   const custom = op === 'query';
   return (
     <div style="width:360px">
-      <h4>{props.initial ? 'Edit filter' : 'Add filter'}</h4>
+      <h4>{props.initial ? t('flt.edit') : t('flt.add')}</h4>
       <div class="field-row">
-        <label>Operator</label>
+        <label>{t('flt.operator')}</label>
         <select class="input" value={op} onChange={(e) => setOp((e.target as HTMLSelectElement).value as FilterOp)}>
-          <option value="is">is</option>
-          <option value="is_not">is not</option>
-          <option value="is_one_of">is one of</option>
-          <option value="is_not_one_of">is not one of</option>
-          <option value="exists">exists</option>
-          <option value="does_not_exist">does not exist</option>
-          <option value="between">is between</option>
-          <option value="query">custom SQL</option>
+          <option value="is">{t('flt.op.is')}</option>
+          <option value="is_not">{t('flt.op.is_not')}</option>
+          <option value="is_one_of">{t('flt.op.is_one_of')}</option>
+          <option value="is_not_one_of">{t('flt.op.is_not_one_of')}</option>
+          <option value="exists">{t('flt.op.exists')}</option>
+          <option value="does_not_exist">{t('flt.op.does_not_exist')}</option>
+          <option value="between">{t('flt.op.between')}</option>
+          <option value="query">{t('flt.op.query')}</option>
         </select>
       </div>
       {!custom && (
         <div class="field-row">
-          <label>Field</label>
+          <label>{t('common.field')}</label>
           <select class="input" value={field} onChange={(e) => setField((e.target as HTMLSelectElement).value)}>
             {props.fields.filter((f) => f.kind !== 'object').map((f) => (
               <option value={f.name}>{f.name}</option>
@@ -39,31 +40,31 @@ function FilterEditor(props: { fields: Field[]; initial?: Filter; onSave: (f: Fi
       )}
       {(op === 'is' || op === 'is_not' || op === 'is_one_of' || op === 'is_not_one_of') && (
         <div class="field-row">
-          <label>{op.endsWith('one_of') ? 'Values (comma separated)' : 'Value'}</label>
+          <label>{op.endsWith('one_of') ? t('flt.values') : t('flt.value')}</label>
           <input class="input" value={value} onInput={(e) => setValue((e.target as HTMLInputElement).value)} />
         </div>
       )}
       {op === 'between' && (
         <div class="row">
           <div class="field-row" style="flex:1">
-            <label>From (inclusive)</label>
+            <label>{t('flt.from')}</label>
             <input class="input" value={from} onInput={(e) => setFrom((e.target as HTMLInputElement).value)} />
           </div>
           <div class="field-row" style="flex:1">
-            <label>To (exclusive)</label>
+            <label>{t('flt.to')}</label>
             <input class="input" value={to} onInput={(e) => setTo((e.target as HTMLInputElement).value)} />
           </div>
         </div>
       )}
       {custom && (
         <div class="field-row">
-          <label>SQL boolean expression (DuckDB)</label>
+          <label>{t('flt.sql')}</label>
           <textarea class="input" value={sql} onInput={(e) => setSql((e.target as HTMLTextAreaElement).value)} placeholder={'e.g. "http"."latency_ms" > 500 AND "level" <> \'info\''} />
         </div>
       )}
       <div class="row end">
         <button class="btn small" onClick={props.onCancel}>
-          Cancel
+          {t('common.cancel')}
         </button>
         <button
           class="btn primary small"
@@ -83,7 +84,7 @@ function FilterEditor(props: { fields: Field[]; initial?: Filter; onSave: (f: Fi
             props.onSave(f);
           }}
         >
-          Save
+          {t('common.save')}
         </button>
       </div>
     </div>
@@ -111,7 +112,7 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
               <span class="txt" style="cursor:pointer" onClick={() => setMenu(menu === f.id ? null : f.id)}>
                 {describeFilter({ ...f, negate: false })}
               </span>
-              <button title="Remove" onClick={() => remove(f.id)}>
+              <button title={t('common.remove')} onClick={() => remove(f.id)}>
                 ✕
               </button>
             </span>
@@ -135,7 +136,7 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
                   setEditing(f.id);
                 }}
               >
-                ✎ Edit filter
+                {t('flt.menu.edit')}
               </button>
               <button
                 onClick={() => {
@@ -143,7 +144,7 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
                   setMenu(null);
                 }}
               >
-                {f.negate ? 'Include results' : 'Exclude results'}
+                {f.negate ? t('flt.menu.include') : t('flt.menu.exclude')}
               </button>
               <button
                 onClick={() => {
@@ -151,7 +152,7 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
                   setMenu(null);
                 }}
               >
-                {f.disabled ? 'Re-enable' : 'Temporarily disable'}
+                {f.disabled ? t('flt.menu.reenable') : t('flt.menu.disable')}
               </button>
               <button
                 onClick={() => {
@@ -159,13 +160,13 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
                   setMenu(null);
                 }}
               >
-                🗑 Delete
+                {t('flt.menu.delete')}
               </button>
             </div>
           )}
         </Popover>
       ))}
-      <Popover open={adding} onClose={() => setAdding(false)} button={<button class="add" onClick={() => setAdding(!adding)}>+ Add filter</button>}>
+      <Popover open={adding} onClose={() => setAdding(false)} button={<button class="add" onClick={() => setAdding(!adding)}>{t('flt.addButton')}</button>}>
         <FilterEditor
           fields={props.fields}
           onCancel={() => setAdding(false)}
@@ -177,7 +178,7 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
       </Popover>
       {props.filters.length > 1 && (
         <button class="add" onClick={() => props.onChange([])}>
-          Clear all
+          {t('flt.clearAll')}
         </button>
       )}
     </div>

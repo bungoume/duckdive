@@ -4,6 +4,7 @@ import { findField } from './fields';
 import { SearchQueryError, searchToSql } from './search';
 import { VIEW, bucketExpr, buildWhere, fieldCompareExpr, lit, type Interval } from './sql';
 import type { MetricDef, SearchState, SortDir, VisState } from './state';
+import { t, type MsgKey } from './i18n';
 
 export interface Compiled {
   where: string;
@@ -127,8 +128,8 @@ export function metricSql(m: MetricDef, fields: Field[]): string {
 
 export function metricLabel(m: MetricDef): string {
   if (m.label) return m.label;
-  const names: Record<string, string> = { count: 'Count of records', sum: 'Sum', avg: 'Average', min: 'Minimum', max: 'Maximum', median: 'Median', unique: 'Unique count', p95: '95th percentile', p99: '99th percentile' };
-  return m.agg === 'count' ? names.count : `${names[m.agg]} of ${m.field ?? '?'}`;
+  if (m.agg === 'count') return t('metric.count');
+  return t('metric.of', { agg: t(`vis.agg.${m.agg}` as MsgKey), field: m.field ?? '?' });
 }
 
 export interface VisRow {

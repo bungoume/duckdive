@@ -3,7 +3,7 @@ import type { FormatId } from './formats';
 import type { TimeRange } from './datemath';
 import type { Filter } from './sql';
 
-export type AppPage = 'discover' | 'visualize' | 'source';
+export type AppPage = 'discover' | 'visualize' | 'source' | 'settings';
 
 export interface S3Config {
   region: string;
@@ -103,7 +103,7 @@ export interface UrlState {
 export const DEFAULT_SEARCH: SearchState = { query: '', range: { from: 'now-6h', to: 'now' }, filters: [] };
 export const DEFAULT_DISCOVER: DiscoverState = { columns: [], sort: [], interval: 'auto' };
 export const DEFAULT_VIS: VisState = {
-  chart: 'area',
+  chart: 'bar',
   x: { kind: 'date_histogram', field: null, interval: 'auto', size: 10, orderBy: 'metric', orderDir: 'desc' },
   metrics: [{ id: 'm0', agg: 'count', field: null }],
   breakdown: { field: null, size: 5, other: true },
@@ -121,7 +121,7 @@ function b64decode(s: string): string {
 export function readUrlState(): UrlState {
   const h = location.hash.replace(/^#\/?/, '');
   const [pageRaw, qs] = h.split('?');
-  const page: AppPage = pageRaw === 'visualize' || pageRaw === 'source' ? pageRaw : 'discover';
+  const page: AppPage = pageRaw === 'visualize' || pageRaw === 'source' || pageRaw === 'settings' ? pageRaw : 'discover';
   let st: Partial<UrlState> = {};
   if (qs) {
     const p = new URLSearchParams(qs);
@@ -175,6 +175,10 @@ export function syncUrlStateFromLocation(): { state: UrlState; full: boolean } {
 
 const LS_SOURCE = 'ddv.source';
 const LS_VIS = 'ddv.savedVis';
+const LS_SOURCES = 'ddv.sources';
+
+/** How many recently connected sources are kept for quick switching. */
+export const SOURCE_HISTORY_MAX = 20;
 
 export function loadSource(): SourceConfig {
   try {
@@ -219,4 +223,76 @@ export function storeSavedVis(list: SavedVis[]) {
   } catch {
     /* ignore */
   }
+}
+
+export interface SourceHistoryEntry {
+  /** connection identity (see sourceKey) */
+  key: string;
+  /** ISO time of the last successful connect */
+  lastUsed: string;
+  config: SourceConfig;
+}
+
+/**
+ * Identity of a source for the history: same destination = same entry. Name, format, time
+ * field and the chosen pattern-variable values are details of the entry, not part of the key.
+ * Local sources have no identity (the files cannot be stored): null.
+ */
+export function sourceKey(cfg: SourceConfig): string | null {
+  if (cfg.kind === 'demo') return 'demo';
+  if (cfg.kind !== 'url') return null;
+  const urls = cfg.urls
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith('#'))
+    .join('\n');
+  return JSON.stringify(['url', urls, cfg.s3.endpoint, cfg.s3.region, cfg.s3.urlStyle, cfg.authMode]);
+}
+
+function normalizeEntry(o: unknown): SourceHistoryEntry | null {
+  if (!o || typeof o !== 'object') return null;
+  const e = o as Partial<SourceHistoryEntry>;
+  if (!e.config || typeof e.config !== 'object') return null;
+  const c = e.config as Partial<SourceConfig>;
+  const config: SourceConfig = { ...DEFAULT_SOURCE, ...c, s3: { ...DEFAULT_SOURCE.s3, ...(c.s3 ?? {}) }, oidc: { ...DEFAULT_OIDC, ...(c.oidc ?? {}) } };
+  const key = sourceKey(config);
+  if (!key) return null;
+  return { key, lastUsed: typeof e.lastUsed === 'string' ? e.lastUsed : '', config };
+}
+
+export function loadSourceHistory(): SourceHistoryEntry[] {
+  try {
+    const raw = localStorage.getItem(LS_SOURCES);
+    if (raw) {
+      const list = JSON.parse(raw);
+      if (Array.isArray(list)) return list.map(normalizeEntry).filter((e): e is SourceHistoryEntry => e !== null).slice(0, SOURCE_HISTORY_MAX);
+    }
+  } catch {
+    /* ignore */
+  }
+  return [];
+}
+
+function storeSourceHistory(list: SourceHistoryEntry[]) {
+  try {
+    localStorage.setItem(LS_SOURCES, JSON.stringify(list));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Put `cfg` at the front of the history (replacing an entry with the same key); returns the new list. */
+export function rememberSource(cfg: SourceConfig, now = new Date()): SourceHistoryEntry[] {
+  const key = sourceKey(cfg);
+  const cur = loadSourceHistory();
+  if (!key) return cur;
+  const list = [{ key, lastUsed: now.toISOString(), config: cfg }, ...cur.filter((e) => e.key !== key)].slice(0, SOURCE_HISTORY_MAX);
+  storeSourceHistory(list);
+  return list;
+}
+
+export function forgetSource(key: string): SourceHistoryEntry[] {
+  const list = loadSourceHistory().filter((e) => e.key !== key);
+  storeSourceHistory(list);
+  return list;
 }

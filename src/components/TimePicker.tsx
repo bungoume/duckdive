@@ -1,6 +1,8 @@
 import { useState } from 'preact/hooks';
 import { Popover } from './ui';
-import { QUICK_RANGES, describeRange, resolveRange, toDatetimeLocal, type TimeRange } from '../datemath';
+import { describeRange, fromDatetimeLocal, quickRangeLabel, quickRanges, resolveRange, toDatetimeLocal, type TimeRange } from '../datemath';
+import { formatDate } from '../datefmt';
+import { t } from '../i18n';
 
 export function TimePicker(props: { range: TimeRange; onChange: (r: TimeRange) => void }) {
   const [open, setOpen] = useState(false);
@@ -35,24 +37,24 @@ export function TimePicker(props: { range: TimeRange; onChange: (r: TimeRange) =
         onClose={() => setOpen(false)}
         align="right"
         button={
-          <button class="btn" onClick={openPicker} title={resolved ? `${resolved.from.toLocaleString()} → ${resolved.to.toLocaleString()}` : ''}>
+          <button class="btn" onClick={openPicker} title={resolved ? `${formatDate(resolved.from)} → ${formatDate(resolved.to)}` : ''}>
             <span>◷</span> {describeRange(props.range)} <span style="color:#98a2b3">▾</span>
           </button>
         }
       >
         <div class="tp-body">
-          <h4>Quick select</h4>
+          <h4>{t('tp.quick')}</h4>
           <div class="row" style="margin-bottom:10px">
-            <span>Last</span>
+            <span>{t('tp.last')}</span>
             <input class="input" type="number" min={1} value={n} style="width:80px" onInput={(e) => setN(Number((e.target as HTMLInputElement).value))} />
             <select class="input" style="width:120px" value={unit} onChange={(e) => setUnit((e.target as HTMLSelectElement).value)}>
-              <option value="s">seconds</option>
-              <option value="m">minutes</option>
-              <option value="h">hours</option>
-              <option value="d">days</option>
-              <option value="w">weeks</option>
-              <option value="M">months</option>
-              <option value="y">years</option>
+              <option value="s">{t('tp.unit.s')}</option>
+              <option value="m">{t('tp.unit.m')}</option>
+              <option value="h">{t('tp.unit.h')}</option>
+              <option value="d">{t('tp.unit.d')}</option>
+              <option value="w">{t('tp.unit.w')}</option>
+              <option value="M">{t('tp.unit.M')}</option>
+              <option value="y">{t('tp.unit.y')}</option>
             </select>
             <button
               class="btn primary small"
@@ -61,57 +63,57 @@ export function TimePicker(props: { range: TimeRange; onChange: (r: TimeRange) =
                 setOpen(false);
               }}
             >
-              Apply
+              {t('tp.apply')}
             </button>
           </div>
           <div class="tp-cols">
             <div class="col">
-              <h4>Commonly used</h4>
+              <h4>{t('tp.common')}</h4>
               <div class="quick-grid">
-                {QUICK_RANGES.map((q) => (
+                {quickRanges().map((q) => (
                   <button
                     onClick={() => {
                       props.onChange({ from: q.from, to: q.to });
                       setOpen(false);
                     }}
                   >
-                    {q.label}
+                    {quickRangeLabel(q)}
                   </button>
                 ))}
               </div>
             </div>
             <div class="col">
-              <h4>Absolute</h4>
+              <h4>{t('tp.absolute')}</h4>
               <div class="field-row">
-                <label>Start</label>
+                <label>{t('tp.start')}</label>
                 <input class="input" type="datetime-local" step={1} value={absFrom} onInput={(e) => setAbsFrom((e.target as HTMLInputElement).value)} />
               </div>
               <div class="field-row">
-                <label>End</label>
+                <label>{t('tp.end')}</label>
                 <input class="input" type="datetime-local" step={1} value={absTo} onInput={(e) => setAbsTo((e.target as HTMLInputElement).value)} />
               </div>
               <div class="row end">
                 <button
                   class="btn small"
                   onClick={() => {
-                    const f = new Date(absFrom);
-                    const t = new Date(absTo);
-                    if (isNaN(f.getTime()) || isNaN(t.getTime())) return;
+                    const f = fromDatetimeLocal(absFrom);
+                    const t = fromDatetimeLocal(absTo);
+                    if (!f || !t) return;
                     props.onChange({ from: f.toISOString(), to: t.toISOString() });
                     setOpen(false);
                   }}
                 >
-                  Update
+                  {t('tp.update')}
                 </button>
               </div>
             </div>
           </div>
         </div>
       </Popover>
-      <button class="btn" title="Previous time window" onClick={() => shift(-1)}>
+      <button class="btn" title={t('tp.prev')} onClick={() => shift(-1)}>
         ‹
       </button>
-      <button class="btn" title="Next time window" onClick={() => shift(1)}>
+      <button class="btn" title={t('tp.next')} onClick={() => shift(1)}>
         ›
       </button>
     </div>

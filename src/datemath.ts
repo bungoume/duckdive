@@ -1,5 +1,11 @@
 // Minimal date-math implementation.
 // Supports: now, now-15m, now+1h, now/d, now-7d/d, absolute ISO-8601 strings.
+// Rounding (`/d`, `/w`, …) and calendar arithmetic happen in the configured time zone; the week
+// starts on the day chosen in Settings.
+
+import { t, type MsgKey } from './i18n';
+import { effectiveTimeZone, formatDate, normalizeWall, zonedParts, zonedToUtc, type WallTime } from './datefmt';
+import { getSettings, type QuickRange } from './settings';
 
 const UNIT_MS: Record<string, number> = {
   s: 1000,
@@ -12,46 +18,57 @@ const UNIT_MS: Record<string, number> = {
   y: 365 * 86_400_000,
 };
 
-function roundDate(d: Date, unit: string, roundUp: boolean): Date {
-  const r = new Date(d);
+/** Start of the unit that contains `d` (wall clock of `tz`), and the start of the next one. */
+function bounds(d: Date, unit: string, tz: string): [Date, Date] | null {
+  const p = zonedParts(d, tz);
+  const w: WallTime = { year: p.year, month: p.month, day: p.day, hour: p.hour, minute: p.minute, second: p.second, ms: 0 };
   switch (unit) {
-    case 's':
-      r.setMilliseconds(0);
-      if (roundUp) r.setSeconds(r.getSeconds() + 1, -1);
-      return r;
-    case 'm':
-      r.setSeconds(0, 0);
-      if (roundUp) r.setMinutes(r.getMinutes() + 1, 0, -1);
-      return r;
-    case 'h':
-    case 'H':
-      r.setMinutes(0, 0, 0);
-      if (roundUp) r.setHours(r.getHours() + 1, 0, 0, -1);
-      return r;
-    case 'd':
-      r.setHours(0, 0, 0, 0);
-      if (roundUp) r.setDate(r.getDate() + 1), r.setMilliseconds(-1);
-      return r;
-    case 'w': {
-      r.setHours(0, 0, 0, 0);
-      const day = (r.getDay() + 6) % 7; // Monday = 0
-      r.setDate(r.getDate() - day);
-      if (roundUp) r.setDate(r.getDate() + 7), r.setMilliseconds(-1);
-      return r;
+    case 's': {
+      const start = zonedToUtc(w, tz);
+      return [start, new Date(start.getTime() + 1000)];
     }
-    case 'M':
-      r.setDate(1);
-      r.setHours(0, 0, 0, 0);
-      if (roundUp) r.setMonth(r.getMonth() + 1), r.setMilliseconds(-1);
-      return r;
-    case 'y':
-      r.setMonth(0, 1);
-      r.setHours(0, 0, 0, 0);
-      if (roundUp) r.setFullYear(r.getFullYear() + 1), r.setMilliseconds(-1);
-      return r;
+    case 'm': {
+      const start = zonedToUtc({ ...w, second: 0 }, tz);
+      return [start, new Date(start.getTime() + 60_000)];
+    }
+    case 'h':
+    case 'H': {
+      const start = zonedToUtc({ ...w, minute: 0, second: 0 }, tz);
+      return [start, new Date(start.getTime() + 3_600_000)];
+    }
+    case 'd': {
+      const s = { ...w, hour: 0, minute: 0, second: 0 };
+      return [zonedToUtc(s, tz), zonedToUtc({ ...s, day: s.day + 1 }, tz)];
+    }
+    case 'w': {
+      const back = (p.weekday - getSettings().dayOfWeek + 7) % 7;
+      const s = normalizeWall({ ...w, day: w.day - back, hour: 0, minute: 0, second: 0 });
+      return [zonedToUtc(s, tz), zonedToUtc({ ...s, day: s.day + 7 }, tz)];
+    }
+    case 'M': {
+      const s = { ...w, day: 1, hour: 0, minute: 0, second: 0 };
+      return [zonedToUtc(s, tz), zonedToUtc({ ...s, month: s.month + 1 }, tz)];
+    }
+    case 'y': {
+      const s = { ...w, month: 1, day: 1, hour: 0, minute: 0, second: 0 };
+      return [zonedToUtc(s, tz), zonedToUtc({ ...s, year: s.year + 1 }, tz)];
+    }
     default:
-      return r;
+      return null;
   }
+}
+
+function roundDate(d: Date, unit: string, roundUp: boolean, tz: string): Date {
+  const b = bounds(d, unit, tz);
+  if (!b) return d;
+  return roundUp ? new Date(b[1].getTime() - 1) : b[0];
+}
+
+/** Add calendar months / years on the wall clock (so 31 Jan + 1 month → 3 Mar, like Date.setMonth). */
+function addCalendar(d: Date, unit: 'M' | 'y', n: number, tz: string): Date {
+  const p = zonedParts(d, tz);
+  const w: WallTime = { year: p.year + (unit === 'y' ? n : 0), month: p.month + (unit === 'M' ? n : 0), day: p.day, hour: p.hour, minute: p.minute, second: p.second, ms: p.ms };
+  return zonedToUtc(w, tz);
 }
 
 export function parseDateMath(expr: string, roundUp = false, now: Date = new Date()): Date | null {
@@ -61,6 +78,7 @@ export function parseDateMath(expr: string, roundUp = false, now: Date = new Dat
     const d = new Date(s);
     return isNaN(d.getTime()) ? null : d;
   }
+  const tz = effectiveTimeZone();
   let d = new Date(now);
   let rest = s.slice(3);
   const re = /^([+-]\d+[smhHdwMy]|\/[smhHdwMy])/;
@@ -69,13 +87,12 @@ export function parseDateMath(expr: string, roundUp = false, now: Date = new Dat
     if (!m) return null;
     const tok = m[1];
     if (tok.startsWith('/')) {
-      d = roundDate(d, tok[1], roundUp);
+      d = roundDate(d, tok[1], roundUp, tz);
     } else {
       const sign = tok[0] === '-' ? -1 : 1;
       const n = parseInt(tok.slice(1, -1), 10);
       const unit = tok[tok.length - 1];
-      if (unit === 'M') d.setMonth(d.getMonth() + sign * n);
-      else if (unit === 'y') d.setFullYear(d.getFullYear() + sign * n);
+      if (unit === 'M' || unit === 'y') d = addCalendar(d, unit, sign * n, tz);
       else d = new Date(d.getTime() + sign * n * UNIT_MS[unit]);
     }
     rest = rest.slice(tok.length);
@@ -95,28 +112,30 @@ export function resolveRange(r: TimeRange, now = new Date()): { from: Date; to: 
   return { from, to };
 }
 
-export const QUICK_RANGES: { label: string; from: string; to: string }[] = [
-  { label: 'Today', from: 'now/d', to: 'now/d' },
-  { label: 'This week', from: 'now/w', to: 'now/w' },
-  { label: 'Last 15 minutes', from: 'now-15m', to: 'now' },
-  { label: 'Last 30 minutes', from: 'now-30m', to: 'now' },
-  { label: 'Last 1 hour', from: 'now-1h', to: 'now' },
-  { label: 'Last 6 hours', from: 'now-6h', to: 'now' },
-  { label: 'Last 24 hours', from: 'now-24h', to: 'now' },
-  { label: 'Last 7 days', from: 'now-7d', to: 'now' },
-  { label: 'Last 30 days', from: 'now-30d', to: 'now' },
-  { label: 'Last 90 days', from: 'now-90d', to: 'now' },
-  { label: 'Last 1 year', from: 'now-1y', to: 'now' },
-];
+/** The "Commonly used" ranges of the time picker (Settings page). */
+export function quickRanges(): QuickRange[] {
+  return getSettings().quickRanges;
+}
+
+/** Label of a quick range: its `display`, else one generated from the expression ("Last 15 minutes", "Today"). */
+export function quickRangeLabel(q: QuickRange): string {
+  if (q.display) return q.display;
+  return autoLabel(q) ?? `${q.from} → ${q.to}`;
+}
+
+function autoLabel(r: TimeRange): string | null {
+  if (r.from === 'now/d' && r.to === 'now/d') return t('range.today');
+  if (r.from === 'now/w' && r.to === 'now/w') return t('range.thisWeek');
+  const m = /^now-(\d+)([smhdwMy])(?:\/[smhdwMy])?$/.exec(r.from);
+  if (m && r.to === 'now') return t('range.lastN', { n: m[1], unit: t(`tp.unit.${m[2]}` as MsgKey) });
+  return null;
+}
 
 export function describeRange(r: TimeRange): string {
-  const q = QUICK_RANGES.find((x) => x.from === r.from && x.to === r.to);
-  if (q) return q.label;
-  const m = /^now-(\d+)([smhdwMy])$/.exec(r.from);
-  if (m && r.to === 'now') {
-    const names: Record<string, string> = { s: 'seconds', m: 'minutes', h: 'hours', d: 'days', w: 'weeks', M: 'months', y: 'years' };
-    return `Last ${m[1]} ${names[m[2]]}`;
-  }
+  const q = quickRanges().find((x) => x.from === r.from && x.to === r.to);
+  if (q) return quickRangeLabel(q);
+  const auto = autoLabel(r);
+  if (auto) return auto;
   const fmt = (s: string) => {
     if (s.startsWith('now')) return s;
     const d = new Date(s);
@@ -125,13 +144,22 @@ export function describeRange(r: TimeRange): string {
   return `${fmt(r.from)} → ${fmt(r.to)}`;
 }
 
-const pad = (n: number, w = 2) => String(n).padStart(w, '0');
-
-export function formatLocal(d: Date, withMs = false): string {
-  const base = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-  return withMs ? `${base}.${pad(d.getMilliseconds(), 3)}` : base;
+/** `d` in the configured date format and time zone. */
+export function formatLocal(d: Date): string {
+  return formatDate(d);
 }
 
+const pad = (n: number, w = 2) => String(n).padStart(w, '0');
+
+/** Value for an <input type="datetime-local">: the wall clock of the configured zone. */
 export function toDatetimeLocal(d: Date): string {
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  const p = zonedParts(d);
+  return `${p.year}-${pad(p.month)}-${pad(p.day)}T${pad(p.hour)}:${pad(p.minute)}:${pad(p.second)}`;
+}
+
+/** Inverse of toDatetimeLocal: the instant at which the configured zone shows this wall clock. */
+export function fromDatetimeLocal(s: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/.exec(s);
+  if (!m) return null;
+  return zonedToUtc({ year: Number(m[1]), month: Number(m[2]), day: Number(m[3]), hour: Number(m[4]), minute: Number(m[5]), second: Number(m[6] ?? 0), ms: 0 });
 }

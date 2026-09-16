@@ -1,0 +1,14 @@
+{
+  "appName": {
+    "message": "Duckdive",
+    "description": "Extension name"
+  },
+  "appDesc": {
+    "message": "Busca y visualiza archivos de registro desde S3, URL HTTPS o el disco local, en el navegador. Nada sale de tu equipo.",
+    "description": "Extension description (max 132 characters)"
+  },
+  "actionTitle": {
+    "message": "Abrir Duckdive",
+    "description": "Tooltip of the toolbar button"
+  }
+}

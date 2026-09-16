@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
+import { t } from '../i18n';
 import { cacheClear, cacheCompact, cacheFiles, cachePurge, cacheSetConfig, cacheStats, fmtBytes, requestPersist, storageEstimate, type CacheConfig, type CacheStats, type CacheSummary, type CachedFile } from '../cache';
 
 const CHUNK_SIZES = [
@@ -46,12 +47,12 @@ export function CachePanel() {
 
   return (
     <div class="card">
-      <h2>Local range cache</h2>
+      <h2>{t('cache.title')}</h2>
       <p class="hint" style="margin-top:-6px">
-        Data that has been read once is kept on this machine, so repeated queries do not download it again. Only parts that were never read are fetched. The copy is discarded when the file changes in storage.
+        {t('cache.intro')}
       </p>
       {err && <div class="alert error">{err}</div>}
-      {opfsError && <div class="alert error">{opfsError} – caching is disabled, every read goes to the origin.</div>}
+      {opfsError && <div class="alert error">{t('cache.opfsDisabled', { error: opfsError })}</div>}
       {config && (
         <>
           <div class="grid2" style="margin-bottom:8px">
@@ -64,9 +65,9 @@ export function CachePanel() {
                   refresh();
                 }}
               />
-              Enable range cache
+              {t('cache.enable')}
             </label>
-            <label class="row" title="AWS log delivery sometimes writes gzip files that cannot be read reliably as-is. When enabled, each .gz file is fetched once at connect time, fixed if needed, and kept in the cache.">
+            <label class="row" title={t('cache.repack.title')}>
               <input
                 type="checkbox"
                 checked={config.normalizeGzip}
@@ -75,10 +76,10 @@ export function CachePanel() {
                   refresh();
                 }}
               />
-              Re-pack concatenated gzip files at connect
+              {t('cache.repack')}
             </label>
             <div class="row">
-              <span class="hint">Chunk size (new files)</span>
+              <span class="hint">{t('cache.chunkSize')}</span>
               <select
                 class="input"
                 style="width:120px"
@@ -97,15 +98,15 @@ export function CachePanel() {
           <table class="kv" style="margin-bottom:8px">
             <tbody>
               <tr>
-                <td class="k">This session</td>
+                <td class="k">{t('cache.session')}</td>
                 <td class="v">
-                  DuckDB read {fmtBytes(total)}: {fmtBytes(stats?.bytesFromCache ?? 0)} from disk ({ratio}%) · downloaded {fmtBytes(stats?.bytesDownloaded ?? 0)} from origin in {stats?.chunkMisses ?? 0} chunks · {stats?.chunkHits ?? 0} chunk hits · {stats?.passthrough ?? 0} passthrough
+                  {t('cache.session.text', { total: fmtBytes(total), fromCache: fmtBytes(stats?.bytesFromCache ?? 0), ratio, downloaded: fmtBytes(stats?.bytesDownloaded ?? 0), misses: stats?.chunkMisses ?? 0, hits: stats?.chunkHits ?? 0, passthrough: stats?.passthrough ?? 0 })}
                 </td>
               </tr>
               <tr>
-                <td class="k">Storage</td>
+                <td class="k">{t('cache.storage')}</td>
                 <td class="v">
-                  {est ? `${fmtBytes(est.usage)} used of ${fmtBytes(est.quota)} quota · ${est.persisted ? 'persistent' : 'best-effort (may be evicted)'}` : '–'}
+                  {est ? t('cache.storage.text', { used: fmtBytes(est.usage), quota: fmtBytes(est.quota), mode: est.persisted ? t('cache.storage.persistent') : t('cache.storage.bestEffort') }) : '–'}
                   {est && !est.persisted && (
                     <button
                       class="btn small"
@@ -115,7 +116,7 @@ export function CachePanel() {
                         refresh();
                       }}
                     >
-                      Request persistent storage
+                      {t('cache.requestPersist')}
                     </button>
                   )}
                 </td>
@@ -126,10 +127,10 @@ export function CachePanel() {
             <table class="kv" style="margin-bottom:8px">
               <tbody>
                 <tr>
-                  <td class="k">On disk</td>
+                  <td class="k">{t('cache.onDisk')}</td>
                   <td class="v">
-                    {summary.cachedFiles.toLocaleString()} file(s) with cached data, {fmtBytes(summary.cachedBytes)} · metadata for {summary.known.toLocaleString()} file(s)
-                    {summary.wasted > 0 ? ` · ${fmtBytes(summary.wasted)} reclaimable` : ''}
+                    {t('cache.onDisk.text', { files: summary.cachedFiles.toLocaleString(), bytes: fmtBytes(summary.cachedBytes), known: summary.known.toLocaleString() })}
+                    {summary.wasted > 0 ? t('cache.reclaimable', { bytes: fmtBytes(summary.wasted) }) : ''}
                     {summary.wasted > 16 * 1024 * 1024 && (
                       <button
                         class="btn small"
@@ -139,7 +140,7 @@ export function CachePanel() {
                           refresh();
                         }}
                       >
-                        Compact
+                        {t('cache.compact')}
                       </button>
                     )}
                   </td>
@@ -151,9 +152,9 @@ export function CachePanel() {
             <table class="data" style="margin-bottom:8px">
               <thead>
                 <tr>
-                  <th>File</th>
-                  <th>Size</th>
-                  <th>Cached</th>
+                  <th>{t('cache.th.file')}</th>
+                  <th>{t('cache.th.size')}</th>
+                  <th>{t('cache.th.cached')}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -173,7 +174,7 @@ export function CachePanel() {
                           refresh();
                         }}
                       >
-                        Drop
+                        {t('cache.drop')}
                       </button>
                     </td>
                   </tr>
@@ -183,16 +184,16 @@ export function CachePanel() {
           )}
           {summary && summary.cachedFiles > files.length && (
             <div class="hint" style="margin-bottom:8px">
-              Showing the {files.length} largest of {summary.cachedFiles.toLocaleString()} cached files.{' '}
+              {t('cache.showing', { n: files.length, total: summary.cachedFiles.toLocaleString() })}{' '}
               <button class="btn ghost small" onClick={() => setLimit(limit + 200)}>
-                Show more
+                {t('cache.showMore')}
               </button>
             </div>
           )}
           {stats && stats.log.length > 0 && (
             <details class="cache-log-box" style="margin-bottom:8px">
               <summary>
-                Request log (last {stats.log.length}; {stats.log.filter((l) => /corrupt|short-body|passthrough:|handler-error|range-ignored/.test(l.outcome)).length} anomalies)
+                {t('cache.log.summary', { n: stats.log.length, anomalies: stats.log.filter((l) => /corrupt|short-body|passthrough:|handler-error|range-ignored/.test(l.outcome)).length })}
               </summary>
               <div class="row end" style="margin:4px 0">
                 <button
@@ -201,7 +202,7 @@ export function CachePanel() {
                     navigator.clipboard.writeText(JSON.stringify(stats.log, null, 2)).catch(() => {});
                   }}
                 >
-                  Copy log (JSON)
+                  {t('cache.log.copy')}
                 </button>
               </div>
               <div class="cache-log">
@@ -229,7 +230,7 @@ export function CachePanel() {
           )}
           <div class="row end">
             <button class="btn small" onClick={refresh}>
-              Refresh
+              {t('common.refresh')}
             </button>
             <button
               class="btn small danger"
@@ -238,7 +239,7 @@ export function CachePanel() {
                 refresh();
               }}
             >
-              Clear cache
+              {t('cache.clear')}
             </button>
           </div>
         </>

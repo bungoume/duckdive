@@ -2,6 +2,7 @@ import type { TimeRange } from './datemath';
 import { resolveRange } from './datemath';
 import type { Field } from './fields';
 import { findField } from './fields';
+import { t, type MsgKey } from './i18n';
 
 export const VIEW = 'src';
 
@@ -21,26 +22,25 @@ export interface Interval {
   ms: number;
   /** DuckDB INTERVAL text, e.g. "5 minute" */
   sql: string;
-  label: string;
   key: string;
 }
 
 export const INTERVALS: Interval[] = [
-  { key: '1s', ms: 1000, sql: '1 second', label: 'Second' },
-  { key: '5s', ms: 5000, sql: '5 second', label: '5 seconds' },
-  { key: '10s', ms: 10000, sql: '10 second', label: '10 seconds' },
-  { key: '30s', ms: 30000, sql: '30 second', label: '30 seconds' },
-  { key: '1m', ms: 60000, sql: '1 minute', label: 'Minute' },
-  { key: '5m', ms: 300000, sql: '5 minute', label: '5 minutes' },
-  { key: '10m', ms: 600000, sql: '10 minute', label: '10 minutes' },
-  { key: '30m', ms: 1800000, sql: '30 minute', label: '30 minutes' },
-  { key: '1h', ms: 3600000, sql: '1 hour', label: 'Hour' },
-  { key: '3h', ms: 3 * 3600000, sql: '3 hour', label: '3 hours' },
-  { key: '12h', ms: 12 * 3600000, sql: '12 hour', label: '12 hours' },
-  { key: '1d', ms: 86400000, sql: '1 day', label: 'Day' },
-  { key: '1w', ms: 7 * 86400000, sql: '7 day', label: 'Week' },
-  { key: '1M', ms: 30 * 86400000, sql: '1 month', label: 'Month' },
-  { key: '1y', ms: 365 * 86400000, sql: '1 year', label: 'Year' },
+  { key: '1s', ms: 1000, sql: '1 second' },
+  { key: '5s', ms: 5000, sql: '5 second' },
+  { key: '10s', ms: 10000, sql: '10 second' },
+  { key: '30s', ms: 30000, sql: '30 second' },
+  { key: '1m', ms: 60000, sql: '1 minute' },
+  { key: '5m', ms: 300000, sql: '5 minute' },
+  { key: '10m', ms: 600000, sql: '10 minute' },
+  { key: '30m', ms: 1800000, sql: '30 minute' },
+  { key: '1h', ms: 3600000, sql: '1 hour' },
+  { key: '3h', ms: 3 * 3600000, sql: '3 hour' },
+  { key: '12h', ms: 12 * 3600000, sql: '12 hour' },
+  { key: '1d', ms: 86400000, sql: '1 day' },
+  { key: '1w', ms: 7 * 86400000, sql: '7 day' },
+  { key: '1M', ms: 30 * 86400000, sql: '1 month' },
+  { key: '1y', ms: 365 * 86400000, sql: '1 year' },
 ];
 
 export function autoInterval(from: Date, to: Date, target = 60): Interval {
@@ -56,6 +56,11 @@ export function autoInterval(from: Date, to: Date, target = 60): Interval {
 
 export function intervalByKey(key: string): Interval | undefined {
   return INTERVALS.find((i) => i.key === key);
+}
+
+/** Display name of a histogram interval in the UI language. */
+export function intervalLabel(iv: Interval): string {
+  return t(`iv.${iv.key}` as MsgKey);
 }
 
 /** Browser timezone offset in minutes east of UTC (e.g. 540 for JST). */
@@ -163,15 +168,15 @@ export function describeFilter(fl: Filter): string {
     case 'is_not':
       return `${fl.negate ? '' : 'NOT '}${fl.field}: ${fl.value}`;
     case 'is_one_of':
-      return `${neg}${fl.field}: is one of ${(fl.values ?? []).join(', ')}`;
+      return `${neg}${fl.field}: ${t('flt.op.is_one_of')} ${(fl.values ?? []).join(', ')}`;
     case 'is_not_one_of':
-      return `${neg}${fl.field}: is not one of ${(fl.values ?? []).join(', ')}`;
+      return `${neg}${fl.field}: ${t('flt.op.is_not_one_of')} ${(fl.values ?? []).join(', ')}`;
     case 'exists':
-      return `${neg}${fl.field}: exists`;
+      return `${neg}${fl.field}: ${t('flt.op.exists')}`;
     case 'does_not_exist':
-      return `${neg}${fl.field}: does not exist`;
+      return `${neg}${fl.field}: ${t('flt.op.does_not_exist')}`;
     case 'between':
-      return `${neg}${fl.field}: ${fl.from ?? '*'} to ${fl.to ?? '*'}`;
+      return `${neg}${fl.field}: ${t('flt.desc.between', { from: fl.from ?? '*', to: fl.to ?? '*' })}`;
     case 'query':
       return `${neg}${fl.label ?? fl.sql ?? ''}`;
   }

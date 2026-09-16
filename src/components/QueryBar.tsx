@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { t, tx } from '../i18n';
 import { Popover } from './ui';
 import { TimePicker } from './TimePicker';
 import type { TimeRange } from '../datemath';
@@ -29,7 +30,7 @@ export function QueryBar(props: {
           <span style="color:#98a2b3">⌕</span>
           <input
             value={text}
-            placeholder='Search (Lucene syntax): e.g. http.status:>=500 AND geo.country:JP  or  "connection reset"'
+            placeholder={t('q.placeholder')}
             onInput={(e) => setText((e.target as HTMLInputElement).value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') props.onSubmit(text, props.range);
@@ -37,29 +38,29 @@ export function QueryBar(props: {
             spellcheck={false}
             autocomplete="off"
           />
-          <Popover open={help} onClose={() => setHelp(false)} align="right" width={520} button={<button class="lang" onClick={() => setHelp(!help)}>Syntax</button>}>
-            <h4>Query syntax (Lucene)</h4>
+          <Popover open={help} onClose={() => setHelp(false)} align="right" width={520} button={<button class="lang" onClick={() => setHelp(!help)}>{t('q.syntax')}</button>}>
+            <h4>{t('q.syntaxTitle')}</h4>
             <table class="help-table">
               <tbody>
-              <tr><td>error timeout</td><td>Free text: any searchable field contains one of the words (words are OR-ed)</td></tr>
-              <tr><td>"connection reset"</td><td>Phrase (substring, case-insensitive). "a b"~3: all words in the same field</td></tr>
-              <tr><td>http.status:503</td><td>Field matches value (numbers/booleans exact; strings token match)</td></tr>
-              <tr><td>host.name:web-*</td><td>Wildcard: * any characters, ? one character</td></tr>
-              <tr><td>path:/api\/v[12]\/.*/</td><td>Regular expression</td></tr>
-              <tr><td>http.status:(500 OR 503)</td><td>List of values</td></tr>
-              <tr><td>http.latency_ms:&gt;800</td><td>Range: :&gt; :&gt;= :&lt; :&lt;=</td></tr>
-              <tr><td>http.bytes:[1000 TO 5000]</td><td>Bracket range (use {'{'}..{'}'} for exclusive, * for open)</td></tr>
-              <tr><td>extra.user_id:*</td><td>Field exists (also _exists_:extra.user_id)</td></tr>
-              <tr><td>NOT level:info / -level:info</td><td>Negation. +term: required</td></tr>
-              <tr><td>a AND (b OR c)</td><td>Boolean operators AND, OR, NOT (upper case), &amp;&amp;, ||, !. Adjacent terms are OR-ed.</td></tr>
+              <tr><td>error timeout</td><td>{t('q.help.free')}</td></tr>
+              <tr><td>"connection reset"</td><td>{t('q.help.phrase')}</td></tr>
+              <tr><td>http.status:503</td><td>{t('q.help.field')}</td></tr>
+              <tr><td>host.name:web-*</td><td>{t('q.help.wildcard')}</td></tr>
+              <tr><td>path:/api\/v[12]\/.*/</td><td>{t('q.help.regex')}</td></tr>
+              <tr><td>http.status:(500 OR 503)</td><td>{t('q.help.list')}</td></tr>
+              <tr><td>http.latency_ms:&gt;800</td><td>{t('q.help.range')}</td></tr>
+              <tr><td>http.bytes:[1000 TO 5000]</td><td>{t('q.help.bracket')}</td></tr>
+              <tr><td>extra.user_id:*</td><td>{t('q.help.exists')}</td></tr>
+              <tr><td>NOT level:info / -level:info</td><td>{t('q.help.not')}</td></tr>
+              <tr><td>a AND (b OR c)</td><td>{t('q.help.bool')}</td></tr>
               </tbody>
             </table>
-            <p class="hint">Nested struct / JSON fields use dot paths (geo.country, extra.user_id). Escape special characters with \ (path:\/api\/v1). Press <kbd>Enter</kbd> to run.</p>
+            <p class="hint">{tx('q.helpNote', { enter: <kbd>Enter</kbd> })}</p>
           </Popover>
         </div>
         <TimePicker range={props.range} onChange={(r) => props.onSubmit(text, r)} />
         <button class="btn primary" onClick={() => props.onSubmit(text, props.range)} disabled={props.busy}>
-          {props.busy ? 'Running…' : 'Refresh'}
+          {props.busy ? t('q.running') : t('q.refresh')}
         </button>
       </div>
       {props.error && <div class="qerror">{props.error}</div>}

@@ -12,6 +12,16 @@ export async function launchExtension({ dist = new URL('../dist', import.meta.ur
     viewport: { width: 1440, height: 900 },
     args: [`--disable-extensions-except=${dist}`, `--load-extension=${dist}`],
   });
+  // The UI follows Chrome's language; the tests assert English text, so pin the choice the
+  // app reads at startup (DDV_LANG=ja etc. switches it, e.g. for screenshots).
+  const lang = process.env.DDV_LANG || 'en';
+  await context.addInitScript((l) => {
+    try {
+      localStorage.setItem('ddv.lang', l);
+    } catch {
+      /* ignore */
+    }
+  }, lang);
   let [sw] = context.serviceWorkers();
   if (!sw) sw = await context.waitForEvent('serviceworker', { timeout: 30000 });
   const extId = new URL(sw.url()).host;

@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks';
+import { t } from '../i18n';
 import { formatLocal } from '../datemath';
 import { findField } from '../fields';
 import type { Field } from '../fields';
@@ -25,10 +26,10 @@ function DocDetail(props: { doc: Doc; fields: Field[]; columns: string[]; onFilt
     <div class="doc-detail">
       <div class="tabs">
         <button class={tab === 'table' ? 'active' : ''} onClick={() => setTab('table')}>
-          Table
+          {t('doc.table')}
         </button>
         <button class={tab === 'json' ? 'active' : ''} onClick={() => setTab('json')}>
-          JSON
+          {t('doc.json')}
         </button>
       </div>
       {tab === 'json' ? (
@@ -43,17 +44,17 @@ function DocDetail(props: { doc: Doc; fields: Field[]; columns: string[]; onFilt
             let shown = val;
             if (val !== null && fld?.kind === 'date') {
               const d = new Date(val.includes('T') || /[zZ]|[+-]\d\d:?\d\d$/.test(val) ? val : val.replace(' ', 'T') + 'Z');
-              if (!isNaN(d.getTime())) shown = `${formatLocal(d, true)}`;
+              if (!isNaN(d.getTime())) shown = formatLocal(d);
             }
             return (
               <tr>
                 <td class="a">
                   {filterable && (
                     <>
-                      <button title="Filter for value" onClick={() => props.onFilter(k, val, false)}>+</button>
-                      <button title="Filter out value" onClick={() => props.onFilter(k, val, true)}>−</button>
-                      <button title="Toggle column in table" onClick={() => props.onToggleColumn(k)}>⊞</button>
-                      <button title="Filter for field present" onClick={() => props.onExists(k)}>*</button>
+                      <button title={t('doc.filterFor')} onClick={() => props.onFilter(k, val, false)}>+</button>
+                      <button title={t('doc.filterOut')} onClick={() => props.onFilter(k, val, true)}>−</button>
+                      <button title={t('doc.toggleColumn')} onClick={() => props.onToggleColumn(k)}>⊞</button>
+                      <button title={t('doc.filterExists')} onClick={() => props.onExists(k)}>*</button>
                     </>
                   )}
                 </td>
@@ -100,10 +101,10 @@ export function DocTable(props: {
         <tr>
           <th></th>
           {props.hasTime && (
-            <th onClick={() => props.timeFieldName && props.onSort(props.timeFieldName)}>Time{props.timeFieldName ? sortIcon(props.timeFieldName) : ''}</th>
+            <th onClick={() => props.timeFieldName && props.onSort(props.timeFieldName)}>{t('doc.time')}{props.timeFieldName ? sortIcon(props.timeFieldName) : ''}</th>
           )}
           {cols.length === 0 ? (
-            <th>Document</th>
+            <th>{t('doc.document')}</th>
           ) : (
             cols.map((c) => (
               <th onClick={() => props.onSort(c)}>
@@ -111,7 +112,7 @@ export function DocTable(props: {
                 {sortIcon(c)}
                 <span
                   class="rm"
-                  title="Remove column"
+                  title={t('doc.removeColumn')}
                   onClick={(e) => {
                     e.stopPropagation();
                     props.onRemoveColumn(c);
@@ -129,11 +130,11 @@ export function DocTable(props: {
           <>
             <tr key={i}>
               <td class="expand">
-                <button onClick={() => toggle(i)} title="Toggle details">
+                <button onClick={() => toggle(i)} title={t('doc.toggleDetails')}>
                   {open.has(i) ? '▼' : '▶'}
                 </button>
               </td>
-              {props.hasTime && <td class="time">{d.ts === null ? '–' : formatLocal(new Date(d.ts), true)}</td>}
+              {props.hasTime && <td class="time">{d.ts === null ? '–' : formatLocal(new Date(d.ts))}</td>}
               {cols.length === 0 ? (
                 <td>
                   <div class="source-summary">

@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { t, tx, useLang } from './i18n';
+import { useSettings } from './settings';
 import { DataSource } from './components/DataSource';
 import { Discover } from './components/Discover';
 import { Visualize } from './components/Visualize';
+import { Settings } from './components/Settings';
 import { attachSource, discoverVariables, unselectedTokens, type AttachedSource, type LargeSourceInfo } from './datasource';
 import { cancelAllQueries } from './duck';
 import { setDiagnoseContext } from './diagnose';
@@ -16,7 +19,7 @@ import { applyS3, capturedColumns, requiredOrigins, type TimeWindow, type ValueF
 import { resolveRange } from './datemath';
 import { ensureHostPermissions } from './permissions';
 import { findField, timeExprFor, type Field } from './fields';
-import { DEFAULT_VIS, type VisState, loadSource, readUrlState, saveSource, syncUrlStateFromLocation, writeUrlState, type AppPage, type SourceConfig, type UrlState } from './state';
+import { DEFAULT_VIS, type VisState, forgetSource, loadSource, loadSourceHistory, readUrlState, rememberSource, saveSource, sourceKey, syncUrlStateFromLocation, writeUrlState, type AppPage, type SourceConfig, type SourceHistoryEntry, type UrlState } from './state';
 
 /** What the running connect is doing; `phase` decides whether Cancel is offered. */
 export interface AttachProgress {
@@ -25,10 +28,17 @@ export interface AttachProgress {
 }
 
 export function App() {
+  // Re-render the whole tree when the UI language changes (every t() call reads the current one).
+  useLang();
+  useSettings();
   const [ready, setReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [url, setUrl] = useState<UrlState>(() => readUrlState());
   const [source, setSource] = useState<SourceConfig>(() => loadSource());
+  // Recently connected sources (newest first) for quick switching; bumped on every successful connect.
+  const [history, setHistory] = useState<SourceHistoryEntry[]>(() => loadSourceHistory());
+  // Incremented when a history entry is loaded, so the Data source form picks up the new config.
+  const [switchSeq, setSwitchSeq] = useState(0);
   const [attached, setAttached] = useState<AttachedSource | null>(null);
   const [attachError, setAttachError] = useState<string | null>(null);
   const [attaching, setAttaching] = useState(false);
@@ -99,7 +109,7 @@ export function App() {
     const stale = () => attemptSeq.current !== attempt;
     const report = (message: string, phase: AttachProgress['phase']) => {
       if (stale()) return;
-      const note = phase === 'db' ? (busyRef.current ? ' (queued behind the running query; DuckDB steps cannot be interrupted)' : ' (inside DuckDB; cannot be interrupted)') : '';
+      const note = phase === 'db' ? (busyRef.current ? t('app.note.queued') : t('app.note.inDb')) : '';
       setAttachProgress({ message: message + note, phase });
     };
     setAttaching(true);
@@ -120,14 +130,14 @@ export function App() {
     try {
       if (cfg.kind === 'url') {
         const perm = await ensureHostPermissions(requiredOrigins(cfg));
-        if (!perm.ok) throw new Error(`Host permission denied for: ${perm.missing.join(', ')}`);
+        if (!perm.ok) throw new Error(t('app.error.hostPermission', { origins: perm.missing.join(', ') }));
       }
-      if (cfg.kind === 'url' && cfg.authMode === 'oidc') report(interactive ? 'Signing in…' : 'Refreshing credentials…', 'auth');
+      if (cfg.kind === 'url' && cfg.authMode === 'oidc') report(interactive ? t('app.progress.signingIn') : t('app.progress.refreshingCreds'), 'auth');
       const c = await resolveCreds(cfg, interactive);
       if (stale()) return null;
       // Patterns with {name} tokens: list the values first and let the user choose before any file is read.
       if (cfg.kind === 'url' && unselectedTokens(cfg).length) {
-        report('Listing values of the pattern variables…', 'list');
+        report(t('app.progress.listingVars'), 'list');
         const found = await discoverVariables(cfg, c, window, { signal: ctl.signal, onProgress: report });
         if (stale()) return null;
         setVariables({ pattern: cfg.urls, ...found });
@@ -136,7 +146,7 @@ export function App() {
       }
       // Whatever is still running belongs to the previous file set: stop it so the new view
       // is not queued behind it.
-      report('Stopping running queries…', 'list');
+      report(t('app.progress.stopping'), 'list');
       await cancelAllQueries();
       if (stale()) return null;
       const a = await attachSource(cfg, files, c, window, valueFiltersFor(cfg), { signal: ctl.signal, onProgress: report, confirmLarge });
@@ -146,12 +156,14 @@ export function App() {
       globalThis.window.__ddv = { ...(globalThis.window.__ddv ?? {}), attached: a };
       setDiagnoseContext(cfg.kind === 'url' ? { files: a.files, fileSizes: a.fileSizes, format: cfg.format } : null);
       setAttached(a);
-      setSource({ ...cfg, timeField: a.timeField?.name ?? null });
-      saveSource({ ...cfg, timeField: a.timeField?.name ?? null });
+      const saved = { ...cfg, timeField: a.timeField?.name ?? null };
+      setSource(saved);
+      saveSource(saved);
+      setHistory(rememberSource(saved));
       return a;
     } catch (e) {
       if (stale()) return null;
-      setAttachError(e instanceof CancelledError ? 'Connection cancelled' : String(e));
+      setAttachError(e instanceof CancelledError ? t('app.error.cancelled') : String(e));
       return null;
     } finally {
       if (!stale()) {
@@ -162,6 +174,33 @@ export function App() {
     }
   };
 
+  /**
+   * Load a remembered source and connect to it. The time range and query are kept; filters,
+   * columns, sorts and chart fields that name a field the new source does not have are dropped.
+   */
+  const switchSource = async (cfg: SourceConfig) => {
+    setSource(cfg);
+    setSwitchSeq((n) => n + 1);
+    const a = await connect(cfg, [], true);
+    if (!a) {
+      setUrl((u) => ({ ...u, page: 'source' }));
+      return;
+    }
+    const has = (name: string | null | undefined) => !name || !!findField(a.fields, name);
+    setUrl((u) => ({
+      ...u,
+      search: { ...u.search, filters: u.search.filters.filter((f) => f.op === 'query' || has(f.field)) },
+      discover: { ...u.discover, columns: u.discover.columns.filter((c) => has(c)), sort: u.discover.sort.filter((s) => has(s.field)) },
+      vis: {
+        ...u.vis,
+        x: has(u.vis.x.field) ? u.vis.x : { ...u.vis.x, field: null },
+        metrics: u.vis.metrics.map((m) => (has(m.field) ? m : { ...m, field: null, agg: 'count' })),
+        breakdown: has(u.vis.breakdown.field) ? u.vis.breakdown : { ...u.vis.breakdown, field: null },
+      },
+    }));
+  };
+  const forget = (key: string) => setHistory(forgetSource(key));
+
   /** Abandon the running connect. Only listing / login can be cut short; a DuckDB step runs on. */
   const cancelConnect = () => {
     if (!attaching || attachProgress?.phase === 'db') return;
@@ -170,7 +209,7 @@ export function App() {
     attemptCtl.current?.abort();
     setAttaching(false);
     setAttachProgress(null);
-    setAttachError('Connection cancelled');
+    setAttachError(t('app.error.cancelled'));
   };
 
   useEffect(() => {
@@ -291,7 +330,8 @@ export function App() {
   };
 
   const noSource = !attached;
-  const page: AppPage = noSource ? 'source' : url.page;
+  // Without a source only the Data source and Settings pages make sense.
+  const page: AppPage = noSource && url.page !== 'settings' ? 'source' : url.page;
 
   return (
     <div class="app">
@@ -302,49 +342,89 @@ export function App() {
         </div>
         <nav>
           <button class={page === 'discover' ? 'active' : ''} onClick={() => setPage('discover')} disabled={noSource}>
-            Discover
+            {t('app.nav.discover')}
           </button>
           <button class={page === 'visualize' ? 'active' : ''} onClick={() => setPage('visualize')} disabled={noSource}>
-            Visualize
+            {t('app.nav.visualize')}
           </button>
           <button class={page === 'source' ? 'active' : ''} onClick={() => setPage('source')}>
-            Data source
+            {t('app.nav.source')}
+          </button>
+          <button class={page === 'settings' ? 'active' : ''} onClick={() => setPage('settings')}>
+            {t('app.nav.settings')}
           </button>
         </nav>
         <span class="spacer" />
+        {history.length > 0 && (
+          <select
+            class="input src-select"
+            title={t('app.sources')}
+            aria-label={t('app.sources')}
+            value={attached ? (sourceKey(source) ?? '') : ''}
+            disabled={attaching}
+            onChange={(e) => {
+              const key = (e.target as HTMLSelectElement).value;
+              const entry = history.find((h) => h.key === key);
+              if (entry && key !== (attached ? sourceKey(source) : null)) switchSource(entry.config);
+            }}
+          >
+            {(!attached || !history.some((h) => h.key === sourceKey(source))) && <option value="">{attached ? source.name : t('app.status.noSource')}</option>}
+            {history.map((h) => (
+              <option value={h.key} title={h.config.kind === 'demo' ? '' : h.config.urls}>
+                {h.config.name || h.config.kind}
+              </option>
+            ))}
+          </select>
+        )}
         <span class="status">
           <span class={'dot' + (initError || attachError ? ' err' : busy || attaching || !ready ? ' busy' : '')} />
-          {!ready ? 'Starting…' : attaching && attachProgress ? `Connecting… ${attachProgress.message}` : attached ? `${source.name || 'source'}${attached.rowCount !== null ? ` · ${attached.rowCount.toLocaleString()} rows` : ` · ${attached.files.length} file(s)`}` : 'No data source'}
+          {!ready
+            ? t('app.status.starting')
+            : attaching && attachProgress
+              ? t('app.status.connecting', { message: attachProgress.message })
+              : attached
+                ? attached.rowCount !== null
+                  ? t('app.status.rows', { name: source.name || t('app.status.sourceFallback'), n: attached.rowCount.toLocaleString() })
+                  : t('app.status.files', { name: source.name || t('app.status.sourceFallback'), n: attached.files.length })
+                : t('app.status.noSource')}
         </span>
       </header>
-      {initError && <div class="alert error" style="margin:16px">Failed to start: {initError}</div>}
+      {initError && <div class="alert error" style="margin:16px">{t('app.failedToStart', { error: initError })}</div>}
       {largeConfirm && (
         <div class="alert warn connect-confirm" style="margin:16px 16px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
           <span style="flex:1 1 320px">
-            <b>{largeConfirm.info.files.toLocaleString()} files</b>
-            {largeConfirm.info.bytes !== null ? ` (${fmtBytes(largeConfirm.info.bytes)})` : ''} match this pattern and time range (threshold {largeConfirm.info.threshold.toLocaleString()}). Nothing has been read yet. Continuing creates the view over all of them; the first query then downloads what it needs. Narrow the time range, add a name prefix or a filter on a captured column, or continue.
+            {tx('app.large.text', {
+              files: <b>{t('app.large.files', { n: largeConfirm.info.files.toLocaleString() })}</b>,
+              bytes: largeConfirm.info.bytes !== null ? ` (${fmtBytes(largeConfirm.info.bytes)})` : '',
+              threshold: largeConfirm.info.threshold.toLocaleString(),
+            })}
           </span>
           <button class="btn small primary" onClick={() => largeConfirm.resolve(true)}>
-            Continue with {largeConfirm.info.files.toLocaleString()} files
+            {t('app.large.continue', { n: largeConfirm.info.files.toLocaleString() })}
           </button>
           <button class="btn small" onClick={() => largeConfirm.resolve(false)}>
-            Cancel
+            {t('common.cancel')}
           </button>
         </div>
       )}
       {page !== 'source' && gate.status === 'blocked' && gate.estimate && (
         <div class="alert warn download-gate" style="margin:16px 16px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
           <span style="flex:1 1 320px">
-            The next query opens <b>{gate.estimate.files.toLocaleString()} files</b> that have not been downloaded yet (threshold {gate.estimate.threshold.toLocaleString()}), up to <b>{fmtBytes(gate.estimate.bytes)}</b> to download
-            {gate.estimate.unknownSizes ? ` (size unknown for ${gate.estimate.unknownSizes.toLocaleString()} of them)` : ''}. Parquet reads only the needed parts; text / gzip files are read whole. Narrow the time range, or run it anyway (later queries reuse the cache).
+            {tx('app.gate.text', {
+              files: <b>{t('app.gate.files', { n: gate.estimate.files.toLocaleString() })}</b>,
+              threshold: gate.estimate.threshold.toLocaleString(),
+              bytes: <b>{fmtBytes(gate.estimate.bytes)}</b>,
+              unknown: gate.estimate.unknownSizes ? t('app.gate.unknown', { n: gate.estimate.unknownSizes.toLocaleString() }) : '',
+            })}
           </span>
           <button class="btn small primary" onClick={runAnyway}>
-            Run anyway
+            {t('app.gate.runAnyway')}
           </button>
         </div>
       )}
+      {page === 'settings' && <Settings />}
       {page === 'source' && (
-        <DataSource config={source} attached={attached} error={attachError} busy={attaching || !ready} progress={attaching ? attachProgress : null} creds={creds} variables={variables} onConnect={(cfg, files) => connect(cfg, files, true)} onCancel={cancelConnect} onTimeField={onTimeField} onCreds={setCreds} />
+        <DataSource config={source} switchSeq={switchSeq} history={history} attached={attached} error={attachError} busy={attaching || !ready} progress={attaching ? attachProgress : null} creds={creds} variables={variables} onConnect={(cfg, files) => connect(cfg, files, true)} onCancel={cancelConnect} onTimeField={onTimeField} onCreds={setCreds} onUseHistory={switchSource} onForgetHistory={forget} />
       )}
       {page === 'discover' && attached && (
         <Discover
@@ -377,7 +457,7 @@ export function App() {
         <div class="overlay">
           <div>
             <div class="spinner" />
-            Starting…
+            {t('app.status.starting')}
           </div>
         </div>
       )}

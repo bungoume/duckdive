@@ -1,0 +1,14 @@
+{
+  "appName": {
+    "message": "Duckdive",
+    "description": "Extension name"
+  },
+  "appDesc": {
+    "message": "S3・HTTPS URL・ローカルのログファイルをブラウザ内で検索・可視化。データは外部に送信されません。",
+    "description": "Extension description (max 132 characters)"
+  },
+  "actionTitle": {
+    "message": "Duckdive を開く",
+    "description": "Tooltip of the toolbar button"
+  }
+}

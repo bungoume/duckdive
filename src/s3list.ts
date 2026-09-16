@@ -4,6 +4,7 @@
 // ({yyyy} {MM} {dd} {HH}) over the selected time range.
 
 import type { AwsCredentials } from './auth';
+import { t as tr } from './i18n';
 import { LIST_CONCURRENCY, fetchWithTimeout, mapLimit, throwIfAborted } from './net';
 import type { S3Config } from './state';
 
@@ -145,7 +146,7 @@ export async function listObjects(target: S3Target, region: string, creds: AwsCr
         lastModified: c.getElementsByTagName('LastModified')[0]?.textContent ?? '',
         etag: c.getElementsByTagName('ETag')[0]?.textContent ?? '',
       });
-      if (objects.length >= maxObjects) throw new Error(`More than ${maxObjects} objects under ${target.bucket}/${prefix}; add a literal prefix before the wildcard (e.g. the load balancer name) or narrow the time range`);
+      if (objects.length >= maxObjects) throw new Error(tr('src.tooManyObjects', { max: maxObjects, bucket: target.bucket, prefix }));
     }
     for (const p of Array.from(doc.getElementsByTagName('CommonPrefixes'))) {
       const pf = p.getElementsByTagName('Prefix')[0]?.textContent;
@@ -280,7 +281,7 @@ export function expandDateTokens(pattern: string, from: Date, to: Date, maxPatte
         out.push(p);
       }
       d.setUTCMonth(d.getUTCMonth() + 1);
-      if (out.length > maxPatterns) throw new Error('Time range expands to too many prefixes');
+      if (out.length > maxPatterns) throw new Error(tr('src.tooManyPrefixes'));
     }
     return out;
   }
@@ -291,7 +292,7 @@ export function expandDateTokens(pattern: string, from: Date, to: Date, maxPatte
       seen.add(p);
       out.push(p);
     }
-    if (out.length > maxPatterns) throw new Error('Time range expands to too many prefixes');
+    if (out.length > maxPatterns) throw new Error(tr('src.tooManyPrefixes'));
   }
   return out;
 }
@@ -540,10 +541,7 @@ export async function resolveS3Patterns(
   let warning: string | null = null;
   if (urls.length > maxFiles) {
     const bytes = objects.reduce((a, o) => a + o.size, 0);
-    warning =
-      `${urls.length.toLocaleString()} files (${(bytes / 1048576).toFixed(0)} MB) match this time range, above the warning threshold of ${maxFiles.toLocaleString()}. ` +
-      `Connecting reads nothing, but text / gzip files are fetched whole and one after another, so the first query over this range will be slow. ` +
-      `Narrow the time range (hours rather than days), or convert wide ranges to hourly Parquet with scripts/alb-to-parquet.sh.`;
+    warning = tr('src.warning.many', { files: urls.length.toLocaleString(), mb: (bytes / 1048576).toFixed(0), max: maxFiles.toLocaleString() });
   }
   return { urls, objects, patterns: jobs.length, skippedByTime, skippedByFilter, warning };
 }
