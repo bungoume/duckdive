@@ -4,7 +4,7 @@
 //   node e2e/cache.mjs
 import { spawn, execSync } from 'node:child_process';
 import { launchExtension, waitReady } from './ext-context.mjs';
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -16,7 +16,9 @@ const parquet = join(dataDir, 'logs.parquet');
 import { rmSync } from 'node:fs';
 rmSync(join(dataDir, 'bucket'), { recursive: true, force: true }); // fixtures are regenerated every run
 mkdirSync(join(dataDir, 'bucket'), { recursive: true });
-if (!existsSync(parquet)) {
+// The fixture spans the last 7 days relative to its creation: regenerate it once it is a day old,
+// otherwise "Last 6 hours" (the default range) finds nothing.
+if (!existsSync(parquet) || Date.now() - statSync(parquet).mtimeMs > 24 * 3600_000) {
   console.log('generating fixture parquet with duckdb CLI…');
   execSync(
     `duckdb -c "COPY (SELECT now()::TIMESTAMP - to_seconds(floor(random()*604800)::BIGINT) AS ts, ['GET','POST','PUT'][1+floor(random()*3)::INT] AS method, (200 + floor(random()*400))::INT AS status, md5(i::VARCHAR) AS session, random()*1000 AS latency_ms, repeat('x', 200) AS payload FROM range(600000) t(i)) TO '${parquet}' (FORMAT PARQUET, ROW_GROUP_SIZE 50000)"`,
@@ -365,7 +367,7 @@ try {
   // narrow the range to the last hour: the file list must be re-resolved. Partitions are UTC
   // days, so the expected file count is the number of UTC dates the last hour touches (1 or 2).
   await page.click('.timepicker .btn');
-  await page.click('.quick-grid button:has-text("Last 1 hour")');
+  await page.click('.quick-grid button:has-text("Last 60 minutes")');
   await page.waitForTimeout(3000);
   await page.waitForFunction(() => !document.querySelector('.loading-bar'), null, { timeout: 60000 });
   const utcDays = new Set([new Date(Date.now() - 3600_000).toISOString().slice(0, 10), new Date().toISOString().slice(0, 10)]).size;
@@ -400,7 +402,7 @@ try {
   await page.click('.header nav button:has-text("Discover")');
   await page.waitForSelector('.hits .n');
   await page.click('.timepicker .btn');
-  await page.click('.quick-grid button:has-text("Last 1 hour")');
+  await page.click('.quick-grid button:has-text("Last 60 minutes")');
   await page.waitForTimeout(3000);
   await page.waitForFunction(() => !document.querySelector('.loading-bar'), null, { timeout: 60000 });
   const albStatus = await page.textContent('.header .status');

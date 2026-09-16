@@ -31,6 +31,14 @@ export async function initDuckDB(): Promise<void> {
     } catch {
       /* icu not available: default is UTC */
     }
+    // DuckDB 1.3+ keeps bytes of remote files in its own in-memory cache. The OPFS range cache
+    // in the worker already serves that purpose (persistently, with ETag checks), and the wasm
+    // heap is the scarcer resource, so the in-memory copy is switched off.
+    try {
+      await conn.query(`SET enable_external_file_cache = false`);
+    } catch {
+      /* older DuckDB without the setting */
+    }
   })();
   return initPromise;
 }
