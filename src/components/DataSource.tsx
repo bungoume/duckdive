@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'preact/hooks';
 import { redirectUrl, secondsUntilExpiry, signIn, storeCredentials, type AwsCredentials, type OidcConfig } from '../auth';
 import { capturedColumns, requiredOrigins, unselectedTokens, type AttachedSource } from '../datasource';
-import type { TokenValue } from '../s3list';
 import { FORMAT_IDS, TEMPLATES, formatLabel, templateLabel, templateNote } from '../formats';
 import { t, tx } from '../i18n';
 import { isTimeCandidate } from '../fields';
-import type { AttachProgress } from '../app';
+import type { AttachProgress, Variables } from '../hooks/useConnect';
 import { hasHostPermissions, isExtension, listGrantedOrigins, removeOrigin } from '../permissions';
 import { SOURCE_HISTORY_MAX, sourceKey, type AuthMode, type SourceConfig, type SourceHistoryEntry } from '../state';
 import { formatDate } from '../datefmt';
@@ -23,7 +22,7 @@ export function DataSource(props: {
   progress: AttachProgress | null;
   creds: AwsCredentials | null;
   /** values listed for the {name} tokens of `pattern` (by pressing Connect) */
-  variables: { pattern: string; values: Record<string, TokenValue[]>; listedFiles: number } | null;
+  variables: Variables | null;
   onConnect: (cfg: SourceConfig, files: File[]) => void;
   onCancel: () => void;
   onTimeField: (name: string | null) => void;
