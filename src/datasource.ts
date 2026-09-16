@@ -253,142 +253,153 @@ function staticCreds(cfg: SourceConfig): AwsCredentials | null {
   return { accessKeyId: cfg.s3.accessKeyId, secretAccessKey: cfg.s3.secretAccessKey, sessionToken: cfg.s3.sessionToken, expiration: '' };
 }
 
+type Progress = (message: string, phase: 'list' | 'db') => void;
+
+/** What the three source kinds have in common once their view exists. */
+interface ViewInfo {
+  description: string;
+  files: string[];
+  fileSizes: (number | null)[];
+  totalBytes: number | null;
+  warning: string | null;
+}
+
+async function attachDemo(progress: Progress): Promise<ViewInfo> {
+  progress(t('src.demo.progress'), 'db');
+  await createDemoTable();
+  await exec(`CREATE OR REPLACE VIEW ${VIEW} AS SELECT * FROM demo_logs`);
+  return { description: t('src.demo.description'), files: [], fileSizes: [], totalBytes: null, warning: null };
+}
+
+async function attachLocal(cfg: SourceConfig, localFiles: File[], progress: Progress): Promise<ViewInfo> {
+  if (!localFiles.length) throw new Error(t('src.local.none'));
+  const db = getDB();
+  const names: string[] = [];
+  progress(t('src.local.progress'), 'db');
+  for (const f of localFiles) {
+    await db.registerFileHandle(f.name, f, DataProtocol.BROWSER_FILEREADER, true);
+    names.push(f.name);
+  }
+  await exec(`CREATE OR REPLACE VIEW ${VIEW} AS ${viewSelect(resolveFormat(cfg.format, names), names, null)}`);
+  const description = t('src.local.description', { n: names.length, names: names.slice(0, 3).join(', '), more: names.length > 3 ? '…' : '' });
+  return { description, files: names, fileSizes: [], totalBytes: null, warning: null };
+}
+
+/**
+ * Concatenated gzip objects (multi-member, as AWS log delivery writes them) break DuckDB-Wasm's
+ * gzip reader over HTTP: fetch every listed .gz here, re-pack when needed, keep it in the cache.
+ * Returns notes for the description.
+ */
+async function prepareGzip(cfg: SourceConfig, creds: AwsCredentials | null, seeds: SeedFile[], opts: AttachOptions, progress: Progress): Promise<string[]> {
+  const gzSeeds = seeds.filter((s) => s.s3 && /\.gz$/i.test(s.url));
+  if (!gzSeeds.length) return [];
+  const avail = await normalizationAvailable();
+  if (!avail.ok) return [t('src.gzDirect', { reason: avail.reason })];
+  const effCreds = cfg.authMode === 'none' ? null : (creds ?? staticCreds(cfg));
+  const region = cfg.s3.region || '';
+  const targets = new Map<string, ReturnType<typeof s3Target>>();
+  const list: NormalizeFile[] = [];
+  for (const s of gzSeeds) {
+    const { bucket, key } = s.s3!;
+    let target = targets.get(bucket);
+    if (!target) targets.set(bucket, (target = s3Target(bucket, cfg.s3)));
+    const signed = await signObjectGet(target, key, region, effCreds);
+    list.push({ url: s.url, fetchUrl: signed.url, headers: signed.headers, etag: s.etag, size: s.size, lastModified: s.lastModified });
+  }
+  progress(t('src.fetchingGz', { n: list.length }), 'list');
+  const notes: string[] = [];
+  try {
+    const r = await normalizeGzipFiles(list, {
+      signal: opts.signal,
+      onProgress: (done, total, bytes) => opts.onProgress?.(t('src.fetchingGzProgress', { done, total, bytes: fmtBytes(bytes) }), 'list'),
+    });
+    throwIfAborted(opts.signal);
+    if (r.repacked) notes.push(t('src.repacked', { n: r.repacked }));
+    if (r.failed.length) notes.push(t('src.gzFailed', { n: r.failed.length, error: r.failed[0].error }));
+  } catch (e) {
+    throwIfAborted(opts.signal);
+    if (e instanceof DOMException && e.name === 'AbortError') throw new CancelledError();
+    throw e;
+  }
+  return notes;
+}
+
+/** Resolve the URL lines to files (cancellable), confirm large sets, prime the cache, create the view. */
+async function attachRemote(cfg: SourceConfig, creds: AwsCredentials | null, range: TimeWindow | null, valueFilters: ValueFilters, opts: AttachOptions, progress: Progress): Promise<ViewInfo> {
+  const lines = sourceUrls(cfg);
+  if (!lines.length) throw new Error(t('src.noUrls'));
+  // List first: it runs on the page and can be cancelled; DuckDB is only touched afterwards.
+  progress(t('src.listingFiles'), 'list');
+  const resolved = await resolveFiles(cfg, creds, range, valueFilters, opts);
+  throwIfAborted(opts.signal);
+  if (!resolved.urls.length) {
+    throw new Error(
+      isRangeDependent(cfg) && !range
+        ? t('src.dateNeedsRange')
+        : t('src.noMatch', { patterns: lines.join(', '), range: range ? t('src.noMatch.range', { from: range.from.toISOString(), to: range.to.toISOString() }) : '' }),
+    );
+  }
+  const files = resolved.urls;
+  const totalBytes = resolved.totalBytes;
+  let warning = resolved.warning;
+  const captures = capturedColumns(cfg);
+  // Ask before touching DuckDB when the source is large: from here on, steps cannot be cancelled.
+  const threshold = cfg.maxFiles || DEFAULT_MAX_FILES;
+  if (opts.confirmLarge && (files.length > threshold || (totalBytes !== null && totalBytes > LARGE_BYTES))) {
+    progress(t('src.waiting', { n: files.length }), 'list');
+    const ok = await opts.confirmLarge({ files: files.length, bytes: totalBytes, threshold });
+    if (!ok) throw new CancelledError();
+    throwIfAborted(opts.signal);
+    warning = null; // the user has seen the numbers; no need to repeat them as a warning
+  }
+  // Seed the range cache with size / ETag from the listing so DuckDB's per-file HEADs
+  // (one per file, per bind) are answered locally instead of hitting S3.
+  if (resolved.seeds.length) {
+    progress(t('src.seeding', { n: resolved.seeds.length }), 'list');
+    try {
+      await cacheSeed(resolved.seeds);
+    } catch (e) {
+      console.warn('cache seed failed', e);
+    }
+  }
+  const notes = await prepareGzip(cfg, creds, resolved.seeds, opts, progress);
+  progress(t('src.creatingView', { n: files.length }), 'db');
+  if (lines.some((u) => u.startsWith('s3://'))) await applyS3(cfg, creds);
+  await exec(`CREATE OR REPLACE VIEW ${VIEW} AS ${viewSelect(resolveFormat(cfg.format, files), files, captures.length ? captureSelect(cfg) : null)}`);
+  const expanded = resolved.patterns > 1 || files.length !== lines.length || resolved.skippedByTime > 0 || resolved.skippedByFilter > 0;
+  if (resolved.skippedByTime) notes.push(t('src.skippedByTime', { n: resolved.skippedByTime }));
+  if (resolved.skippedByFilter) notes.push(t('src.skippedByFilter', { n: resolved.skippedByFilter, names: captures.join(', ') }));
+  const skipped = notes.length ? ` (${notes.join('; ')})` : '';
+  const size = totalBytes !== null ? `, ${(totalBytes / 1048576).toFixed(totalBytes < 10 * 1048576 ? 1 : 0)} MB` : '';
+  const more = files.length > 1 ? ' …' : '';
+  const description = expanded ? t('src.description.matched', { n: files.length, size, patterns: lines.length, notes: skipped, first: files[0], more }) : t('src.description.urls', { n: files.length, first: files[0], more });
+  return { description, files, fileSizes: resolved.sizes, totalBytes, warning };
+}
+
+/** The remembered choice if it still looks like a time column, else the format's preference, else the best-named date column. */
+function pickTimeField(cfg: SourceConfig, fields: Field[], files: string[]): Field | null {
+  if (cfg.timeField) {
+    const f = findField(fields, cfg.timeField);
+    if (f && (f.kind === 'date' || isTimeCandidate(f))) return f;
+  }
+  if (cfg.kind !== 'demo') {
+    const pref = resolveFormat(cfg.format, files).timeField;
+    const f = (pref && findField(fields, pref)) || (cfg.format === 'ltsv' ? findField(fields, 'log.time') ?? findField(fields, 'log.timestamp') : null);
+    if (f) return f;
+  }
+  const cands = fields.filter((f) => f.kind === 'date');
+  return cands.find((f) => f.name === '@timestamp') ?? cands.find((f) => /timestamp|time|ts|date/i.test(f.name)) ?? cands[0] ?? fields.find(isTimeCandidate) ?? null;
+}
+
 export async function attachSource(cfg: SourceConfig, localFiles: File[] = [], creds: AwsCredentials | null = null, range: TimeWindow | null = null, valueFilters: ValueFilters = {}, opts: AttachOptions = {}): Promise<AttachedSource> {
-  const progress = (m: string, phase: 'list' | 'db') => {
+  const progress: Progress = (m, phase) => {
     throwIfAborted(opts.signal);
     opts.onProgress?.(m, phase);
   };
-  let description: string;
-  let files: string[] = [];
-  let fileSizes: (number | null)[] = [];
-  let totalBytes: number | null = null;
-  let warning: string | null = null;
-  const notesExtra: string[] = [];
-  if (cfg.kind === 'demo') {
-    progress(t('src.demo.progress'), 'db');
-    await createDemoTable();
-    await exec(`CREATE OR REPLACE VIEW ${VIEW} AS SELECT * FROM demo_logs`);
-    description = t('src.demo.description');
-  } else if (cfg.kind === 'local') {
-    if (!localFiles.length) throw new Error(t('src.local.none'));
-    const db = getDB();
-    const names: string[] = [];
-    progress(t('src.local.progress'), 'db');
-    for (const f of localFiles) {
-      await db.registerFileHandle(f.name, f, DataProtocol.BROWSER_FILEREADER, true);
-      names.push(f.name);
-    }
-    await exec(`CREATE OR REPLACE VIEW ${VIEW} AS ${viewSelect(resolveFormat(cfg.format, names), names, null)}`);
-    description = t('src.local.description', { n: names.length, names: names.slice(0, 3).join(', '), more: names.length > 3 ? '…' : '' });
-    files = names;
-  } else {
-    const lines = sourceUrls(cfg);
-    if (!lines.length) throw new Error(t('src.noUrls'));
-    // List first: it runs on the page and can be cancelled; DuckDB is only touched afterwards.
-    progress(t('src.listingFiles'), 'list');
-    const resolved = await resolveFiles(cfg, creds, range, valueFilters, opts);
-    throwIfAborted(opts.signal);
-    if (!resolved.urls.length) {
-      throw new Error(
-        isRangeDependent(cfg) && !range
-          ? t('src.dateNeedsRange')
-          : t('src.noMatch', { patterns: lines.join(', '), range: range ? t('src.noMatch.range', { from: range.from.toISOString(), to: range.to.toISOString() }) : '' }),
-      );
-    }
-    files = resolved.urls;
-    fileSizes = resolved.sizes;
-    totalBytes = resolved.totalBytes;
-    warning = resolved.warning;
-    const captures = capturedColumns(cfg);
-    // Ask before touching DuckDB when the source is large: from here on, steps cannot be cancelled.
-    const threshold = cfg.maxFiles || DEFAULT_MAX_FILES;
-    if (opts.confirmLarge && (files.length > threshold || (totalBytes !== null && totalBytes > LARGE_BYTES))) {
-      progress(t('src.waiting', { n: files.length }), 'list');
-      const ok = await opts.confirmLarge({ files: files.length, bytes: totalBytes, threshold });
-      if (!ok) throw new CancelledError();
-      throwIfAborted(opts.signal);
-      warning = null; // the user has seen the numbers; no need to repeat them as a warning
-    }
-    // Seed the range cache with size / ETag from the listing so DuckDB's per-file HEADs
-    // (one per file, per bind) are answered locally instead of hitting S3.
-    if (resolved.seeds.length) {
-      progress(t('src.seeding', { n: resolved.seeds.length }), 'list');
-      try {
-        await cacheSeed(resolved.seeds);
-      } catch (e) {
-        console.warn('cache seed failed', e);
-      }
-    }
-    // Concatenated gzip objects (multi-member, as AWS log delivery writes them) break DuckDB-Wasm's
-    // gzip reader over HTTP: fetch every listed .gz here, re-pack when needed, keep it in the cache.
-    const gzSeeds = resolved.seeds.filter((s) => s.s3 && /\.gz$/i.test(s.url));
-    if (gzSeeds.length) {
-      const avail = await normalizationAvailable();
-      if (!avail.ok) {
-        notesExtra.push(t('src.gzDirect', { reason: avail.reason }));
-      } else {
-        const effCreds = cfg.authMode === 'none' ? null : (creds ?? staticCreds(cfg));
-        const region = cfg.s3.region || '';
-        const targets = new Map<string, ReturnType<typeof s3Target>>();
-        const list: NormalizeFile[] = [];
-        for (const s of gzSeeds) {
-          const { bucket, key } = s.s3!;
-          let t = targets.get(bucket);
-          if (!t) targets.set(bucket, (t = s3Target(bucket, cfg.s3)));
-          const signed = await signObjectGet(t, key, region, effCreds);
-          list.push({ url: s.url, fetchUrl: signed.url, headers: signed.headers, etag: s.etag, size: s.size, lastModified: s.lastModified });
-        }
-        progress(t('src.fetchingGz', { n: list.length }), 'list');
-        try {
-          const r = await normalizeGzipFiles(list, {
-            signal: opts.signal,
-            onProgress: (done, total, bytes) => opts.onProgress?.(t('src.fetchingGzProgress', { done, total, bytes: fmtBytes(bytes) }), 'list'),
-          });
-          throwIfAborted(opts.signal);
-          if (r.repacked) notesExtra.push(t('src.repacked', { n: r.repacked }));
-          if (r.failed.length) notesExtra.push(t('src.gzFailed', { n: r.failed.length, error: r.failed[0].error }));
-        } catch (e) {
-          throwIfAborted(opts.signal);
-          if (e instanceof DOMException && e.name === 'AbortError') throw new CancelledError();
-          throw e;
-        }
-      }
-    }
-    progress(t('src.creatingView', { n: files.length }), 'db');
-    if (lines.some((u) => u.startsWith('s3://'))) await applyS3(cfg, creds);
-    await exec(`CREATE OR REPLACE VIEW ${VIEW} AS ${viewSelect(resolveFormat(cfg.format, files), files, captures.length ? captureSelect(cfg) : null)}`);
-    const expanded = resolved.patterns > 1 || files.length !== lines.length || resolved.skippedByTime > 0 || resolved.skippedByFilter > 0;
-    const notes: string[] = [...notesExtra];
-    if (resolved.skippedByTime) notes.push(t('src.skippedByTime', { n: resolved.skippedByTime }));
-    if (resolved.skippedByFilter) notes.push(t('src.skippedByFilter', { n: resolved.skippedByFilter, names: captures.join(', ') }));
-    const skipped = notes.length ? ` (${notes.join('; ')})` : '';
-    const size = totalBytes !== null ? `, ${(totalBytes / 1048576).toFixed(totalBytes < 10 * 1048576 ? 1 : 0)} MB` : '';
-    const more = files.length > 1 ? ' …' : '';
-    description = expanded ? t('src.description.matched', { n: files.length, size, patterns: lines.length, notes: skipped, first: files[0], more }) : t('src.description.urls', { n: files.length, first: files[0], more });
-  }
-
+  const view = cfg.kind === 'demo' ? await attachDemo(progress) : cfg.kind === 'local' ? await attachLocal(cfg, localFiles, progress) : await attachRemote(cfg, creds, range, valueFilters, opts, progress);
   progress(t('src.readingSchema'), 'db');
   const fields = await introspectFields(VIEW);
-  let timeField: Field | null = null;
-  if (cfg.timeField) {
-    // a remembered choice is only honoured if it still looks like a time column
-    const f = findField(fields, cfg.timeField);
-    if (f && (f.kind === 'date' || isTimeCandidate(f))) timeField = f;
-  }
-  if (!timeField && cfg.kind !== 'demo') {
-    const pref = resolveFormat(cfg.format, files).timeField;
-    if (pref) timeField = findField(fields, pref) ?? null;
-    if (!timeField && cfg.format === 'ltsv') timeField = findField(fields, 'log.time') ?? findField(fields, 'log.timestamp') ?? null;
-  }
-  if (!timeField) {
-    const cands = fields.filter((f) => f.kind === 'date');
-    timeField =
-      cands.find((f) => f.name === '@timestamp') ??
-      cands.find((f) => /timestamp|time|ts|date/i.test(f.name)) ??
-      cands[0] ??
-      fields.find(isTimeCandidate) ??
-      null;
-  }
+  const timeField = pickTimeField(cfg, fields, view.files);
   // Row count at connect time only for local / demo data. Over HTTP it would touch every file
   // (all Parquet footers, or a full scan of text formats); Discover counts per time range.
   let rowCount: number | null = null;
@@ -401,7 +412,7 @@ export async function attachSource(cfg: SourceConfig, localFiles: File[] = [], c
       rowCount = null;
     }
   }
-  return { fields, timeField, rowCount, description, files, fileSizes, rangeDependent: isRangeDependent(cfg), totalBytes, warning, captures: cfg.kind === 'url' ? capturedColumns(cfg) : [] };
+  return { fields, timeField, rowCount, ...view, rangeDependent: isRangeDependent(cfg), captures: cfg.kind === 'url' ? capturedColumns(cfg) : [] };
 }
 
 export async function createDemoTable() {
