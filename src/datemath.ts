@@ -6,6 +6,7 @@
 import { t, type MsgKey } from './i18n';
 import { effectiveTimeZone, formatDate, normalizeWall, zonedParts, zonedToUtc, type WallTime } from './datefmt';
 import { getSettings, type QuickRange } from './settings';
+import { pad } from './util';
 
 const UNIT_MS: Record<string, number> = {
   s: 1000,
@@ -148,8 +149,6 @@ export function describeRange(r: TimeRange): string {
 export function formatLocal(d: Date): string {
   return formatDate(d);
 }
-
-const pad = (n: number, w = 2) => String(n).padStart(w, '0');
 
 /** Value for an <input type="datetime-local">: the wall clock of the configured zone. */
 export function toDatetimeLocal(d: Date): string {

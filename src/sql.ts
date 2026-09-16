@@ -5,6 +5,7 @@ import type { Field } from './fields';
 import { findField } from './fields';
 import { t, type MsgKey } from './i18n';
 import { getSettings } from './settings';
+import { pad } from './util';
 
 export const VIEW = 'src';
 
@@ -72,8 +73,6 @@ export function intervalLabel(iv: Interval): string {
 export function bucketOffsetMinutes(at: Date = new Date()): number {
   return zonedParts(at, effectiveTimeZone()).offset;
 }
-
-const pad = (n: number, w = 2) => String(n).padStart(w, '0');
 
 /** Origin for weekly buckets: a day in January 2000 that falls on the configured first day of the week. */
 function weekOrigin(): string {

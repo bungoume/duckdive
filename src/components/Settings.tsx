@@ -1,16 +1,8 @@
 import { useEffect, useState } from 'preact/hooks';
 import { LANGS, setLang, t, useLang, type Lang } from '../i18n';
 import { parseDateMath } from '../datemath';
-import { formatDate, isValidTimeZone, parseIsoDuration } from '../datefmt';
+import { browserZone, formatDate, isValidTimeZone, parseIsoDuration } from '../datefmt';
 import { DEFAULT_SETTINGS, getSettings, resetSettings, updateSettings, useSettings, type AppSettings, type QuickRange } from '../settings';
-
-const browserZone = (): string => {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  } catch {
-    return 'UTC';
-  }
-};
 
 const zoneNames = (): string[] => {
   try {

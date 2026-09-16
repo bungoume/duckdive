@@ -55,6 +55,11 @@ export function fmtNum(n: number | null | undefined, digits = 2): string {
   return n.toLocaleString(undefined, { maximumFractionDigits: digits });
 }
 
+/** Compact axis label: 1234 → "1.2k", 12345 → "12k". */
+export function fmtAxisNumber(d: number): string {
+  return Math.abs(d) >= 1000 ? `${(d / 1000).toFixed(Math.abs(d) >= 10000 ? 0 : 1)}k` : String(d);
+}
+
 export function fmtValue(v: unknown): string {
   if (v === null || v === undefined) return '–';
   if (typeof v === 'object') return JSON.stringify(v);

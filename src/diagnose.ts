@@ -9,6 +9,7 @@ import { QueryCancelled, query } from './duck';
 import { resolveFormat, type FormatId } from './formats';
 import { inflateGzipMembers } from './gzmembers';
 import { lit } from './sql';
+import { toHex } from './util';
 
 export interface DiagnoseContext {
   files: string[];
@@ -25,7 +26,12 @@ export function canDiagnose(): boolean {
 }
 
 /** Error messages that point at damaged / unexpected file bytes rather than at the query. */
-export const FILE_ERROR = /gzip|zstd|magic|corrupt|Parquet file|invalid input|not a valid|sniff/i;
+export const FILE_ERROR = /gzip|zstd|magic|corrupt|Parquet file|invalid|not a valid|sniff/i;
+
+/** Such errors get a pointer to the diagnosis button and the cache controls. */
+export function withCacheHint(msg: string): string {
+  return FILE_ERROR.test(msg) ? t('disc.cacheHint', { error: msg, button: t('diag.find'), clear: t('cache.clear'), enable: t('cache.enable') }) : msg;
+}
 
 export interface FileReport {
   file: string;
@@ -68,9 +74,6 @@ export interface DiagnoseReport {
 
 const MAX_INSPECT_BYTES = 32 * 1024 * 1024;
 
-function hex(b: Uint8Array): string {
-  return Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
-}
 function fromHex(h: string): Uint8Array {
   const out = new Uint8Array(h.length / 2);
   for (let i = 0; i < out.length; i++) out[i] = parseInt(h.substr(i * 2, 2), 16);
@@ -149,7 +152,7 @@ async function inspectFile(file: string, listedSize: number | null, error: strin
     }
     const r = await query(`SELECT hex(content) AS h FROM read_blob(${lit(file)})`);
     const buf = fromHex(String(r.rows[0]?.h ?? ''));
-    rep.head = hex(buf.subarray(0, 10));
+    rep.head = toHex(buf.subarray(0, 10));
     if (/\.gz$/i.test(file) || (buf[0] === 0x1f && buf[1] === 0x8b)) rep.gzip = await inspectGzip(buf);
   } catch (e) {
     if (e instanceof QueryCancelled) throw e;

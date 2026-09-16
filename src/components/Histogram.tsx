@@ -6,6 +6,7 @@ import { timeAxis } from '../ticks';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Bucket } from '../queries';
 import { bucketStarts, type Interval } from '../sql';
+import { fmtAxisNumber } from './ui';
 
 /** Fill empty buckets (from the first one up to `to`) so the bar chart has a continuous x axis. */
 export function fillBuckets(b: Bucket[], to: Date, iv: Interval, tzOffset: number): Bucket[] {
@@ -45,7 +46,7 @@ export function Histogram(props: { buckets: Bucket[]; interval: Interval; from: 
       marginBottom: 28,
       style: { fontSize: '11px', background: 'transparent', overflow: 'visible' },
       x: { type: 'time', domain: [props.from, props.to], label: null, grid: false, ticks: axis.ticks, tickFormat: axis.tickFormat },
-      y: { label: t('hist.count'), grid: true, nice: true, tickFormat: (d: number) => (d >= 1000 ? `${(d / 1000).toFixed(d >= 10000 ? 0 : 1)}k` : String(d)) },
+      y: { label: t('hist.count'), grid: true, nice: true, tickFormat: fmtAxisNumber },
       marks: [
         Plot.rectY(data, { x1: 't', x2: 't2', y: 'c', fill: '#54b399', inset: 1, insetLeft: 0.5, insetRight: 0.5 }),
         Plot.ruleY([0]),

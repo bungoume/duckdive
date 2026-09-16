@@ -14,12 +14,8 @@ import { FilterBar } from './FilterBar';
 import { Histogram, fillBuckets } from './Histogram';
 import { DiagnosePanel } from './DiagnosePanel';
 import { QueryBar } from './QueryBar';
+import { withCacheHint } from '../diagnose';
 import { QueryCancelled, getQueryLog } from '../duck';
-
-/** Errors that smell like damaged file bytes get a pointer to the cache controls. */
-function withCacheHint(msg: string): string {
-  return /gzip|zstd|magic|corrupt|Parquet file|invalid/i.test(msg) ? t('disc.cacheHint', { error: msg, button: t('diag.find'), clear: t('cache.clear'), enable: t('cache.enable') }) : msg;
-}
 
 const PAGE = 100;
 

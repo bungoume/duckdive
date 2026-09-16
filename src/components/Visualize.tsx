@@ -14,6 +14,7 @@ import { FieldSidebar } from './FieldSidebar';
 import { FilterBar } from './FilterBar';
 import { DiagnosePanel } from './DiagnosePanel';
 import { QueryBar } from './QueryBar';
+import { withCacheHint } from '../diagnose';
 
 const CHARTS: { id: ChartType; icon: string }[] = [
   { id: 'area', icon: '⛰' },
@@ -68,11 +69,6 @@ function FieldSelect(props: { fields: Field[]; value: string | null; onChange: (
       ))}
     </select>
   );
-}
-
-/** Errors that smell like damaged file bytes get a pointer to the cache controls. */
-function withCacheHint(msg: string): string {
-  return /gzip|zstd|magic|corrupt|Parquet file|invalid/i.test(msg) ? t('disc.cacheHint', { error: msg, button: t('diag.find'), clear: t('cache.clear'), enable: t('cache.enable') }) : msg;
 }
 
 export function Visualize(props: {

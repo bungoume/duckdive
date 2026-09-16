@@ -7,6 +7,7 @@ import type { AwsCredentials } from './auth';
 import { t as tr } from './i18n';
 import { CancelledError, LIST_CONCURRENCY, fetchWithTimeout, mapLimit, throwIfAborted } from './net';
 import type { S3Config } from './state';
+import { pad, toHex } from './util';
 
 /** Optional cancellation / progress hooks for a listing. */
 export interface ListOptions {
@@ -33,11 +34,8 @@ export interface S3Target {
 
 const enc = new TextEncoder();
 
-function hex(buf: ArrayBuffer): string {
-  return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('');
-}
 async function sha256(s: string): Promise<string> {
-  return hex(await crypto.subtle.digest('SHA-256', enc.encode(s)));
+  return toHex(await crypto.subtle.digest('SHA-256', enc.encode(s)));
 }
 async function hmac(key: ArrayBuffer | Uint8Array, msg: string): Promise<ArrayBuffer> {
   const k = await crypto.subtle.importKey('raw', key as BufferSource, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
@@ -99,7 +97,7 @@ async function sigv4Get(target: S3Target, canonicalUri: string, qs: string, regi
   const canonical = ['GET', canonicalUri, qs, signedHeaders.map((h) => `${h}:${headers[h]}\n`).join(''), signedHeaders.join(';'), EMPTY_SHA256].join('\n');
   const scope = `${date}/${rg}/s3/aws4_request`;
   const sts = ['AWS4-HMAC-SHA256', datetime, scope, await sha256(canonical)].join('\n');
-  const signature = hex(await hmac(await signingKey(creds, date, rg), sts));
+  const signature = toHex(await hmac(await signingKey(creds, date, rg), sts));
   const out: Record<string, string> = { ...headers };
   delete out.host; // the browser sets Host
   out.authorization = `AWS4-HMAC-SHA256 Credential=${creds.accessKeyId}/${scope}, SignedHeaders=${signedHeaders.join(';')}, Signature=${signature}`;
@@ -262,8 +260,6 @@ function globSegmentToRegex(seg: string): RegExp {
   }
   return new RegExp(re + '$');
 }
-
-const pad = (n: number, w = 2) => String(n).padStart(w, '0');
 
 /** Expand {yyyy}/{MM}/{dd}/{HH} tokens over [from, to] (UTC, like AWS log prefixes). */
 export function expandDateTokens(pattern: string, from: Date, to: Date, maxPatterns = 5000): string[] {

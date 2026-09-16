@@ -7,7 +7,7 @@ import { timeAxis } from '../ticks';
 import { OTHER, metricLabel, type VisResult } from '../queries';
 import { bucketStarts, nextBucketStart, type Interval } from '../sql';
 import type { ChartType, MetricDef } from '../state';
-import { fmtNum } from './ui';
+import { fmtAxisNumber, fmtNum } from './ui';
 
 export const PALETTE = ['#54B399', '#6092C0', '#D36086', '#9170B8', '#CA8EAE', '#D6BF57', '#B9A888', '#DA8B45', '#AA6556', '#E7664C'];
 
@@ -181,7 +181,7 @@ export function Chart(props: {
           label: yLabel,
           grid: true,
           nice: true,
-          tickFormat: (d: number) => (Math.abs(d) >= 1000 ? `${(d / 1000).toFixed(Math.abs(d) >= 10000 ? 0 : 1)}k` : String(d)),
+          tickFormat: fmtAxisNumber,
         },
         marks: marks as Plot.Markish[],
       });

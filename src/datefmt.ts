@@ -4,6 +4,7 @@
 // plus [literal text] in brackets. Month / weekday names follow the UI language.
 
 import { getSettings } from './settings';
+import { pad } from './util';
 
 export interface WallTime {
   year: number;
@@ -23,7 +24,8 @@ export interface ZonedParts extends WallTime {
   offset: number;
 }
 
-const browserZone = (): string => {
+/** The browser's own IANA time zone. */
+export const browserZone = (): string => {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   } catch {
@@ -95,7 +97,6 @@ export function zonedToUtc(w: WallTime, tz: string = effectiveTimeZone()): Date 
   return new Date(t);
 }
 
-const pad = (n: number, w = 2) => String(n).padStart(w, '0');
 const TOKEN = /\[([^\]]*)\]|YYYY|YY|MMMM|MMM|MM|M|DD|D|dddd|ddd|d|HH|H|hh|h|mm|m|ss|s|SSS|SS|S|A|a|ZZ|Z|X|x/g;
 
 const nameCache = new Map<string, string[]>();
