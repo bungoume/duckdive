@@ -3,7 +3,7 @@
 // Prereqs: `DDV_EXTRA_HOSTS="http://localhost/*" npm run build`, `duckdb` CLI on PATH.
 //   node e2e/cache.mjs
 import { spawn, execSync } from 'node:child_process';
-import { launchExtension, waitReady } from './ext-context.mjs';
+import { launchExtension, settled, waitReady } from './ext-context.mjs';
 import { existsSync, mkdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -321,7 +321,6 @@ const pressConnect = async () => {
   const all = page.locator('.variables-box button:has-text("Select all values")');
   if (await all.count()) {
     await all.click();
-    await page.waitForTimeout(200);
     await page.click('.source-page button:has-text("Connect")');
   }
 };
@@ -333,8 +332,7 @@ const openSource = async () => {
 const runQuery = async (q) => {
   await page.fill('.qinput input', q);
   await page.press('.qinput input', 'Enter');
-  await page.waitForTimeout(500);
-  await page.waitForFunction(() => !document.querySelector('.loading-bar'), null, { timeout: 60000 });
+  await settled(page);
   return page.textContent('.hits .n');
 };
 
@@ -435,12 +433,13 @@ try {
   // temporary credentials; requests must carry the session token. (The browser login itself
   // needs a real identity provider and is not covered here.)
   await openSource();
-  console.log(`     before oidc select: switchSeq=${await page.evaluate(() => window.__ddv.switchSeq)} auth=${await page.inputValue('.source-page .field-row:has-text("Authentication") select')}`);
+  // DuckDB keeps every block it has read in memory for the session, and the static-key queries
+  // above read the whole of logs.parquet (its rows are in random time order, so no row group can
+  // be skipped). The session token can only be observed on a file DuckDB has not seen: yesterday's
+  // partition copy.
+  const stsFile = `s3://bucket/AWSLogs/123456789012/parquet/ap-northeast-1/${dayPath(yesterday)}/part-${dayPath(yesterday).replace(/\//g, '')}.parquet`;
+  await page.fill('.source-page textarea', stsFile);
   await page.selectOption('.source-page .field-row:has-text("Authentication") select', 'oidc');
-  await page.waitForTimeout(300);
-  console.log(
-    `     after oidc select: switchSeq=${await page.evaluate(() => window.__ddv.switchSeq)} auth=${await page.inputValue('.source-page .field-row:has-text("Authentication") select')} busy=${(await page.textContent('.source-page button.connect')).trim()}`,
-  );
   await page.fill('.source-page .field-row:has-text("IAM role ARN") input', 'arn:aws:iam::123456789012:role/test');
   await page.fill('.source-page .field-row:has-text("STS endpoint") input', `http://localhost:${dataPort}/sts`);
   const creds = await page.evaluate(async (port) => {
@@ -467,7 +466,7 @@ try {
   await page.evaluate(() => window.__ddv.cacheClear());
   const srvT0 = await serverStats();
   await page.click('.source-page button:has-text("Connect")');
-  await connectDone('s3://bucket/logs.parquet');
+  await connectDone(stsFile);
   const oidcErr = await page
     .locator('.alert.error')
     .textContent()
@@ -476,9 +475,13 @@ try {
   check('connect with STS credentials', !oidcErr && oidcRows === 600000, oidcErr ?? `rows=${oidcRows}`);
   await page.click('.header nav button:has-text("Discover")');
   await page.waitForSelector('.hits .n');
-  await runQuery('method:GET');
+  const stsHits = await runQuery('method:GET');
   const srvT1 = await serverStats();
-  check('requests carry x-amz-security-token', srvT1.tokenRequests > srvT0.tokenRequests, `token requests +${srvT1.tokenRequests - srvT0.tokenRequests}`);
+  check(
+    'requests carry x-amz-security-token',
+    srvT1.tokenRequests > srvT0.tokenRequests,
+    `token requests +${srvT1.tokenRequests - srvT0.tokenRequests} of ${srvT1.requests - srvT0.requests}, hits=${stsHits}`,
+  );
   await page.screenshot({ path: `${out}/22-ext-source.png` });
 
   // Named wildcards: {alb} becomes a column; an "is" filter on it prunes the file list.
@@ -486,7 +489,7 @@ try {
   await page.waitForSelector('.timepicker .btn');
   await page.click('.timepicker .btn');
   await page.click('.quick-grid button:has-text("Last 7 days")');
-  await page.waitForTimeout(500);
+  await settled(page);
   await openSource();
   await page.selectOption('.source-page .field-row:has-text("Authentication") select', 'static');
   await page.fill('.source-page textarea', 's3://bucket/AWSLogs/{account}/elasticloadbalancing/{region}/{yyyy}/{MM}/{dd}/{account}_elasticloadbalancing_{region}_app.{alb}.*.log.gz');
@@ -505,7 +508,6 @@ try {
     `${albOpts.join(' | ')} connectDisabled=${await page.locator('.source-page button.connect').isDisabled()}`,
   );
   await page.click('.variables-box button:has-text("Select all values")');
-  await page.waitForTimeout(200);
   await page.click('.source-page button:has-text("Connect")');
   await page.waitForFunction(() => [...document.querySelectorAll('.alert.ok')].some((e) => /matched/.test(e.textContent ?? '')) || document.querySelector('.alert.error'), null, { timeout: 60000 });
   const nErr = await page
@@ -535,7 +537,7 @@ try {
       .catch(() => '')} hits=${await page.textContent('.hits .n')} status=${await page.textContent('.header .status')}`,
   );
   await page.click('.field-item:has-text("alb")');
-  await page.waitForTimeout(2500);
+  await settled(page);
   console.log(
     `     details open: ${await page.locator('.field-details').count()} text=${(
       await page
@@ -546,8 +548,7 @@ try {
   );
   await page.waitForSelector('.topval', { timeout: 15000 });
   await page.locator('.topval', { hasText: 'alb-other' }).locator('.pm button').first().click();
-  await page.waitForTimeout(3000);
-  await page.waitForFunction(() => !document.querySelector('.loading-bar'), null, { timeout: 60000 });
+  await settled(page);
   const prunedStatus = await page.textContent('.header .status');
   const prunedFiles = await page.evaluate(() => window.__ddv.query('SELECT count(DISTINCT _file) f, count(DISTINCT alb) a FROM src').then((r) => r.rows[0]));
   check(
@@ -556,14 +557,14 @@ try {
     `${prunedStatus.trim()} ${JSON.stringify(prunedFiles)}`,
   );
   await page.click('.filterbar .pill button[title="Remove"]');
-  await page.waitForTimeout(1500);
+  await settled(page);
 
   // Glob + date tokens on S3: only the partitions inside the time range are listed and read.
   await page.click('.header nav button:has-text("Discover")');
   await page.waitForSelector('.timepicker .btn');
   await page.click('.timepicker .btn');
   await page.click('.quick-grid button:has-text("Last 7 days")');
-  await page.waitForTimeout(500);
+  await settled(page);
   await openSource();
   await page.selectOption('.source-page .field-row:has-text("Authentication") select', 'static');
   await page.fill('.source-page textarea', 's3://bucket/AWSLogs/123456789012/parquet/ap-northeast-1/{yyyy}/{MM}/{dd}/*.parquet');
@@ -588,8 +589,7 @@ try {
   // days, so the expected file count is the number of UTC dates the last hour touches (1 or 2).
   await page.click('.timepicker .btn');
   await page.click('.quick-grid button:has-text("Last 60 minutes")');
-  await page.waitForTimeout(3000);
-  await page.waitForFunction(() => !document.querySelector('.loading-bar'), null, { timeout: 60000 });
+  await settled(page);
   const utcDays = new Set([new Date(Date.now() - 3600_000).toISOString().slice(0, 10), new Date().toISOString().slice(0, 10)]).size;
   const status = await page.textContent('.header .status');
   const rangeRows = await srcRows();
@@ -602,7 +602,7 @@ try {
   // ALB access logs (.log.gz): format auto-detected from the path, columns typed.
   await page.click('.timepicker .btn');
   await page.click('.quick-grid button:has-text("Last 7 days")');
-  await page.waitForTimeout(1500);
+  await settled(page);
   await openSource();
   await page.fill(
     '.source-page textarea',
@@ -654,8 +654,7 @@ try {
   await page.waitForSelector('.hits .n');
   await page.click('.timepicker .btn');
   await page.click('.quick-grid button:has-text("Last 60 minutes")');
-  await page.waitForTimeout(3000);
-  await page.waitForFunction(() => !document.querySelector('.loading-bar'), null, { timeout: 60000 });
+  await settled(page);
   const albStatus = await page.textContent('.header .status');
   const albFiles = await page.evaluate(() => window.__ddv.query('SELECT count(*) n FROM src').then((r) => r.rows[0].n));
   // the 00:00Z file is kept while now-1h-65min <= 00:00, i.e. before 02:05 UTC
@@ -669,7 +668,7 @@ try {
   await runQuery(''); // drop the query that referenced a field of another source
   await page.click('.timepicker .btn');
   await page.click('.quick-grid button:has-text("Last 7 days")');
-  await page.waitForTimeout(1500);
+  await settled(page);
   await openSource();
   await page.evaluate(() => window.__ddv.cacheClear());
   await page.waitForFunction(() => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect', null, { timeout: 60000 });
@@ -690,7 +689,8 @@ try {
   check('cancelling the confirmation aborts the connect', (await banner.count()) === 0, await page.textContent('.alert.error'));
   await page.click('.source-page button:has-text("Connect")');
   await banner.waitFor({ timeout: 60000 });
-  await banner.locator('button', { hasText: 'Continue' }).click();
+  // the banner unmounts as soon as the click is handled: do not wait for it afterwards
+  await banner.locator('button', { hasText: 'Continue' }).click({ noWaitAfter: true });
   await page.waitForFunction(
     () =>
       (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect' &&

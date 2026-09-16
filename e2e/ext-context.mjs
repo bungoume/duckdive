@@ -38,3 +38,27 @@ export async function launchExtension({ dist = new URL('../dist', import.meta.ur
 export async function waitReady(page, timeout = 120000) {
   await page.waitForFunction(() => window.__ddv && window.__ddv.query, null, { timeout });
 }
+
+/**
+ * Wait until the app has finished whatever the last action started. The app is busy while a page
+ * shows its loading bar, a query runs inside DuckDB or a connect is in progress (the latter two
+ * are exposed on window.__ddv by the e2e build). A click or Enter starts its query on the next
+ * render, so the app is first given a moment to become busy; an action that starts nothing (a
+ * compile error, a no-op) just passes after that grace period. A range or filter change also
+ * re-resolves the file list after a 250 ms debounce, so a short idle period must be confirmed
+ * before returning. Functions, not strings: the extension page's CSP forbids evaluating source.
+ */
+export async function settled(page, timeout = 120000) {
+  const busy = () => !!document.querySelector('.loading-bar') || (window.__ddv?.queriesRunning?.() ?? 0) > 0 || !!window.__ddv?.attaching;
+  const idle = () => !document.querySelector('.loading-bar') && (window.__ddv?.queriesRunning?.() ?? 0) === 0 && !window.__ddv?.attaching;
+  const t0 = Date.now();
+  await page.waitForFunction(busy, null, { timeout: 1500 }).catch(() => undefined);
+  for (;;) {
+    await page.waitForFunction(idle, null, { timeout: Math.max(1, timeout - (Date.now() - t0)) });
+    const resumed = await page.waitForFunction(busy, null, { timeout: 600 }).then(
+      () => true,
+      () => false,
+    );
+    if (!resumed) return;
+  }
+}

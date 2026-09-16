@@ -1,6 +1,6 @@
 // Smoke test of the extension UI (Discover / Visualize) on the demo dataset.
 //   npm run build && node e2e/smoke.mjs
-import { launchExtension } from './ext-context.mjs';
+import { launchExtension, settled } from './ext-context.mjs';
 
 const out = process.env.OUT ?? '.';
 const { context, page, appUrl } = await launchExtension();
@@ -40,7 +40,7 @@ await step('discover-initial', async () => {
 await step('search-query', async () => {
   await page.fill('.qinput input', 'http.status:>=500 AND geo.country:JP AND NOT host.name:web-1');
   await page.press('.qinput input', 'Enter');
-  await page.waitForTimeout(1500);
+  await settled(page);
   const hits = await page.textContent('.hits .n');
   const err = await page.locator('.qerror').count();
   console.log(`     hits=${hits} errors=${err}`);
@@ -50,7 +50,7 @@ await step('search-query', async () => {
 await step('free-text', async () => {
   await page.fill('.qinput input', '"connection failure" OR extra.ab_test:variant-a');
   await page.press('.qinput input', 'Enter');
-  await page.waitForTimeout(1500);
+  await settled(page);
   const hits = await page.textContent('.hits .n');
   const err = await page.locator('.qerror').count();
   console.log(`     hits=${hits} errors=${err}`);
@@ -87,8 +87,7 @@ await step('search-matrix', async () => {
   for (const q of cases) {
     await page.fill('.qinput input', q);
     await page.press('.qinput input', 'Enter');
-    await page.waitForTimeout(700);
-    await page.waitForFunction(() => !document.querySelector('.loading-bar'), null, { timeout: 30000 });
+    await settled(page);
     const err = await page.locator('.qerror').count();
     const hits = await page.textContent('.hits .n');
     console.log(`     ${err ? 'ERR ' : 'ok  '} ${q.padEnd(56)} hits=${hits}`);
@@ -97,14 +96,14 @@ await step('search-matrix', async () => {
   for (const q of bad) {
     await page.fill('.qinput input', q);
     await page.press('.qinput input', 'Enter');
-    await page.waitForTimeout(400);
+    await settled(page);
     const err = await page.locator('.qerror').count();
     console.log(`     ${err ? 'ok  ' : 'MISS'} (expect error) ${q.padEnd(40)} ${err ? (await page.textContent('.qerror')).slice(0, 60) : ''}`);
     if (!err) throw new Error(`expected error for ${q}`);
   }
   await page.fill('.qinput input', '"connection failure" OR extra.ab_test:variant-a');
   await page.press('.qinput input', 'Enter');
-  await page.waitForTimeout(1200);
+  await settled(page);
 });
 await step('expand-doc', async () => {
   await page.click('table.docs tbody tr:first-child td.expand button');
@@ -118,7 +117,7 @@ await step('expand-doc', async () => {
   const row = page.locator('table.kv tr', { hasText: 'level' }).first();
   await row.hover();
   await row.locator('td.a button').first().click();
-  await page.waitForTimeout(1200);
+  await settled(page);
   const pills = await page.locator('.pill').count();
   console.log(`     pills=${pills} hits=${await page.textContent('.hits .n')}`);
   if (!pills) throw new Error('no filter pill');
@@ -130,7 +129,7 @@ await step('field-sidebar', async () => {
   console.log(`     topvalues=${n}`);
   await page.screenshot({ path: `${out}/04-field.png` });
   await page.click('.field-item:has-text("http.method") .act');
-  await page.waitForTimeout(800);
+  await settled(page);
   const th = await page.locator('table.docs th').allTextContents();
   console.log(`     columns=${th.join('|')}`);
 });
@@ -146,21 +145,21 @@ await step('brush', async () => {
   await page.mouse.down();
   await page.mouse.move(box.x + box.width * 0.5, box.y + box.height / 2, { steps: 5 });
   await page.mouse.up();
-  await page.waitForTimeout(1200);
+  await settled(page);
   const label = await page.textContent('.timepicker .btn');
   console.log(`     range=${label}`);
 });
 await step('visualize', async () => {
   await page.click('.header nav button:has-text("Visualize")');
   await page.waitForSelector('.visualize');
-  await page.waitForTimeout(2000);
+  await settled(page);
   const paths = await page.locator('.vis-panel svg path').count();
   const cerr = await page.locator('.chart-error').count();
   console.log(`     svg paths=${paths} chartErrors=${cerr}` + (cerr ? ' ' + (await page.textContent('.chart-error')) : ''));
   await page.screenshot({ path: `${out}/05-visualize.png` });
   // breakdown by http.status
   await page.selectOption('.cfg-section:has-text("Break down by") select', 'http.status');
-  await page.waitForTimeout(2000);
+  await settled(page);
   await page.screenshot({ path: `${out}/06-visualize-breakdown.png` });
   // hover shows key / value; click filters by the breakdown value under the cursor
   const cbox = await page.locator('.vis-panel .chart-box').boundingBox();
@@ -168,7 +167,7 @@ await step('visualize', async () => {
   let tip = '';
   for (const f of [0.85, 0.8, 0.75, 0.7, 0.6, 0.5]) {
     await page.mouse.move(cbox.x + cbox.width * 0.5, cbox.y + cbox.height * f);
-    await page.waitForTimeout(250);
+    await settled(page);
     tip = await page
       .locator('.chart-tip')
       .textContent()
@@ -179,38 +178,38 @@ await step('visualize', async () => {
   if (!/click to filter/.test(tip)) throw new Error('no tooltip with filter hint: ' + tip);
   await page.mouse.down();
   await page.mouse.up();
-  await page.waitForTimeout(1500);
+  await settled(page);
   const pills = await page.locator('.filterbar .pill').allTextContents();
   console.log(`     pills after click: ${pills.join(' | ')}`);
   if (!pills.some((t) => /http\.status: \d+/.test(t))) throw new Error('click did not add a breakdown filter');
   await page.click('.filterbar .pill button[title="Remove"]');
-  await page.waitForTimeout(800);
+  await settled(page);
   // no tooltip over empty space (top-left corner of the plot area, above every band)
   await page.mouse.move(cbox.x + cbox.width * 0.5, cbox.y + 30);
-  await page.waitForTimeout(300);
+  await settled(page);
   if (await page.locator('.chart-tip').count()) throw new Error('tooltip shown over empty space');
   // Back restores the previous search state (filters / time range)
   const rangeBefore = await page.textContent('.timepicker .btn');
   await page.click('.timepicker .btn');
   await page.click('.quick-grid button:has-text("Last 24 hours")');
-  await page.waitForTimeout(1500);
+  await settled(page);
   const rangeAfter = await page.textContent('.timepicker .btn');
   await page.goBack();
-  await page.waitForTimeout(1500);
+  await settled(page);
   const rangeBack = await page.textContent('.timepicker .btn');
   console.log(`     history: ${rangeBefore.trim()} -> ${rangeAfter.trim()} -> back: ${rangeBack.trim()}`);
   if (rangeAfter === rangeBefore || rangeBack !== rangeBefore) throw new Error('Back did not restore the previous time range');
   // add avg latency metric
   await page.click('.cfg-section:has-text("Vertical axis") .head button');
-  await page.waitForTimeout(300);
+  await settled(page);
   const metricSections = page.locator('.cfg-section:has-text("Vertical axis") .cfg-section');
   const last = metricSections.last();
   await last.locator('select').first().selectOption('avg');
   await last.locator('select').nth(1).selectOption('http.latency_ms');
-  await page.waitForTimeout(2000);
+  await settled(page);
   // switch to table
   await page.click('.chart-types button[title="Table"]');
-  await page.waitForTimeout(1500);
+  await settled(page);
   const rows = await page.locator('table.data tbody tr').count();
   const heads = await page.locator('table.data th').allTextContents();
   console.log(`     table rows=${rows} heads=${heads.join('|')}`);
@@ -218,15 +217,15 @@ await step('visualize', async () => {
   // top values x
   await page.click('.chart-types button[title="Bar"]');
   await page.selectOption('.cfg-section:has-text("Horizontal axis") .field-row:has-text("Function") select', 'terms');
-  await page.waitForTimeout(300);
+  await settled(page);
   await page.selectOption('.cfg-section:has-text("Horizontal axis") .field-row:has-text("Field") select', 'http.path');
-  await page.waitForTimeout(1500);
+  await settled(page);
   const bars = await page.locator('.vis-panel svg rect').count();
   console.log(`     terms bars=${bars}`);
-  await page.waitForTimeout(2000);
+  await settled(page);
   await page.screenshot({ path: `${out}/08-terms-bar.png` });
   await page.click('.chart-types button[title="Metric"]');
-  await page.waitForTimeout(1500);
+  await settled(page);
   await page.screenshot({ path: `${out}/09-metric.png` });
   const sqlErr = await page.locator('.qerror').count();
   if (sqlErr) throw new Error(await page.textContent('.qerror'));

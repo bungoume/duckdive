@@ -149,11 +149,15 @@ The unit tests in `test/` run in Node against the pure modules (with Web Storage
 vite.config.ts                     manifest generation
 src/background.ts                  toolbar button
 src/worker/duckdb-cache-worker.ts  XHR replacement, OPFS cache, duckdb-wasm worker
-src/auth.ts                        OIDC login and STS
+src/cache.ts, duck.ts              cache control port, DuckDB session and query queue
+src/auth.ts, secrets.ts            OIDC login and STS; session-only static keys
 src/permissions.ts                 host permissions
 src/datasource.ts, s3list.ts       listing, pattern expansion, view creation
 src/search.ts, sql.ts, queries.ts  query compilation
-src/components/                    UI
+src/hooks/                         connect life cycle, download gate, credential refresh
+src/components/                    UI (components/source/: the Data source page's sections)
+src/trust.ts, debug.ts             custom-SQL trust list; test hooks (e2e builds only)
+test/                              vitest unit tests for the pure modules
 scripts/                           duckdb-wasm bundling, icons, packaging, ALB to Parquet
 docs/                              IAM examples, privacy policy
 e2e/                               Playwright tests and the local range server

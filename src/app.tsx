@@ -61,7 +61,7 @@ export function App() {
   const { gate, runAnyway } = useDownloadGate(source, attached, ackedFiles);
   useCredentialRefresh(source, attached, setCreds);
   const paused = attaching || gate.status !== 'ok';
-  expose({ gate, switchSeq });
+  expose({ gate, switchSeq, attaching });
 
   const fields: Field[] = attached?.fields ?? [];
   const timeField = attached?.timeField ?? null;
