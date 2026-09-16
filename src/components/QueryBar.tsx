@@ -4,13 +4,7 @@ import { Popover } from './ui';
 import { TimePicker } from './TimePicker';
 import type { TimeRange } from '../datemath';
 
-export function QueryBar(props: {
-  query: string;
-  range: TimeRange;
-  error: string | null;
-  busy: boolean;
-  onSubmit: (query: string, range: TimeRange) => void;
-}) {
+export function QueryBar(props: { query: string; range: TimeRange; error: string | null; busy: boolean; onSubmit: (query: string, range: TimeRange) => void }) {
   const [text, setText] = useState(props.query);
   const [help, setHelp] = useState(false);
   // Sync the input only when the submitted query actually changes (not on mount), so text
@@ -38,21 +32,64 @@ export function QueryBar(props: {
             spellcheck={false}
             autocomplete="off"
           />
-          <Popover open={help} onClose={() => setHelp(false)} align="right" width={520} button={<button class="lang" onClick={() => setHelp(!help)}>{t('q.syntax')}</button>}>
+          <Popover
+            open={help}
+            onClose={() => setHelp(false)}
+            align="right"
+            width={520}
+            button={
+              <button class="lang" onClick={() => setHelp(!help)}>
+                {t('q.syntax')}
+              </button>
+            }
+          >
             <h4>{t('q.syntaxTitle')}</h4>
             <table class="help-table">
               <tbody>
-              <tr><td>error timeout</td><td>{t('q.help.free')}</td></tr>
-              <tr><td>"connection reset"</td><td>{t('q.help.phrase')}</td></tr>
-              <tr><td>http.status:503</td><td>{t('q.help.field')}</td></tr>
-              <tr><td>host.name:web-*</td><td>{t('q.help.wildcard')}</td></tr>
-              <tr><td>path:/api\/v[12]\/.*/</td><td>{t('q.help.regex')}</td></tr>
-              <tr><td>http.status:(500 OR 503)</td><td>{t('q.help.list')}</td></tr>
-              <tr><td>http.latency_ms:&gt;800</td><td>{t('q.help.range')}</td></tr>
-              <tr><td>http.bytes:[1000 TO 5000]</td><td>{t('q.help.bracket')}</td></tr>
-              <tr><td>extra.user_id:*</td><td>{t('q.help.exists')}</td></tr>
-              <tr><td>NOT level:info / -level:info</td><td>{t('q.help.not')}</td></tr>
-              <tr><td>a AND (b OR c)</td><td>{t('q.help.bool')}</td></tr>
+                <tr>
+                  <td>error timeout</td>
+                  <td>{t('q.help.free')}</td>
+                </tr>
+                <tr>
+                  <td>"connection reset"</td>
+                  <td>{t('q.help.phrase')}</td>
+                </tr>
+                <tr>
+                  <td>http.status:503</td>
+                  <td>{t('q.help.field')}</td>
+                </tr>
+                <tr>
+                  <td>host.name:web-*</td>
+                  <td>{t('q.help.wildcard')}</td>
+                </tr>
+                <tr>
+                  <td>path:/api\/v[12]\/.*/</td>
+                  <td>{t('q.help.regex')}</td>
+                </tr>
+                <tr>
+                  <td>http.status:(500 OR 503)</td>
+                  <td>{t('q.help.list')}</td>
+                </tr>
+                <tr>
+                  <td>http.latency_ms:&gt;800</td>
+                  <td>{t('q.help.range')}</td>
+                </tr>
+                <tr>
+                  <td>http.bytes:[1000 TO 5000]</td>
+                  <td>{t('q.help.bracket')}</td>
+                </tr>
+                <tr>
+                  <td>extra.user_id:*</td>
+                  <td>{t('q.help.exists')}</td>
+                </tr>
+                <tr>
+                  <td>NOT level:info / -level:info</td>
+                  <td>{t('q.help.not')}</td>
+                </tr>
+                <tr>
+                  <td>a AND (b OR c)</td>
+                  <td>{t('q.help.bool')}</td>
+                </tr>
               </tbody>
             </table>
             <p class="hint">{tx('q.helpNote', { enter: <kbd>Enter</kbd> })}</p>

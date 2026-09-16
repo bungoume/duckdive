@@ -12,14 +12,14 @@ Duckdive is a Chrome extension that searches and visualizes log files stored in 
 
 ## Data the extension handles
 
-| Data | Where it is stored | Sent to |
-| --- | --- | --- |
-| Log data read from your storage | Memory and, when the cache is enabled, a private storage area of the browser on your device | Nowhere. It is read directly from the endpoint you configured and never leaves the browser |
-| Data source settings (URLs, region, field names, format, identity provider settings, IAM role ARN) | The extension's `localStorage` on your device | Nowhere |
-| Static AWS access keys, if you choose the "static keys" mode | The extension's `localStorage` on your device | Only to the S3 endpoint you configured, as request signatures |
-| Temporary AWS credentials obtained via sign-in | `chrome.storage.session` (memory only, cleared when the browser closes) | Only to the S3 endpoint you configured, as request signatures |
-| OpenID Connect ID token obtained via sign-in | Memory, for the duration of one STS call | AWS STS (`AssumeRoleWithWebIdentity`) at the endpoint you configured |
-| Your queries and filters | The page URL and `localStorage` on your device | Nowhere; they are executed on your device |
+| Data                                                                                               | Where it is stored                                                                          | Sent to                                                                                    |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Log data read from your storage                                                                    | Memory and, when the cache is enabled, a private storage area of the browser on your device | Nowhere. It is read directly from the endpoint you configured and never leaves the browser |
+| Data source settings (URLs, region, field names, format, identity provider settings, IAM role ARN) | The extension's `localStorage` on your device                                               | Nowhere                                                                                    |
+| Static AWS access keys, if you choose the "static keys" mode                                       | The extension's `localStorage` on your device                                               | Only to the S3 endpoint you configured, as request signatures                              |
+| Temporary AWS credentials obtained via sign-in                                                     | `chrome.storage.session` (memory only, cleared when the browser closes)                     | Only to the S3 endpoint you configured, as request signatures                              |
+| OpenID Connect ID token obtained via sign-in                                                       | Memory, for the duration of one STS call                                                    | AWS STS (`AssumeRoleWithWebIdentity`) at the endpoint you configured                       |
+| Your queries and filters                                                                           | The page URL and `localStorage` on your device                                              | Nowhere; they are executed on your device                                                  |
 
 ## Permissions
 

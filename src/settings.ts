@@ -61,9 +61,14 @@ function sanitize(o: unknown): AppSettings {
   const r = o as Record<string, unknown>;
   if (typeof r.dateFormat === 'string' && r.dateFormat.trim()) s.dateFormat = r.dateFormat;
   if (typeof r.timeZone === 'string') s.timeZone = r.timeZone;
-  if (Array.isArray(r.scaledDateFormat) && r.scaledDateFormat.every((e) => Array.isArray(e) && e.length === 2 && typeof e[0] === 'string' && typeof e[1] === 'string')) s.scaledDateFormat = r.scaledDateFormat as [string, string][];
+  if (Array.isArray(r.scaledDateFormat) && r.scaledDateFormat.every((e) => Array.isArray(e) && e.length === 2 && typeof e[0] === 'string' && typeof e[1] === 'string'))
+    s.scaledDateFormat = r.scaledDateFormat as [string, string][];
   if (typeof r.dayOfWeek === 'number' && r.dayOfWeek >= 0 && r.dayOfWeek <= 6) s.dayOfWeek = Math.floor(r.dayOfWeek);
-  if (Array.isArray(r.quickRanges) && r.quickRanges.length && r.quickRanges.every((q) => q && typeof q === 'object' && typeof (q as QuickRange).from === 'string' && typeof (q as QuickRange).to === 'string')) {
+  if (
+    Array.isArray(r.quickRanges) &&
+    r.quickRanges.length &&
+    r.quickRanges.every((q) => q && typeof q === 'object' && typeof (q as QuickRange).from === 'string' && typeof (q as QuickRange).to === 'string')
+  ) {
     s.quickRanges = (r.quickRanges as QuickRange[]).map((q) => ({ from: q.from, to: q.to, ...(typeof q.display === 'string' && q.display ? { display: q.display } : {}) }));
   }
   return s;

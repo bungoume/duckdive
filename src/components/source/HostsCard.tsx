@@ -12,7 +12,9 @@ export function HostsCard(props: { refreshKey: unknown }) {
   return (
     <div class="card">
       <h2>{t('ds.hosts.title')}</h2>
-      <p class="hint" style="margin-top:-6px">{t('ds.hosts.hint')}</p>
+      <p class="hint" style="margin-top:-6px">
+        {t('ds.hosts.hint')}
+      </p>
       <table class="kv">
         <tbody>
           {granted.map((g) => (

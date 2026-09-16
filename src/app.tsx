@@ -37,7 +37,27 @@ export function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  const { ready, initError, source, history, switchSeq, attached, attachError, attaching, attachProgress, largeConfirm, variables, creds, setCreds, ackedFiles, connect, switchSource, forget, cancelConnect, onTimeField } = useConnect(url, setUrl, busyRef);
+  const {
+    ready,
+    initError,
+    source,
+    history,
+    switchSeq,
+    attached,
+    attachError,
+    attaching,
+    attachProgress,
+    largeConfirm,
+    variables,
+    creds,
+    setCreds,
+    ackedFiles,
+    connect,
+    switchSource,
+    forget,
+    cancelConnect,
+    onTimeField,
+  } = useConnect(url, setUrl, busyRef);
   const { gate, runAnyway } = useDownloadGate(source, attached, ackedFiles);
   useCredentialRefresh(source, attached, setCreds);
   const paused = attaching || gate.status !== 'ok';
@@ -124,7 +144,11 @@ export function App() {
                 : t('app.status.noSource')}
         </span>
       </header>
-      {initError && <div class="alert error" style="margin:16px">{t('app.failedToStart', { error: initError })}</div>}
+      {initError && (
+        <div class="alert error" style="margin:16px">
+          {t('app.failedToStart', { error: initError })}
+        </div>
+      )}
       {largeConfirm && (
         <div class="alert warn connect-confirm" style="margin:16px 16px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
           <span style="flex:1 1 320px">
@@ -159,7 +183,23 @@ export function App() {
       )}
       {page === 'settings' && <Settings />}
       {page === 'source' && (
-        <DataSource config={source} switchSeq={switchSeq} history={history} attached={attached} error={attachError} busy={attaching || !ready} progress={attaching ? attachProgress : null} creds={creds} variables={variables} onConnect={(cfg, files) => connect(cfg, files, true)} onCancel={cancelConnect} onTimeField={onTimeField} onCreds={setCreds} onUseHistory={switchSource} onForgetHistory={forget} />
+        <DataSource
+          config={source}
+          switchSeq={switchSeq}
+          history={history}
+          attached={attached}
+          error={attachError}
+          busy={attaching || !ready}
+          progress={attaching ? attachProgress : null}
+          creds={creds}
+          variables={variables}
+          onConnect={(cfg, files) => connect(cfg, files, true)}
+          onCancel={cancelConnect}
+          onTimeField={onTimeField}
+          onCreds={setCreds}
+          onUseHistory={switchSource}
+          onForgetHistory={forget}
+        />
       )}
       {page === 'discover' && attached && (
         <Discover

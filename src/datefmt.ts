@@ -52,7 +52,18 @@ const partFormatters = new Map<string, Intl.DateTimeFormat>();
 function partFormatter(tz: string): Intl.DateTimeFormat {
   let f = partFormatters.get(tz);
   if (!f) {
-    f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', weekday: 'short', timeZoneName: 'longOffset' });
+    f = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hourCycle: 'h23',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+      weekday: 'short',
+      timeZoneName: 'longOffset',
+    });
     partFormatters.set(tz, f);
   }
   return f;
@@ -126,35 +137,64 @@ export function formatDate(d: Date, pattern: string = getSettings().dateFormat, 
   return pattern.replace(TOKEN, (tok, literal: string | undefined) => {
     if (literal !== undefined) return literal;
     switch (tok) {
-      case 'YYYY': return String(p.year);
-      case 'YY': return pad(p.year % 100);
-      case 'MMMM': return names('month', 'long')[p.month - 1];
-      case 'MMM': return names('month', 'short')[p.month - 1];
-      case 'MM': return pad(p.month);
-      case 'M': return String(p.month);
-      case 'DD': return pad(p.day);
-      case 'D': return String(p.day);
-      case 'dddd': return names('weekday', 'long')[p.weekday];
-      case 'ddd': return names('weekday', 'short')[p.weekday];
-      case 'd': return String(p.weekday);
-      case 'HH': return pad(p.hour);
-      case 'H': return String(p.hour);
-      case 'hh': return pad(h12);
-      case 'h': return String(h12);
-      case 'mm': return pad(p.minute);
-      case 'm': return String(p.minute);
-      case 'ss': return pad(p.second);
-      case 's': return String(p.second);
-      case 'SSS': return pad(p.ms, 3);
-      case 'SS': return pad(Math.floor(p.ms / 10));
-      case 'S': return String(Math.floor(p.ms / 100));
-      case 'A': return p.hour < 12 ? 'AM' : 'PM';
-      case 'a': return p.hour < 12 ? 'am' : 'pm';
-      case 'ZZ': return offsetText(p.offset, false);
-      case 'Z': return offsetText(p.offset, true);
-      case 'X': return String(Math.floor(d.getTime() / 1000));
-      case 'x': return String(d.getTime());
-      default: return tok;
+      case 'YYYY':
+        return String(p.year);
+      case 'YY':
+        return pad(p.year % 100);
+      case 'MMMM':
+        return names('month', 'long')[p.month - 1];
+      case 'MMM':
+        return names('month', 'short')[p.month - 1];
+      case 'MM':
+        return pad(p.month);
+      case 'M':
+        return String(p.month);
+      case 'DD':
+        return pad(p.day);
+      case 'D':
+        return String(p.day);
+      case 'dddd':
+        return names('weekday', 'long')[p.weekday];
+      case 'ddd':
+        return names('weekday', 'short')[p.weekday];
+      case 'd':
+        return String(p.weekday);
+      case 'HH':
+        return pad(p.hour);
+      case 'H':
+        return String(p.hour);
+      case 'hh':
+        return pad(h12);
+      case 'h':
+        return String(h12);
+      case 'mm':
+        return pad(p.minute);
+      case 'm':
+        return String(p.minute);
+      case 'ss':
+        return pad(p.second);
+      case 's':
+        return String(p.second);
+      case 'SSS':
+        return pad(p.ms, 3);
+      case 'SS':
+        return pad(Math.floor(p.ms / 10));
+      case 'S':
+        return String(Math.floor(p.ms / 100));
+      case 'A':
+        return p.hour < 12 ? 'AM' : 'PM';
+      case 'a':
+        return p.hour < 12 ? 'am' : 'pm';
+      case 'ZZ':
+        return offsetText(p.offset, false);
+      case 'Z':
+        return offsetText(p.offset, true);
+      case 'X':
+        return String(Math.floor(d.getTime() / 1000));
+      case 'x':
+        return String(d.getTime());
+      default:
+        return tok;
     }
   });
 }
@@ -165,7 +205,15 @@ export function parseIsoDuration(s: string): number | null {
   const m = /^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/i.exec(s.trim());
   if (!m) return null;
   const [, y, mo, w, d, h, mi, sec] = m;
-  return Number(y ?? 0) * 365 * 86400000 + Number(mo ?? 0) * 30 * 86400000 + Number(w ?? 0) * 7 * 86400000 + Number(d ?? 0) * 86400000 + Number(h ?? 0) * 3600000 + Number(mi ?? 0) * 60000 + Number(sec ?? 0) * 1000;
+  return (
+    Number(y ?? 0) * 365 * 86400000 +
+    Number(mo ?? 0) * 30 * 86400000 +
+    Number(w ?? 0) * 7 * 86400000 +
+    Number(d ?? 0) * 86400000 +
+    Number(h ?? 0) * 3600000 +
+    Number(mi ?? 0) * 60000 +
+    Number(sec ?? 0) * 1000
+  );
 }
 
 /** The pattern configured for date-histogram buckets of `intervalMs` (largest threshold not above it). */

@@ -29,12 +29,7 @@ export function kindOf(duckType: string): FieldKind {
   if (t === 'VARCHAR' || t === 'TEXT' || t === 'STRING' || t === 'UUID' || t.startsWith('ENUM') || t === 'CHAR' || t.startsWith('VARCHAR(')) return 'string';
   if (t === 'BOOLEAN' || t === 'BOOL') return 'boolean';
   if (t.startsWith('TIMESTAMP') || t === 'DATE' || t === 'DATETIME') return 'date';
-  if (
-    /^(TINYINT|SMALLINT|INTEGER|INT|BIGINT|HUGEINT|UTINYINT|USMALLINT|UINTEGER|UBIGINT|UHUGEINT|FLOAT|REAL|DOUBLE|DECIMAL|NUMERIC)/.test(
-      t,
-    )
-  )
-    return 'number';
+  if (/^(TINYINT|SMALLINT|INTEGER|INT|BIGINT|HUGEINT|UTINYINT|USMALLINT|UINTEGER|UBIGINT|UHUGEINT|FLOAT|REAL|DOUBLE|DECIMAL|NUMERIC)/.test(t)) return 'number';
   return 'unknown';
 }
 

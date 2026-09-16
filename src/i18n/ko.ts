@@ -23,11 +23,13 @@ export const ko: Messages = {
   'app.error.hostPermission': '다음 호스트에 대한 권한이 거부되었습니다: {origins}',
   'app.error.cancelled': '연결이 취소되었습니다',
   'app.large.files': '{n}개 파일',
-  'app.large.text': '{files}{bytes}이(가) 이 패턴과 시간 범위에 일치합니다 (임계값 {threshold}). 아직 아무것도 읽지 않았습니다. 계속하면 모든 파일에 대한 뷰가 생성되고, 첫 쿼리가 필요한 부분을 다운로드합니다. 시간 범위를 좁히거나, 이름 접두사 또는 캡처된 열에 대한 필터를 추가하거나, 계속 진행하세요.',
+  'app.large.text':
+    '{files}{bytes}이(가) 이 패턴과 시간 범위에 일치합니다 (임계값 {threshold}). 아직 아무것도 읽지 않았습니다. 계속하면 모든 파일에 대한 뷰가 생성되고, 첫 쿼리가 필요한 부분을 다운로드합니다. 시간 범위를 좁히거나, 이름 접두사 또는 캡처된 열에 대한 필터를 추가하거나, 계속 진행하세요.',
   'app.large.continue': '{n}개 파일로 계속',
   'app.gate.files': '{n}개 파일',
   'app.gate.unknown': ' (그중 {n}개는 크기 미확인)',
-  'app.gate.text': '다음 쿼리는 아직 다운로드되지 않은 {files}을(를) 엽니다 (임계값 {threshold}). 최대 {bytes}를 다운로드합니다{unknown}. Parquet은 필요한 부분만 읽지만 텍스트 / gzip 파일은 전체를 읽습니다. 시간 범위를 좁히거나 그대로 실행하세요 (이후 쿼리는 캐시를 재사용합니다).',
+  'app.gate.text':
+    '다음 쿼리는 아직 다운로드되지 않은 {files}을(를) 엽니다 (임계값 {threshold}). 최대 {bytes}를 다운로드합니다{unknown}. Parquet은 필요한 부분만 읽지만 텍스트 / gzip 파일은 전체를 읽습니다. 시간 범위를 좁히거나 그대로 실행하세요 (이후 쿼리는 캐시를 재사용합니다).',
   'app.gate.runAnyway': '그대로 실행',
 
   // ---- settings page ----
@@ -41,7 +43,8 @@ export const ko: Messages = {
   'settings.timeZone': '시간대',
   'settings.timeZone.hint': 'Asia/Seoul, UTC 같은 IANA 이름. 비워 두면 브라우저 시간대({browser})를 사용합니다. 날짜 표시, 절대 시간 선택기, "now/d" 반올림에 적용됩니다.',
   'settings.scaled': '간격별 날짜 형식',
-  'settings.scaled.hint': '[ISO 8601 기간, 패턴]의 JSON 목록: 날짜 히스토그램의 툴팁과 표에서 버킷 폭이 해당 기간 이상일 때 사용하는 패턴입니다(""는 1초 미만). 축 레이블은 표시 범위에 맞춰 자동으로 선택됩니다.',
+  'settings.scaled.hint':
+    '[ISO 8601 기간, 패턴]의 JSON 목록: 날짜 히스토그램의 툴팁과 표에서 버킷 폭이 해당 기간 이상일 때 사용하는 패턴입니다(""는 1초 미만). 축 레이블은 표시 범위에 맞춰 자동으로 선택됩니다.',
   'settings.dow': '주의 시작 요일',
   'settings.dow.hint': '"now/w" 범위와 주 단위 버킷에 사용하는 한 주의 첫 요일.',
   'settings.quickRanges': '시간 필터 빠른 범위',
@@ -85,11 +88,13 @@ export const ko: Messages = {
   'ds.template.replace': '대체',
   'ds.template.keep': '현재 유지',
   'ds.urls.label': 'URL 또는 패턴, 한 줄에 하나씩 (s3://, https://; #으로 시작하는 줄은 무시)',
-  'ds.urls.hint': 's3:// 패턴에는 {star}, {q}, {dstar}와 날짜 토큰 {dates}를 사용할 수 있습니다. 날짜 토큰은 시간 선택기(UTC)에서 채워지므로 선택한 범위 안의 파티션만 나열하고 읽습니다. 그 외의 {name}은 이름 있는 와일드카드로, 일치한 텍스트가 열이 됩니다 (예: {example}은 검색과 필터에 사용할 수 있는 {alb} 필드를 만듭니다. 이 필드에 "is" 필터를 걸면 다른 파일은 읽지 않습니다).',
+  'ds.urls.hint':
+    's3:// 패턴에는 {star}, {q}, {dstar}와 날짜 토큰 {dates}를 사용할 수 있습니다. 날짜 토큰은 시간 선택기(UTC)에서 채워지므로 선택한 범위 안의 파티션만 나열하고 읽습니다. 그 외의 {name}은 이름 있는 와일드카드로, 일치한 텍스트가 열이 됩니다 (예: {example}은 검색과 필터에 사용할 수 있는 {alb} 필드를 만듭니다. 이 필드에 "is" 필터를 걸면 다른 파일은 읽지 않습니다).',
   'ds.vars.title': '패턴 변수 · {names}',
   'ds.vars.listed': '최신 파티션의 파일 {n}개',
   'ds.vars.selectAll': '모든 값 선택',
-  'ds.vars.hint': '패턴의 각 {name}은 변수입니다. "{button}"을 누르면 최신 파티션을 나열하고 {names}에서 발견된 값을 여기에 표시하며, 읽을 값을 선택합니다 (변수당 최소 하나). 그 전까지는 아무것도 읽지 않습니다.',
+  'ds.vars.hint':
+    '패턴의 각 {name}은 변수입니다. "{button}"을 누르면 최신 파티션을 나열하고 {names}에서 발견된 값을 여기에 표시하며, 읽을 값을 선택합니다 (변수당 최소 하나). 그 전까지는 아무것도 읽지 않습니다.',
   'ds.vars.count': '값 {n}개 · {sel}개 선택됨',
   'ds.vars.all': '전체',
   'ds.vars.none': '없음',
@@ -97,7 +102,8 @@ export const ko: Messages = {
   'ds.vars.missing': '다음 변수에 대해 값을 하나 이상 선택하세요: {names}',
   'ds.name': '이름',
   'ds.maxFiles': '연결 전에 이 수보다 많은 파일이 일치하면 경고 (기본값 1000)',
-  'ds.listingHint': '나열 시 첫 와일드카드 앞의 리터럴 텍스트를 S3 접두사로 사용하므로, 하루 폴더에 여러 ALB가 있을 때는 패턴에 로드 밸런서 이름을 넣으세요. 이름에 타임스탬프(…_20260909T0105Z_…)가 있고 시간 범위를 벗어난 파일은 자동으로 건너뜁니다.',
+  'ds.listingHint':
+    '나열 시 첫 와일드카드 앞의 리터럴 텍스트를 S3 접두사로 사용하므로, 하루 폴더에 여러 ALB가 있을 때는 패턴에 로드 밸런서 이름을 넣으세요. 이름에 타임스탬프(…_20260909T0105Z_…)가 있고 시간 범위를 벗어난 파일은 자동으로 건너뜁니다.',
   'ds.s3.title': 'S3 엔드포인트',
   'ds.s3.region': '리전',
   'ds.s3.endpoint': '엔드포인트 (선택; AWS: s3.<region>.amazonaws.com, MinIO / R2: 호스트 또는 http://host:9000)',
@@ -109,12 +115,14 @@ export const ko: Messages = {
   'ds.auth.static': '액세스 키 (비밀 키는 이 브라우저 세션 동안만 보관)',
   'ds.auth.none': '없음 (공개 버킷)',
   'ds.key.title': '액세스 키',
-  'ds.key.warn': '액세스 키 ID는 소스 설정과 함께 저장됩니다. 비밀 키와 세션 토큰은 이 브라우저 세션 동안만 메모리에 보관되며 Chrome을 다시 시작하면 다시 입력해야 합니다. 임시 자격 증명(세션 토큰) 또는 OIDC 로그인을 권장합니다.',
+  'ds.key.warn':
+    '액세스 키 ID는 소스 설정과 함께 저장됩니다. 비밀 키와 세션 토큰은 이 브라우저 세션 동안만 메모리에 보관되며 Chrome을 다시 시작하면 다시 입력해야 합니다. 임시 자격 증명(세션 토큰) 또는 OIDC 로그인을 권장합니다.',
   'ds.key.id': '액세스 키 ID',
   'ds.key.secret': '비밀 액세스 키',
   'ds.key.token': '세션 토큰 (임시 자격 증명용)',
   'ds.oidc.title': 'OIDC 로그인 → AWS STS',
-  'ds.oidc.intro': '브라우저가 ID 공급자에 로그인한 뒤 STS {api}를 직접 호출합니다. 장기 키는 어디에도 존재하지 않으며, 임시 자격 증명은 메모리(chrome.storage.session)에 보관되고 자동으로 갱신됩니다. ID 공급자에 다음 리디렉션 URL을 등록하세요: {url}',
+  'ds.oidc.intro':
+    '브라우저가 ID 공급자에 로그인한 뒤 STS {api}를 직접 호출합니다. 장기 키는 어디에도 존재하지 않으며, 임시 자격 증명은 메모리(chrome.storage.session)에 보관되고 자동으로 갱신됩니다. ID 공급자에 다음 리디렉션 URL을 등록하세요: {url}',
   'ds.oidc.authUrl': '인증 엔드포인트',
   'ds.oidc.clientId': '클라이언트 ID',
   'ds.oidc.scope': '스코프',
@@ -145,14 +153,16 @@ export const ko: Messages = {
   'ds.timeField.none': '(없음 – 시간 필터링 안 함)',
   'ds.connected.rangeDependent': '이 소스는 날짜 토큰을 사용합니다. 시간 범위가 바뀔 때마다 파일 목록을 다시 확인합니다. ',
   'ds.connected.captures': '파일 이름에서 캡처한 열: {names} (이 열로 필터링하면 파일 목록도 줄어듭니다).',
-  'ds.connected.large': '일치한 파일의 총 크기는 {mb} MB입니다. 텍스트 / gzip 파일은 전체를 하나씩 순서대로 가져오므로 이 범위의 첫 쿼리는 느립니다. 시간 범위를 좁히거나 넓은 범위를 시간별 Parquet으로 변환하세요 (scripts/alb-to-parquet.sh).',
+  'ds.connected.large':
+    '일치한 파일의 총 크기는 {mb} MB입니다. 텍스트 / gzip 파일은 전체를 하나씩 순서대로 가져오므로 이 범위의 첫 쿼리는 느립니다. 시간 범위를 좁히거나 넓은 범위를 시간별 Parquet으로 변환하세요 (scripts/alb-to-parquet.sh).',
   'ds.connected.files': '파일 ({n})',
   'ds.connected.fieldsTitle': '필드',
   'ds.hosts.title': '허용된 호스트',
   'ds.hosts.hint': '이 확장 프로그램이 읽을 수 있는 호스트입니다. AWS 엔드포인트는 기본적으로 허용되며, 그 외 호스트는 연결 시 요청합니다.',
   'ds.hosts.revoke': '취소',
   'ds.history.title': '최근 소스',
-  'ds.history.hint': '최근에 연결한 S3 / HTTPS 및 데모 소스 {n}개(최신순)입니다. 선택하면 해당 설정(선택한 패턴 변수 값 포함, 액세스 키의 비밀 키는 이 브라우저 세션 동안만)을 불러와 연결합니다. 헤더의 메뉴에서도 어느 페이지에서나 같은 작업을 할 수 있습니다.',
+  'ds.history.hint':
+    '최근에 연결한 S3 / HTTPS 및 데모 소스 {n}개(최신순)입니다. 선택하면 해당 설정(선택한 패턴 변수 값 포함, 액세스 키의 비밀 키는 이 브라우저 세션 동안만)을 불러와 연결합니다. 헤더의 메뉴에서도 어느 페이지에서나 같은 작업을 할 수 있습니다.',
   'ds.history.use': '연결',
   'ds.history.current': '현재',
   'ds.history.lastUsed': '마지막 사용 {time}',
@@ -271,7 +281,8 @@ export const ko: Messages = {
   'diag.finding': '실패한 파일을 찾는 중…',
   'diag.hint': '연결된 파일을 count(*) 쿼리로 이분 탐색하고 각 원인 파일의 바이트를 검사합니다 (원인 파일당 약 두 번의 전체 스캔).',
   'diag.cancelled': '취소됨 (소스가 다시 연결되었습니다)',
-  'diag.allOk': '방금 {n}개 파일 모두 count(*)로 정상적으로 읽혔습니다. 오류는 일시적이거나 (네트워크나 캐시의 잘못된 응답: 데이터 소스 → 로컬 범위 캐시의 요청 로그 참조) 실패한 쿼리에 한정된 것입니다.',
+  'diag.allOk':
+    '방금 {n}개 파일 모두 count(*)로 정상적으로 읽혔습니다. 오류는 일시적이거나 (네트워크나 캐시의 잘못된 응답: 데이터 소스 → 로컬 범위 캐시의 요청 로그 참조) 실패한 쿼리에 한정된 것입니다.',
   'diag.failing': '{queries}회 쿼리로 실패한 파일 {n}개를 찾았습니다{truncated}.',
   'diag.truncated': ' (처음 몇 개 이후 중지)',
   'diag.size': '크기',
@@ -344,7 +355,8 @@ export const ko: Messages = {
   'flt.addButton': '+ 필터 추가',
   'flt.clearAll': '모두 지우기',
   'flt.not': '제외: ',
-  'flt.untrusted': '이 링크에는 이 브라우저에서 작성되지 않은 사용자 지정 SQL 필터 {n}개가 포함되어 있습니다. 비활성화되어 있습니다. 각 필터를 열어 SQL을 확인하고 보낸 사람을 신뢰할 수 있는 경우에만 활성화하세요(필터는 이 확장 프로그램의 S3 자격 증명을 읽고 네트워크에 접근할 수 있습니다).',
+  'flt.untrusted':
+    '이 링크에는 이 브라우저에서 작성되지 않은 사용자 지정 SQL 필터 {n}개가 포함되어 있습니다. 비활성화되어 있습니다. 각 필터를 열어 SQL을 확인하고 보낸 사람을 신뢰할 수 있는 경우에만 활성화하세요(필터는 이 확장 프로그램의 S3 자격 증명을 읽고 네트워크에 접근할 수 있습니다).',
   'flt.menu.trust': '활성화 (SQL을 확인함)',
   'flt.desc.between': '{from} ~ {to}',
 
@@ -428,7 +440,8 @@ export const ko: Messages = {
   'tpl.alb.label': 'ALB 액세스 로그',
   'tpl.alb.note': 'account / region / alb가 열이 됩니다. alb로 필터링하면 로드 밸런서 하나만 읽습니다. 버킷 접두사를 설정했다면 AWSLogs 앞에 추가하세요.',
   'tpl.alb-parquet.label': 'Parquet으로 변환한 ALB 액세스 로그 (scripts/alb-to-parquet.sh)',
-  'tpl.alb-parquet.note': 'scripts/alb-to-parquet.sh가 쓴 시간별 Parquet: <prefix>/<alb>/dt=YYYY-MM-DD/hour=HH/data.parquet. dt와 hour가 파티션 열이 됩니다. 대상이 이미 로드 밸런서 하나를 가리키면 "{alb}/"를 제거하세요.',
+  'tpl.alb-parquet.note':
+    'scripts/alb-to-parquet.sh가 쓴 시간별 Parquet: <prefix>/<alb>/dt=YYYY-MM-DD/hour=HH/data.parquet. dt와 hour가 파티션 열이 됩니다. 대상이 이미 로드 밸런서 하나를 가리키면 "{alb}/"를 제거하세요.',
   'tpl.nlb.label': 'NLB 액세스 로그',
   'tpl.nlb.note': 'TLS 리스너 로그만 해당 (공백 구분, 자동 감지). 필요하면 시간 필드를 직접 선택하세요.',
   'tpl.cloudfront.label': 'CloudFront 로그',
@@ -438,7 +451,8 @@ export const ko: Messages = {
   'tpl.flowlogs.label': 'VPC Flow Logs',
   'tpl.flowlogs.note': '헤더가 있는 텍스트 (사용자 지정 형식도 가능). "start"(epoch 초)를 시간 필드로 사용합니다.',
   'tpl.flowlogs-parquet.label': 'VPC Flow Logs (Parquet, Hive 호환 접두사)',
-  'tpl.flowlogs-parquet.note': '"Hive 호환 S3 접두사"와 시간별 파티션으로 전송된 Parquet 플로우 로그. Hive 옵션이 없으면 레이아웃은 AWSLogs/{account}/vpcflowlogs/{region}/{yyyy}/{MM}/{dd}/{HH}/*.log.parquet입니다. "start"(epoch 초)가 시간 필드입니다.',
+  'tpl.flowlogs-parquet.note':
+    '"Hive 호환 S3 접두사"와 시간별 파티션으로 전송된 Parquet 플로우 로그. Hive 옵션이 없으면 레이아웃은 AWSLogs/{account}/vpcflowlogs/{region}/{yyyy}/{MM}/{dd}/{HH}/*.log.parquet입니다. "start"(epoch 초)가 시간 필드입니다.',
   'tpl.waf.label': 'WAF 로그 (S3 전송)',
   'tpl.waf.note': '요청당 한 줄의 JSON. "timestamp"(epoch 밀리초)가 시간 필드입니다. CloudFront 앞의 웹 ACL은 리전으로 "cloudfront"를 사용합니다.',
   'tpl.netfw.label': 'Network Firewall 로그',
@@ -446,11 +460,14 @@ export const ko: Messages = {
   'tpl.r53resolver.label': 'Route 53 Resolver 쿼리 로그',
   'tpl.r53resolver.note': 'DNS 쿼리당 한 줄의 JSON. "query_timestamp"가 시간 필드입니다.',
   'tpl.s3access.label': 'S3 서버 액세스 로그',
-  'tpl.s3access.note': '파티션 없는 레이아웃: <prefix>YYYY-MM-DD-HH-MM-SS-UniqueString. 날짜 기반 파티션은 <prefix>/{account}/{region}/{source_bucket}/{yyyy}/{MM}/{dd}/{yyyy}-{MM}-{dd}-{HH}-*를 사용하세요. "timestamp" 열이 파생됩니다.',
+  'tpl.s3access.note':
+    '파티션 없는 레이아웃: <prefix>YYYY-MM-DD-HH-MM-SS-UniqueString. 날짜 기반 파티션은 <prefix>/{account}/{region}/{source_bucket}/{yyyy}/{MM}/{dd}/{yyyy}-{MM}-{dd}-{HH}-*를 사용하세요. "timestamp" 열이 파생됩니다.',
   'tpl.firehose.label': 'Kinesis Data Firehose 전송 (기본 접두사)',
-  'tpl.firehose.note': 'Firehose가 사용하는 기본 YYYY/MM/DD/HH 접두사 (CloudWatch Logs 구독, EventBridge, Firehose를 통한 WAF 등). 레코드는 사이에 줄바꿈이 있든 없든 JSON으로 읽습니다. 시간 필드가 감지되지 않으면 직접 선택하세요.',
+  'tpl.firehose.note':
+    'Firehose가 사용하는 기본 YYYY/MM/DD/HH 접두사 (CloudWatch Logs 구독, EventBridge, Firehose를 통한 WAF 등). 레코드는 사이에 줄바꿈이 있든 없든 JSON으로 읽습니다. 시간 필드가 감지되지 않으면 직접 선택하세요.',
   'tpl.cwlexport.label': 'CloudWatch Logs의 S3 내보내기',
-  'tpl.cwlexport.note': '"Amazon S3로 데이터 내보내기"(create-export-task)로 생성된 파일: 로그 스트림당 폴더 하나, "timestamp message" 형식의 줄. 앞의 타임스탬프가 시간 필드가 되고 나머지는 "message"가 됩니다.',
+  'tpl.cwlexport.note':
+    '"Amazon S3로 데이터 내보내기"(create-export-task)로 생성된 파일: 로그 스트림당 폴더 하나, "timestamp message" 형식의 줄. 앞의 타임스탬프가 시간 필드가 되고 나머지는 "message"가 됩니다.',
   'tpl.ssm.label': 'SSM 세션 / 명령 로그',
   'tpl.ssm.note': 'Session Manager 기록과 Run Command의 stdout/stderr는 비구조적입니다. 각 줄이 한 행이 되고 파일 이름은 _file에 들어갑니다. 시간 필드 없음.',
 
@@ -487,5 +504,6 @@ export const ko: Messages = {
   'src.counting': '행 수 계산 중…',
   'src.tooManyObjects': '{bucket}/{prefix} 아래에 {max}개가 넘는 객체가 있습니다. 와일드카드 앞에 리터럴 접두사(예: 로드 밸런서 이름)를 추가하거나 시간 범위를 좁히세요',
   'src.tooManyPrefixes': '시간 범위가 너무 많은 접두사로 확장됩니다',
-  'src.warning.many': '{files}개 파일({mb} MB)이 이 시간 범위에 일치하며, 경고 임계값 {max}를 초과합니다. 연결 자체는 아무것도 읽지 않지만 텍스트 / gzip 파일은 전체를 하나씩 순서대로 가져오므로 이 범위의 첫 쿼리는 느립니다. 시간 범위를 좁히거나(일 단위보다 시간 단위) 넓은 범위는 scripts/alb-to-parquet.sh로 시간별 Parquet으로 변환하세요.',
+  'src.warning.many':
+    '{files}개 파일({mb} MB)이 이 시간 범위에 일치하며, 경고 임계값 {max}를 초과합니다. 연결 자체는 아무것도 읽지 않지만 텍스트 / gzip 파일은 전체를 하나씩 순서대로 가져오므로 이 범위의 첫 쿼리는 느립니다. 시간 범위를 좁히거나(일 단위보다 시간 단위) 넓은 범위는 scripts/alb-to-parquet.sh로 시간별 Parquet으로 변환하세요.',
 };

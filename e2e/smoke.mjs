@@ -161,7 +161,6 @@ await step('visualize', async () => {
   // breakdown by http.status
   await page.selectOption('.cfg-section:has-text("Break down by") select', 'http.status');
   await page.waitForTimeout(2000);
-  const legend = await page.locator('.vis-panel svg ~ div, .vis-panel [class*=legend]').count();
   await page.screenshot({ path: `${out}/06-visualize-breakdown.png` });
   // hover shows key / value; click filters by the breakdown value under the cursor
   const cbox = await page.locator('.vis-panel .chart-box').boundingBox();
@@ -170,7 +169,10 @@ await step('visualize', async () => {
   for (const f of [0.85, 0.8, 0.75, 0.7, 0.6, 0.5]) {
     await page.mouse.move(cbox.x + cbox.width * 0.5, cbox.y + cbox.height * f);
     await page.waitForTimeout(250);
-    tip = await page.locator('.chart-tip').textContent().catch(() => '');
+    tip = await page
+      .locator('.chart-tip')
+      .textContent()
+      .catch(() => '');
     if (/click to filter/.test(tip)) break;
   }
   console.log(`     tooltip: ${tip.replace(/\s+/g, ' ').slice(0, 100)}`);

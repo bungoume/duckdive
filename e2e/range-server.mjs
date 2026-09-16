@@ -82,7 +82,14 @@ const server = createServer((req, res) => {
   // ListObjectsV2 (path style)
   if (req.method === 'GET' && url.searchParams.get('list-type') === '2') {
     const bucket = url.pathname.replace(/^\/|\/$/g, '');
-    const xml = listObjectsV2(join(dir, bucket), bucket, url.searchParams.get('prefix') ?? '', url.searchParams.get('delimiter') ?? '', Number(url.searchParams.get('max-keys') ?? 1000), url.searchParams.get('continuation-token') ?? '');
+    const xml = listObjectsV2(
+      join(dir, bucket),
+      bucket,
+      url.searchParams.get('prefix') ?? '',
+      url.searchParams.get('delimiter') ?? '',
+      Number(url.searchParams.get('max-keys') ?? 1000),
+      url.searchParams.get('continuation-token') ?? '',
+    );
     requests++;
     if (req.headers.authorization && /^AWS4-HMAC-SHA256/.test(req.headers.authorization) && req.headers['x-amz-date']) signedRequests++;
     if (!xml) {
@@ -125,7 +132,21 @@ const server = createServer((req, res) => {
     return;
   }
   requests++;
-  if (process.env.LOG_HEADERS) console.log('REQ', req.method, req.url, JSON.stringify({ range: req.headers.range, origin: req.headers.origin, referer: req.headers.referer, dest: req.headers['sec-fetch-dest'], mode: req.headers['sec-fetch-mode'], site: req.headers['sec-fetch-site'], ua: (req.headers['user-agent'] || '').slice(0, 40) }));
+  if (process.env.LOG_HEADERS)
+    console.log(
+      'REQ',
+      req.method,
+      req.url,
+      JSON.stringify({
+        range: req.headers.range,
+        origin: req.headers.origin,
+        referer: req.headers.referer,
+        dest: req.headers['sec-fetch-dest'],
+        mode: req.headers['sec-fetch-mode'],
+        site: req.headers['sec-fetch-site'],
+        ua: (req.headers['user-agent'] || '').slice(0, 40),
+      }),
+    );
   if (req.headers.authorization && /^AWS4-HMAC-SHA256/.test(req.headers.authorization) && req.headers['x-amz-date']) signedRequests++;
   if (req.headers['x-amz-security-token']) tokenRequests++;
   if (req.method === 'HEAD') headRequests++;

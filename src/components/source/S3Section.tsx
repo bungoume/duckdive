@@ -5,7 +5,14 @@ import { isExtension } from '../../permissions';
 import type { AuthMode, SourceConfig } from '../../state';
 
 /** S3 connection settings: region, endpoint, URL style and how credentials are obtained. */
-export function S3Section(props: { cfg: SourceConfig; creds: AwsCredentials | null; onChange: (patch: Partial<SourceConfig>) => void; onS3: (patch: Partial<SourceConfig['s3']>) => void; onOidc: (patch: Partial<OidcConfig>) => void; onCreds: (c: AwsCredentials | null) => void }) {
+export function S3Section(props: {
+  cfg: SourceConfig;
+  creds: AwsCredentials | null;
+  onChange: (patch: Partial<SourceConfig>) => void;
+  onS3: (patch: Partial<SourceConfig['s3']>) => void;
+  onOidc: (patch: Partial<OidcConfig>) => void;
+  onCreds: (c: AwsCredentials | null) => void;
+}) {
   const { cfg } = props;
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -21,7 +28,9 @@ export function S3Section(props: { cfg: SourceConfig; creds: AwsCredentials | nu
     }
   };
   const expiresIn = props.creds ? Math.max(0, Math.round(secondsUntilExpiry(props.creds) / 60)) : 0;
-  const input = (value: string, onInput: (v: string) => void, extra: Record<string, unknown> = {}) => <input class="input" value={value} onInput={(e) => onInput((e.target as HTMLInputElement).value)} {...extra} />;
+  const input = (value: string, onInput: (v: string) => void, extra: Record<string, unknown> = {}) => (
+    <input class="input" value={value} onInput={(e) => onInput((e.target as HTMLInputElement).value)} {...extra} />
+  );
 
   return (
     <div style="margin-top:8px">
@@ -130,7 +139,11 @@ export function S3Section(props: { cfg: SourceConfig; creds: AwsCredentials | nu
               <span class="hint">{t('ds.oidc.notSignedIn', { ext: isExtension ? '' : t('ds.oidc.extOnly') })}</span>
             )}
           </div>
-          {authError && <div class="alert error" style="margin-top:8px">{authError}</div>}
+          {authError && (
+            <div class="alert error" style="margin-top:8px">
+              {authError}
+            </div>
+          )}
         </>
       )}
     </div>

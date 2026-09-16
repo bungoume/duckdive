@@ -209,7 +209,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
 
   const onTimeField = (name: string | null) => {
     if (!attached) return;
-    const f = name ? findField(attached.fields, name) ?? null : null;
+    const f = name ? (findField(attached.fields, name) ?? null) : null;
     setAttached({ ...attached, timeField: f });
     const cfg = { ...source, timeField: f?.name ?? null };
     setSource(cfg);
@@ -265,5 +265,25 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
     return () => clearTimeout(timer);
   }, [rangeKey]);
 
-  return { ready, initError, source, history, switchSeq, attached, attachError, attaching, attachProgress, largeConfirm, variables, creds, setCreds, ackedFiles, connect, switchSource, forget, cancelConnect, onTimeField };
+  return {
+    ready,
+    initError,
+    source,
+    history,
+    switchSeq,
+    attached,
+    attachError,
+    attaching,
+    attachProgress,
+    largeConfirm,
+    variables,
+    creds,
+    setCreds,
+    ackedFiles,
+    connect,
+    switchSource,
+    forget,
+    cancelConnect,
+    onTimeField,
+  };
 }

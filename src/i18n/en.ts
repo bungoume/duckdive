@@ -25,11 +25,13 @@ export const en = {
   'app.error.hostPermission': 'Host permission denied for: {origins}',
   'app.error.cancelled': 'Connection cancelled',
   'app.large.files': '{n} files',
-  'app.large.text': '{files}{bytes} match this pattern and time range (threshold {threshold}). Nothing has been read yet. Continuing creates the view over all of them; the first query then downloads what it needs. Narrow the time range, add a name prefix or a filter on a captured column, or continue.',
+  'app.large.text':
+    '{files}{bytes} match this pattern and time range (threshold {threshold}). Nothing has been read yet. Continuing creates the view over all of them; the first query then downloads what it needs. Narrow the time range, add a name prefix or a filter on a captured column, or continue.',
   'app.large.continue': 'Continue with {n} files',
   'app.gate.files': '{n} files',
   'app.gate.unknown': ' (size unknown for {n} of them)',
-  'app.gate.text': 'The next query opens {files} that have not been downloaded yet (threshold {threshold}), up to {bytes} to download{unknown}. Parquet reads only the needed parts; text / gzip files are read whole. Narrow the time range, or run it anyway (later queries reuse the cache).',
+  'app.gate.text':
+    'The next query opens {files} that have not been downloaded yet (threshold {threshold}), up to {bytes} to download{unknown}. Parquet reads only the needed parts; text / gzip files are read whole. Narrow the time range, or run it anyway (later queries reuse the cache).',
   'app.gate.runAnyway': 'Run anyway',
 
   // ---- settings page ----
@@ -43,7 +45,8 @@ export const en = {
   'settings.timeZone': 'Time zone',
   'settings.timeZone.hint': 'IANA name such as Asia/Tokyo or UTC; leave empty for the browser zone ({browser}). Applies to displayed dates, the absolute time picker and "now/d" rounding.',
   'settings.scaled': 'Scaled date format',
-  'settings.scaled.hint': 'JSON list of [ISO 8601 duration, pattern]: the pattern used for date-histogram tooltips and tables whose bucket is at least that long ("" = shorter than a second). Axis labels are chosen automatically to fit the visible range.',
+  'settings.scaled.hint':
+    'JSON list of [ISO 8601 duration, pattern]: the pattern used for date-histogram tooltips and tables whose bucket is at least that long ("" = shorter than a second). Axis labels are chosen automatically to fit the visible range.',
   'settings.dow': 'Day of week',
   'settings.dow.hint': 'First day of the week for "now/w" ranges and weekly buckets.',
   'settings.quickRanges': 'Time filter quick ranges',
@@ -87,11 +90,13 @@ export const en = {
   'ds.template.replace': 'Replace',
   'ds.template.keep': 'Keep current',
   'ds.urls.label': 'URLs or patterns, one per line (s3://, https://; lines starting with # are ignored)',
-  'ds.urls.hint': 's3:// patterns may use {star}, {q}, {dstar} and the date tokens {dates}, which are filled from the time picker (UTC) so only the partitions inside the selected range are listed and read. Any other {name} is a named wildcard: the matched text becomes a column (e.g. {example} gives an {alb} field you can search and filter on; an "is" filter on it also stops the other files from being read).',
+  'ds.urls.hint':
+    's3:// patterns may use {star}, {q}, {dstar} and the date tokens {dates}, which are filled from the time picker (UTC) so only the partitions inside the selected range are listed and read. Any other {name} is a named wildcard: the matched text becomes a column (e.g. {example} gives an {alb} field you can search and filter on; an "is" filter on it also stops the other files from being read).',
   'ds.vars.title': 'Pattern variables · {names}',
   'ds.vars.listed': '{n} files in the newest partition(s)',
   'ds.vars.selectAll': 'Select all values',
-  'ds.vars.hint': 'Each {name} in the pattern is a variable. Press "{button}": the newest partition is listed, the values found for {names} are shown here, and you choose which ones to read (at least one per variable). Nothing is read until then.',
+  'ds.vars.hint':
+    'Each {name} in the pattern is a variable. Press "{button}": the newest partition is listed, the values found for {names} are shown here, and you choose which ones to read (at least one per variable). Nothing is read until then.',
   'ds.vars.count': '{n} value(s) · {sel} selected',
   'ds.vars.all': 'All',
   'ds.vars.none': 'None',
@@ -99,7 +104,8 @@ export const en = {
   'ds.vars.missing': 'Select at least one value for: {names}',
   'ds.name': 'Name',
   'ds.maxFiles': 'Warn when more files than this match before connecting (default 1000)',
-  'ds.listingHint': 'Listing uses the literal text before the first wildcard as the S3 prefix, so put the load balancer name in the pattern when a day folder holds many ALBs. Files whose name carries a timestamp (…_20260909T0105Z_…) outside the time range are skipped automatically.',
+  'ds.listingHint':
+    'Listing uses the literal text before the first wildcard as the S3 prefix, so put the load balancer name in the pattern when a day folder holds many ALBs. Files whose name carries a timestamp (…_20260909T0105Z_…) outside the time range are skipped automatically.',
   'ds.s3.title': 'S3 endpoint',
   'ds.s3.region': 'Region',
   'ds.s3.endpoint': 'Endpoint (optional; AWS: s3.<region>.amazonaws.com, MinIO / R2: host or http://host:9000)',
@@ -111,12 +117,14 @@ export const en = {
   'ds.auth.static': 'Access key (secret kept for this browser session)',
   'ds.auth.none': 'None (public bucket)',
   'ds.key.title': 'Access key',
-  'ds.key.warn': 'The access key ID is saved with the source; the secret and the session token stay in memory for this browser session only and must be entered again after Chrome restarts. Prefer temporary credentials (session token) or the OIDC sign-in.',
+  'ds.key.warn':
+    'The access key ID is saved with the source; the secret and the session token stay in memory for this browser session only and must be entered again after Chrome restarts. Prefer temporary credentials (session token) or the OIDC sign-in.',
   'ds.key.id': 'Access key ID',
   'ds.key.secret': 'Secret access key',
   'ds.key.token': 'Session token (for temporary credentials)',
   'ds.oidc.title': 'OIDC sign-in → AWS STS',
-  'ds.oidc.intro': 'The browser signs in at your identity provider, then calls STS {api} directly. No long-lived key exists anywhere; temporary credentials live in memory (chrome.storage.session) and are refreshed automatically. Register this redirect URL at the identity provider: {url}',
+  'ds.oidc.intro':
+    'The browser signs in at your identity provider, then calls STS {api} directly. No long-lived key exists anywhere; temporary credentials live in memory (chrome.storage.session) and are refreshed automatically. Register this redirect URL at the identity provider: {url}',
   'ds.oidc.authUrl': 'Authorization endpoint',
   'ds.oidc.clientId': 'Client ID',
   'ds.oidc.scope': 'Scope',
@@ -147,25 +155,29 @@ export const en = {
   'ds.timeField.none': '(none – no time filtering)',
   'ds.connected.rangeDependent': 'This source uses date tokens: the file list is re-resolved whenever the time range changes. ',
   'ds.connected.captures': 'Columns captured from file names: {names} (filtering on them also prunes the file list).',
-  'ds.connected.large': 'The matched files total {mb} MB. Text / gzip files are fetched whole and one after another, so the first query over this range will be slow. Narrow the time range, or convert wide ranges to hourly Parquet (scripts/alb-to-parquet.sh).',
+  'ds.connected.large':
+    'The matched files total {mb} MB. Text / gzip files are fetched whole and one after another, so the first query over this range will be slow. Narrow the time range, or convert wide ranges to hourly Parquet (scripts/alb-to-parquet.sh).',
   'ds.connected.files': 'Files ({n})',
   'ds.connected.fieldsTitle': 'Fields',
   'ds.hosts.title': 'Granted hosts',
   'ds.hosts.hint': 'Hosts this extension is allowed to read from. AWS endpoints are allowed by default; any other host is requested when you connect.',
   'ds.hosts.revoke': 'Revoke',
   'ds.history.title': 'Recent sources',
-  'ds.history.hint': 'The last {n} S3 / HTTPS and demo sources that were connected, newest first. Choosing one loads its settings (chosen pattern values included; access-key secrets only while this browser session lasts) and connects; the header menu does the same from any page.',
+  'ds.history.hint':
+    'The last {n} S3 / HTTPS and demo sources that were connected, newest first. Choosing one loads its settings (chosen pattern values included; access-key secrets only while this browser session lasts) and connects; the header menu does the same from any page.',
   'ds.history.use': 'Connect',
   'ds.history.current': 'current',
   'ds.history.lastUsed': 'last used {time}',
 
   // ---- Local range cache panel ----
   'cache.title': 'Local range cache',
-  'cache.intro': 'Data that has been read once is kept on this machine, so repeated queries do not download it again. Only parts that were never read are fetched. The copy is discarded when the file changes in storage.',
+  'cache.intro':
+    'Data that has been read once is kept on this machine, so repeated queries do not download it again. Only parts that were never read are fetched. The copy is discarded when the file changes in storage.',
   'cache.opfsDisabled': '{error} – caching is disabled, every read goes to the origin.',
   'cache.enable': 'Enable range cache',
   'cache.repack': 'Re-pack concatenated gzip files at connect',
-  'cache.repack.title': 'AWS log delivery sometimes writes gzip files that cannot be read reliably as-is. When enabled, each .gz file is fetched once at connect time, fixed if needed, and kept in the cache.',
+  'cache.repack.title':
+    'AWS log delivery sometimes writes gzip files that cannot be read reliably as-is. When enabled, each .gz file is fetched once at connect time, fixed if needed, and kept in the cache.',
   'cache.chunkSize': 'Chunk size (new files)',
   'cache.session': 'This session',
   'cache.session.text': 'DuckDB read {total}: {fromCache} from disk ({ratio}%) · downloaded {downloaded} from origin in {misses} chunks · {hits} chunk hits · {passthrough} passthrough',
@@ -273,7 +285,8 @@ export const en = {
   'diag.finding': 'Finding the failing file…',
   'diag.hint': 'Bisects the attached files with count(*) queries and inspects the bytes of each culprit (about two full scans per culprit).',
   'diag.cancelled': 'Cancelled (the source was reconnected)',
-  'diag.allOk': 'All {n} file(s) read fine with count(*) just now. The failure is either transient (a bad answer from the network or the cache: see the request log under Data source → Local range cache) or specific to the failing query.',
+  'diag.allOk':
+    'All {n} file(s) read fine with count(*) just now. The failure is either transient (a bad answer from the network or the cache: see the request log under Data source → Local range cache) or specific to the failing query.',
   'diag.failing': '{n} failing file(s) found in {queries} queries{truncated}.',
   'diag.truncated': ' (stopped after the first few)',
   'diag.size': 'size',
@@ -346,7 +359,8 @@ export const en = {
   'flt.addButton': '+ Add filter',
   'flt.clearAll': 'Clear all',
   'flt.not': 'NOT ',
-  'flt.untrusted': 'This link carries {n} custom SQL filter(s) that were not written in this browser. They are disabled: open each one, check the SQL and enable it only if you trust the sender (a filter can read this extension\'s S3 credentials and reach the network).',
+  'flt.untrusted':
+    "This link carries {n} custom SQL filter(s) that were not written in this browser. They are disabled: open each one, check the SQL and enable it only if you trust the sender (a filter can read this extension's S3 credentials and reach the network).",
   'flt.menu.trust': 'Enable (I checked this SQL)',
   'flt.desc.between': '{from} to {to}',
 
@@ -430,7 +444,8 @@ export const en = {
   'tpl.alb.label': 'ALB access logs',
   'tpl.alb.note': 'account / region / alb become columns; filter on alb to read one load balancer only. Add your bucket prefix before AWSLogs if you configured one.',
   'tpl.alb-parquet.label': 'ALB access logs converted to Parquet (scripts/alb-to-parquet.sh)',
-  'tpl.alb-parquet.note': 'Hourly Parquet written by scripts/alb-to-parquet.sh: <prefix>/<alb>/dt=YYYY-MM-DD/hour=HH/data.parquet. dt and hour become partition columns; drop "{alb}/" if the destination already names one load balancer.',
+  'tpl.alb-parquet.note':
+    'Hourly Parquet written by scripts/alb-to-parquet.sh: <prefix>/<alb>/dt=YYYY-MM-DD/hour=HH/data.parquet. dt and hour become partition columns; drop "{alb}/" if the destination already names one load balancer.',
   'tpl.nlb.label': 'NLB access logs',
   'tpl.nlb.note': 'TLS listener logs only (space separated, auto-detected). Pick the time field manually if needed.',
   'tpl.cloudfront.label': 'CloudFront logs',
@@ -440,7 +455,8 @@ export const en = {
   'tpl.flowlogs.label': 'VPC Flow Logs',
   'tpl.flowlogs.note': 'Text with header (custom formats work too). "start" (epoch seconds) is used as the time field.',
   'tpl.flowlogs-parquet.label': 'VPC Flow Logs (Parquet, Hive-compatible prefixes)',
-  'tpl.flowlogs-parquet.note': 'Flow logs delivered as Parquet with "Hive-compatible S3 prefixes" and hourly partitions. Without the Hive option the layout is AWSLogs/{account}/vpcflowlogs/{region}/{yyyy}/{MM}/{dd}/{HH}/*.log.parquet. "start" (epoch seconds) is the time field.',
+  'tpl.flowlogs-parquet.note':
+    'Flow logs delivered as Parquet with "Hive-compatible S3 prefixes" and hourly partitions. Without the Hive option the layout is AWSLogs/{account}/vpcflowlogs/{region}/{yyyy}/{MM}/{dd}/{HH}/*.log.parquet. "start" (epoch seconds) is the time field.',
   'tpl.waf.label': 'WAF logs (S3 delivery)',
   'tpl.waf.note': 'JSON lines, one per request; "timestamp" (epoch milliseconds) is the time field. Web ACLs in front of CloudFront use "cloudfront" as the region.',
   'tpl.netfw.label': 'Network Firewall logs',
@@ -448,11 +464,14 @@ export const en = {
   'tpl.r53resolver.label': 'Route 53 Resolver query logs',
   'tpl.r53resolver.note': 'JSON lines, one per DNS query; "query_timestamp" is the time field.',
   'tpl.s3access.label': 'S3 server access logs',
-  'tpl.s3access.note': 'Non-partitioned layout: <prefix>YYYY-MM-DD-HH-MM-SS-UniqueString. For date-based partitioning use <prefix>/{account}/{region}/{source_bucket}/{yyyy}/{MM}/{dd}/{yyyy}-{MM}-{dd}-{HH}-*. A "timestamp" column is derived.',
+  'tpl.s3access.note':
+    'Non-partitioned layout: <prefix>YYYY-MM-DD-HH-MM-SS-UniqueString. For date-based partitioning use <prefix>/{account}/{region}/{source_bucket}/{yyyy}/{MM}/{dd}/{yyyy}-{MM}-{dd}-{HH}-*. A "timestamp" column is derived.',
   'tpl.firehose.label': 'Kinesis Data Firehose delivery (default prefix)',
-  'tpl.firehose.note': 'The default YYYY/MM/DD/HH prefix used by Firehose (CloudWatch Logs subscriptions, EventBridge, WAF via Firehose, …). Records are read as JSON, with or without newlines between them. Choose the time field by hand if it is not detected.',
+  'tpl.firehose.note':
+    'The default YYYY/MM/DD/HH prefix used by Firehose (CloudWatch Logs subscriptions, EventBridge, WAF via Firehose, …). Records are read as JSON, with or without newlines between them. Choose the time field by hand if it is not detected.',
   'tpl.cwlexport.label': 'CloudWatch Logs export to S3',
-  'tpl.cwlexport.note': 'Files written by "Export data to Amazon S3" (create-export-task): one folder per log stream, lines of "timestamp message". The leading timestamp becomes the time field, the rest is "message".',
+  'tpl.cwlexport.note':
+    'Files written by "Export data to Amazon S3" (create-export-task): one folder per log stream, lines of "timestamp message". The leading timestamp becomes the time field, the rest is "message".',
   'tpl.ssm.label': 'SSM session / command logs',
   'tpl.ssm.note': 'Session Manager transcripts and Run Command stdout/stderr are unstructured: every line becomes a row with its file name in _file. No time field.',
 
@@ -489,5 +508,6 @@ export const en = {
   'src.counting': 'Counting rows…',
   'src.tooManyObjects': 'More than {max} objects under {bucket}/{prefix}; add a literal prefix before the wildcard (e.g. the load balancer name) or narrow the time range',
   'src.tooManyPrefixes': 'Time range expands to too many prefixes',
-  'src.warning.many': '{files} files ({mb} MB) match this time range, above the warning threshold of {max}. Connecting reads nothing, but text / gzip files are fetched whole and one after another, so the first query over this range will be slow. Narrow the time range (hours rather than days), or convert wide ranges to hourly Parquet with scripts/alb-to-parquet.sh.',
+  'src.warning.many':
+    '{files} files ({mb} MB) match this time range, above the warning threshold of {max}. Connecting reads nothing, but text / gzip files are fetched whole and one after another, so the first query over this range will be slow. Narrow the time range (hours rather than days), or convert wide ranges to hourly Parquet with scripts/alb-to-parquet.sh.',
 } as const;

@@ -6,7 +6,21 @@ import { DataProtocol, exec, getDB, query } from './duck';
 import { CancelledError, throwIfAborted } from './net';
 import { originPattern } from './permissions';
 import { detectFormat, resolveFormat, type FormatDef } from './formats';
-import { DEFAULT_MAX_FILES, HAS_DATE_TOKEN, HAS_WILDCARD, captureRegex, discoverTokenValues, expandDateTokens, namedToGlob, namedTokens, parseS3Url, resolveS3Patterns, s3Target, signObjectGet, type TokenValue } from './s3list';
+import {
+  DEFAULT_MAX_FILES,
+  HAS_DATE_TOKEN,
+  HAS_WILDCARD,
+  captureRegex,
+  discoverTokenValues,
+  expandDateTokens,
+  namedToGlob,
+  namedTokens,
+  parseS3Url,
+  resolveS3Patterns,
+  s3Target,
+  signObjectGet,
+  type TokenValue,
+} from './s3list';
 
 export { detectFormat };
 import type { Field } from './fields';
@@ -107,7 +121,9 @@ export function s3HttpsUrl(url: string, s3: SourceConfig['s3']): string | null {
 export function requiredOrigins(cfg: SourceConfig): string[] {
   const out = new Set<string>();
   for (const raw of sourceUrls(cfg)) {
-    const u = namedToGlob(raw).replace(/\{(yyyy|yy|MM|dd|HH)\}/g, '0').replace(/[*?[\]]/g, 'x');
+    const u = namedToGlob(raw)
+      .replace(/\{(yyyy|yy|MM|dd|HH)\}/g, '0')
+      .replace(/[*?[\]]/g, 'x');
     const https = u.startsWith('s3://') ? s3HttpsUrl(u, cfg.s3) : u;
     const p = https ? originPattern(https) : null;
     if (p) out.add(p);
@@ -129,7 +145,7 @@ export async function applyS3(cfg: SourceConfig, creds: AwsCredentials | null = 
     try {
       await exec(`SET ${k}=${lit(v)}`);
     } catch (e) {
-      throw new Error(t('src.applyFailed', { key: k, error: String(e) }));
+      throw new Error(t('src.applyFailed', { key: k, error: String(e) }), { cause: e });
     }
   }
 }
@@ -141,17 +157,22 @@ export interface TimeWindow {
 
 /** Named tokens of the patterns that have no selected value yet. */
 export function unselectedTokens(cfg: SourceConfig): string[] {
-  return capturedColumns(cfg).filter((n) => !(cfg.tokenValues?.[n]?.length));
+  return capturedColumns(cfg).filter((n) => !cfg.tokenValues?.[n]?.length);
 }
 
 /** List the values the {name} tokens take (newest partitions only). */
-export async function discoverVariables(cfg: SourceConfig, creds: AwsCredentials | null, range: TimeWindow | null, opts: AttachOptions = {}): Promise<{ values: Record<string, TokenValue[]>; listedFiles: number }> {
+export async function discoverVariables(
+  cfg: SourceConfig,
+  creds: AwsCredentials | null,
+  range: TimeWindow | null,
+  opts: AttachOptions = {},
+): Promise<{ values: Record<string, TokenValue[]>; listedFiles: number }> {
   const lines = sourceUrls(cfg).filter((u) => u.startsWith('s3://') && namedTokens(u).length);
   if (!lines.length) return { values: {}, listedFiles: 0 };
   const placeholder = lines.find((u) => /<[a-z-]+>/i.test(u));
   if (placeholder) throw new Error(t('src.placeholder', { placeholder: /<[a-z-]+>/i.exec(placeholder)![0] }));
   if (lines.some((u) => HAS_DATE_TOKEN.test(u)) && !range) throw new Error(t('src.dateNeedsRange'));
-  return discoverTokenValues(lines, cfg.s3, cfg.authMode === 'none' ? null : creds ?? staticCreds(cfg), range, {
+  return discoverTokenValues(lines, cfg.s3, cfg.authMode === 'none' ? null : (creds ?? staticCreds(cfg)), range, {
     signal: opts.signal,
     onProgress: (done, total) => opts.onProgress?.(t('src.listingValues', { done, total }), 'list'),
   });
@@ -165,7 +186,13 @@ export function isRangeDependent(cfg: SourceConfig): boolean {
  * Turn the configured URL lines into concrete file URLs: date tokens are expanded over
  * the time window, s3:// globs are listed with ListObjectsV2 (duckdb-wasm cannot glob S3).
  */
-export async function resolveFiles(cfg: SourceConfig, creds: AwsCredentials | null, range: TimeWindow | null, valueFilters: ValueFilters = {}, opts: AttachOptions = {}): Promise<{ urls: string[]; sizes: (number | null)[]; seeds: SeedFile[]; patterns: number; skippedByTime: number; skippedByFilter: number; totalBytes: number | null; warning: string | null }> {
+export async function resolveFiles(
+  cfg: SourceConfig,
+  creds: AwsCredentials | null,
+  range: TimeWindow | null,
+  valueFilters: ValueFilters = {},
+  opts: AttachOptions = {},
+): Promise<{ urls: string[]; sizes: (number | null)[]; seeds: SeedFile[]; patterns: number; skippedByTime: number; skippedByFilter: number; totalBytes: number | null; warning: string | null }> {
   const lines = sourceUrls(cfg);
   const placeholder = lines.find((u) => /<[a-z-]+>/i.test(u));
   if (placeholder) {
@@ -194,7 +221,7 @@ export async function resolveFiles(cfg: SourceConfig, creds: AwsCredentials | nu
     const r = await resolveS3Patterns(
       s3Patterns,
       cfg.s3,
-      cfg.authMode === 'none' ? null : creds ?? staticCreds(cfg),
+      cfg.authMode === 'none' ? null : (creds ?? staticCreds(cfg)),
       range,
       cfg.maxFiles || undefined,
       valueFilters,
@@ -372,7 +399,9 @@ async function attachRemote(cfg: SourceConfig, creds: AwsCredentials | null, ran
   const skipped = notes.length ? ` (${notes.join('; ')})` : '';
   const size = totalBytes !== null ? `, ${(totalBytes / 1048576).toFixed(totalBytes < 10 * 1048576 ? 1 : 0)} MB` : '';
   const more = files.length > 1 ? ' …' : '';
-  const description = expanded ? t('src.description.matched', { n: files.length, size, patterns: lines.length, notes: skipped, first: files[0], more }) : t('src.description.urls', { n: files.length, first: files[0], more });
+  const description = expanded
+    ? t('src.description.matched', { n: files.length, size, patterns: lines.length, notes: skipped, first: files[0], more })
+    : t('src.description.urls', { n: files.length, first: files[0], more });
   return { description, files, fileSizes: resolved.sizes, totalBytes, warning };
 }
 
@@ -384,19 +413,27 @@ function pickTimeField(cfg: SourceConfig, fields: Field[], files: string[]): Fie
   }
   if (cfg.kind !== 'demo') {
     const pref = resolveFormat(cfg.format, files).timeField;
-    const f = (pref && findField(fields, pref)) || (cfg.format === 'ltsv' ? findField(fields, 'log.time') ?? findField(fields, 'log.timestamp') : null);
+    const f = (pref && findField(fields, pref)) || (cfg.format === 'ltsv' ? (findField(fields, 'log.time') ?? findField(fields, 'log.timestamp')) : null);
     if (f) return f;
   }
   const cands = fields.filter((f) => f.kind === 'date');
   return cands.find((f) => f.name === '@timestamp') ?? cands.find((f) => /timestamp|time|ts|date/i.test(f.name)) ?? cands[0] ?? fields.find(isTimeCandidate) ?? null;
 }
 
-export async function attachSource(cfg: SourceConfig, localFiles: File[] = [], creds: AwsCredentials | null = null, range: TimeWindow | null = null, valueFilters: ValueFilters = {}, opts: AttachOptions = {}): Promise<AttachedSource> {
+export async function attachSource(
+  cfg: SourceConfig,
+  localFiles: File[] = [],
+  creds: AwsCredentials | null = null,
+  range: TimeWindow | null = null,
+  valueFilters: ValueFilters = {},
+  opts: AttachOptions = {},
+): Promise<AttachedSource> {
   const progress: Progress = (m, phase) => {
     throwIfAborted(opts.signal);
     opts.onProgress?.(m, phase);
   };
-  const view = cfg.kind === 'demo' ? await attachDemo(progress) : cfg.kind === 'local' ? await attachLocal(cfg, localFiles, progress) : await attachRemote(cfg, creds, range, valueFilters, opts, progress);
+  const view =
+    cfg.kind === 'demo' ? await attachDemo(progress) : cfg.kind === 'local' ? await attachLocal(cfg, localFiles, progress) : await attachRemote(cfg, creds, range, valueFilters, opts, progress);
   progress(t('src.readingSchema'), 'db');
   const fields = await introspectFields(VIEW);
   const timeField = pickTimeField(cfg, fields, view.files);

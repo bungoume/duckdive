@@ -115,7 +115,11 @@ export function DataSource(props: {
                   </span>
                 </div>
               )}
-              {!pendingTemplate && templateId && TEMPLATES.find((x) => x.id === templateId) && <div class="hint" style="margin-top:6px">{templateNote(TEMPLATES.find((x) => x.id === templateId)!)}</div>}
+              {!pendingTemplate && templateId && TEMPLATES.find((x) => x.id === templateId) && (
+                <div class="hint" style="margin-top:6px">
+                  {templateNote(TEMPLATES.find((x) => x.id === templateId)!)}
+                </div>
+              )}
             </div>
             <div class="field-row">
               <label>{t('ds.urls.label')}</label>
@@ -123,14 +127,31 @@ export function DataSource(props: {
                 class="input"
                 value={cfg.urls}
                 onInput={(e) => set({ urls: (e.target as HTMLTextAreaElement).value, timeField: null, tokenValues: {} })}
-                placeholder={'s3://my-logs/AWSLogs/123456789012/elasticloadbalancing/ap-northeast-1/{yyyy}/{MM}/{dd}/*.log.gz\ns3://my-bucket/events/dt={yyyy}-{MM}-{dd}/*.parquet\nhttps://d1234.cloudfront.net/logs/2026-09-09.parquet'}
+                placeholder={
+                  's3://my-logs/AWSLogs/123456789012/elasticloadbalancing/ap-northeast-1/{yyyy}/{MM}/{dd}/*.log.gz\ns3://my-bucket/events/dt={yyyy}-{MM}-{dd}/*.parquet\nhttps://d1234.cloudfront.net/logs/2026-09-09.parquet'
+                }
               />
               <span class="hint">
-                {tx('ds.urls.hint', { star: <code>*</code>, q: <code>?</code>, dstar: <code>**</code>, dates: <code>{'{yyyy} {MM} {dd} {HH}'}</code>, name: <code>{'{name}'}</code>, example: <code>{'app.{alb}.*.log.gz'}</code>, alb: <code>alb</code> })}
+                {tx('ds.urls.hint', {
+                  star: <code>*</code>,
+                  q: <code>?</code>,
+                  dstar: <code>**</code>,
+                  dates: <code>{'{yyyy} {MM} {dd} {HH}'}</code>,
+                  name: <code>{'{name}'}</code>,
+                  example: <code>{'app.{alb}.*.log.gz'}</code>,
+                  alb: <code>alb</code>,
+                })}
               </span>
             </div>
             {tokens.length > 0 && (
-              <TokenValues tokens={tokens} vars={vars} selected={cfg.tokenValues ?? {}} missing={missing} onSelect={setTokenValues} onSelectAll={() => set({ tokenValues: Object.fromEntries(tokens.map((n) => [n, (vars?.values[n] ?? []).map((v) => v.value)])) })} />
+              <TokenValues
+                tokens={tokens}
+                vars={vars}
+                selected={cfg.tokenValues ?? {}}
+                missing={missing}
+                onSelect={setTokenValues}
+                onSelectAll={() => set({ tokenValues: Object.fromEntries(tokens.map((n) => [n, (vars?.values[n] ?? []).map((v) => v.value)])) })}
+              />
             )}
             <div class="grid2">
               <div class="field-row">
@@ -150,9 +171,7 @@ export function DataSource(props: {
                 <input class="input" type="number" min={1} value={cfg.maxFiles || ''} placeholder="1000" onInput={(e) => set({ maxFiles: Number((e.target as HTMLInputElement).value) || 0 })} />
               </div>
             </div>
-            <span class="hint">
-              {t('ds.listingHint')}
-            </span>
+            <span class="hint">{t('ds.listingHint')}</span>
             {usesS3 && <S3Section cfg={cfg} creds={props.creds} onChange={set} onS3={setS3} onOidc={setOidc} onCreds={props.onCreds} />}
             {isExtension && origins.length > 0 && (
               <div class={'alert ' + (needPerm ? 'info' : 'ok')} style="margin-top:8px">
@@ -200,7 +219,9 @@ export function DataSource(props: {
       </div>
 
       {props.attached && <ConnectedCard attached={props.attached} onTimeField={props.onTimeField} />}
-      {props.history.length > 0 && <HistoryCard history={props.history} currentKey={props.attached ? sourceKey(props.config) : null} busy={props.busy} onUse={props.onUseHistory} onForget={props.onForgetHistory} />}
+      {props.history.length > 0 && (
+        <HistoryCard history={props.history} currentKey={props.attached ? sourceKey(props.config) : null} busy={props.busy} onUse={props.onUseHistory} onForget={props.onForgetHistory} />
+      )}
       <HostsCard refreshKey={props.attached} />
       <CachePanel />
     </div>

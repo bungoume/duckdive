@@ -14,7 +14,7 @@ export const fr: Messages = {
   'app.status.noSource': 'Aucune source de données',
   'app.status.sourceFallback': 'source',
   'app.failedToStart': 'Échec du démarrage : {error}',
-  'app.note.queued': " (en attente derrière la requête en cours ; les étapes DuckDB ne peuvent pas être interrompues)",
+  'app.note.queued': ' (en attente derrière la requête en cours ; les étapes DuckDB ne peuvent pas être interrompues)',
   'app.note.inDb': ' (dans DuckDB ; ne peut pas être interrompu)',
   'app.progress.signingIn': 'Connexion en cours…',
   'app.progress.refreshingCreds': 'Renouvellement des identifiants…',
@@ -23,11 +23,13 @@ export const fr: Messages = {
   'app.error.hostPermission': 'Permission refusée pour les hôtes : {origins}',
   'app.error.cancelled': 'Connexion annulée',
   'app.large.files': '{n} fichiers',
-  'app.large.text': "{files}{bytes} correspondent à ce motif et à cette plage de temps (seuil {threshold}). Rien n'a encore été lu. Continuer crée la vue sur l'ensemble de ces fichiers ; la première requête télécharge ensuite ce dont elle a besoin. Réduisez la plage de temps, ajoutez un préfixe de nom ou un filtre sur une colonne capturée, ou continuez.",
+  'app.large.text':
+    "{files}{bytes} correspondent à ce motif et à cette plage de temps (seuil {threshold}). Rien n'a encore été lu. Continuer crée la vue sur l'ensemble de ces fichiers ; la première requête télécharge ensuite ce dont elle a besoin. Réduisez la plage de temps, ajoutez un préfixe de nom ou un filtre sur une colonne capturée, ou continuez.",
   'app.large.continue': 'Continuer avec {n} fichiers',
   'app.gate.files': '{n} fichiers',
   'app.gate.unknown': " (taille inconnue pour {n} d'entre eux)",
-  'app.gate.text': "La prochaine requête ouvre {files} qui n'ont pas encore été téléchargés (seuil {threshold}), soit jusqu'à {bytes} à télécharger{unknown}. Parquet ne lit que les parties nécessaires ; les fichiers texte / gzip sont lus en entier. Réduisez la plage de temps, ou exécutez quand même (les requêtes suivantes réutilisent le cache).",
+  'app.gate.text':
+    "La prochaine requête ouvre {files} qui n'ont pas encore été téléchargés (seuil {threshold}), soit jusqu'à {bytes} à télécharger{unknown}. Parquet ne lit que les parties nécessaires ; les fichiers texte / gzip sont lus en entier. Réduisez la plage de temps, ou exécutez quand même (les requêtes suivantes réutilisent le cache).",
   'app.gate.runAnyway': 'Exécuter quand même',
 
   // ---- settings page ----
@@ -36,12 +38,15 @@ export const fr: Messages = {
   'settings.lang.hint': "S'applique immédiatement à toute l'interface. Le choix est conservé dans ce navigateur ; une nouvelle installation suit la langue de Chrome.",
   'settings.section.time': 'Dates et heures',
   'settings.dateFormat': 'Format de date',
-  'settings.dateFormat.hint': 'Motif de toutes les dates affichées : YYYY MM DD HH mm ss SSS, ddd / dddd (jour de la semaine), MMM / MMMM (nom du mois), A (AM/PM), Z (décalage), [texte] pour un littéral.',
+  'settings.dateFormat.hint':
+    'Motif de toutes les dates affichées : YYYY MM DD HH mm ss SSS, ddd / dddd (jour de la semaine), MMM / MMMM (nom du mois), A (AM/PM), Z (décalage), [texte] pour un littéral.',
   'settings.preview': 'Aperçu : {value}',
   'settings.timeZone': 'Fuseau horaire',
-  'settings.timeZone.hint': "Nom IANA tel que Europe/Paris ou UTC ; laissez vide pour le fuseau du navigateur ({browser}). S'applique aux dates affichées, au sélecteur de temps absolu et à l'arrondi de « now/d ».",
+  'settings.timeZone.hint':
+    "Nom IANA tel que Europe/Paris ou UTC ; laissez vide pour le fuseau du navigateur ({browser}). S'applique aux dates affichées, au sélecteur de temps absolu et à l'arrondi de « now/d ».",
   'settings.scaled': 'Format de date par échelle',
-  'settings.scaled.hint': 'Liste JSON de [durée ISO 8601, motif] : le motif utilisé pour les infobulles et tableaux des histogrammes de dates dont le compartiment est au moins aussi long ("" = moins d\'une seconde). Les étiquettes d\'axe sont choisies automatiquement selon la plage affichée.',
+  'settings.scaled.hint':
+    'Liste JSON de [durée ISO 8601, motif] : le motif utilisé pour les infobulles et tableaux des histogrammes de dates dont le compartiment est au moins aussi long ("" = moins d\'une seconde). Les étiquettes d\'axe sont choisies automatiquement selon la plage affichée.',
   'settings.dow': 'Jour de la semaine',
   'settings.dow.hint': 'Premier jour de la semaine pour les plages « now/w » et les compartiments hebdomadaires.',
   'settings.quickRanges': 'Plages rapides du filtre temporel',
@@ -81,15 +86,17 @@ export const fr: Messages = {
   'ds.template': 'Modèle',
   'ds.template.choose': 'Choisir une famille de journaux AWS…',
   'ds.template.hint': 'Remplit le motif et le format ci-dessous ; remplacez ensuite <bucket> / <prefix>.',
-  'ds.template.confirm': 'Appliquer « {label} » remplace le motif d\'URL et le format actuels. Continuer ?',
+  'ds.template.confirm': "Appliquer « {label} » remplace le motif d'URL et le format actuels. Continuer ?",
   'ds.template.replace': 'Remplacer',
   'ds.template.keep': "Conserver l'actuel",
   'ds.urls.label': 'URLs ou motifs, un par ligne (s3://, https:// ; les lignes commençant par # sont ignorées)',
-  'ds.urls.hint': "Les motifs s3:// peuvent utiliser {star}, {q}, {dstar} et les jetons de date {dates}, remplis depuis le sélecteur de temps (UTC) afin que seules les partitions de la plage sélectionnée soient listées et lues. Tout autre {name} est un joker nommé : le texte correspondant devient une colonne (par ex. {example} donne un champ {alb} sur lequel vous pouvez chercher et filtrer ; un filtre « is » dessus empêche aussi la lecture des autres fichiers).",
+  'ds.urls.hint':
+    'Les motifs s3:// peuvent utiliser {star}, {q}, {dstar} et les jetons de date {dates}, remplis depuis le sélecteur de temps (UTC) afin que seules les partitions de la plage sélectionnée soient listées et lues. Tout autre {name} est un joker nommé : le texte correspondant devient une colonne (par ex. {example} donne un champ {alb} sur lequel vous pouvez chercher et filtrer ; un filtre « is » dessus empêche aussi la lecture des autres fichiers).',
   'ds.vars.title': 'Variables du motif · {names}',
   'ds.vars.listed': '{n} fichiers dans la ou les partitions les plus récentes',
   'ds.vars.selectAll': 'Sélectionner toutes les valeurs',
-  'ds.vars.hint': "Chaque {name} du motif est une variable. Appuyez sur « {button} » : la partition la plus récente est listée, les valeurs trouvées pour {names} s'affichent ici, et vous choisissez lesquelles lire (au moins une par variable). Rien n'est lu avant cela.",
+  'ds.vars.hint':
+    "Chaque {name} du motif est une variable. Appuyez sur « {button} » : la partition la plus récente est listée, les valeurs trouvées pour {names} s'affichent ici, et vous choisissez lesquelles lire (au moins une par variable). Rien n'est lu avant cela.",
   'ds.vars.count': '{n} valeur(s) · {sel} sélectionnée(s)',
   'ds.vars.all': 'Toutes',
   'ds.vars.none': 'Aucune',
@@ -97,7 +104,8 @@ export const fr: Messages = {
   'ds.vars.missing': 'Sélectionnez au moins une valeur pour : {names}',
   'ds.name': 'Nom',
   'ds.maxFiles': 'Avertir avant la connexion si plus de fichiers que ceci correspondent (1000 par défaut)',
-  'ds.listingHint': "Le listage utilise le texte littéral avant le premier joker comme préfixe S3 ; indiquez donc le nom du load balancer dans le motif quand un dossier journalier contient de nombreux ALB. Les fichiers dont le nom porte un horodatage (…_20260909T0105Z_…) hors de la plage de temps sont ignorés automatiquement.",
+  'ds.listingHint':
+    'Le listage utilise le texte littéral avant le premier joker comme préfixe S3 ; indiquez donc le nom du load balancer dans le motif quand un dossier journalier contient de nombreux ALB. Les fichiers dont le nom porte un horodatage (…_20260909T0105Z_…) hors de la plage de temps sont ignorés automatiquement.',
   'ds.s3.title': 'Point de terminaison S3',
   'ds.s3.region': 'Région',
   'ds.s3.endpoint': 'Point de terminaison (facultatif ; AWS : s3.<region>.amazonaws.com, MinIO / R2 : hôte ou http://host:9000)',
@@ -109,12 +117,14 @@ export const fr: Messages = {
   'ds.auth.static': "Clé d'accès (secret conservé pour cette session du navigateur)",
   'ds.auth.none': 'Aucune (bucket public)',
   'ds.key.title': "Clé d'accès",
-  'ds.key.warn': "L'identifiant de la clé d'accès est enregistré avec la source ; le secret et le jeton de session restent en mémoire pour cette session du navigateur seulement et doivent être saisis à nouveau après un redémarrage de Chrome. Préférez des identifiants temporaires (jeton de session) ou la connexion OIDC.",
+  'ds.key.warn':
+    "L'identifiant de la clé d'accès est enregistré avec la source ; le secret et le jeton de session restent en mémoire pour cette session du navigateur seulement et doivent être saisis à nouveau après un redémarrage de Chrome. Préférez des identifiants temporaires (jeton de session) ou la connexion OIDC.",
   'ds.key.id': "ID de clé d'accès",
   'ds.key.secret': "Clé d'accès secrète",
   'ds.key.token': 'Jeton de session (pour les identifiants temporaires)',
   'ds.oidc.title': 'Connexion OIDC → AWS STS',
-  'ds.oidc.intro': "Le navigateur se connecte auprès de votre fournisseur d'identité, puis appelle directement STS {api}. Aucune clé de longue durée n'existe nulle part ; les identifiants temporaires restent en mémoire (chrome.storage.session) et sont renouvelés automatiquement. Enregistrez cette URL de redirection chez le fournisseur d'identité : {url}",
+  'ds.oidc.intro':
+    "Le navigateur se connecte auprès de votre fournisseur d'identité, puis appelle directement STS {api}. Aucune clé de longue durée n'existe nulle part ; les identifiants temporaires restent en mémoire (chrome.storage.session) et sont renouvelés automatiquement. Enregistrez cette URL de redirection chez le fournisseur d'identité : {url}",
   'ds.oidc.authUrl': "Point de terminaison d'autorisation",
   'ds.oidc.clientId': 'ID client',
   'ds.oidc.scope': 'Scope',
@@ -133,7 +143,8 @@ export const fr: Messages = {
   'ds.perm.granted': 'Accès accordé pour : ',
   'ds.local.files': 'Fichiers',
   'ds.local.hint': "Les fichiers sont lus sur place via l'API File du navigateur ; ils ne sont jamais téléversés.",
-  'ds.demo.hint': "Une table synthétique de journaux d'accès (structs host/http/geo, liste tags, colonne JSON extra) est générée dans DuckDB pour que vous puissiez essayer chaque fonctionnalité sans aucun stockage.",
+  'ds.demo.hint':
+    "Une table synthétique de journaux d'accès (structs host/http/geo, liste tags, colonne JSON extra) est générée dans DuckDB pour que vous puissiez essayer chaque fonctionnalité sans aucun stockage.",
   'ds.connect': 'Connecter',
   'ds.connecting': 'Connexion…',
   'ds.listAndConnect': 'Lister les valeurs et connecter',
@@ -145,28 +156,33 @@ export const fr: Messages = {
   'ds.timeField.none': '(aucun – pas de filtrage temporel)',
   'ds.connected.rangeDependent': 'Cette source utilise des jetons de date : la liste de fichiers est recalculée à chaque changement de plage de temps. ',
   'ds.connected.captures': 'Colonnes capturées depuis les noms de fichiers : {names} (filtrer dessus réduit aussi la liste de fichiers).',
-  'ds.connected.large': "Les fichiers correspondants totalisent {mb} Mo. Les fichiers texte / gzip sont récupérés en entier et l'un après l'autre, donc la première requête sur cette plage sera lente. Réduisez la plage de temps, ou convertissez les plages larges en Parquet horaire (scripts/alb-to-parquet.sh).",
+  'ds.connected.large':
+    "Les fichiers correspondants totalisent {mb} Mo. Les fichiers texte / gzip sont récupérés en entier et l'un après l'autre, donc la première requête sur cette plage sera lente. Réduisez la plage de temps, ou convertissez les plages larges en Parquet horaire (scripts/alb-to-parquet.sh).",
   'ds.connected.files': 'Fichiers ({n})',
   'ds.connected.fieldsTitle': 'Champs',
   'ds.hosts.title': 'Hôtes autorisés',
-  'ds.hosts.hint': "Hôtes depuis lesquels cette extension est autorisée à lire. Les points de terminaison AWS sont autorisés par défaut ; tout autre hôte est demandé lors de la connexion.",
+  'ds.hosts.hint': 'Hôtes depuis lesquels cette extension est autorisée à lire. Les points de terminaison AWS sont autorisés par défaut ; tout autre hôte est demandé lors de la connexion.',
   'ds.hosts.revoke': 'Révoquer',
   'ds.history.title': 'Sources récentes',
-  'ds.history.hint': "Les {n} dernières sources S3 / HTTPS et démo connectées, la plus récente en premier. En choisir une charge ses réglages (valeurs de variables comprises ; les secrets des clés seulement pendant cette session du navigateur) et connecte ; le menu de l'en-tête fait de même depuis n'importe quelle page.",
+  'ds.history.hint':
+    "Les {n} dernières sources S3 / HTTPS et démo connectées, la plus récente en premier. En choisir une charge ses réglages (valeurs de variables comprises ; les secrets des clés seulement pendant cette session du navigateur) et connecte ; le menu de l'en-tête fait de même depuis n'importe quelle page.",
   'ds.history.use': 'Connecter',
   'ds.history.current': 'actuelle',
   'ds.history.lastUsed': 'dernière utilisation {time}',
 
   // ---- Local range cache panel ----
   'cache.title': 'Cache local de plages',
-  'cache.intro': "Les données lues une fois sont conservées sur cette machine, de sorte que les requêtes répétées ne les téléchargent plus. Seules les parties jamais lues sont récupérées. La copie est supprimée quand le fichier change dans le stockage.",
+  'cache.intro':
+    'Les données lues une fois sont conservées sur cette machine, de sorte que les requêtes répétées ne les téléchargent plus. Seules les parties jamais lues sont récupérées. La copie est supprimée quand le fichier change dans le stockage.',
   'cache.opfsDisabled': "{error} – le cache est désactivé, chaque lecture va à l'origine.",
   'cache.enable': 'Activer le cache de plages',
   'cache.repack': 'Ré-empaqueter les fichiers gzip concaténés à la connexion',
-  'cache.repack.title': "La livraison de journaux AWS écrit parfois des fichiers gzip qui ne peuvent pas être lus de manière fiable tels quels. Quand cette option est activée, chaque fichier .gz est récupéré une fois à la connexion, corrigé si nécessaire, et conservé dans le cache.",
+  'cache.repack.title':
+    'La livraison de journaux AWS écrit parfois des fichiers gzip qui ne peuvent pas être lus de manière fiable tels quels. Quand cette option est activée, chaque fichier .gz est récupéré une fois à la connexion, corrigé si nécessaire, et conservé dans le cache.',
   'cache.chunkSize': 'Taille de bloc (nouveaux fichiers)',
   'cache.session': 'Cette session',
-  'cache.session.text': "DuckDB a lu {total} : {fromCache} depuis le disque ({ratio}%) · {downloaded} téléchargés depuis l'origine en {misses} blocs · {hits} blocs en cache · {passthrough} passthrough",
+  'cache.session.text':
+    "DuckDB a lu {total} : {fromCache} depuis le disque ({ratio}%) · {downloaded} téléchargés depuis l'origine en {misses} blocs · {hits} blocs en cache · {passthrough} passthrough",
   'cache.storage': 'Stockage',
   'cache.storage.text': '{used} utilisés sur un quota de {quota} · {mode}',
   'cache.storage.persistent': 'persistant',
@@ -194,7 +210,8 @@ export const fr: Messages = {
   'disc.empty.title': 'Aucun résultat ne correspond à vos critères de recherche',
   'disc.empty.text': 'Élargissez la plage de temps ou ajustez la requête et les filtres.',
   'disc.loadMore': 'Charger plus ({shown} sur {total})',
-  'disc.cacheHint': "{error}\n\nUtilisez « {button} » ci-dessous pour localiser et inspecter le fichier que DuckDB rejette. Si le cache est suspecté : Source de données → Cache local de plages → « {clear} » ou décochez « {enable} ».",
+  'disc.cacheHint':
+    '{error}\n\nUtilisez « {button} » ci-dessous pour localiser et inspecter le fichier que DuckDB rejette. Si le cache est suspecté : Source de données → Cache local de plages → « {clear} » ou décochez « {enable} ».',
 
   // ---- Visualize page ----
   'vis.chart.area': 'Aires',
@@ -271,7 +288,8 @@ export const fr: Messages = {
   'diag.finding': 'Recherche du fichier défaillant…',
   'diag.hint': 'Bissecte les fichiers attachés avec des requêtes count(*) et inspecte les octets de chaque coupable (environ deux lectures complètes par coupable).',
   'diag.cancelled': 'Annulé (la source a été reconnectée)',
-  'diag.allOk': "Les {n} fichier(s) viennent d'être lus sans erreur avec count(*). L'échec est soit transitoire (mauvaise réponse du réseau ou du cache : voir le journal des requêtes sous Source de données → Cache local de plages), soit propre à la requête défaillante.",
+  'diag.allOk':
+    "Les {n} fichier(s) viennent d'être lus sans erreur avec count(*). L'échec est soit transitoire (mauvaise réponse du réseau ou du cache : voir le journal des requêtes sous Source de données → Cache local de plages), soit propre à la requête défaillante.",
   'diag.failing': '{n} fichier(s) défaillant(s) trouvé(s) en {queries} requêtes{truncated}.',
   'diag.truncated': ' (arrêt après les premiers)',
   'diag.size': 'taille',
@@ -344,7 +362,8 @@ export const fr: Messages = {
   'flt.addButton': '+ Ajouter un filtre',
   'flt.clearAll': 'Tout effacer',
   'flt.not': 'SAUF ',
-  'flt.untrusted': 'Ce lien contient {n} filtre(s) SQL personnalisé(s) qui n\'ont pas été écrits dans ce navigateur. Ils sont désactivés : ouvrez chacun d\'eux, vérifiez le SQL et ne l\'activez que si vous faites confiance à l\'expéditeur (un filtre peut lire les identifiants S3 de cette extension et accéder au réseau).',
+  'flt.untrusted':
+    "Ce lien contient {n} filtre(s) SQL personnalisé(s) qui n'ont pas été écrits dans ce navigateur. Ils sont désactivés : ouvrez chacun d'eux, vérifiez le SQL et ne l'activez que si vous faites confiance à l'expéditeur (un filtre peut lire les identifiants S3 de cette extension et accéder au réseau).",
   'flt.menu.trust': 'Activer (SQL vérifié)',
   'flt.desc.between': '{from} à {to}',
 
@@ -363,7 +382,8 @@ export const fr: Messages = {
   'q.help.exists': 'Le champ existe (aussi _exists_:extra.user_id)',
   'q.help.not': 'Négation. +terme : obligatoire',
   'q.help.bool': 'Opérateurs booléens AND, OR, NOT (en majuscules), &&, ||, !. Les termes adjacents sont combinés par OR.',
-  'q.helpNote': 'Les champs struct / JSON imbriqués utilisent des chemins pointés (geo.country, extra.user_id). Échappez les caractères spéciaux avec \\ (path:\\/api\\/v1). Appuyez sur {enter} pour exécuter.',
+  'q.helpNote':
+    'Les champs struct / JSON imbriqués utilisent des chemins pointés (geo.country, extra.user_id). Échappez les caractères spéciaux avec \\ (path:\\/api\\/v1). Appuyez sur {enter} pour exécuter.',
   'q.running': 'Exécution…',
   'q.refresh': 'Actualiser',
 
@@ -411,7 +431,7 @@ export const fr: Messages = {
   'metric.of': '{agg} de {field}',
 
   // ---- file formats ----
-  'fmt.auto': 'Auto (selon le chemin / l\'extension)',
+  'fmt.auto': "Auto (selon le chemin / l'extension)",
   'fmt.parquet': 'Parquet',
   'fmt.csv': 'CSV / TSV / texte (détection automatique)',
   'fmt.json': 'JSON / NDJSON',
@@ -428,17 +448,21 @@ export const fr: Messages = {
   'tpl.alb.label': "Journaux d'accès ALB",
   'tpl.alb.note': "account / region / alb deviennent des colonnes ; filtrez sur alb pour ne lire qu'un seul load balancer. Ajoutez votre préfixe de bucket avant AWSLogs si vous en avez configuré un.",
   'tpl.alb-parquet.label': "Journaux d'accès ALB convertis en Parquet (scripts/alb-to-parquet.sh)",
-  'tpl.alb-parquet.note': 'Parquet horaire écrit par scripts/alb-to-parquet.sh : <prefix>/<alb>/dt=YYYY-MM-DD/hour=HH/data.parquet. dt et hour deviennent des colonnes de partition ; supprimez « {alb}/ » si la destination nomme déjà un seul load balancer.',
+  'tpl.alb-parquet.note':
+    'Parquet horaire écrit par scripts/alb-to-parquet.sh : <prefix>/<alb>/dt=YYYY-MM-DD/hour=HH/data.parquet. dt et hour deviennent des colonnes de partition ; supprimez « {alb}/ » si la destination nomme déjà un seul load balancer.',
   'tpl.nlb.label': "Journaux d'accès NLB",
   'tpl.nlb.note': 'Journaux des écouteurs TLS uniquement (séparés par des espaces, détection automatique). Choisissez le champ temporel manuellement si nécessaire.',
   'tpl.cloudfront.label': 'Journaux CloudFront',
-  'tpl.cloudfront.note': 'Journaux standard hérités (TSV avec en-tête #Fields). Supprimez « <prefix>/ » si les journaux sont à la racine du bucket. Une colonne « timestamp » est dérivée de date + time.',
+  'tpl.cloudfront.note':
+    'Journaux standard hérités (TSV avec en-tête #Fields). Supprimez « <prefix>/ » si les journaux sont à la racine du bucket. Une colonne « timestamp » est dérivée de date + time.',
   'tpl.cloudtrail.label': 'CloudTrail',
-  'tpl.cloudtrail.note': "Une ligne par Record (eventTime, eventSource, eventName, userIdentity, requestParameters, …). Pour les trails d'organisation, ajoutez l'id de l'organisation : AWSLogs/o-xxxx/{account}/…",
+  'tpl.cloudtrail.note':
+    "Une ligne par Record (eventTime, eventSource, eventName, userIdentity, requestParameters, …). Pour les trails d'organisation, ajoutez l'id de l'organisation : AWSLogs/o-xxxx/{account}/…",
   'tpl.flowlogs.label': 'VPC Flow Logs',
   'tpl.flowlogs.note': 'Texte avec en-tête (les formats personnalisés fonctionnent aussi). « start » (secondes epoch) est utilisé comme champ temporel.',
   'tpl.flowlogs-parquet.label': 'VPC Flow Logs (Parquet, préfixes compatibles Hive)',
-  'tpl.flowlogs-parquet.note': "Flow logs livrés en Parquet avec « préfixes S3 compatibles Hive » et partitions horaires. Sans l'option Hive, la disposition est AWSLogs/{account}/vpcflowlogs/{region}/{yyyy}/{MM}/{dd}/{HH}/*.log.parquet. « start » (secondes epoch) est le champ temporel.",
+  'tpl.flowlogs-parquet.note':
+    "Flow logs livrés en Parquet avec « préfixes S3 compatibles Hive » et partitions horaires. Sans l'option Hive, la disposition est AWSLogs/{account}/vpcflowlogs/{region}/{yyyy}/{MM}/{dd}/{HH}/*.log.parquet. « start » (secondes epoch) est le champ temporel.",
   'tpl.waf.label': 'Journaux WAF (livraison S3)',
   'tpl.waf.note': 'Lignes JSON, une par requête ; « timestamp » (millisecondes epoch) est le champ temporel. Les Web ACL devant CloudFront utilisent « cloudfront » comme région.',
   'tpl.netfw.label': 'Journaux Network Firewall',
@@ -446,13 +470,17 @@ export const fr: Messages = {
   'tpl.r53resolver.label': 'Journaux de requêtes Route 53 Resolver',
   'tpl.r53resolver.note': 'Lignes JSON, une par requête DNS ; « query_timestamp » est le champ temporel.',
   'tpl.s3access.label': "Journaux d'accès serveur S3",
-  'tpl.s3access.note': 'Disposition non partitionnée : <prefix>YYYY-MM-DD-HH-MM-SS-UniqueString. Pour un partitionnement par date, utilisez <prefix>/{account}/{region}/{source_bucket}/{yyyy}/{MM}/{dd}/{yyyy}-{MM}-{dd}-{HH}-*. Une colonne « timestamp » est dérivée.',
+  'tpl.s3access.note':
+    'Disposition non partitionnée : <prefix>YYYY-MM-DD-HH-MM-SS-UniqueString. Pour un partitionnement par date, utilisez <prefix>/{account}/{region}/{source_bucket}/{yyyy}/{MM}/{dd}/{yyyy}-{MM}-{dd}-{HH}-*. Une colonne « timestamp » est dérivée.',
   'tpl.firehose.label': 'Livraison Kinesis Data Firehose (préfixe par défaut)',
-  'tpl.firehose.note': "Le préfixe YYYY/MM/DD/HH par défaut utilisé par Firehose (abonnements CloudWatch Logs, EventBridge, WAF via Firehose, …). Les enregistrements sont lus en JSON, avec ou sans sauts de ligne entre eux. Choisissez le champ temporel à la main s'il n'est pas détecté.",
+  'tpl.firehose.note':
+    "Le préfixe YYYY/MM/DD/HH par défaut utilisé par Firehose (abonnements CloudWatch Logs, EventBridge, WAF via Firehose, …). Les enregistrements sont lus en JSON, avec ou sans sauts de ligne entre eux. Choisissez le champ temporel à la main s'il n'est pas détecté.",
   'tpl.cwlexport.label': 'Export CloudWatch Logs vers S3',
-  'tpl.cwlexport.note': "Fichiers écrits par « Exporter les données vers Amazon S3 » (create-export-task) : un dossier par flux de journaux, lignes « horodatage message ». L'horodatage initial devient le champ temporel, le reste est « message ».",
+  'tpl.cwlexport.note':
+    "Fichiers écrits par « Exporter les données vers Amazon S3 » (create-export-task) : un dossier par flux de journaux, lignes « horodatage message ». L'horodatage initial devient le champ temporel, le reste est « message ».",
   'tpl.ssm.label': 'Journaux de session / commande SSM',
-  'tpl.ssm.note': 'Les transcriptions Session Manager et les stdout/stderr de Run Command sont non structurés : chaque ligne devient un enregistrement avec son nom de fichier dans _file. Pas de champ temporel.',
+  'tpl.ssm.note':
+    'Les transcriptions Session Manager et les stdout/stderr de Run Command sont non structurés : chaque ligne devient un enregistrement avec son nom de fichier dans _file. Pas de champ temporel.',
 
   // ---- connect / listing (datasource.ts, s3list.ts) ----
   'src.listingValues': 'Listage des valeurs… {done} / {total}',
@@ -487,5 +515,6 @@ export const fr: Messages = {
   'src.counting': 'Comptage des lignes…',
   'src.tooManyObjects': 'Plus de {max} objets sous {bucket}/{prefix} ; ajoutez un préfixe littéral avant le joker (par ex. le nom du load balancer) ou réduisez la plage de temps',
   'src.tooManyPrefixes': 'La plage de temps produit trop de préfixes',
-  'src.warning.many': "{files} fichiers ({mb} Mo) correspondent à cette plage de temps, au-delà du seuil d'avertissement de {max}. La connexion ne lit rien, mais les fichiers texte / gzip sont récupérés en entier et l'un après l'autre, donc la première requête sur cette plage sera lente. Réduisez la plage de temps (des heures plutôt que des jours), ou convertissez les plages larges en Parquet horaire avec scripts/alb-to-parquet.sh.",
+  'src.warning.many':
+    "{files} fichiers ({mb} Mo) correspondent à cette plage de temps, au-delà du seuil d'avertissement de {max}. La connexion ne lit rien, mais les fichiers texte / gzip sont récupérés en entier et l'un après l'autre, donc la première requête sur cette plage sera lente. Réduisez la plage de temps (des heures plutôt que des jours), ou convertissez les plages larges en Parquet horaire avec scripts/alb-to-parquet.sh.",
 };

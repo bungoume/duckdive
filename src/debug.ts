@@ -11,6 +11,6 @@ declare global {
 }
 
 export function expose(fns: Record<string, unknown>): void {
-  if (!DEBUG) return;
+  if (!DEBUG || typeof window === 'undefined') return;
   window.__ddv = { ...(window.__ddv ?? {}), ...fns };
 }

@@ -112,7 +112,10 @@ export const DEFAULT_VIS: VisState = {
 };
 
 function b64encode(s: string): string {
-  return btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return btoa(unescape(encodeURIComponent(s)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 }
 function b64decode(s: string): string {
   const t = s.replace(/-/g, '+').replace(/_/g, '/');
@@ -295,7 +298,11 @@ export function loadSourceHistory(): SourceHistoryEntry[] {
     const raw = localStorage.getItem(LS_SOURCES);
     if (raw) {
       const list = JSON.parse(raw);
-      if (Array.isArray(list)) return list.map(normalizeEntry).filter((e): e is SourceHistoryEntry => e !== null).slice(0, SOURCE_HISTORY_MAX);
+      if (Array.isArray(list))
+        return list
+          .map(normalizeEntry)
+          .filter((e): e is SourceHistoryEntry => e !== null)
+          .slice(0, SOURCE_HISTORY_MAX);
     }
   } catch {
     /* ignore */

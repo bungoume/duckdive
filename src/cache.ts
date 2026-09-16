@@ -99,7 +99,8 @@ export interface SeedFile {
 /** Hand listing metadata to the cache worker so DuckDB's per-file HEADs are answered locally. */
 export const cacheSeed = (files: SeedFile[]) => send<{ seeded: number }>({ type: 'seed', files }, 60000);
 /** Store a complete copy of an object (fetched by the page); `repacked` marks a re-compressed gzip. The buffer is transferred, not copied. */
-export const cacheStore = (f: { url: string; etag: string; lastModified?: string; bytes: ArrayBuffer; repacked: boolean; origSize: number; note?: string }) => send<{ chunks: number }>({ type: 'store', ...f }, 60000, [f.bytes]);
+export const cacheStore = (f: { url: string; etag: string; lastModified?: string; bytes: ArrayBuffer; repacked: boolean; origSize: number; note?: string }) =>
+  send<{ chunks: number }>({ type: 'store', ...f }, 60000, [f.bytes]);
 /** URLs among `files` that are already completely cached with the same ETag. */
 export const cacheComplete = (files: { url: string; etag: string }[]) => send<{ complete: string[] }>({ type: 'complete', files }, 30000);
 export const cacheStats = () => send<{ stats: CacheStats; config: CacheConfig; opfsError: string | null }>({ type: 'stats' });

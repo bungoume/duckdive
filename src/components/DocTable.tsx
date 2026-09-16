@@ -18,7 +18,14 @@ export function flatten(o: unknown, prefix = '', out: [string, unknown][] = []):
   return out;
 }
 
-function DocDetail(props: { doc: Doc; fields: Field[]; columns: string[]; onFilter: (field: string, value: string | null, negate: boolean) => void; onExists: (field: string) => void; onToggleColumn: (name: string) => void }) {
+function DocDetail(props: {
+  doc: Doc;
+  fields: Field[];
+  columns: string[];
+  onFilter: (field: string, value: string | null, negate: boolean) => void;
+  onExists: (field: string) => void;
+  onToggleColumn: (name: string) => void;
+}) {
   const [tab, setTab] = useState<'table' | 'json'>('table');
   const entries = flatten(props.doc.source);
   const known = new Set(props.fields.map((f) => f.name));
@@ -37,32 +44,42 @@ function DocDetail(props: { doc: Doc; fields: Field[]; columns: string[]; onFilt
       ) : (
         <table class="kv">
           <tbody>
-          {entries.map(([k, v]) => {
-            const filterable = known.has(k);
-            const val = v === null || v === undefined ? null : typeof v === 'object' ? JSON.stringify(v) : String(v);
-            const fld = findField(props.fields, k);
-            let shown = val;
-            if (val !== null && fld?.kind === 'date') {
-              const d = new Date(val.includes('T') || /[zZ]|[+-]\d\d:?\d\d$/.test(val) ? val : val.replace(' ', 'T') + 'Z');
-              if (!isNaN(d.getTime())) shown = formatLocal(d);
-            }
-            return (
-              <tr>
-                <td class="a">
-                  {filterable && (
-                    <>
-                      <button title={t('doc.filterFor')} onClick={() => props.onFilter(k, val, false)}>+</button>
-                      <button title={t('doc.filterOut')} onClick={() => props.onFilter(k, val, true)}>−</button>
-                      <button title={t('doc.toggleColumn')} onClick={() => props.onToggleColumn(k)}>⊞</button>
-                      <button title={t('doc.filterExists')} onClick={() => props.onExists(k)}>*</button>
-                    </>
-                  )}
-                </td>
-                <td class="k">{k}</td>
-                <td class="v" title={val ?? ''}>{shown === null ? <i style="color:#98a2b3">null</i> : shown}</td>
-              </tr>
-            );
-          })}
+            {entries.map(([k, v]) => {
+              const filterable = known.has(k);
+              const val = v === null || v === undefined ? null : typeof v === 'object' ? JSON.stringify(v) : String(v);
+              const fld = findField(props.fields, k);
+              let shown = val;
+              if (val !== null && fld?.kind === 'date') {
+                const d = new Date(val.includes('T') || /[zZ]|[+-]\d\d:?\d\d$/.test(val) ? val : val.replace(' ', 'T') + 'Z');
+                if (!isNaN(d.getTime())) shown = formatLocal(d);
+              }
+              return (
+                <tr>
+                  <td class="a">
+                    {filterable && (
+                      <>
+                        <button title={t('doc.filterFor')} onClick={() => props.onFilter(k, val, false)}>
+                          +
+                        </button>
+                        <button title={t('doc.filterOut')} onClick={() => props.onFilter(k, val, true)}>
+                          −
+                        </button>
+                        <button title={t('doc.toggleColumn')} onClick={() => props.onToggleColumn(k)}>
+                          ⊞
+                        </button>
+                        <button title={t('doc.filterExists')} onClick={() => props.onExists(k)}>
+                          *
+                        </button>
+                      </>
+                    )}
+                  </td>
+                  <td class="k">{k}</td>
+                  <td class="v" title={val ?? ''}>
+                    {shown === null ? <i style="color:#98a2b3">null</i> : shown}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}
@@ -86,7 +103,8 @@ export function DocTable(props: {
   const [open, setOpen] = useState<Set<number>>(new Set());
   const toggle = (i: number) => {
     const s = new Set(open);
-    s.has(i) ? s.delete(i) : s.add(i);
+    if (s.has(i)) s.delete(i);
+    else s.add(i);
     setOpen(s);
   };
   const sortIcon = (name: string) => {
@@ -101,7 +119,10 @@ export function DocTable(props: {
         <tr>
           <th></th>
           {props.hasTime && (
-            <th onClick={() => props.timeFieldName && props.onSort(props.timeFieldName)}>{t('doc.time')}{props.timeFieldName ? sortIcon(props.timeFieldName) : ''}</th>
+            <th onClick={() => props.timeFieldName && props.onSort(props.timeFieldName)}>
+              {t('doc.time')}
+              {props.timeFieldName ? sortIcon(props.timeFieldName) : ''}
+            </th>
           )}
           {cols.length === 0 ? (
             <th>{t('doc.document')}</th>

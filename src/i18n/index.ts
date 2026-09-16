@@ -41,7 +41,7 @@ function isLang(s: unknown): s is Lang {
 
 /** Best language for the browser / Chrome UI locale (en when nothing matches). */
 export function detectLang(): Lang {
-  let tag = '';
+  let tag: string;
   try {
     tag = (typeof chrome !== 'undefined' && chrome.i18n?.getUILanguage?.()) || navigator.language || '';
   } catch {

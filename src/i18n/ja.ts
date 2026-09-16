@@ -23,11 +23,13 @@ export const ja: Messages = {
   'app.error.hostPermission': '次のホストへのアクセス権限が拒否されました: {origins}',
   'app.error.cancelled': '接続をキャンセルしました',
   'app.large.files': '{n} ファイル',
-  'app.large.text': '{files}{bytes} がこのパターンと時間範囲に一致します(しきい値 {threshold})。まだ何も読み込んでいません。続行するとすべてのファイルに対するビューが作成され、最初のクエリで必要な部分がダウンロードされます。時間範囲を狭める、名前のプレフィックスや取得列へのフィルタを追加する、またはそのまま続行してください。',
+  'app.large.text':
+    '{files}{bytes} がこのパターンと時間範囲に一致します(しきい値 {threshold})。まだ何も読み込んでいません。続行するとすべてのファイルに対するビューが作成され、最初のクエリで必要な部分がダウンロードされます。時間範囲を狭める、名前のプレフィックスや取得列へのフィルタを追加する、またはそのまま続行してください。',
   'app.large.continue': '{n} ファイルで続行',
   'app.gate.files': '{n} ファイル',
   'app.gate.unknown': '(うち {n} 件はサイズ不明)',
-  'app.gate.text': '次のクエリは未ダウンロードの {files} を開きます(しきい値 {threshold})。ダウンロード量は最大 {bytes} です{unknown}。Parquet は必要な部分だけを読みますが、テキスト / gzip ファイルは全体を読み込みます。時間範囲を狭めるか、そのまま実行してください(以降のクエリはキャッシュを再利用します)。',
+  'app.gate.text':
+    '次のクエリは未ダウンロードの {files} を開きます(しきい値 {threshold})。ダウンロード量は最大 {bytes} です{unknown}。Parquet は必要な部分だけを読みますが、テキスト / gzip ファイルは全体を読み込みます。時間範囲を狭めるか、そのまま実行してください(以降のクエリはキャッシュを再利用します)。',
   'app.gate.runAnyway': 'そのまま実行',
 
   // ---- settings page ----
@@ -41,7 +43,8 @@ export const ja: Messages = {
   'settings.timeZone': 'タイムゾーン',
   'settings.timeZone.hint': 'Asia/Tokyo や UTC などの IANA 名。空欄ならブラウザのゾーン({browser})。日付表示、絶対時刻ピッカー、"now/d" の丸めに適用されます。',
   'settings.scaled': '間隔別の日付フォーマット',
-  'settings.scaled.hint': '[ISO 8601 の期間, パターン] の JSON 配列。日付ヒストグラムのツールチップとテーブルで、バケット幅がその期間以上のときに使うパターンです("" は 1 秒未満)。軸ラベルは表示範囲に合わせて自動的に選ばれます。',
+  'settings.scaled.hint':
+    '[ISO 8601 の期間, パターン] の JSON 配列。日付ヒストグラムのツールチップとテーブルで、バケット幅がその期間以上のときに使うパターンです("" は 1 秒未満)。軸ラベルは表示範囲に合わせて自動的に選ばれます。',
   'settings.dow': '週の開始曜日',
   'settings.dow.hint': '"now/w" の範囲と週単位のバケットで使う週の最初の曜日。',
   'settings.quickRanges': '時間フィルタのクイック範囲',
@@ -85,11 +88,13 @@ export const ja: Messages = {
   'ds.template.replace': '置き換える',
   'ds.template.keep': '現在のまま',
   'ds.urls.label': 'URL またはパターン、1 行に 1 つ(s3://、https://。# で始まる行は無視されます)',
-  'ds.urls.hint': 's3:// パターンでは {star}、{q}、{dstar} と日付トークン {dates} が使えます。日付トークンは時間ピッカー(UTC)から埋められ、選択範囲内のパーティションだけが一覧化・読み込みされます。それ以外の {name} は名前付きワイルドカードで、一致したテキストが列になります(例: {example} なら検索やフィルタに使える {alb} フィールドができます。この列への「is」フィルタは他のファイルの読み込みも抑止します)。',
+  'ds.urls.hint':
+    's3:// パターンでは {star}、{q}、{dstar} と日付トークン {dates} が使えます。日付トークンは時間ピッカー(UTC)から埋められ、選択範囲内のパーティションだけが一覧化・読み込みされます。それ以外の {name} は名前付きワイルドカードで、一致したテキストが列になります(例: {example} なら検索やフィルタに使える {alb} フィールドができます。この列への「is」フィルタは他のファイルの読み込みも抑止します)。',
   'ds.vars.title': 'パターン変数 · {names}',
   'ds.vars.listed': '最新パーティションに {n} ファイル',
   'ds.vars.selectAll': 'すべての値を選択',
-  'ds.vars.hint': 'パターン内の各 {name} は変数です。「{button}」を押すと最新パーティションが一覧化され、{names} で見つかった値がここに表示されます。読み込む値を選んでください(変数ごとに 1 つ以上)。それまで何も読み込まれません。',
+  'ds.vars.hint':
+    'パターン内の各 {name} は変数です。「{button}」を押すと最新パーティションが一覧化され、{names} で見つかった値がここに表示されます。読み込む値を選んでください(変数ごとに 1 つ以上)。それまで何も読み込まれません。',
   'ds.vars.count': '{n} 個の値 · {sel} 個選択中',
   'ds.vars.all': 'すべて',
   'ds.vars.none': 'なし',
@@ -97,7 +102,8 @@ export const ja: Messages = {
   'ds.vars.missing': '次の変数に 1 つ以上の値を選択してください: {names}',
   'ds.name': '名前',
   'ds.maxFiles': '接続前に警告を出すファイル数のしきい値(既定 1000)',
-  'ds.listingHint': '一覧化では最初のワイルドカードより前のリテラル部分を S3 プレフィックスとして使うため、1 日のフォルダに多数の ALB が含まれる場合はロードバランサー名をパターンに含めてください。ファイル名にタイムスタンプ(…_20260909T0105Z_…)を含み時間範囲外のファイルは自動的にスキップされます。',
+  'ds.listingHint':
+    '一覧化では最初のワイルドカードより前のリテラル部分を S3 プレフィックスとして使うため、1 日のフォルダに多数の ALB が含まれる場合はロードバランサー名をパターンに含めてください。ファイル名にタイムスタンプ(…_20260909T0105Z_…)を含み時間範囲外のファイルは自動的にスキップされます。',
   'ds.s3.title': 'S3 エンドポイント',
   'ds.s3.region': 'リージョン',
   'ds.s3.endpoint': 'エンドポイント(省略可。AWS: s3.<region>.amazonaws.com、MinIO / R2: ホストまたは http://host:9000)',
@@ -109,12 +115,14 @@ export const ja: Messages = {
   'ds.auth.static': 'アクセスキー(シークレットはこのブラウザセッションのみ保持)',
   'ds.auth.none': 'なし(公開バケット)',
   'ds.key.title': 'アクセスキー',
-  'ds.key.warn': 'アクセスキー ID はソース設定と一緒に保存されます。シークレットとセッショントークンはこのブラウザセッションの間だけメモリに保持され、Chrome の再起動後は再入力が必要です。一時認証情報(セッショントークン)または OIDC サインインの利用を推奨します。',
+  'ds.key.warn':
+    'アクセスキー ID はソース設定と一緒に保存されます。シークレットとセッショントークンはこのブラウザセッションの間だけメモリに保持され、Chrome の再起動後は再入力が必要です。一時認証情報(セッショントークン)または OIDC サインインの利用を推奨します。',
   'ds.key.id': 'アクセスキー ID',
   'ds.key.secret': 'シークレットアクセスキー',
   'ds.key.token': 'セッショントークン(一時認証情報用)',
   'ds.oidc.title': 'OIDC サインイン → AWS STS',
-  'ds.oidc.intro': 'ブラウザが ID プロバイダーでサインインし、STS の {api} を直接呼び出します。長期キーはどこにも存在せず、一時認証情報はメモリ上(chrome.storage.session)に保持され自動更新されます。次のリダイレクト URL を ID プロバイダーに登録してください: {url}',
+  'ds.oidc.intro':
+    'ブラウザが ID プロバイダーでサインインし、STS の {api} を直接呼び出します。長期キーはどこにも存在せず、一時認証情報はメモリ上(chrome.storage.session)に保持され自動更新されます。次のリダイレクト URL を ID プロバイダーに登録してください: {url}',
   'ds.oidc.authUrl': '認可エンドポイント',
   'ds.oidc.clientId': 'クライアント ID',
   'ds.oidc.scope': 'スコープ',
@@ -145,14 +153,16 @@ export const ja: Messages = {
   'ds.timeField.none': '(なし – 時間フィルタなし)',
   'ds.connected.rangeDependent': 'このソースは日付トークンを使用しています。時間範囲が変わるたびにファイル一覧が再解決されます。',
   'ds.connected.captures': 'ファイル名から取得した列: {names}(これらへのフィルタはファイル一覧の絞り込みにも使われます)。',
-  'ds.connected.large': '一致したファイルの合計は {mb} MB です。テキスト / gzip ファイルは全体を 1 つずつ取得するため、この範囲での最初のクエリは遅くなります。時間範囲を狭めるか、広い範囲は 1 時間ごとの Parquet に変換してください(scripts/alb-to-parquet.sh)。',
+  'ds.connected.large':
+    '一致したファイルの合計は {mb} MB です。テキスト / gzip ファイルは全体を 1 つずつ取得するため、この範囲での最初のクエリは遅くなります。時間範囲を狭めるか、広い範囲は 1 時間ごとの Parquet に変換してください(scripts/alb-to-parquet.sh)。',
   'ds.connected.files': 'ファイル({n})',
   'ds.connected.fieldsTitle': 'フィールド',
   'ds.hosts.title': '許可済みホスト',
   'ds.hosts.hint': 'この拡張機能が読み取りを許可されているホストです。AWS のエンドポイントは既定で許可され、それ以外のホストは接続時に許可を求めます。',
   'ds.hosts.revoke': '取り消し',
   'ds.history.title': '最近のソース',
-  'ds.history.hint': '最近接続した S3 / HTTPS とデモのソース {n} 件(新しい順)。選ぶとその設定(パターン変数の選択値を含む。アクセスキーのシークレットはこのブラウザセッション中のみ)を読み込んで接続します。ヘッダーのメニューからも同じ操作ができます。',
+  'ds.history.hint':
+    '最近接続した S3 / HTTPS とデモのソース {n} 件(新しい順)。選ぶとその設定(パターン変数の選択値を含む。アクセスキーのシークレットはこのブラウザセッション中のみ)を読み込んで接続します。ヘッダーのメニューからも同じ操作ができます。',
   'ds.history.use': '接続',
   'ds.history.current': '現在',
   'ds.history.lastUsed': '最終使用 {time}',
@@ -163,10 +173,12 @@ export const ja: Messages = {
   'cache.opfsDisabled': '{error} – キャッシュは無効です。すべての読み込みはオリジンに送られます。',
   'cache.enable': '範囲キャッシュを有効にする',
   'cache.repack': '接続時に連結 gzip ファイルを再パックする',
-  'cache.repack.title': 'AWS のログ配信では、そのままでは確実に読めない gzip ファイルが書き出されることがあります。有効にすると、各 .gz ファイルを接続時に 1 回取得し、必要なら修復してキャッシュに保持します。',
+  'cache.repack.title':
+    'AWS のログ配信では、そのままでは確実に読めない gzip ファイルが書き出されることがあります。有効にすると、各 .gz ファイルを接続時に 1 回取得し、必要なら修復してキャッシュに保持します。',
   'cache.chunkSize': 'チャンクサイズ(新規ファイル)',
   'cache.session': 'このセッション',
-  'cache.session.text': 'DuckDB の読み込み {total}: ディスクから {fromCache}({ratio}%) · オリジンから {downloaded} を {misses} チャンクでダウンロード · チャンクヒット {hits} · パススルー {passthrough}',
+  'cache.session.text':
+    'DuckDB の読み込み {total}: ディスクから {fromCache}({ratio}%) · オリジンから {downloaded} を {misses} チャンクでダウンロード · チャンクヒット {hits} · パススルー {passthrough}',
   'cache.storage': 'ストレージ',
   'cache.storage.text': '使用量 {used} / 割当 {quota} · {mode}',
   'cache.storage.persistent': '永続',
@@ -194,7 +206,8 @@ export const ja: Messages = {
   'disc.empty.title': '検索条件に一致する結果がありません',
   'disc.empty.text': '時間範囲を広げるか、クエリやフィルタを調整してください。',
   'disc.loadMore': 'さらに読み込む({shown} / {total})',
-  'disc.cacheHint': '{error}\n\n下の「{button}」で DuckDB が拒否したファイルを特定・検査できます。キャッシュが疑わしい場合: Data source → Local range cache → 「{clear}」、または「{enable}」のチェックを外してください。',
+  'disc.cacheHint':
+    '{error}\n\n下の「{button}」で DuckDB が拒否したファイルを特定・検査できます。キャッシュが疑わしい場合: Data source → Local range cache → 「{clear}」、または「{enable}」のチェックを外してください。',
 
   // ---- Visualize page ----
   'vis.chart.area': '面',
@@ -271,7 +284,8 @@ export const ja: Messages = {
   'diag.finding': '失敗したファイルを探しています…',
   'diag.hint': '接続中のファイルを count(*) クエリで二分探索し、原因ファイルのバイト列を検査します(原因ファイルごとにフルスキャン約 2 回)。',
   'diag.cancelled': 'キャンセルされました(ソースが再接続されました)',
-  'diag.allOk': '{n} ファイルすべてが今 count(*) で正常に読めました。失敗は一時的なもの(ネットワークまたはキャッシュからの不正な応答。Data source → Local range cache のリクエストログを参照)か、失敗したクエリ固有のものです。',
+  'diag.allOk':
+    '{n} ファイルすべてが今 count(*) で正常に読めました。失敗は一時的なもの(ネットワークまたはキャッシュからの不正な応答。Data source → Local range cache のリクエストログを参照)か、失敗したクエリ固有のものです。',
   'diag.failing': '{queries} 回のクエリで失敗ファイルが {n} 件見つかりました{truncated}。',
   'diag.truncated': '(最初の数件で打ち切り)',
   'diag.size': 'サイズ',
@@ -344,7 +358,8 @@ export const ja: Messages = {
   'flt.addButton': '+ フィルタを追加',
   'flt.clearAll': 'すべてクリア',
   'flt.not': '除外: ',
-  'flt.untrusted': 'このリンクには、このブラウザで作成されていないカスタム SQL フィルタが {n} 件含まれています。無効化してあります。各フィルタを開いて SQL を確認し、送信元を信頼できる場合のみ有効にしてください(フィルタはこの拡張機能の S3 認証情報を読み取り、ネットワークにアクセスできます)。',
+  'flt.untrusted':
+    'このリンクには、このブラウザで作成されていないカスタム SQL フィルタが {n} 件含まれています。無効化してあります。各フィルタを開いて SQL を確認し、送信元を信頼できる場合のみ有効にしてください(フィルタはこの拡張機能の S3 認証情報を読み取り、ネットワークにアクセスできます)。',
   'flt.menu.trust': '有効にする(SQL を確認した)',
   'flt.desc.between': '{from} 〜 {to}',
 
@@ -428,7 +443,8 @@ export const ja: Messages = {
   'tpl.alb.label': 'ALB アクセスログ',
   'tpl.alb.note': 'account / region / alb が列になります。alb でフィルタすると 1 つのロードバランサーだけを読みます。バケットにプレフィックスを設定している場合は AWSLogs の前に追加してください。',
   'tpl.alb-parquet.label': 'Parquet に変換した ALB アクセスログ(scripts/alb-to-parquet.sh)',
-  'tpl.alb-parquet.note': 'scripts/alb-to-parquet.sh が書き出す 1 時間ごとの Parquet: <prefix>/<alb>/dt=YYYY-MM-DD/hour=HH/data.parquet。dt と hour がパーティション列になります。出力先がすでに 1 つのロードバランサーを指している場合は "{alb}/" を削除してください。',
+  'tpl.alb-parquet.note':
+    'scripts/alb-to-parquet.sh が書き出す 1 時間ごとの Parquet: <prefix>/<alb>/dt=YYYY-MM-DD/hour=HH/data.parquet。dt と hour がパーティション列になります。出力先がすでに 1 つのロードバランサーを指している場合は "{alb}/" を削除してください。',
   'tpl.nlb.label': 'NLB アクセスログ',
   'tpl.nlb.note': 'TLS リスナーのログのみ(スペース区切り、自動検出)。必要なら時間フィールドを手動で選択してください。',
   'tpl.cloudfront.label': 'CloudFront ログ',
@@ -438,7 +454,8 @@ export const ja: Messages = {
   'tpl.flowlogs.label': 'VPC Flow Logs',
   'tpl.flowlogs.note': 'ヘッダー付きテキスト(カスタム形式も可)。"start"(エポック秒)が時間フィールドとして使われます。',
   'tpl.flowlogs-parquet.label': 'VPC Flow Logs(Parquet、Hive 互換プレフィックス)',
-  'tpl.flowlogs-parquet.note': '「Hive 互換 S3 プレフィックス」と 1 時間ごとのパーティションで Parquet として配信されたフローログ。Hive オプションなしの場合の配置は AWSLogs/{account}/vpcflowlogs/{region}/{yyyy}/{MM}/{dd}/{HH}/*.log.parquet です。"start"(エポック秒)が時間フィールドです。',
+  'tpl.flowlogs-parquet.note':
+    '「Hive 互換 S3 プレフィックス」と 1 時間ごとのパーティションで Parquet として配信されたフローログ。Hive オプションなしの場合の配置は AWSLogs/{account}/vpcflowlogs/{region}/{yyyy}/{MM}/{dd}/{HH}/*.log.parquet です。"start"(エポック秒)が時間フィールドです。',
   'tpl.waf.label': 'WAF ログ(S3 配信)',
   'tpl.waf.note': 'リクエストごとに 1 行の JSON lines。"timestamp"(エポックミリ秒)が時間フィールドです。CloudFront 前段の Web ACL はリージョンに "cloudfront" を使います。',
   'tpl.netfw.label': 'Network Firewall ログ',
@@ -446,11 +463,14 @@ export const ja: Messages = {
   'tpl.r53resolver.label': 'Route 53 Resolver クエリログ',
   'tpl.r53resolver.note': 'DNS クエリごとに 1 行の JSON lines。"query_timestamp" が時間フィールドです。',
   'tpl.s3access.label': 'S3 サーバーアクセスログ',
-  'tpl.s3access.note': 'パーティションなしの配置: <prefix>YYYY-MM-DD-HH-MM-SS-UniqueString。日付ベースのパーティションの場合は <prefix>/{account}/{region}/{source_bucket}/{yyyy}/{MM}/{dd}/{yyyy}-{MM}-{dd}-{HH}-* を使います。"timestamp" 列が導出されます。',
+  'tpl.s3access.note':
+    'パーティションなしの配置: <prefix>YYYY-MM-DD-HH-MM-SS-UniqueString。日付ベースのパーティションの場合は <prefix>/{account}/{region}/{source_bucket}/{yyyy}/{MM}/{dd}/{yyyy}-{MM}-{dd}-{HH}-* を使います。"timestamp" 列が導出されます。',
   'tpl.firehose.label': 'Kinesis Data Firehose 配信(既定プレフィックス)',
-  'tpl.firehose.note': 'Firehose が使う既定の YYYY/MM/DD/HH プレフィックス(CloudWatch Logs サブスクリプション、EventBridge、Firehose 経由の WAF など)。レコードは改行の有無にかかわらず JSON として読みます。時間フィールドが検出されない場合は手動で選択してください。',
+  'tpl.firehose.note':
+    'Firehose が使う既定の YYYY/MM/DD/HH プレフィックス(CloudWatch Logs サブスクリプション、EventBridge、Firehose 経由の WAF など)。レコードは改行の有無にかかわらず JSON として読みます。時間フィールドが検出されない場合は手動で選択してください。',
   'tpl.cwlexport.label': 'CloudWatch Logs の S3 エクスポート',
-  'tpl.cwlexport.note': '「Amazon S3 へのデータのエクスポート」(create-export-task)が書き出すファイル: ログストリームごとに 1 フォルダ、"timestamp message" 形式の行。先頭のタイムスタンプが時間フィールドになり、残りが "message" になります。',
+  'tpl.cwlexport.note':
+    '「Amazon S3 へのデータのエクスポート」(create-export-task)が書き出すファイル: ログストリームごとに 1 フォルダ、"timestamp message" 形式の行。先頭のタイムスタンプが時間フィールドになり、残りが "message" になります。',
   'tpl.ssm.label': 'SSM セッション / コマンドログ',
   'tpl.ssm.note': 'Session Manager の記録や Run Command の stdout/stderr は非構造化です。各行が 1 行になり、ファイル名は _file に入ります。時間フィールドはありません。',
 
@@ -487,5 +507,6 @@ export const ja: Messages = {
   'src.counting': '行数を集計中…',
   'src.tooManyObjects': '{bucket}/{prefix} 配下のオブジェクトが {max} 件を超えています。ワイルドカードの前にリテラルのプレフィックス(ロードバランサー名など)を追加するか、時間範囲を狭めてください',
   'src.tooManyPrefixes': '時間範囲の展開結果のプレフィックスが多すぎます',
-  'src.warning.many': '{files} ファイル({mb} MB)がこの時間範囲に一致し、警告しきい値 {max} を超えています。接続時には何も読みませんが、テキスト / gzip ファイルは全体を 1 つずつ取得するため、この範囲での最初のクエリは遅くなります。時間範囲を(日単位ではなく時間単位に)狭めるか、広い範囲は scripts/alb-to-parquet.sh で 1 時間ごとの Parquet に変換してください。',
+  'src.warning.many':
+    '{files} ファイル({mb} MB)がこの時間範囲に一致し、警告しきい値 {max} を超えています。接続時には何も読みませんが、テキスト / gzip ファイルは全体を 1 つずつ取得するため、この範囲での最初のクエリは遅くなります。時間範囲を(日単位ではなく時間単位に)狭めるか、広い範囲は scripts/alb-to-parquet.sh で 1 時間ごとの Parquet に変換してください。',
 };

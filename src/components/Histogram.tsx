@@ -18,7 +18,9 @@ export function fillBuckets(b: Bucket[], to: Date, iv: Interval, tzOffset: numbe
 export function Histogram(props: { buckets: Bucket[]; interval: Interval; from: Date; to: Date; height?: number; onBrush: (from: Date, to: Date) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const [brush, setBrush] = useState<{ x0: number; x1: number } | null>(null);
-  const drag = useRef<{ start: number; svg: SVGSVGElement; plot: any } | null>(null);
+  /** Plot's figure element exposes its scales; only the x scale's inverse is used (brush → dates). */
+  type PlotFigure = { scale?: (name: string) => { invert?: (v: number) => unknown } | undefined } | null;
+  const drag = useRef<{ start: number; svg: SVGSVGElement; plot: PlotFigure } | null>(null);
   const [width, setWidth] = useState(800);
   // the axis label is baked into the plot: rebuild it when the language changes
   const lang = useLang();
@@ -55,7 +57,7 @@ export function Histogram(props: { buckets: Bucket[]; interval: Interval; from: 
           Plot.pointerX({
             x: 't',
             y: 'c',
-            title: (d: any) => `${formatBucket(d.t, props.interval.ms)}\n${t('hist.records', { n: d.c.toLocaleString() })}`,
+            title: (d: { t: Date; c: number }) => `${formatBucket(d.t, props.interval.ms)}\n${t('hist.records', { n: d.c.toLocaleString() })}`,
           }),
         ),
       ],
@@ -71,7 +73,7 @@ export function Histogram(props: { buckets: Bucket[]; interval: Interval; from: 
     const svg = el.querySelector('svg');
     if (!svg) return;
     const rect = el.getBoundingClientRect();
-    drag.current = { start: e.clientX - rect.left, svg, plot: el.firstElementChild };
+    drag.current = { start: e.clientX - rect.left, svg, plot: el.firstElementChild as unknown as PlotFigure };
     setBrush({ x0: e.clientX - rect.left, x1: e.clientX - rect.left });
     (e.target as Element).setPointerCapture?.(e.pointerId);
   };
@@ -85,7 +87,7 @@ export function Histogram(props: { buckets: Bucket[]; interval: Interval; from: 
     const rect = ref.current.getBoundingClientRect();
     const a = drag.current.start;
     const b = e.clientX - rect.left;
-    const plot = drag.current.plot as any;
+    const plot = drag.current.plot;
     drag.current = null;
     setBrush(null);
     if (Math.abs(a - b) < 4) return;

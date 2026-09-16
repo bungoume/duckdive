@@ -46,7 +46,10 @@ function parseDraft(d: Draft): { ok: true; value: Partial<AppSettings> } | { ok:
   else value.timeZone = tz;
   try {
     const arr = JSON.parse(d.scaled);
-    const good = Array.isArray(arr) && arr.length > 0 && arr.every((e) => Array.isArray(e) && e.length === 2 && typeof e[0] === 'string' && typeof e[1] === 'string' && parseIsoDuration(e[0]) !== null && e[1].trim());
+    const good =
+      Array.isArray(arr) &&
+      arr.length > 0 &&
+      arr.every((e) => Array.isArray(e) && e.length === 2 && typeof e[0] === 'string' && typeof e[1] === 'string' && parseIsoDuration(e[0]) !== null && e[1].trim());
     if (!good) errors.scaled = t('settings.error.scaled');
     else value.scaledDateFormat = arr as [string, string][];
   } catch (e) {
@@ -131,7 +134,11 @@ export function Settings() {
           <div class="field-row">
             <label>{t('settings.dateFormat')}</label>
             <input class="input mono" value={draft.dateFormat} onInput={(e) => set({ dateFormat: (e.target as HTMLInputElement).value })} placeholder={DEFAULT_SETTINGS.dateFormat} />
-            {errors.dateFormat && <span class="hint" style="color:var(--k-danger, #bd271e)">{errors.dateFormat}</span>}
+            {errors.dateFormat && (
+              <span class="hint" style="color:var(--k-danger, #bd271e)">
+                {errors.dateFormat}
+              </span>
+            )}
             <span class="hint">{t('settings.dateFormat.hint')}</span>
             {preview && <span class="hint mono">{t('settings.preview', { value: preview })}</span>}
           </div>
@@ -143,7 +150,11 @@ export function Settings() {
                 <option value={z} />
               ))}
             </datalist>
-            {errors.timeZone && <span class="hint" style="color:var(--k-danger, #bd271e)">{errors.timeZone}</span>}
+            {errors.timeZone && (
+              <span class="hint" style="color:var(--k-danger, #bd271e)">
+                {errors.timeZone}
+              </span>
+            )}
             <span class="hint">{t('settings.timeZone.hint', { browser: browserZone() })}</span>
           </div>
           <div class="field-row">
@@ -159,13 +170,21 @@ export function Settings() {
         <div class="field-row">
           <label>{t('settings.scaled')}</label>
           <textarea class="input mono settings-json" value={draft.scaled} onInput={(e) => set({ scaled: (e.target as HTMLTextAreaElement).value })} spellcheck={false} />
-          {errors.scaled && <span class="hint" style="color:var(--k-danger, #bd271e)">{errors.scaled}</span>}
+          {errors.scaled && (
+            <span class="hint" style="color:var(--k-danger, #bd271e)">
+              {errors.scaled}
+            </span>
+          )}
           <span class="hint">{t('settings.scaled.hint')}</span>
         </div>
         <div class="field-row">
           <label>{t('settings.quickRanges')}</label>
           <textarea class="input mono settings-json" value={draft.quick} onInput={(e) => set({ quick: (e.target as HTMLTextAreaElement).value })} spellcheck={false} />
-          {errors.quick && <span class="hint" style="color:var(--k-danger, #bd271e)">{errors.quick}</span>}
+          {errors.quick && (
+            <span class="hint" style="color:var(--k-danger, #bd271e)">
+              {errors.quick}
+            </span>
+          )}
           <span class="hint">{t('settings.quickRanges.hint')}</span>
         </div>
         <div class="row end" style="gap:10px;align-items:center">

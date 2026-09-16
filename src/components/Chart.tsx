@@ -22,7 +22,7 @@ export function toSeries(r: VisResult, metrics: MetricDef[]): { data: Series[]; 
   const hasG = r.groups.length > 0;
   const metricIdx = hasG ? [0] : metrics.map((_, i) => i);
   const series: string[] = [];
-  const seriesName = (g: string | null, mi: number) => (hasG ? g ?? NULL_GROUP : metricLabel(metrics[mi]));
+  const seriesName = (g: string | null, mi: number) => (hasG ? (g ?? NULL_GROUP) : metricLabel(metrics[mi]));
   if (hasG) series.push(...r.groups);
   else series.push(...metricIdx.map((i) => metricLabel(metrics[i])));
 
@@ -173,11 +173,7 @@ export function Chart(props: {
         marginBottom: isBand ? 60 : 30,
         style: { fontSize: '11px', background: 'transparent', overflow: 'visible' },
         color,
-        x: isTime
-          ? xTime
-          : isBand
-            ? { domain: xDomain as string[], label: null, tickRotate: xDomain.length > 8 ? -30 : 0 }
-            : { label: null },
+        x: isTime ? xTime : isBand ? { domain: xDomain as string[], label: null, tickRotate: xDomain.length > 8 ? -30 : 0 } : { label: null },
         y: {
           label: yLabel,
           grid: true,
@@ -295,15 +291,12 @@ export function Chart(props: {
     if (!hit || !ref.current) return;
     const svg = chartSvg();
     if (!svg) return;
-    let el: Element | null = null;
-    if (props.chart === 'bar') {
-      const rects = svg.querySelectorAll('g[aria-label="rect"] rect, g[aria-label="bar"] rect');
-      el = rects[hit.xIndex * model.current.series.length + hit.sIndex] ?? null;
-    } else if (props.chart === 'area') {
-      el = svg.querySelectorAll('g[aria-label="area"] path')[hit.sIndex] ?? null;
-    } else {
-      el = svg.querySelectorAll('g[aria-label="line"] path')[hit.sIndex] ?? null;
-    }
+    const el: Element | null =
+      props.chart === 'bar'
+        ? (svg.querySelectorAll('g[aria-label="rect"] rect, g[aria-label="bar"] rect')[hit.xIndex * model.current.series.length + hit.sIndex] ?? null)
+        : props.chart === 'area'
+          ? (svg.querySelectorAll('g[aria-label="area"] path')[hit.sIndex] ?? null)
+          : (svg.querySelectorAll('g[aria-label="line"] path')[hit.sIndex] ?? null);
     if (!el) return;
     const se = el as SVGElement & { dataset: DOMStringMap };
     se.dataset.ddvStroke = se.style.stroke;
@@ -393,7 +386,9 @@ export function Chart(props: {
             <span class="chart-tip-key">{groupLabel(hover.series)}</span>
             <span class="chart-tip-val">{fmtNum(hover.value)}</span>
           </div>
-          {props.onPick && <div class="chart-tip-hint">{(hasBreakdown && hover.series !== OTHER) || props.result.xKind === 'terms' ? t('chart.clickFilter') : hover.isTime ? t('chart.clickZoom') : ''}</div>}
+          {props.onPick && (
+            <div class="chart-tip-hint">{(hasBreakdown && hover.series !== OTHER) || props.result.xKind === 'terms' ? t('chart.clickFilter') : hover.isTime ? t('chart.clickZoom') : ''}</div>
+          )}
         </div>
       )}
     </div>

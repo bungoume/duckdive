@@ -286,8 +286,7 @@ class Parser {
       const to = this.next();
       const hi = this.next();
       const close = this.next();
-      if ((lo.k !== 'word' && lo.k !== 'str') || to.k !== 'word' || to.v !== 'TO' || (hi.k !== 'word' && hi.k !== 'str'))
-        throw new SearchQueryError('Expected [lower TO upper]');
+      if ((lo.k !== 'word' && lo.k !== 'str') || to.k !== 'word' || to.v !== 'TO' || (hi.k !== 'word' && hi.k !== 'str')) throw new SearchQueryError('Expected [lower TO upper]');
       if (close.k !== 'rb' && close.k !== 'rc') throw new SearchQueryError('Expected "]" or "}"');
       return {
         t: 'between',
@@ -327,21 +326,36 @@ class Parser {
 
 function describe(t: Tok): string {
   switch (t.k) {
-    case 'word': return t.v;
-    case 'str': return `"${t.v}"`;
-    case 're': return `/${t.v}/`;
-    case 'and': return 'AND';
-    case 'or': return 'OR';
-    case 'not': return 'NOT';
-    case 'plus': return '+';
-    case 'minus': return '-';
-    case 'lp': return '(';
-    case 'rp': return ')';
-    case 'lb': return '[';
-    case 'rb': return ']';
-    case 'lc': return '{';
-    case 'rc': return '}';
-    case 'colon': return ':';
+    case 'word':
+      return t.v;
+    case 'str':
+      return `"${t.v}"`;
+    case 're':
+      return `/${t.v}/`;
+    case 'and':
+      return 'AND';
+    case 'or':
+      return 'OR';
+    case 'not':
+      return 'NOT';
+    case 'plus':
+      return '+';
+    case 'minus':
+      return '-';
+    case 'lp':
+      return '(';
+    case 'rp':
+      return ')';
+    case 'lb':
+      return '[';
+    case 'rb':
+      return ']';
+    case 'lc':
+      return '{';
+    case 'rc':
+      return '}';
+    case 'colon':
+      return ':';
   }
 }
 

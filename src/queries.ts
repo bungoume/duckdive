@@ -14,7 +14,7 @@ export interface Compiled {
 }
 
 export function compileSearch(search: SearchState, fields: Field[], timeExpr: string | null): Compiled {
-  let querySql: string | null = null;
+  let querySql: string;
   let error: string | null = null;
   try {
     querySql = searchToSql(search.query, fields);
@@ -47,15 +47,7 @@ export interface Doc {
   cols: Record<string, unknown>;
 }
 
-export async function fetchDocs(
-  where: string,
-  timeExpr: string | null,
-  fields: Field[],
-  sort: { field: string; dir: SortDir }[],
-  columns: string[],
-  limit: number,
-  offset: number,
-): Promise<Doc[]> {
+export async function fetchDocs(where: string, timeExpr: string | null, fields: Field[], sort: { field: string; dir: SortDir }[], columns: string[], limit: number, offset: number): Promise<Doc[]> {
   const sel: string[] = [];
   sel.push(timeExpr ? `epoch_ms(${timeExpr})::DOUBLE AS "__ts"` : `NULL AS "__ts"`);
   sel.push(`to_json(t)::VARCHAR AS "__src"`);
@@ -70,7 +62,7 @@ export async function fetchDocs(
   const sql = `SELECT ${sel.join(', ')} FROM ${VIEW} t WHERE ${where}${order.length ? ' ORDER BY ' + order.join(', ') : ''} LIMIT ${limit} OFFSET ${offset}`;
   const r = await query(sql);
   return r.rows.map((row) => {
-    let source: Record<string, unknown> = {};
+    let source: Record<string, unknown>;
     try {
       source = JSON.parse(String(row.__src));
     } catch {
@@ -180,7 +172,7 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
   const gExpr = gf ? `(${gf.expr})::VARCHAR` : null;
 
   const ctes: string[] = [`base AS (SELECT * FROM ${VIEW} WHERE ${where})`];
-  let xSel = xExpr ? `${xExpr} AS x` : `NULL AS x`;
+  const xSel = xExpr ? `${xExpr} AS x` : `NULL AS x`;
   let gSel = gExpr ? `${gExpr} AS g` : `NULL AS g`;
   const joins: string[] = [];
 
@@ -204,7 +196,7 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
     m: ms.map((_, i) => (row[`m${i}`] === null || row[`m${i}`] === undefined ? NaN : Number(row[`m${i}`]))),
   }));
 
-  let xOrder: (string | number)[] = [];
+  let xOrder: (string | number)[];
   if (xOrderSql) {
     const o = await query(`WITH ${ctes.join(',\n')} SELECT x FROM topx`);
     xOrder = o.rows.map((x) => String(x.x));

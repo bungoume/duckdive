@@ -46,7 +46,9 @@ export function ConnectedCard(props: { attached: AttachedSource; onTimeField: (n
       )}
       {a.files.length > 0 && (
         <details>
-          <summary class="hint" style="cursor:pointer">{t('ds.connected.files', { n: a.files.length })}</summary>
+          <summary class="hint" style="cursor:pointer">
+            {t('ds.connected.files', { n: a.files.length })}
+          </summary>
           <div class="sql-box" style="max-height:240px">
             {a.files.slice(0, 500).join('\n')}
             {a.files.length > 500 ? '\n…' : ''}
@@ -54,7 +56,9 @@ export function ConnectedCard(props: { attached: AttachedSource; onTimeField: (n
         </details>
       )}
       <details>
-        <summary class="hint" style="cursor:pointer">{t('ds.connected.fieldsTitle')}</summary>
+        <summary class="hint" style="cursor:pointer">
+          {t('ds.connected.fieldsTitle')}
+        </summary>
         <table class="kv" style="margin-top:6px">
           <tbody>
             {a.fields.map((f) => (

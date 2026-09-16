@@ -51,13 +51,9 @@ export function DiagnosePanel(props: { error: string | null }) {
       {report && (
         <div class="diagnose-report">
           {report.allReadable ? (
-            <div class="alert ok">
-              {t('diag.allOk', { n: report.totalFiles })}
-            </div>
+            <div class="alert ok">{t('diag.allOk', { n: report.totalFiles })}</div>
           ) : (
-            <div class="alert warn">
-              {t('diag.failing', { n: report.failing.length, queries: report.queries, truncated: report.truncated ? t('diag.truncated') : '' })}
-            </div>
+            <div class="alert warn">{t('diag.failing', { n: report.failing.length, queries: report.queries, truncated: report.truncated ? t('diag.truncated') : '' })}</div>
           )}
           {report.failing.map((f) => (
             <div class="diag-file">

@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    name: typecheck, lint, unit tests, smoke e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test:unit
+      - run: npm run build:e2e
+      - run: npx playwright install --with-deps chromium
+      - run: node e2e/smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: smoke-screenshots
+          path: '*.png'
+
+  cache-e2e:
+    name: cache e2e (needs the duckdb CLI)
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:e2e
+      - run: npx playwright install --with-deps chromium
+      - name: Install the duckdb CLI
+        run: |
+          curl -fsSL https://install.duckdb.org | sh
+          echo "$HOME/.duckdb/cli/latest" >> "$GITHUB_PATH"
+      - run: duckdb --version
+      - run: node e2e/cache.mjs
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cache-screenshots
+          path: '*.png'

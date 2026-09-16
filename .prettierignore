@@ -1,0 +1,7 @@
+dist
+release
+public/duckdb
+public/THIRD_PARTY_LICENSES.txt
+package-lock.json
+src/styles.css
+*.png

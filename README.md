@@ -104,19 +104,19 @@ Access key mode keeps the access key ID with the source configuration and the se
 
 The query bar uses Lucene syntax.
 
-| Example | Meaning |
-| --- | --- |
-| `error timeout` | free text; each word matches any searchable field, words are OR-ed |
-| `"connection reset"` | phrase; `"a b"~3` requires all words in the same field |
-| `http.status:503` | field match (exact for numbers and booleans, token match for strings) |
-| `host.name:web-*` | wildcard; `?` matches one character |
-| `path:/api\/v[12]\/.*/` | regular expression |
-| `http.status:(500 OR 503)` | list of values |
-| `http.latency_ms:>800` | range; `:>` `:>=` `:<` `:<=` |
-| `http.bytes:[1000 TO 5000]` | bracket range; `{}` excludes the bound, `*` leaves it open |
-| `extra.user_id:*` | field exists |
-| `NOT level:info`, `-level:info` | negation; `+term` requires |
-| `a AND (b OR c)` | `AND` `OR` `NOT` in upper case, or `&&` `||` `!`; adjacent terms are OR-ed |
+| Example                         | Meaning                                                               |
+| ------------------------------- | --------------------------------------------------------------------- |
+| `error timeout`                 | free text; each word matches any searchable field, words are OR-ed    |
+| `"connection reset"`            | phrase; `"a b"~3` requires all words in the same field                |
+| `http.status:503`               | field match (exact for numbers and booleans, token match for strings) |
+| `host.name:web-*`               | wildcard; `?` matches one character                                   |
+| `path:/api\/v[12]\/.*/`         | regular expression                                                    |
+| `http.status:(500 OR 503)`      | list of values                                                        |
+| `http.latency_ms:>800`          | range; `:>` `:>=` `:<` `:<=`                                          |
+| `http.bytes:[1000 TO 5000]`     | bracket range; `{}` excludes the bound, `*` leaves it open            |
+| `extra.user_id:*`               | field exists                                                          |
+| `NOT level:info`, `-level:info` | negation; `+term` requires                                            |
+| `a AND (b OR c)`                | `AND` `OR` `NOT` in upper case, or `&&` `                             |     | ` `!`; adjacent terms are OR-ed |
 
 Special characters are escaped with `\`. `term~2` and `term^3` are accepted and ignored. Struct columns are addressed with dots (`geo.country`); JSON columns are sampled for keys and exposed the same way (`extra.user_id`). "show SQL" displays the generated statement.
 
@@ -131,11 +131,15 @@ duckdb-wasm downloads whole HTTP files by default. `src/duck.ts` opens the datab
 ## Tests
 
 ```
-npm test               # builds with localhost allowed and the test hooks, then runs both suites
-npm run build:e2e      # that build alone (VITE_DDV_DEBUG=1, http://localhost/* allowed)
+npm test               # typecheck, lint, unit tests, then the e2e build and both Playwright suites
+npm run test:unit      # vitest: query parser, date math, ticks, pattern expansion, gzip members, SQL, URL state
+npm run lint           # eslint + prettier --check   (npm run format rewrites)
+npm run build:e2e      # the e2e build alone (VITE_DDV_DEBUG=1, http://localhost/* allowed)
 node e2e/smoke.mjs     # Discover and Visualize on the demo dataset
 node e2e/cache.mjs     # permissions, OPFS persistence, SigV4 and STS against a local range server
 ```
+
+The unit tests in `test/` run in Node against the pure modules (with Web Storage and `location` stubbed in `test/setup.ts`); everything that needs DuckDB or Chrome is covered by the Playwright suites. `.github/workflows/ci.yml` runs the same steps on every push and pull request.
 
 `e2e/cache.mjs` needs the `duckdb` CLI to generate fixtures. Both use Playwright's headless Chromium with the built extension loaded and drive the app through `window.__ddv`, hooks that exist only in dev builds and in builds made with `VITE_DDV_DEBUG=1` (`src/debug.ts`); a store build publishes nothing on the page. The tests assert English text, so `e2e/ext-context.mjs` pins the UI language to English before the page loads; set `DDV_LANG=ja` (or another language id) to run `npm run screenshots` (after `npm run build:e2e`) in that language.
 

@@ -1,6 +1,20 @@
 import { useEffect, useState } from 'preact/hooks';
 import { t } from '../i18n';
-import { cacheClear, cacheCompact, cacheFiles, cachePurge, cacheSetConfig, cacheStats, fmtBytes, requestPersist, storageEstimate, type CacheConfig, type CacheStats, type CacheSummary, type CachedFile } from '../cache';
+import {
+  cacheClear,
+  cacheCompact,
+  cacheFiles,
+  cachePurge,
+  cacheSetConfig,
+  cacheStats,
+  fmtBytes,
+  requestPersist,
+  storageEstimate,
+  type CacheConfig,
+  type CacheStats,
+  type CacheSummary,
+  type CachedFile,
+} from '../cache';
 
 const CHUNK_SIZES = [
   { v: 256 * 1024, l: '256 KB' },
@@ -100,7 +114,15 @@ export function CachePanel() {
               <tr>
                 <td class="k">{t('cache.session')}</td>
                 <td class="v">
-                  {t('cache.session.text', { total: fmtBytes(total), fromCache: fmtBytes(stats?.bytesFromCache ?? 0), ratio, downloaded: fmtBytes(stats?.bytesDownloaded ?? 0), misses: stats?.chunkMisses ?? 0, hits: stats?.chunkHits ?? 0, passthrough: stats?.passthrough ?? 0 })}
+                  {t('cache.session.text', {
+                    total: fmtBytes(total),
+                    fromCache: fmtBytes(stats?.bytesFromCache ?? 0),
+                    ratio,
+                    downloaded: fmtBytes(stats?.bytesDownloaded ?? 0),
+                    misses: stats?.chunkMisses ?? 0,
+                    hits: stats?.chunkHits ?? 0,
+                    passthrough: stats?.passthrough ?? 0,
+                  })}
                 </td>
               </tr>
               <tr>
@@ -161,7 +183,9 @@ export function CachePanel() {
               <tbody>
                 {files.map((f) => (
                   <tr>
-                    <td class="mono" style="word-break:break-all">{f.url}</td>
+                    <td class="mono" style="word-break:break-all">
+                      {f.url}
+                    </td>
                     <td class="num">{fmtBytes(f.size)}</td>
                     <td class="num">
                       {fmtBytes(f.cachedBytes)} ({f.size ? Math.min(100, Math.round((f.cachedBytes / f.size) * 100)) : 0}%)

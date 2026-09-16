@@ -30,7 +30,7 @@ for (const dir of paths) {
   const licFile = readdirSync(dir).find((f) => /^(licen[cs]e|copying)(\.|$)/i.test(f));
   const text = licFile ? readFileSync(join(dir, licFile), 'utf8').trim() : null;
   const license = pkg.license ?? (typeof pkg.licenses === 'object' ? JSON.stringify(pkg.licenses) : 'UNKNOWN');
-  const holder = typeof pkg.author === 'string' ? pkg.author : pkg.author?.name ?? pkg.name;
+  const holder = typeof pkg.author === 'string' ? pkg.author : (pkg.author?.name ?? pkg.name);
   seen.set(key, { name: pkg.name, version: pkg.version, license, homepage: pkg.homepage ?? '', text: text ?? (license === 'MIT' ? mitText(holder) : null) });
 }
 

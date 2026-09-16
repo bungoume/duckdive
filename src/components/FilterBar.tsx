@@ -33,9 +33,11 @@ function FilterEditor(props: { fields: Field[]; initial?: Filter; onSave: (f: Fi
         <div class="field-row">
           <label>{t('common.field')}</label>
           <select class="input" value={field} onChange={(e) => setField((e.target as HTMLSelectElement).value)}>
-            {props.fields.filter((f) => f.kind !== 'object').map((f) => (
-              <option value={f.name}>{f.name}</option>
-            ))}
+            {props.fields
+              .filter((f) => f.kind !== 'object')
+              .map((f) => (
+                <option value={f.name}>{f.name}</option>
+              ))}
           </select>
         </div>
       )}
@@ -72,7 +74,11 @@ function FilterEditor(props: { fields: Field[]; initial?: Filter; onSave: (f: Fi
           onClick={() => {
             const f: Filter = { id: props.initial?.id ?? newId(), field, op, negate: props.initial?.negate, disabled: props.initial?.disabled };
             if (op === 'is' || op === 'is_not') f.value = value;
-            if (op === 'is_one_of' || op === 'is_not_one_of') f.values = value.split(',').map((s) => s.trim()).filter(Boolean);
+            if (op === 'is_one_of' || op === 'is_not_one_of')
+              f.values = value
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean);
             if (op === 'between') {
               f.from = from || undefined;
               f.to = to || undefined;
@@ -108,7 +114,11 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
 
   return (
     <div class="filterbar">
-      {untrusted > 0 && <div class="alert warn filter-untrusted" style="flex-basis:100%;margin:0">{t('flt.untrusted', { n: untrusted })}</div>}
+      {untrusted > 0 && (
+        <div class="alert warn filter-untrusted" style="flex-basis:100%;margin:0">
+          {t('flt.untrusted', { n: untrusted })}
+        </div>
+      )}
       {props.filters.map((f) => (
         <Popover
           open={menu === f.id || editing === f.id}
@@ -187,7 +197,15 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
           )}
         </Popover>
       ))}
-      <Popover open={adding} onClose={() => setAdding(false)} button={<button class="add" onClick={() => setAdding(!adding)}>{t('flt.addButton')}</button>}>
+      <Popover
+        open={adding}
+        onClose={() => setAdding(false)}
+        button={
+          <button class="add" onClick={() => setAdding(!adding)}>
+            {t('flt.addButton')}
+          </button>
+        }
+      >
         <FilterEditor
           fields={props.fields}
           onCancel={() => setAdding(false)}

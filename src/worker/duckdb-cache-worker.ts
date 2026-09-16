@@ -14,7 +14,8 @@
 
 declare function importScripts(...urls: string[]): void;
 
-// OPFS synchronous access handles are only typed in lib.webworker; declare what we use.
+// OPFS synchronous access handles are only typed in lib.webworker; declare what we use. This
+// file has no imports, so it is a script and these declarations merge into the DOM interfaces.
 interface FileSystemSyncAccessHandle {
   read(buffer: ArrayBufferView, options?: { at?: number }): number;
   write(buffer: ArrayBufferView, options?: { at?: number }): number;
@@ -23,6 +24,7 @@ interface FileSystemSyncAccessHandle {
   flush(): void;
   close(): void;
 }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- declaration merging (see above)
 interface FileSystemFileHandle {
   createSyncAccessHandle(): Promise<FileSystemSyncAccessHandle>;
 }
@@ -113,7 +115,19 @@ interface LogEntry {
   head?: string;
 }
 const LOG_SIZE = 300;
-const stats = { requests: 0, passthrough: 0, chunkHits: 0, chunkMisses: 0, bytesFromCache: 0, bytesFromNetwork: 0, bytesDownloaded: 0, headsSynthesized: 0, headsNetwork: 0, corruptions: 0, log: [] as LogEntry[] };
+const stats = {
+  requests: 0,
+  passthrough: 0,
+  chunkHits: 0,
+  chunkMisses: 0,
+  bytesFromCache: 0,
+  bytesFromNetwork: 0,
+  bytesDownloaded: 0,
+  headsSynthesized: 0,
+  headsNetwork: 0,
+  corruptions: 0,
+  log: [] as LogEntry[],
+};
 const files = new Map<string, CacheEntry>();
 interface ExtEntry {
   name: string;
@@ -352,7 +366,13 @@ function isComplete(entry: CacheEntry): boolean {
 }
 
 /** Store a complete copy of an object (possibly re-packed, see FileMeta.norm) as cache chunks. */
-function storeWhole(url: string, etag: string, lastModified: string | undefined, bytes: Uint8Array, norm: { origSize: number } | undefined): { ok: true; chunks: number } | { ok: false; error: string } {
+function storeWhole(
+  url: string,
+  etag: string,
+  lastModified: string | undefined,
+  bytes: Uint8Array,
+  norm: { origSize: number } | undefined,
+): { ok: true; chunks: number } | { ok: false; error: string } {
   if (!slab) return { ok: false, error: opfsError ?? 'cache storage unavailable' };
   if (!bytes.byteLength) return { ok: false, error: 'empty body' };
   const key = cacheKey(url);
@@ -605,7 +625,16 @@ function synthesizedHead(entry: CacheEntry, rangeHeader: string | undefined): Na
   } else {
     h['content-length'] = String(entry.size);
   }
-  return { status, statusText: status === 206 ? 'Partial Content' : 'OK', headers: h, rawHeaders: Object.entries(h).map(([k, v]) => `${k}: ${v}`).join('\r\n') + '\r\n', body: null };
+  return {
+    status,
+    statusText: status === 206 ? 'Partial Content' : 'OK',
+    headers: h,
+    rawHeaders:
+      Object.entries(h)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('\r\n') + '\r\n',
+    body: null,
+  };
 }
 
 function handleHead(url: string, headers: HeaderMap): NativeResult {
@@ -733,7 +762,16 @@ function handleRangeGet(url: string, headers: HeaderMap, rangeHeader: string, re
     etag: entry.etag,
     'x-ddv-cache': 'range',
   };
-  return { status: 206, statusText: 'Partial Content', headers: h, rawHeaders: Object.entries(h).map(([k, v]) => `${k}: ${v}`).join('\r\n') + '\r\n', body: out.buffer };
+  return {
+    status: 206,
+    statusText: 'Partial Content',
+    headers: h,
+    rawHeaders:
+      Object.entries(h)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('\r\n') + '\r\n',
+    body: out.buffer,
+  };
 }
 
 function handleExtensionGet(url: string, headers: HeaderMap): NativeResult {
@@ -744,7 +782,16 @@ function handleExtensionGet(url: string, headers: HeaderMap): NativeResult {
     if (n === rec.size) {
       log({ method: 'GET', url, range: null, outcome: 'extension-cache' });
       const h: HeaderMap = { 'content-type': 'application/wasm', 'content-length': String(rec.size), 'x-ddv-cache': 'extension' };
-      return { status: 200, statusText: 'OK', headers: h, rawHeaders: Object.entries(h).map(([k, v]) => `${k}: ${v}`).join('\r\n') + '\r\n', body: buf.buffer };
+      return {
+        status: 200,
+        statusText: 'OK',
+        headers: h,
+        rawHeaders:
+          Object.entries(h)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join('\r\n') + '\r\n',
+        body: buf.buffer,
+      };
     }
   }
   const res = nativeSync('GET', url, headers, true, WHOLE_FILE_TIMEOUT_MS);
@@ -1007,7 +1054,15 @@ async function handleControl(data: unknown, reply: (payload: Record<string, unkn
         }
         const norm = rest.repacked ? { origSize: Number(rest.origSize) || bytes.byteLength } : undefined;
         const r = storeWhole(String(rest.url), String(rest.etag ?? ''), rest.lastModified ? new Date(String(rest.lastModified)).toUTCString() : undefined, bytes, norm);
-        if (r.ok) log({ method: 'STORE', url: String(rest.url), range: null, outcome: (norm ? `repacked:${norm.origSize}->${bytes.byteLength}` : 'stored') + (rest.note ? ` ${String(rest.note)}` : ''), bytes: bytes.byteLength, head: hexHead(new Uint8Array(bytes.subarray(0, 8)).buffer as ArrayBuffer) });
+        if (r.ok)
+          log({
+            method: 'STORE',
+            url: String(rest.url),
+            range: null,
+            outcome: (norm ? `repacked:${norm.origSize}->${bytes.byteLength}` : 'stored') + (rest.note ? ` ${String(rest.note)}` : ''),
+            bytes: bytes.byteLength,
+            head: hexHead(new Uint8Array(bytes.subarray(0, 8)).buffer as ArrayBuffer),
+          });
         reply(r.ok ? { ok: true, chunks: r.chunks } : { ok: false, error: r.error });
         break;
       }

@@ -178,7 +178,10 @@ export async function diagnoseFiles(onProgress: (msg: string) => void, maxFailin
     }
     report.queries++;
     onProgress(t('diag.progress.reading', { n: idx.length, query: report.queries, found: found.length }));
-    const err = await readError(format, idx.map((i) => files[i]));
+    const err = await readError(
+      format,
+      idx.map((i) => files[i]),
+    );
     if (!err) return;
     if (idx.length === 1) {
       found.push({ file: files[idx[0]], error: err });

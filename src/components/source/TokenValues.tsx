@@ -2,7 +2,14 @@ import { t } from '../../i18n';
 import type { Variables } from '../../hooks/useConnect';
 
 /** The {name} tokens of the pattern: which values were listed and which the user picked. */
-export function TokenValues(props: { tokens: string[]; vars: Variables | null; selected: Record<string, string[]>; missing: string[]; onSelect: (name: string, values: string[]) => void; onSelectAll: () => void }) {
+export function TokenValues(props: {
+  tokens: string[];
+  vars: Variables | null;
+  selected: Record<string, string[]>;
+  missing: string[];
+  onSelect: (name: string, values: string[]) => void;
+  onSelectAll: () => void;
+}) {
   const { tokens, vars } = props;
   return (
     <div class="variables-box">
@@ -29,9 +36,19 @@ export function TokenValues(props: { tokens: string[]; vars: Variables | null; s
           return (
             <div class="var-values" data-token={n} style="margin-top:8px">
               <div class="row" style="gap:8px;align-items:center">
-                <b class="mono" style="font-size:12px">{'{' + n + '}'}</b>
+                <b class="mono" style="font-size:12px">
+                  {'{' + n + '}'}
+                </b>
                 <span class="hint">{t('ds.vars.count', { n: opts.length, sel: sel.length })}</span>
-                <button class="btn ghost small" onClick={() => props.onSelect(n, opts.map((v) => v.value))}>
+                <button
+                  class="btn ghost small"
+                  onClick={() =>
+                    props.onSelect(
+                      n,
+                      opts.map((v) => v.value),
+                    )
+                  }
+                >
                   {t('ds.vars.all')}
                 </button>
                 <button class="btn ghost small" onClick={() => props.onSelect(n, [])}>
@@ -41,7 +58,11 @@ export function TokenValues(props: { tokens: string[]; vars: Variables | null; s
               <div class="var-list">
                 {opts.map((v) => (
                   <label class="var-item">
-                    <input type="checkbox" checked={sel.includes(v.value)} onChange={(e) => props.onSelect(n, (e.target as HTMLInputElement).checked ? [...sel, v.value] : sel.filter((x) => x !== v.value))} />
+                    <input
+                      type="checkbox"
+                      checked={sel.includes(v.value)}
+                      onChange={(e) => props.onSelect(n, (e.target as HTMLInputElement).checked ? [...sel, v.value] : sel.filter((x) => x !== v.value))}
+                    />
                     <span class="mono">{v.value || t('common.empty')}</span>
                     <span class="hint">{t('common.files', { n: v.files.toLocaleString() })}</span>
                   </label>
@@ -51,7 +72,11 @@ export function TokenValues(props: { tokens: string[]; vars: Variables | null; s
             </div>
           );
         })}
-      {vars && props.missing.length > 0 && <div class="alert warn" style="margin-top:8px">{t('ds.vars.missing', { names: props.missing.join(', ') })}</div>}
+      {vars && props.missing.length > 0 && (
+        <div class="alert warn" style="margin-top:8px">
+          {t('ds.vars.missing', { names: props.missing.join(', ') })}
+        </div>
+      )}
     </div>
   );
 }

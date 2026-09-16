@@ -23,11 +23,13 @@ export const zh_CN: Messages = {
   'app.error.hostPermission': '以下主机的访问权限被拒绝：{origins}',
   'app.error.cancelled': '连接已取消',
   'app.large.files': '{n} 个文件',
-  'app.large.text': '{files}{bytes} 与此模式和时间范围匹配（阈值 {threshold}）。目前尚未读取任何内容。继续将基于全部文件创建视图；首次查询时再下载所需部分。请缩小时间范围、添加名称前缀或对捕获列添加筛选，或直接继续。',
+  'app.large.text':
+    '{files}{bytes} 与此模式和时间范围匹配（阈值 {threshold}）。目前尚未读取任何内容。继续将基于全部文件创建视图；首次查询时再下载所需部分。请缩小时间范围、添加名称前缀或对捕获列添加筛选，或直接继续。',
   'app.large.continue': '继续处理 {n} 个文件',
   'app.gate.files': '{n} 个文件',
   'app.gate.unknown': '（其中 {n} 个大小未知）',
-  'app.gate.text': '下一次查询将打开 {files}，它们尚未下载（阈值 {threshold}），最多需要下载 {bytes}{unknown}。Parquet 只读取所需部分；文本 / gzip 文件会整体读取。请缩小时间范围，或仍然运行（后续查询会复用缓存）。',
+  'app.gate.text':
+    '下一次查询将打开 {files}，它们尚未下载（阈值 {threshold}），最多需要下载 {bytes}{unknown}。Parquet 只读取所需部分；文本 / gzip 文件会整体读取。请缩小时间范围，或仍然运行（后续查询会复用缓存）。',
   'app.gate.runAnyway': '仍然运行',
 
   // ---- settings page ----
@@ -85,7 +87,8 @@ export const zh_CN: Messages = {
   'ds.template.replace': '替换',
   'ds.template.keep': '保留当前',
   'ds.urls.label': 'URL 或模式，每行一个（s3://、https://；以 # 开头的行会被忽略）',
-  'ds.urls.hint': 's3:// 模式可以使用 {star}、{q}、{dstar} 以及日期标记 {dates}，日期标记由时间选择器（UTC）填充，因此只会列出并读取所选范围内的分区。其他任何 {name} 都是命名通配符：匹配到的文本会成为一列（例如 {example} 会生成一个可搜索、可筛选的 {alb} 字段；对它添加“is”筛选还会阻止读取其他文件）。',
+  'ds.urls.hint':
+    's3:// 模式可以使用 {star}、{q}、{dstar} 以及日期标记 {dates}，日期标记由时间选择器（UTC）填充，因此只会列出并读取所选范围内的分区。其他任何 {name} 都是命名通配符：匹配到的文本会成为一列（例如 {example} 会生成一个可搜索、可筛选的 {alb} 字段；对它添加“is”筛选还会阻止读取其他文件）。',
   'ds.vars.title': '模式变量 · {names}',
   'ds.vars.listed': '最新分区中有 {n} 个文件',
   'ds.vars.selectAll': '选择全部取值',
@@ -97,7 +100,8 @@ export const zh_CN: Messages = {
   'ds.vars.missing': '请为以下变量至少选择一个取值：{names}',
   'ds.name': '名称',
   'ds.maxFiles': '连接前匹配文件数超过此值时发出警告（默认 1000）',
-  'ds.listingHint': '列出对象时会把第一个通配符之前的字面文本作为 S3 前缀，因此当一个日期目录下包含多个 ALB 时，请把负载均衡器名称写进模式。文件名中带有时间戳（…_20260909T0105Z_…）且超出时间范围的文件会被自动跳过。',
+  'ds.listingHint':
+    '列出对象时会把第一个通配符之前的字面文本作为 S3 前缀，因此当一个日期目录下包含多个 ALB 时，请把负载均衡器名称写进模式。文件名中带有时间戳（…_20260909T0105Z_…）且超出时间范围的文件会被自动跳过。',
   'ds.s3.title': 'S3 端点',
   'ds.s3.region': '区域',
   'ds.s3.endpoint': '端点（可选；AWS：s3.<region>.amazonaws.com，MinIO / R2：主机名或 http://host:9000）',
@@ -114,7 +118,8 @@ export const zh_CN: Messages = {
   'ds.key.secret': '私有访问密钥',
   'ds.key.token': '会话令牌（用于临时凭证）',
   'ds.oidc.title': 'OIDC 登录 → AWS STS',
-  'ds.oidc.intro': '浏览器先在您的身份提供商处登录，然后直接调用 STS {api}。任何地方都不存在长期密钥；临时凭证保存在内存中（chrome.storage.session）并自动刷新。请在身份提供商处注册此重定向 URL：{url}',
+  'ds.oidc.intro':
+    '浏览器先在您的身份提供商处登录，然后直接调用 STS {api}。任何地方都不存在长期密钥；临时凭证保存在内存中（chrome.storage.session）并自动刷新。请在身份提供商处注册此重定向 URL：{url}',
   'ds.oidc.authUrl': '授权端点',
   'ds.oidc.clientId': '客户端 ID',
   'ds.oidc.scope': '范围（scope）',
@@ -152,7 +157,8 @@ export const zh_CN: Messages = {
   'ds.hosts.hint': '此扩展被允许读取的主机。AWS 端点默认允许；其他主机会在连接时请求授权。',
   'ds.hosts.revoke': '撤销',
   'ds.history.title': '最近的来源',
-  'ds.history.hint': '最近连接过的 {n} 个 S3 / HTTPS 和演示数据源（最新在前）。选择后会加载其设置（包括已选的模式变量值；访问密钥的密钥仅在本浏览器会话期间有效）并连接；标题栏的菜单在任何页面都可执行相同操作。',
+  'ds.history.hint':
+    '最近连接过的 {n} 个 S3 / HTTPS 和演示数据源（最新在前）。选择后会加载其设置（包括已选的模式变量值；访问密钥的密钥仅在本浏览器会话期间有效）并连接；标题栏的菜单在任何页面都可执行相同操作。',
   'ds.history.use': '连接',
   'ds.history.current': '当前',
   'ds.history.lastUsed': '上次使用 {time}',
@@ -428,7 +434,8 @@ export const zh_CN: Messages = {
   'tpl.alb.label': 'ALB 访问日志',
   'tpl.alb.note': 'account / region / alb 会成为列；对 alb 筛选可只读取一个负载均衡器。如果配置了存储桶前缀，请加在 AWSLogs 之前。',
   'tpl.alb-parquet.label': '转换为 Parquet 的 ALB 访问日志（scripts/alb-to-parquet.sh）',
-  'tpl.alb-parquet.note': '由 scripts/alb-to-parquet.sh 写出的按小时 Parquet：<prefix>/<alb>/dt=YYYY-MM-DD/hour=HH/data.parquet。dt 和 hour 会成为分区列；如果目标路径已指定单个负载均衡器，请去掉“{alb}/”。',
+  'tpl.alb-parquet.note':
+    '由 scripts/alb-to-parquet.sh 写出的按小时 Parquet：<prefix>/<alb>/dt=YYYY-MM-DD/hour=HH/data.parquet。dt 和 hour 会成为分区列；如果目标路径已指定单个负载均衡器，请去掉“{alb}/”。',
   'tpl.nlb.label': 'NLB 访问日志',
   'tpl.nlb.note': '仅限 TLS 监听器日志（空格分隔，自动检测）。必要时请手动选择时间字段。',
   'tpl.cloudfront.label': 'CloudFront 日志',
@@ -438,7 +445,8 @@ export const zh_CN: Messages = {
   'tpl.flowlogs.label': 'VPC Flow Logs',
   'tpl.flowlogs.note': '带表头的文本（自定义格式也可用）。使用“start”（epoch 秒）作为时间字段。',
   'tpl.flowlogs-parquet.label': 'VPC Flow Logs（Parquet，Hive 兼容前缀）',
-  'tpl.flowlogs-parquet.note': '以 Parquet 投递、启用“Hive 兼容 S3 前缀”并按小时分区的流日志。未启用 Hive 选项时，布局为 AWSLogs/{account}/vpcflowlogs/{region}/{yyyy}/{MM}/{dd}/{HH}/*.log.parquet。“start”（epoch 秒）为时间字段。',
+  'tpl.flowlogs-parquet.note':
+    '以 Parquet 投递、启用“Hive 兼容 S3 前缀”并按小时分区的流日志。未启用 Hive 选项时，布局为 AWSLogs/{account}/vpcflowlogs/{region}/{yyyy}/{MM}/{dd}/{HH}/*.log.parquet。“start”（epoch 秒）为时间字段。',
   'tpl.waf.label': 'WAF 日志（S3 投递）',
   'tpl.waf.note': 'JSON 行，每个请求一行；“timestamp”（epoch 毫秒）为时间字段。CloudFront 前的 Web ACL 使用“cloudfront”作为区域。',
   'tpl.netfw.label': 'Network Firewall 日志',
@@ -446,7 +454,8 @@ export const zh_CN: Messages = {
   'tpl.r53resolver.label': 'Route 53 Resolver 查询日志',
   'tpl.r53resolver.note': 'JSON 行，每次 DNS 查询一行；“query_timestamp”为时间字段。',
   'tpl.s3access.label': 'S3 服务器访问日志',
-  'tpl.s3access.note': '非分区布局：<prefix>YYYY-MM-DD-HH-MM-SS-UniqueString。基于日期的分区请使用 <prefix>/{account}/{region}/{source_bucket}/{yyyy}/{MM}/{dd}/{yyyy}-{MM}-{dd}-{HH}-*。会派生出“timestamp”列。',
+  'tpl.s3access.note':
+    '非分区布局：<prefix>YYYY-MM-DD-HH-MM-SS-UniqueString。基于日期的分区请使用 <prefix>/{account}/{region}/{source_bucket}/{yyyy}/{MM}/{dd}/{yyyy}-{MM}-{dd}-{HH}-*。会派生出“timestamp”列。',
   'tpl.firehose.label': 'Kinesis Data Firehose 投递（默认前缀）',
   'tpl.firehose.note': 'Firehose 使用的默认 YYYY/MM/DD/HH 前缀（CloudWatch Logs 订阅、EventBridge、经 Firehose 的 WAF 等）。记录按 JSON 读取，记录之间有无换行均可。如果未检测到时间字段，请手动选择。',
   'tpl.cwlexport.label': 'CloudWatch Logs 导出到 S3',
@@ -487,5 +496,6 @@ export const zh_CN: Messages = {
   'src.counting': '正在统计行数…',
   'src.tooManyObjects': '{bucket}/{prefix} 下的对象超过 {max} 个；请在通配符前添加字面前缀（例如负载均衡器名称）或缩小时间范围',
   'src.tooManyPrefixes': '时间范围展开后的前缀过多',
-  'src.warning.many': '{files} 个文件（{mb} MB）与此时间范围匹配，超过了警告阈值 {max}。连接本身不会读取任何内容，但文本 / gzip 文件会整体且逐个下载，因此此范围内的首次查询会很慢。请缩小时间范围（按小时而非按天），或用 scripts/alb-to-parquet.sh 将较大范围转换为按小时的 Parquet。',
+  'src.warning.many':
+    '{files} 个文件（{mb} MB）与此时间范围匹配，超过了警告阈值 {max}。连接本身不会读取任何内容，但文本 / gzip 文件会整体且逐个下载，因此此范围内的首次查询会很慢。请缩小时间范围（按小时而非按天），或用 scripts/alb-to-parquet.sh 将较大范围转换为按小时的 Parquet。',
 };

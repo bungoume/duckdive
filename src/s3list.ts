@@ -59,7 +59,10 @@ export function s3Target(bucket: string, s3: S3Config): S3Target {
 }
 
 function amzDate(d = new Date()): { date: string; datetime: string } {
-  const iso = d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const iso = d
+    .toISOString()
+    .replace(/[-:]/g, '')
+    .replace(/\.\d{3}/, '');
   return { date: iso.slice(0, 8), datetime: iso };
 }
 
@@ -128,7 +131,15 @@ export interface ListResult {
   prefixes: string[];
 }
 
-export async function listObjects(target: S3Target, region: string, creds: AwsCredentials | null, prefix: string, delimiter: '/' | '' = '/', maxObjects = 200000, signal?: AbortSignal | null): Promise<ListResult> {
+export async function listObjects(
+  target: S3Target,
+  region: string,
+  creds: AwsCredentials | null,
+  prefix: string,
+  delimiter: '/' | '' = '/',
+  maxObjects = 200000,
+  signal?: AbortSignal | null,
+): Promise<ListResult> {
   const objects: S3Object[] = [];
   const prefixes: string[] = [];
   let token: string | null = null;

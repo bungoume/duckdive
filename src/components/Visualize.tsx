@@ -64,9 +64,11 @@ function FieldSelect(props: { fields: Field[]; value: string | null; onChange: (
   return (
     <select class="input" value={props.value ?? ''} onChange={(e) => props.onChange((e.target as HTMLSelectElement).value || null)}>
       <option value="">{props.placeholder ?? t('vis.selectField')}</option>
-      {props.fields.filter((f) => f.kind !== 'object' && (!props.allow || props.allow(f))).map((f) => (
-        <option value={f.name}>{f.name}</option>
-      ))}
+      {props.fields
+        .filter((f) => f.kind !== 'object' && (!props.allow || props.allow(f)))
+        .map((f) => (
+          <option value={f.name}>{f.name}</option>
+        ))}
     </select>
   );
 }
@@ -223,7 +225,11 @@ export function Visualize(props: {
                   {t('common.save')}
                 </button>
               </div>
-              {showSql && result && <div class="sql-box" style="margin-bottom:8px">{result.sql}</div>}
+              {showSql && result && (
+                <div class="sql-box" style="margin-bottom:8px">
+                  {result.sql}
+                </div>
+              )}
               {result && vis.chart === 'table' && <DataTable result={result} metrics={vis.metrics} xLabel={xLabel} gLabel={gLabel} />}
               {result && vis.chart === 'metric' && <MetricTiles result={result} metrics={vis.metrics} />}
               {result && (vis.chart === 'area' || vis.chart === 'line' || vis.chart === 'bar') && (
@@ -288,7 +294,13 @@ export function Visualize(props: {
                   <>
                     <div class="field-row">
                       <label>{t('common.field')}</label>
-                      <FieldSelect fields={fields} value={vis.x.field} onChange={(v) => setX({ field: v })} allow={(f) => f.kind === 'date'} placeholder={t('vis.timeFieldPlaceholder', { name: props.timeField?.name ?? t('common.none') })} />
+                      <FieldSelect
+                        fields={fields}
+                        value={vis.x.field}
+                        onChange={(v) => setX({ field: v })}
+                        allow={(f) => f.kind === 'date'}
+                        placeholder={t('vis.timeFieldPlaceholder', { name: props.timeField?.name ?? t('common.none') })}
+                      />
                     </div>
                     <div class="field-row">
                       <label>{t('vis.minInterval')}</label>
@@ -337,7 +349,14 @@ export function Visualize(props: {
                     </div>
                     <div class="field-row">
                       <label>{t('vis.bucketSize')}</label>
-                      <input class="input" type="number" min={0} step="any" value={vis.x.interval === 'auto' ? 10 : vis.x.interval} onInput={(e) => setX({ interval: (e.target as HTMLInputElement).value })} />
+                      <input
+                        class="input"
+                        type="number"
+                        min={0}
+                        step="any"
+                        value={vis.x.interval === 'auto' ? 10 : vis.x.interval}
+                        onInput={(e) => setX({ interval: (e.target as HTMLInputElement).value })}
+                      />
                     </div>
                   </>
                 )}

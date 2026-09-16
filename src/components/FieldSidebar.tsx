@@ -73,14 +73,19 @@ export function FieldSidebar(props: {
         {open === f.name && (
           <div class="field-details" style={anchor ? { left: anchor.left, top: anchor.top } : undefined} onClick={(e) => e.stopPropagation()}>
             <div class="row" style="justify-content:space-between;margin-bottom:6px">
-              <b class="mono" style="font-size:12px">{f.name}</b>
+              <b class="mono" style="font-size:12px">
+                {f.name}
+              </b>
               <span class="hint">{f.duckType}</span>
             </div>
             {f.kind === 'object' ? (
               <div class="hint">{t('fs.objectField')}</div>
             ) : (
               <>
-                <h4>{t('fs.top5')}{tops ? t('fs.inRecords', { n: tops.total.toLocaleString() }) : ''}</h4>
+                <h4>
+                  {t('fs.top5')}
+                  {tops ? t('fs.inRecords', { n: tops.total.toLocaleString() }) : ''}
+                </h4>
                 {loading && <div class="hint">{t('common.loading')}</div>}
                 {tops &&
                   tops.values.map((v) => (
