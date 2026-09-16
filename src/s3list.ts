@@ -65,7 +65,48 @@ function amzDate(d = new Date()): { date: string; datetime: string } {
   return { date: iso.slice(0, 8), datetime: iso };
 }
 
-/** Sign a GET request (SigV4, service s3). Returns headers to send. */
+const EMPTY_SHA256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'; // sha256('')
+
+/**
+ * SigV4 signing keys, one per (date, region, access key). Deriving one costs four HMACs; a
+ * connect that signs thousands of object GETs (gzip re-packing) reuses it.
+ */
+const signingKeys = new Map<string, { secret: string; key: ArrayBuffer }>();
+
+async function signingKey(creds: AwsCredentials, date: string, region: string): Promise<ArrayBuffer> {
+  const id = `${date}/${region}/${creds.accessKeyId}`;
+  const hit = signingKeys.get(id);
+  if (hit && hit.secret === creds.secretAccessKey) return hit.key;
+  let k: ArrayBuffer = await hmac(enc.encode('AWS4' + creds.secretAccessKey), date);
+  k = await hmac(k, region);
+  k = await hmac(k, 's3');
+  k = await hmac(k, 'aws4_request');
+  if (signingKeys.size >= 8) signingKeys.clear();
+  signingKeys.set(id, { secret: creds.secretAccessKey, key: k });
+  return k;
+}
+
+/**
+ * SigV4 (service s3) headers for a GET with an empty body. `canonicalUri` is the encoded path
+ * and `qs` the canonical query string (sorted, RFC 3986 encoded; '' when none).
+ */
+async function sigv4Get(target: S3Target, canonicalUri: string, qs: string, region: string, creds: AwsCredentials): Promise<Record<string, string>> {
+  const { date, datetime } = amzDate();
+  const rg = region || 'us-east-1';
+  const headers: Record<string, string> = { host: target.host, 'x-amz-content-sha256': EMPTY_SHA256, 'x-amz-date': datetime };
+  if (creds.sessionToken) headers['x-amz-security-token'] = creds.sessionToken;
+  const signedHeaders = Object.keys(headers).sort();
+  const canonical = ['GET', canonicalUri, qs, signedHeaders.map((h) => `${h}:${headers[h]}\n`).join(''), signedHeaders.join(';'), EMPTY_SHA256].join('\n');
+  const scope = `${date}/${rg}/s3/aws4_request`;
+  const sts = ['AWS4-HMAC-SHA256', datetime, scope, await sha256(canonical)].join('\n');
+  const signature = hex(await hmac(await signingKey(creds, date, rg), sts));
+  const out: Record<string, string> = { ...headers };
+  delete out.host; // the browser sets Host
+  out.authorization = `AWS4-HMAC-SHA256 Credential=${creds.accessKeyId}/${scope}, SignedHeaders=${signedHeaders.join(';')}, Signature=${signature}`;
+  return out;
+}
+
+/** Sign a GET of the bucket (ListObjectsV2). Returns the URL to fetch and the headers to send. */
 async function signGet(target: S3Target, query: Record<string, string>, region: string, creds: AwsCredentials | null): Promise<{ url: string; headers: Record<string, string> }> {
   const qs = Object.keys(query)
     .sort()
@@ -73,47 +114,15 @@ async function signGet(target: S3Target, query: Record<string, string>, region: 
     .join('&');
   const url = `${target.baseUrl}/?${qs}`;
   if (!creds) return { url, headers: {} };
-  const { date, datetime } = amzDate();
-  const payloadHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'; // sha256('')
-  const headers: Record<string, string> = { host: target.host, 'x-amz-content-sha256': payloadHash, 'x-amz-date': datetime };
-  if (creds.sessionToken) headers['x-amz-security-token'] = creds.sessionToken;
-  const signedHeaders = Object.keys(headers).sort();
-  const canonical = ['GET', target.canonicalBase, qs, signedHeaders.map((h) => `${h}:${headers[h]}\n`).join(''), signedHeaders.join(';'), payloadHash].join('\n');
-  const scope = `${date}/${region || 'us-east-1'}/s3/aws4_request`;
-  const sts = ['AWS4-HMAC-SHA256', datetime, scope, await sha256(canonical)].join('\n');
-  let k: ArrayBuffer = await hmac(enc.encode('AWS4' + creds.secretAccessKey), date);
-  k = await hmac(k, region || 'us-east-1');
-  k = await hmac(k, 's3');
-  k = await hmac(k, 'aws4_request');
-  const signature = hex(await hmac(k, sts));
-  const out: Record<string, string> = { ...headers };
-  delete out.host; // the browser sets Host
-  out.authorization = `AWS4-HMAC-SHA256 Credential=${creds.accessKeyId}/${scope}, SignedHeaders=${signedHeaders.join(';')}, Signature=${signature}`;
-  return { url, headers: out };
+  return { url, headers: await sigv4Get(target, target.canonicalBase, qs, region, creds) };
 }
 
-/** Sign a GET of one object (SigV4, service s3). Returns the URL to fetch and the headers to send. */
+/** Sign a GET of one object. Returns the URL to fetch and the headers to send. */
 export async function signObjectGet(target: S3Target, key: string, region: string, creds: AwsCredentials | null): Promise<{ url: string; headers: Record<string, string> }> {
   const encKey = key.split('/').map(rfc3986).join('/');
   const url = `${target.baseUrl}/${encKey}`;
   if (!creds) return { url, headers: {} };
-  const { date, datetime } = amzDate();
-  const payloadHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'; // sha256('')
-  const headers: Record<string, string> = { host: target.host, 'x-amz-content-sha256': payloadHash, 'x-amz-date': datetime };
-  if (creds.sessionToken) headers['x-amz-security-token'] = creds.sessionToken;
-  const signedHeaders = Object.keys(headers).sort();
-  const canonical = ['GET', `${target.canonicalBase}${encKey}`, '', signedHeaders.map((h) => `${h}:${headers[h]}\n`).join(''), signedHeaders.join(';'), payloadHash].join('\n');
-  const scope = `${date}/${region || 'us-east-1'}/s3/aws4_request`;
-  const sts = ['AWS4-HMAC-SHA256', datetime, scope, await sha256(canonical)].join('\n');
-  let k: ArrayBuffer = await hmac(enc.encode('AWS4' + creds.secretAccessKey), date);
-  k = await hmac(k, region || 'us-east-1');
-  k = await hmac(k, 's3');
-  k = await hmac(k, 'aws4_request');
-  const signature = hex(await hmac(k, sts));
-  const out: Record<string, string> = { ...headers };
-  delete out.host;
-  out.authorization = `AWS4-HMAC-SHA256 Credential=${creds.accessKeyId}/${scope}, SignedHeaders=${signedHeaders.join(';')}, Signature=${signature}`;
-  return { url, headers: out };
+  return { url, headers: await sigv4Get(target, `${target.canonicalBase}${encKey}`, '', region, creds) };
 }
 
 export interface ListResult {
