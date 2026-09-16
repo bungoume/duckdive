@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { TimeRange } from '../datemath';
 import type { Field } from '../fields';
 import { findField } from '../fields';
-import { OTHER, compileSearch, fetchVis, metricLabel, type VisResult } from '../queries';
+import { NULL_GROUP, OTHER, compileSearch, fetchVis, metricLabel, type VisResult } from '../queries';
 import { INTERVALS, autoInterval, bucketOffsetMinutes, intervalByKey, intervalLabel, newId, type Filter, type Interval } from '../sql';
 import { t, type MsgKey } from '../i18n';
 import { useSettings } from '../settings';
@@ -162,11 +162,11 @@ export function Visualize(props: {
         if (top.length) props.onSearch({ ...search, filters: [...search.filters, { id: newId(), field: vis.breakdown.field, op: 'is_not_one_of', values: top }] });
         return;
       }
-      addFilter(vis.breakdown.field, pick.series === '(null)' ? null : pick.series, false);
+      addFilter(vis.breakdown.field, pick.series === NULL_GROUP ? null : pick.series, false);
       return;
     }
     if (vis.x.kind === 'terms' && vis.x.field) {
-      addFilter(vis.x.field, pick.x === '(null)' ? null : String(pick.x), false);
+      addFilter(vis.x.field, pick.x === NULL_GROUP ? null : String(pick.x), false);
       return;
     }
     if (pick.isTime && pick.x instanceof Date && pick.intervalMs) onBrush(pick.x, new Date(pick.x.getTime() + pick.intervalMs));

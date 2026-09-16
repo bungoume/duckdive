@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { formatBucket, formatDate } from '../datefmt';
 import { useSettings } from '../settings';
 import { timeAxis } from '../ticks';
-import { OTHER, metricLabel, type VisResult } from '../queries';
+import { NULL_GROUP, OTHER, groupLabel, metricLabel, type VisResult } from '../queries';
 import { bucketStarts, nextBucketStart, type Interval } from '../sql';
 import type { ChartType, MetricDef } from '../state';
 import { fmtAxisNumber, fmtNum } from './ui';
@@ -22,7 +22,7 @@ export function toSeries(r: VisResult, metrics: MetricDef[]): { data: Series[]; 
   const hasG = r.groups.length > 0;
   const metricIdx = hasG ? [0] : metrics.map((_, i) => i);
   const series: string[] = [];
-  const seriesName = (g: string | null, mi: number) => (hasG ? g ?? '(null)' : metricLabel(metrics[mi]));
+  const seriesName = (g: string | null, mi: number) => (hasG ? g ?? NULL_GROUP : metricLabel(metrics[mi]));
   if (hasG) series.push(...r.groups);
   else series.push(...metricIdx.map((i) => metricLabel(metrics[i])));
 
@@ -118,6 +118,7 @@ export function Chart(props: {
       domain: series,
       range: series.map((s, i) => (s === OTHER ? '#98a2b3' : PALETTE[i % PALETTE.length])),
       legend: series.length > 1 || props.result.groups.length > 0,
+      tickFormat: groupLabel,
     };
     const yLabel = props.result.groups.length ? metricLabel(props.metrics[0]) : props.metrics.length === 1 ? metricLabel(props.metrics[0]) : t('chart.value');
     const marks: unknown[] = [Plot.ruleY([0])];
@@ -389,7 +390,7 @@ export function Chart(props: {
             {hover.isTime && hover.intervalMs ? ` – ${formatBucket(new Date((hover.x as Date).getTime() + hover.intervalMs), hover.intervalMs)}` : ''}
           </div>
           <div class="chart-tip-row">
-            <span class="chart-tip-key">{hasBreakdown ? hover.series : hover.series}</span>
+            <span class="chart-tip-key">{groupLabel(hover.series)}</span>
             <span class="chart-tip-val">{fmtNum(hover.value)}</span>
           </div>
           {props.onPick && <div class="chart-tip-hint">{(hasBreakdown && hover.series !== OTHER) || props.result.xKind === 'terms' ? t('chart.clickFilter') : hover.isTime ? t('chart.clickZoom') : ''}</div>}
@@ -411,8 +412,8 @@ export function DataTable(props: { result: VisResult; metrics: MetricDef[]; xLab
   headers.push(...props.metrics.map(metricLabel));
   let rows = r.rows.map((row) => {
     const cells: (string | number)[] = [];
-    if (hasX) cells.push(row.x === null ? '(null)' : isDate ? (row.x as number) : String(row.x));
-    if (hasG) cells.push(row.g ?? '(null)');
+    if (hasX) cells.push(row.x === null ? t('common.null') : isDate ? (row.x as number) : groupLabel(String(row.x)));
+    if (hasG) cells.push(groupLabel(row.g ?? NULL_GROUP));
     cells.push(...row.m);
     return cells;
   });
@@ -436,7 +437,7 @@ export function DataTable(props: { result: VisResult; metrics: MetricDef[]; xLab
     const blob = new Blob([lines.join(NL)], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'table.csv';
+    a.download = 'duckdive-table.csv';
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -487,7 +488,7 @@ export function MetricTiles(props: { result: VisResult; metrics: MetricDef[] }) 
           <div class="metric-big" style="min-width:200px;padding:16px">
             <div class="val">{fmtNum(row.m[i])}</div>
             <div class="lbl">
-              {row.g ? `${row.g} · ` : ''}
+              {row.g ? `${groupLabel(row.g)} · ` : ''}
               {metricLabel(m)}
             </div>
           </div>

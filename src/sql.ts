@@ -205,12 +205,12 @@ export function filterToSQL(fl: Filter, fields: Field[]): string | null {
 }
 
 export function describeFilter(fl: Filter): string {
-  const neg = fl.negate ? 'NOT ' : '';
+  const neg = fl.negate ? t('flt.not') : '';
   switch (fl.op) {
     case 'is':
       return `${neg}${fl.field}: ${fl.value}`;
     case 'is_not':
-      return `${fl.negate ? '' : 'NOT '}${fl.field}: ${fl.value}`;
+      return `${fl.negate ? '' : t('flt.not')}${fl.field}: ${fl.value}`;
     case 'is_one_of':
       return `${neg}${fl.field}: ${t('flt.op.is_one_of')} ${(fl.values ?? []).join(', ')}`;
     case 'is_not_one_of':

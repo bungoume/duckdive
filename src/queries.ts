@@ -149,7 +149,14 @@ export interface VisResult {
   sql: string;
 }
 
+/** Sentinel group values (not shown as such: see groupLabel). */
 export const OTHER = 'Other';
+export const NULL_GROUP = '(null)';
+
+/** Display text of a group / series value. */
+export function groupLabel(g: string): string {
+  return g === OTHER ? t('vis.other') : g === NULL_GROUP ? t('common.null') : g;
+}
 
 export async function fetchVis(vis: VisState, where: string, timeExpr: string | null, fields: Field[], iv: Interval | null, tzOffset: number): Promise<VisResult> {
   const ms = vis.metrics.map((m) => metricSql(m, fields));
@@ -193,7 +200,7 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
   const r = await query(sql);
   const rows: VisRow[] = r.rows.map((row: Row) => ({
     x: row.x === null || row.x === undefined ? null : xKind === 'terms' ? String(row.x) : Number(row.x),
-    g: row.g === null || row.g === undefined ? (gExpr ? '(null)' : null) : String(row.g),
+    g: row.g === null || row.g === undefined ? (gExpr ? NULL_GROUP : null) : String(row.g),
     m: ms.map((_, i) => (row[`m${i}`] === null || row[`m${i}`] === undefined ? NaN : Number(row[`m${i}`]))),
   }));
 

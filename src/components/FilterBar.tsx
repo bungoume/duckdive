@@ -117,7 +117,7 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
             setEditing(null);
           }}
           button={
-            <span class={'pill' + (f.negate ? ' negate' : '') + (f.disabled ? ' disabled' : '') + (f.untrusted ? ' untrusted' : '')} title={describeFilter(f)}>
+            <span class={'pill' + (f.negate ? ' negate' : '') + (f.disabled ? ' disabled' : '') + (f.untrusted ? ' untrusted' : '')} title={describeFilter(f)} data-not={t('flt.not')}>
               <span class="txt" style="cursor:pointer" onClick={() => setMenu(menu === f.id ? null : f.id)}>
                 {describeFilter({ ...f, negate: false })}
               </span>
