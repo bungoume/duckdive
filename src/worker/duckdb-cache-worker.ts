@@ -613,7 +613,7 @@ function looksGzip(url: string): boolean {
   }
 }
 
-function handleRangeGet(url: string, headers: HeaderMap, rangeHeader: string, retry = true): NativeResult {
+function handleRangeGet(url: string, headers: HeaderMap, rangeHeader: string, retry = true, retryEtag = true): NativeResult {
   const key = cacheKey(url);
   let entry = files.get(key) ?? null;
   if (!entry) {
@@ -663,7 +663,13 @@ function handleRangeGet(url: string, headers: HeaderMap, rangeHeader: string, re
       } else {
         const etag = etagFrom(res);
         if (entry.etag && etag && etag !== entry.etag) {
-          void resetEntry(entry, totalSizeFrom(res) || entry.size, etag);
+          // the object was replaced under us: whatever was assembled so far belongs to the old
+          // version, so drop the cached chunks and start this request over against the new one
+          log({ method: 'GET', url, range: rangeHeader, outcome: `etag-changed:${entry.etag}->${etag}` });
+          resetEntry(entry, totalSizeFrom(res) || entry.size, etag);
+          if (retryEtag) return handleRangeGet(url, headers, rangeHeader, retry, false);
+          stats.passthrough++;
+          return nativeSync('GET', url, headers, true, WHOLE_FILE_TIMEOUT_MS);
         }
         buf = new Uint8Array(res.body);
       }
