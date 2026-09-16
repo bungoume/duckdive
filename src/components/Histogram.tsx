@@ -5,16 +5,13 @@ import { useSettings } from '../settings';
 import { timeAxis } from '../ticks';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Bucket } from '../queries';
-import type { Interval } from '../sql';
+import { bucketStarts, type Interval } from '../sql';
 
-/** Fill empty buckets so the bar chart has a continuous x axis. */
-export function fillBuckets(b: Bucket[], from: Date, to: Date, iv: Interval): Bucket[] {
-  if (!b.length || iv.ms >= 30 * 86400000) return b;
+/** Fill empty buckets (from the first one up to `to`) so the bar chart has a continuous x axis. */
+export function fillBuckets(b: Bucket[], to: Date, iv: Interval, tzOffset: number): Bucket[] {
+  if (!b.length) return b;
   const map = new Map(b.map((x) => [x.t, x.c]));
-  const start = b[0].t;
-  const out: Bucket[] = [];
-  for (let t = start; t <= to.getTime() && out.length < 5000; t += iv.ms) out.push({ t, c: map.get(t) ?? 0 });
-  return out;
+  return bucketStarts(b[0].t, to.getTime(), iv, tzOffset).map((t) => ({ t, c: map.get(t) ?? 0 }));
 }
 
 export function Histogram(props: { buckets: Bucket[]; interval: Interval; from: Date; to: Date; height?: number; onBrush: (from: Date, to: Date) => void }) {

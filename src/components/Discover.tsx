@@ -4,8 +4,9 @@ import { formatLocal } from '../datemath';
 import type { Field } from '../fields';
 import { findField } from '../fields';
 import { compileSearch, fetchCount, fetchDocs, fetchHistogram, type Bucket, type Doc } from '../queries';
-import { INTERVALS, autoInterval, intervalByKey, intervalLabel, newId, type Filter, type Interval } from '../sql';
+import { INTERVALS, autoInterval, bucketOffsetMinutes, intervalByKey, intervalLabel, newId, type Filter, type Interval } from '../sql';
 import { t } from '../i18n';
+import { useSettings } from '../settings';
 import type { DiscoverState, SearchState } from '../state';
 import { DocTable } from './DocTable';
 import { FieldSidebar } from './FieldSidebar';
@@ -42,6 +43,10 @@ export function Discover(props: {
     return discover.interval === 'auto' ? autoInterval(compiled.from, compiled.to) : (intervalByKey(discover.interval) ?? autoInterval(compiled.from, compiled.to));
   }, [compiled, discover.interval]);
 
+  // buckets are aligned with the display time zone: re-query when it changes
+  const settings = useSettings();
+  const tzOffset = useMemo(() => bucketOffsetMinutes(compiled.to ?? undefined), [compiled, settings.timeZone]);
+
   const [count, setCount] = useState<number | null>(null);
   const [buckets, setBuckets] = useState<Bucket[]>([]);
   const [docs, setDocs] = useState<Doc[]>([]);
@@ -65,7 +70,7 @@ export function Discover(props: {
       try {
         const [n, b, d] = await Promise.all([
           fetchCount(compiled.where),
-          timeExpr && interval ? fetchHistogram(compiled.where, timeExpr, interval) : Promise.resolve([]),
+          timeExpr && interval ? fetchHistogram(compiled.where, timeExpr, interval, tzOffset) : Promise.resolve([]),
           fetchDocs(compiled.where, timeExpr, fields, discover.sort, discover.columns, PAGE, 0),
         ]);
         if (id !== runId.current) return;
@@ -82,7 +87,7 @@ export function Discover(props: {
         }
       }
     })();
-  }, [compiled.where, compiled.error, interval?.key, sortKey, colKey, timeExpr, props.paused]);
+  }, [compiled.where, compiled.error, interval?.key, tzOffset, sortKey, colKey, timeExpr, props.paused]);
 
   const loadMore = async () => {
     setBusy(true);
@@ -119,7 +124,7 @@ export function Discover(props: {
   const onBrush = (from: Date, to: Date) => props.onSearch({ ...search, range: { from: from.toISOString(), to: to.toISOString() } });
   const submit = (query: string, range: TimeRange) => props.onSearch({ ...search, query, range });
 
-  const filled = useMemo(() => (interval && compiled.from && compiled.to ? fillBuckets(buckets, compiled.from, compiled.to, interval) : buckets), [buckets, interval, compiled]);
+  const filled = useMemo(() => (interval && compiled.from && compiled.to ? fillBuckets(buckets, compiled.to, interval, tzOffset) : buckets), [buckets, interval, compiled, tzOffset]);
   const lastSql = getQueryLog()[0]?.sql;
 
   return (

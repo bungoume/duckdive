@@ -31,8 +31,8 @@ export interface Bucket {
   c: number;
 }
 
-export async function fetchHistogram(where: string, timeExpr: string, iv: Interval): Promise<Bucket[]> {
-  const r = await query(`SELECT ${bucketExpr(timeExpr, iv)} AS t, count(*)::DOUBLE AS c FROM ${VIEW} WHERE ${where} GROUP BY 1 ORDER BY 1`);
+export async function fetchHistogram(where: string, timeExpr: string, iv: Interval, tzOffset: number): Promise<Bucket[]> {
+  const r = await query(`SELECT ${bucketExpr(timeExpr, iv, tzOffset)} AS t, count(*)::DOUBLE AS c FROM ${VIEW} WHERE ${where} GROUP BY 1 ORDER BY 1`);
   return r.rows.map((x) => ({ t: Number(x.t), c: Number(x.c) }));
 }
 
@@ -144,12 +144,14 @@ export interface VisResult {
   xOrder: (string | number)[];
   groups: string[];
   interval: Interval | null;
+  /** offset (minutes east of UTC) the date-histogram buckets were aligned with */
+  tzOffset: number;
   sql: string;
 }
 
 export const OTHER = 'Other';
 
-export async function fetchVis(vis: VisState, where: string, timeExpr: string | null, fields: Field[], iv: Interval | null): Promise<VisResult> {
+export async function fetchVis(vis: VisState, where: string, timeExpr: string | null, fields: Field[], iv: Interval | null, tzOffset: number): Promise<VisResult> {
   const ms = vis.metrics.map((m) => metricSql(m, fields));
   const mSel = ms.map((s, i) => `${s} AS m${i}`).join(', ');
   const xf = vis.x.field ? findField(fields, vis.x.field) : undefined;
@@ -158,7 +160,7 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
   let xKind = vis.x.kind;
   if (xKind === 'date_histogram') {
     const te = xf ? `(${xf.expr})::TIMESTAMP` : timeExpr;
-    if (te && iv) xExpr = bucketExpr(te, iv);
+    if (te && iv) xExpr = bucketExpr(te, iv, tzOffset);
     else xKind = 'none';
   } else if (xKind === 'terms' && xf) {
     xExpr = `(${xf.expr})::VARCHAR`;
@@ -211,5 +213,5 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
       .map((e) => e[0]);
     if (groups.includes(OTHER)) groups = [...groups.filter((g) => g !== OTHER), OTHER];
   }
-  return { rows, xKind, xOrder, groups, interval: xKind === 'date_histogram' ? iv : null, sql };
+  return { rows, xKind, xOrder, groups, interval: xKind === 'date_histogram' ? iv : null, tzOffset, sql };
 }

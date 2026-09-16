@@ -1,8 +1,10 @@
 import type { TimeRange } from './datemath';
 import { resolveRange } from './datemath';
+import { effectiveTimeZone, zonedParts } from './datefmt';
 import type { Field } from './fields';
 import { findField } from './fields';
 import { t, type MsgKey } from './i18n';
+import { getSettings } from './settings';
 
 export const VIEW = 'src';
 
@@ -10,19 +12,19 @@ export function lit(s: string): string {
   return `'${s.replace(/'/g, "''")}'`;
 }
 
-const pad = (n: number, w = 2) => String(n).padStart(w, '0');
-
 /** Naive UTC TIMESTAMP literal. */
 export function tsLit(d: Date): string {
   return `TIMESTAMP '${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}.${pad(d.getMilliseconds(), 3)}'`;
 }
 
 export interface Interval {
-  /** approximate ms per bucket (for gap filling and axis) */
+  /** nominal ms per bucket (axis spacing; calendar buckets vary in length) */
   ms: number;
   /** DuckDB INTERVAL text, e.g. "5 minute" */
   sql: string;
   key: string;
+  /** buckets that follow the calendar rather than a fixed length (see nextBucketStart) */
+  calendar?: 'week' | 'month' | 'year';
 }
 
 export const INTERVALS: Interval[] = [
@@ -38,9 +40,9 @@ export const INTERVALS: Interval[] = [
   { key: '3h', ms: 3 * 3600000, sql: '3 hour' },
   { key: '12h', ms: 12 * 3600000, sql: '12 hour' },
   { key: '1d', ms: 86400000, sql: '1 day' },
-  { key: '1w', ms: 7 * 86400000, sql: '7 day' },
-  { key: '1M', ms: 30 * 86400000, sql: '1 month' },
-  { key: '1y', ms: 365 * 86400000, sql: '1 year' },
+  { key: '1w', ms: 7 * 86400000, sql: '7 day', calendar: 'week' },
+  { key: '1M', ms: 30 * 86400000, sql: '1 month', calendar: 'month' },
+  { key: '1y', ms: 365 * 86400000, sql: '1 year', calendar: 'year' },
 ];
 
 export function autoInterval(from: Date, to: Date, target = 60): Interval {
@@ -63,21 +65,49 @@ export function intervalLabel(iv: Interval): string {
   return t(`iv.${iv.key}` as MsgKey);
 }
 
-/** Browser timezone offset in minutes east of UTC (e.g. 540 for JST). */
-export function tzOffsetMinutes(): number {
-  return -new Date().getTimezoneOffset();
+/**
+ * Offset (minutes east of UTC) of the display time zone at `at`. Bucket boundaries are aligned
+ * with this one offset, so a range that spans a DST change is off by an hour on its far side.
+ */
+export function bucketOffsetMinutes(at: Date = new Date()): number {
+  return zonedParts(at, effectiveTimeZone()).offset;
+}
+
+const pad = (n: number, w = 2) => String(n).padStart(w, '0');
+
+/** Origin for weekly buckets: a day in January 2000 that falls on the configured first day of the week. */
+function weekOrigin(): string {
+  const day = 3 + ((getSettings().dayOfWeek - 1 + 7) % 7); // 2000-01-03 is a Monday
+  return `TIMESTAMP '2000-01-${pad(day)} 00:00:00'`;
 }
 
 /**
- * Bucket expression aligned to the browser's local timezone
- * (so that daily buckets start at local midnight).
- * Returns epoch milliseconds as DOUBLE.
+ * Bucket expression aligned to the wall clock of the display time zone (daily buckets start at
+ * that zone's midnight, weekly ones on the configured first day of the week, monthly ones on the
+ * 1st). Returns epoch milliseconds as DOUBLE.
  */
-export function bucketExpr(timeExpr: string, iv: Interval): string {
-  const off = tzOffsetMinutes();
-  const shift = off ? ` + INTERVAL ${off} MINUTE` : '';
-  const unshift = off ? ` - INTERVAL ${off} MINUTE` : '';
-  return `epoch_ms(time_bucket(INTERVAL '${iv.sql}', (${timeExpr})${shift})${unshift})::DOUBLE`;
+export function bucketExpr(timeExpr: string, iv: Interval, offsetMinutes: number = bucketOffsetMinutes()): string {
+  const shift = offsetMinutes ? ` + to_minutes(${offsetMinutes})` : '';
+  const unshift = offsetMinutes ? ` - to_minutes(${offsetMinutes})` : '';
+  const origin = iv.calendar === 'week' ? `, ${weekOrigin()}` : '';
+  return `epoch_ms(time_bucket(INTERVAL '${iv.sql}', (${timeExpr})${shift}${origin})${unshift})::DOUBLE`;
+}
+
+/** Start of the bucket after the one starting at `t` (epoch ms), for buckets made by bucketExpr with the same offset. */
+export function nextBucketStart(t: number, iv: Interval, offsetMinutes: number): number {
+  if (iv.calendar !== 'month' && iv.calendar !== 'year') return t + iv.ms;
+  const shift = offsetMinutes * 60_000;
+  const d = new Date(t + shift);
+  if (iv.calendar === 'month') d.setUTCMonth(d.getUTCMonth() + 1);
+  else d.setUTCFullYear(d.getUTCFullYear() + 1);
+  return d.getTime() - shift;
+}
+
+/** Every bucket start from `first` to `last` inclusive (both bucket starts), at most `limit` of them. */
+export function bucketStarts(first: number, last: number, iv: Interval, offsetMinutes: number, limit = 5000): number[] {
+  const out: number[] = [];
+  for (let t = first; t <= last && out.length < limit; t = nextBucketStart(t, iv, offsetMinutes)) out.push(t);
+  return out;
 }
 
 export type FilterOp = 'is' | 'is_not' | 'is_one_of' | 'is_not_one_of' | 'exists' | 'does_not_exist' | 'between' | 'query';

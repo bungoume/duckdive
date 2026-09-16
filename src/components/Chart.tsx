@@ -5,6 +5,7 @@ import { formatBucket, formatDate } from '../datefmt';
 import { useSettings } from '../settings';
 import { timeAxis } from '../ticks';
 import { OTHER, metricLabel, type VisResult } from '../queries';
+import { bucketStarts, nextBucketStart, type Interval } from '../sql';
 import type { ChartType, MetricDef } from '../state';
 import { fmtNum } from './ui';
 
@@ -27,10 +28,9 @@ export function toSeries(r: VisResult, metrics: MetricDef[]): { data: Series[]; 
 
   let xs: (number | string)[] = r.xOrder;
   if (r.xKind === 'date_histogram' && r.interval && xs.length) {
+    // every bucket between the first and the last, so gaps show as zeros (calendar months included)
     const nums = xs as number[];
-    const out: number[] = [];
-    for (let t = nums[0]; t <= nums[nums.length - 1] && out.length < 5000; t += r.interval.ms) out.push(t);
-    xs = out;
+    xs = bucketStarts(nums[0], nums[nums.length - 1], r.interval, r.tzOffset);
   }
   const key = (x: number | string | null, s: string) => `${x} ${s}`;
   const map = new Map<string, number>();
@@ -89,11 +89,13 @@ export function Chart(props: {
     isTime: boolean;
     isBand: boolean;
     ivMs: number;
+    iv: Interval | null;
+    tzOffset: number;
     xs: (Date | string | number)[];
     series: string[];
     /** per x: series → [y0, y1] (stacked) or value (line) */
     bands: Map<string, { s: string; y0: number; y1: number; v: number }[]>;
-  }>({ plot: null, stacked: false, isTime: false, isBand: false, ivMs: 0, xs: [], series: [], bands: new Map() });
+  }>({ plot: null, stacked: false, isTime: false, isBand: false, ivMs: 0, iv: null, tzOffset: 0, xs: [], series: [], bands: new Map() });
   const highlighted = useRef<Element | null>(null);
   // axis / legend labels are baked into the plot: rebuild it when the language changes
   const lang = useLang();
@@ -120,6 +122,9 @@ export function Chart(props: {
     const yLabel = props.result.groups.length ? metricLabel(props.metrics[0]) : props.metrics.length === 1 ? metricLabel(props.metrics[0]) : t('chart.value');
     const marks: unknown[] = [Plot.ruleY([0])];
     const ivMs = props.result.interval?.ms ?? 0;
+    // end of the bucket starting at t (calendar months differ in length)
+    const iv = props.result.interval;
+    const bucketEnd = (t: number) => (iv ? nextBucketStart(t, iv, props.result.tzOffset) : t + ivMs);
     const stacked = props.chart === 'area' || props.chart === 'bar';
     if (props.chart === 'line') {
       marks.push(Plot.lineY(data, { x: 'x', y: 'y', stroke: 's', strokeWidth: 2, curve: 'monotone-x' }));
@@ -128,7 +133,7 @@ export function Chart(props: {
       marks.push(Plot.lineY(data, Plot.stackY2({ x: 'x', y: 'y', stroke: 's', order: series, strokeWidth: 1, curve: 'monotone-x' })));
     } else if (props.chart === 'bar') {
       if (isTime) {
-        const d2 = data.map((d) => ({ ...d, x2: new Date((d.x as Date).getTime() + ivMs) }));
+        const d2 = data.map((d) => ({ ...d, x2: new Date(bucketEnd((d.x as Date).getTime())) }));
         marks.push(Plot.rectY(d2, { x1: 'x', x2: 'x2', y: 'y', fill: 's', order: series, inset: 0.5 }));
       } else {
         marks.push(Plot.barY(data, { x: 'x', y: 'y', fill: 's', order: series }));
@@ -153,7 +158,7 @@ export function Chart(props: {
     if (isTime && xDomain.length) {
       const ts = xDomain as Date[];
       const t0 = ts[0];
-      const t1 = new Date(ts[ts.length - 1].getTime() + (props.chart === 'bar' ? ivMs : 0));
+      const t1 = new Date(props.chart === 'bar' ? bucketEnd(ts[ts.length - 1].getTime()) : ts[ts.length - 1].getTime());
       const axis = timeAxis(t0, t1, width - marginLeft - marginRight, ivMs);
       xTime = { type: 'time', domain: [t0, t1], label: null, grid: false, ticks: axis.ticks, tickFormat: axis.tickFormat };
     }
@@ -190,7 +195,7 @@ export function Chart(props: {
       return;
     }
     el.replaceChildren(plot);
-    model.current = { plot: plot as unknown as typeof model.current.plot, stacked, isTime, isBand, ivMs, xs: xDomain, series, bands };
+    model.current = { plot: plot as unknown as typeof model.current.plot, stacked, isTime, isBand, ivMs, iv, tzOffset: props.result.tzOffset, xs: xDomain, series, bands };
     highlighted.current = null;
     setHover(null);
     return () => plot.remove();
@@ -222,6 +227,7 @@ export function Chart(props: {
     const xscale = m.plot.scale?.('x');
     const yscale = m.plot.scale?.('y');
     if (!xscale || !yscale?.invert) return null;
+    const bucketEnd = (t: number) => (m.iv ? nextBucketStart(t, m.iv, m.tzOffset) : t + m.ivMs);
     let x: Date | string | number | null = null;
     if (m.isBand) {
       const bw = xscale.bandwidth ?? 0;
@@ -240,7 +246,7 @@ export function Chart(props: {
       let bestD = Infinity;
       for (const v of m.xs) {
         const tv = v instanceof Date ? v.getTime() : Number(v);
-        const d = m.isTime && m.ivMs ? (t >= tv && t < tv + m.ivMs ? 0 : Math.abs(t - tv)) : Math.abs(t - tv);
+        const d = m.isTime && m.ivMs ? (t >= tv && t < bucketEnd(tv) ? 0 : Math.abs(t - tv)) : Math.abs(t - tv);
         if (d < bestD) {
           bestD = d;
           best = v;
@@ -271,7 +277,9 @@ export function Chart(props: {
       }
     }
     if (!pick) return null;
-    return { x, series: pick.s, value: pick.v, isTime: m.isTime, intervalMs: m.ivMs, px, py, xIndex: m.xs.indexOf(x), sIndex: m.series.indexOf(pick.s) };
+    // intervalMs is the length of this bucket (calendar months differ), so x + intervalMs is its end
+    const intervalMs = m.isTime && x instanceof Date ? bucketEnd(x.getTime()) - x.getTime() : m.ivMs;
+    return { x, series: pick.s, value: pick.v, isTime: m.isTime, intervalMs, px, py, xIndex: m.xs.indexOf(x), sIndex: m.series.indexOf(pick.s) };
   };
 
   /** Emphasise the mark under the cursor (area / line path of the series, or the bar itself). */

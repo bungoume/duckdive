@@ -5,8 +5,9 @@ import type { TimeRange } from '../datemath';
 import type { Field } from '../fields';
 import { findField } from '../fields';
 import { OTHER, compileSearch, fetchVis, metricLabel, type VisResult } from '../queries';
-import { INTERVALS, autoInterval, intervalByKey, intervalLabel, newId, type Filter, type Interval } from '../sql';
+import { INTERVALS, autoInterval, bucketOffsetMinutes, intervalByKey, intervalLabel, newId, type Filter, type Interval } from '../sql';
 import { t, type MsgKey } from '../i18n';
+import { useSettings } from '../settings';
 import { loadSavedVis, storeSavedVis, type ChartType, type MetricAgg, type MetricDef, type SavedVis, type SearchState, type VisState } from '../state';
 import { Chart, DataTable, MetricTiles, type ChartPick } from './Chart';
 import { FieldSidebar } from './FieldSidebar';
@@ -94,6 +95,10 @@ export function Visualize(props: {
     return vis.x.interval === 'auto' ? autoInterval(compiled.from, compiled.to, 50) : (intervalByKey(vis.x.interval) ?? autoInterval(compiled.from, compiled.to, 50));
   }, [compiled, vis.x.interval]);
 
+  // buckets are aligned with the display time zone: re-query when it changes
+  const settings = useSettings();
+  const tzOffset = useMemo(() => bucketOffsetMinutes(compiled.to ?? undefined), [compiled, settings.timeZone]);
+
   const [result, setResult] = useState<VisResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,7 +113,7 @@ export function Visualize(props: {
     setBusy(true);
     props.onBusy(true);
     setError(null);
-    fetchVis(effVis, compiled.where, timeExpr, fields, interval)
+    fetchVis(effVis, compiled.where, timeExpr, fields, interval, tzOffset)
       .then((r) => {
         if (id === runId.current) setResult(r);
       })
@@ -121,7 +126,7 @@ export function Visualize(props: {
           props.onBusy(false);
         }
       });
-  }, [compiled.where, compiled.error, visKey, interval?.key, timeExpr, props.paused]);
+  }, [compiled.where, compiled.error, visKey, interval?.key, tzOffset, timeExpr, props.paused]);
 
   const setVis = (patch: Partial<VisState>) => props.onVis({ ...vis, ...patch });
   const setX = (patch: Partial<VisState['x']>) => setVis({ x: { ...vis.x, ...patch } });
