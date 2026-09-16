@@ -11,12 +11,14 @@ page.on('console', (m) => {
 });
 page.on('pageerror', (e) => errors.push(`[pageerror] ${e.message}`));
 
+let failed = 0;
 const step = async (name, fn) => {
   const t0 = Date.now();
   try {
     await fn();
     console.log(`ok   ${name} (${Date.now() - t0}ms)`);
   } catch (e) {
+    failed++;
     console.log(`FAIL ${name}: ${e.message.split('\n')[0]}`);
     await page.screenshot({ path: `${out}/fail-${name}.png` });
   }
@@ -236,3 +238,5 @@ await step('source-page', async () => {
 console.log('\nconsole errors/warnings:');
 for (const e of errors.filter((x) => !x.includes('Improper nesting')).slice(0, 20)) console.log('  ' + e.slice(0, 400));
 await context.close();
+if (failed) console.log(`\n${failed} step(s) failed`);
+process.exit(failed ? 1 : 0);
