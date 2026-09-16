@@ -371,7 +371,7 @@ export function DataSource(props: {
               {t('common.cancel')}
             </button>
           )}
-          <button class="btn primary" disabled={props.busy || (!!vars && missing.length > 0)} onClick={() => props.onConnect(cfg, files)}>
+          <button class="btn primary connect" disabled={props.busy || (!!vars && missing.length > 0)} onClick={() => props.onConnect(cfg, files)}>
             {connectLabel}
           </button>
         </div>

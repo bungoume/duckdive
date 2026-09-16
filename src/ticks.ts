@@ -37,7 +37,7 @@ const STEPS: Step[] = [
 /** Minimum gap between two neighbouring labels, in px. */
 const GAP = 20;
 /** Plot's default font for axis text (`style.fontSize` is set to 11px by the charts). */
-export const AXIS_FONT = '11px system-ui, sans-serif';
+const AXIS_FONT = '11px system-ui, sans-serif';
 
 let canvas: CanvasRenderingContext2D | null | undefined;
 /** Rendered width of `s` in `font` (a per-character estimate when no canvas is available). */

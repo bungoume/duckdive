@@ -58,7 +58,7 @@ export interface AttachOptions {
 }
 
 /** Matched sizes above this ask for confirmation even when the file count is small. */
-export const LARGE_BYTES = 512 * 1024 * 1024;
+const LARGE_BYTES = 512 * 1024 * 1024;
 
 export function capturedColumns(cfg: SourceConfig): string[] {
   const out: string[] = [];
@@ -463,8 +463,4 @@ SELECT
   ('{"user_id": ' || floor(r1 * 5000)::INT::VARCHAR || ', "session": "' || substr(md5(i::VARCHAR), 1, 12) || '", "premium": ' || (r2 < 0.2)::VARCHAR || ', "ab_test": "' || ['control','variant-a','variant-b'][1 + floor(r3 * 3)::INT] || '"}')::JSON AS extra
 FROM enriched
 `);
-}
-
-export function columnNamesFor(fields: Field[]): string[] {
-  return fields.filter((f) => f.name === f.column).map((f) => quoteIdent(f.column));
 }

@@ -31,7 +31,6 @@ type HeaderMap = Record<string, string>;
 
 interface FileMeta {
   key: string;
-  name: string; // OPFS file name
   size: number;
   etag: string;
   chunkSize: number;
@@ -164,8 +163,8 @@ function cacheKey(url: string): string {
   return u.toString();
 }
 
+/** OPFS file name for a cached DuckDB extension (FNV-1a, two 32-bit lanes). */
 function hashName(s: string): string {
-  // FNV-1a 64-bit-ish (two 32-bit lanes) – good enough for file names
   let h1 = 0x811c9dc5;
   let h2 = 0x01000193;
   for (let i = 0; i < s.length; i++) {
@@ -303,7 +302,7 @@ async function saveIndex() {
     if (!e.chunks.size) continue;
     const chunks: [number, number, number, number?][] = [];
     for (const [i, r] of e.chunks) chunks.push([i, r.off, r.len, r.sum ?? 0]);
-    index.files[k] = { key: e.key, name: e.name, size: e.size, etag: e.etag, chunkSize: e.chunkSize, seenAt: e.seenAt, lastModified: e.lastModified, norm: e.norm, chunks };
+    index.files[k] = { key: e.key, size: e.size, etag: e.etag, chunkSize: e.chunkSize, seenAt: e.seenAt, lastModified: e.lastModified, norm: e.norm, chunks };
   }
   for (const [url, e] of extFiles) index.ext[url] = { name: e.name, size: e.size };
   try {
@@ -360,7 +359,7 @@ function storeWhole(url: string, etag: string, lastModified: string | undefined,
   let entry = files.get(key);
   if (entry) resetEntry(entry, bytes.byteLength, etag);
   else {
-    entry = newEntry({ key, name: hashName(key), size: bytes.byteLength, etag, chunkSize: config.chunkSize, seenAt: Date.now(), lastModified });
+    entry = newEntry({ key, size: bytes.byteLength, etag, chunkSize: config.chunkSize, seenAt: Date.now(), lastModified });
     files.set(key, entry);
   }
   entry.seenAt = Date.now();
@@ -424,7 +423,7 @@ function recordMeta(key: string, size: number, etag: string, lastModified?: stri
     if (lastModified) entry.lastModified = lastModified;
     return entry;
   }
-  entry = newEntry({ key, name: hashName(key), size, etag, chunkSize: config.chunkSize, seenAt: Date.now(), lastModified });
+  entry = newEntry({ key, size, etag, chunkSize: config.chunkSize, seenAt: Date.now(), lastModified });
   files.set(key, entry);
   return entry;
 }

@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 import type { FieldKind } from '../fields';
 
 export function Popover(props: { open: boolean; onClose: () => void; button: ComponentChildren; children: ComponentChildren; align?: 'left' | 'right'; width?: number }) {
@@ -38,15 +38,6 @@ export function FieldIcon({ kind }: { kind: FieldKind }) {
       {label[kind]}
     </span>
   );
-}
-
-export function useDebounced<T>(v: T, ms: number): T {
-  const [d, setD] = useState(v);
-  useEffect(() => {
-    const t = setTimeout(() => setD(v), ms);
-    return () => clearTimeout(t);
-  }, [v, ms]);
-  return d;
 }
 
 export function fmtNum(n: number | null | undefined, digits = 2): string {

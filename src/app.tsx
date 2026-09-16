@@ -6,7 +6,7 @@ import { Discover } from './components/Discover';
 import { Visualize } from './components/Visualize';
 import { Settings } from './components/Settings';
 import { attachSource, discoverVariables, unselectedTokens, type AttachedSource, type LargeSourceInfo } from './datasource';
-import { cancelAllQueries } from './duck';
+import { cancelAllQueries, queriesRunning } from './duck';
 import { setDiagnoseContext } from './diagnose';
 import type { TokenValue } from './s3list';
 import { fmtBytes } from './cache';
@@ -229,7 +229,7 @@ export function App() {
           setSwitchSeq((n) => n + 1);
         }
         await initDuckDB();
-        expose({ query, cancelAllQueries, registerFileURL: (name: string, url: string) => getDB().registerFileURL(name, url, DataProtocol.HTTP, false) });
+        expose({ query, cancelAllQueries, queriesRunning, registerFileURL: (name: string, url: string) => getDB().registerFileURL(name, url, DataProtocol.HTTP, false) });
         setReady(true);
         if (cfg.kind === 'local') {
           setUrl((u) => ({ ...u, page: 'source' }));

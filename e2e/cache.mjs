@@ -168,11 +168,11 @@ const swStats = () => page.evaluate(() => window.__ddv.cacheStats().then((r) => 
 // Connect no longer counts rows for URL sources (it would read every footer); count explicitly.
 const srcRows = () => page.evaluate(() => window.__ddv.query('SELECT count(*)::DOUBLE AS n FROM src').then((r) => Number(r.rows[0].n)));
 const connectDone = (marker) =>
-  page.waitForFunction((m) => (document.querySelector('.source-page button.primary')?.textContent ?? '').trim() === 'Connect' && ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) || !!document.querySelector('.alert.error')), marker, { timeout: 60000 });
+  page.waitForFunction((m) => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect' && ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) || !!document.querySelector('.alert.error')), marker, { timeout: 60000 });
 /** Press Connect; if the pattern has {name} variables, select every listed value and press again. */
 const pressConnect = async () => {
   await page.click('.source-page button:has-text("connect")');
-  const settled = () => (document.querySelector('.source-page button.primary')?.textContent ?? '').trim().toLowerCase() !== 'connecting…';
+  const settled = () => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim().toLowerCase() !== 'connecting…';
   await page.waitForFunction(settled, null, { timeout: 120000 });
   const all = page.locator('.variables-box button:has-text("Select all values")');
   if (await all.count()) {
@@ -317,7 +317,7 @@ try {
   await page.waitForSelector('.variables-box .var-values', { timeout: 60000 });
   const varsText = (await page.textContent('.variables-box')).replace(/\s+/g, ' ');
   const albOpts = await page.locator('.var-values[data-token="alb"] .var-item').allTextContents();
-  check('pattern variables are listed before anything is read', /\{account\}/.test(varsText) && /\{region\}/.test(varsText) && albOpts.length === 2 && albOpts.some((t) => /alb-app-dev/.test(t)) && albOpts.some((t) => /alb-other/.test(t)) && (await page.locator('.source-page button.primary').isDisabled()), `${albOpts.join(' | ')} connectDisabled=${await page.locator('.source-page button.primary').isDisabled()}`);
+  check('pattern variables are listed before anything is read', /\{account\}/.test(varsText) && /\{region\}/.test(varsText) && albOpts.length === 2 && albOpts.some((t) => /alb-app-dev/.test(t)) && albOpts.some((t) => /alb-other/.test(t)) && (await page.locator('.source-page button.connect').isDisabled()), `${albOpts.join(' | ')} connectDisabled=${await page.locator('.source-page button.connect').isDisabled()}`);
   await page.click('.variables-box button:has-text("Select all values")');
   await page.waitForTimeout(200);
   await page.click('.source-page button:has-text("Connect")');
@@ -419,7 +419,7 @@ try {
   await page.waitForTimeout(1500);
   await openSource();
   await page.evaluate(() => window.__ddv.cacheClear());
-  await page.waitForFunction(() => (document.querySelector('.source-page button.primary')?.textContent ?? '').trim() === 'Connect', null, { timeout: 60000 });
+  await page.waitForFunction(() => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect', null, { timeout: 60000 });
   await page.fill('.source-page .field-row:has-text("Warn when more files") input', '1');
   const srvL0 = await serverStats();
   await page.click('.source-page button:has-text("Connect")');
@@ -434,7 +434,7 @@ try {
   await page.click('.source-page button:has-text("Connect")');
   await banner.waitFor({ timeout: 60000 });
   await banner.locator('button', { hasText: 'Continue' }).click();
-  await page.waitForFunction(() => (document.querySelector('.source-page button.primary')?.textContent ?? '').trim() === 'Connect' && [...document.querySelectorAll('.alert.ok')].some((e) => /3 file\(s\)/.test(e.textContent ?? '')), null, { timeout: 60000 });
+  await page.waitForFunction(() => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect' && [...document.querySelectorAll('.alert.ok')].some((e) => /3 file\(s\)/.test(e.textContent ?? '')), null, { timeout: 60000 });
   await page.click('.header nav button:has-text("Discover")');
   await page.waitForFunction(() => !(document.querySelector('.hits .n')?.textContent ?? '…').includes('…'), null, { timeout: 60000 });
   await page.waitForFunction(() => !document.querySelector('.loading-bar'), null, { timeout: 60000 });
@@ -458,7 +458,7 @@ try {
     await page.fill('.source-page textarea', filled);
     await pressConnect();
     // wait for THIS connection's result (the previous source's card stays visible meanwhile)
-    await page.waitForFunction((m) => (document.querySelector('.source-page button.primary')?.textContent ?? '').trim() === 'Connect' && ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) || !!document.querySelector('.alert.error')), marker, { timeout: 60000 });
+    await page.waitForFunction((m) => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect' && ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) || !!document.querySelector('.alert.error')), marker, { timeout: 60000 });
     const err = await page.locator('.alert.error').textContent().catch(() => null);
     const tf = err ? null : await page.inputValue('.source-page .field-row:has-text("Time field") select');
     return { err, tf };
@@ -495,7 +495,7 @@ try {
     await page.fill('.source-page textarea', urls);
     await page.selectOption('.source-page .field-row:has-text("Format") select', 'auto');
     await page.click('.source-page button:has-text("Connect")');
-    await page.waitForFunction((m) => (document.querySelector('.source-page button.primary')?.textContent ?? '').trim() === 'Connect' && ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) || !!document.querySelector('.alert.error')), marker, { timeout: 60000 });
+    await page.waitForFunction((m) => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect' && ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) || !!document.querySelector('.alert.error')), marker, { timeout: 60000 });
     const err = await page.locator('.alert.error').textContent().catch(() => null);
     const tf = err ? null : await page.inputValue('.source-page .field-row:has-text("Time field") select');
     return { err, tf };
@@ -546,7 +546,7 @@ try {
   await page.selectOption('.source-page .field-row:has-text("Format") select', 'lines');
   const srvM0 = await serverStats();
   await pressConnect();
-  await page.waitForFunction(() => (document.querySelector('.source-page button.primary')?.textContent ?? '').trim() === 'Connect', null, { timeout: 120000 });
+  await page.waitForFunction(() => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect', null, { timeout: 120000 });
   const multiErr = await page.locator('.alert.error').textContent().catch(() => null);
   const multiOk = multiErr ? '' : await page.locator('.alert.ok', { hasText: 'multigz' }).first().textContent();
   const multiRows = await q('SELECT count(*) n FROM src');
@@ -555,7 +555,7 @@ try {
   const cachedM = (await page.evaluate(() => window.__ddv.cacheFiles({ all: true }))).files.filter((f) => /multigz/.test(f.url));
   check('concatenated gzip: copies live in the cache (2 re-packed, 1 as-is)', cachedM.length === 3 && cachedM.filter((f) => f.repacked).length === 2 && cachedM.every((f) => f.cachedBytes === f.size), JSON.stringify(cachedM.map((f) => [f.url.split('/').pop(), f.size, f.cachedBytes, f.repacked ?? null])));
   await pressConnect();
-  await page.waitForFunction(() => (document.querySelector('.source-page button.primary')?.textContent ?? '').trim() === 'Connect', null, { timeout: 120000 });
+  await page.waitForFunction(() => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect', null, { timeout: 120000 });
   const multiRows2 = await q('SELECT count(*) n FROM src');
   const srvM2 = await serverStats();
   check('concatenated gzip: reconnect + query do not touch the origin again', Number(multiRows2?.[0]?.n) === 23100 && srvM2.bytesSent === srvM1.bytesSent && srvM1.bytesSent > srvM0.bytesSent, `bytes ${srvM0.bytesSent} -> ${srvM1.bytesSent} -> ${srvM2.bytesSent} rows=${JSON.stringify(multiRows2)}`);
@@ -564,7 +564,7 @@ try {
   await page.fill('.source-page textarea', 's3://bucket/badgz/{yyyy}/{MM}/{dd}/*.log.gz');
   await page.selectOption('.source-page .field-row:has-text("Format") select', 'lines');
   await pressConnect();
-  await page.waitForFunction(() => (document.querySelector('.source-page button.primary')?.textContent ?? '').trim() === 'Connect', null, { timeout: 60000 });
+  await page.waitForFunction(() => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect', null, { timeout: 60000 });
   const badErr = await page.locator('.alert.error').textContent().catch(() => null);
   const badCount = await q('SELECT count(*) n FROM src');
   check('damaged gz: connect succeeds, count(*) reports the GZIP error', !badErr && /GZIP/i.test(badCount?.[0]?.error ?? ''), badErr ?? JSON.stringify(badCount).slice(0, 160));

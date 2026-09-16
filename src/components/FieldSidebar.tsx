@@ -12,7 +12,6 @@ export function FieldSidebar(props: {
   onToggleColumn?: (name: string) => void;
   onAddFilter: (field: string, value: string | null, negate: boolean) => void;
   onVisualize?: (field: Field) => void;
-  onDragField?: (field: Field) => void;
 }) {
   const [q, setQ] = useState('');
   const [open, setOpen] = useState<string | null>(null);
@@ -49,10 +48,7 @@ export function FieldSidebar(props: {
         class={'field-item' + (isSel ? ' selected' : '')}
         key={f.name}
         draggable={true}
-        onDragStart={(e) => {
-          e.dataTransfer?.setData('text/field', f.name);
-          props.onDragField?.(f);
-        }}
+        onDragStart={(e) => e.dataTransfer?.setData('text/field', f.name)}
         onClick={(e) => {
           const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
           setAnchor({ left: Math.min(r.right + 4, window.innerWidth - 336), top: Math.max(8, Math.min(r.top, window.innerHeight - 360)) });

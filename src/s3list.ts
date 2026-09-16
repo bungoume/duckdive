@@ -236,7 +236,7 @@ export function captureRegex(pattern: string): { source: string; names: string[]
   return { source: re + '$', names };
 }
 
-export function extractCaptures(url: string, cap: { source: string; names: string[] }): Record<string, string> | null {
+function extractCaptures(url: string, cap: { source: string; names: string[] }): Record<string, string> | null {
   const m = new RegExp(cap.source).exec(url);
   if (!m) return null;
   const out: Record<string, string> = {};
