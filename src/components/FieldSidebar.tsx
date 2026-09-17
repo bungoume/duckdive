@@ -41,18 +41,30 @@ export function FieldSidebar(props: {
   const selected = visible.filter((f) => props.selected.includes(f.name));
   const available = visible.filter((f) => !props.selected.includes(f.name));
 
+  /** Open (or close) the details popover next to the item that was clicked or activated from the keyboard. */
+  const toggleDetails = (f: Field, el: HTMLElement) => {
+    const r = el.getBoundingClientRect();
+    setAnchor({ left: Math.min(r.right + 4, window.innerWidth - 336), top: Math.max(8, Math.min(r.top, window.innerHeight - 360)) });
+    setOpen(open === f.name ? null : f.name);
+  };
+
   const renderItem = (f: Field) => {
     const isSel = props.selected.includes(f.name);
     return (
       <div
         class={'field-item' + (isSel ? ' selected' : '')}
         key={f.name}
+        role="button"
+        tabIndex={0}
+        aria-expanded={open === f.name}
         draggable={true}
         onDragStart={(e) => e.dataTransfer?.setData('text/field', f.name)}
-        onClick={(e) => {
-          const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-          setAnchor({ left: Math.min(r.right + 4, window.innerWidth - 336), top: Math.max(8, Math.min(r.top, window.innerHeight - 360)) });
-          setOpen(open === f.name ? null : f.name);
+        onClick={(e) => toggleDetails(f, e.currentTarget as HTMLElement)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleDetails(f, e.currentTarget as HTMLElement);
+          } else if (e.key === 'Escape' && open === f.name) setOpen(null);
         }}
       >
         {showTypes && <FieldIcon kind={f.kind} />}
@@ -100,10 +112,10 @@ export function FieldSidebar(props: {
                       </div>
                       <span class="hint">{(v.pct * 100).toFixed(1)}%</span>
                       <span class="pm">
-                        <button title={t('doc.filterFor')} onClick={() => props.onAddFilter(f.name, v.value, false)}>
+                        <button title={t('doc.filterFor')} aria-label={t('doc.filterFor')} onClick={() => props.onAddFilter(f.name, v.value, false)}>
                           +
                         </button>
-                        <button title={t('doc.filterOut')} onClick={() => props.onAddFilter(f.name, v.value, true)}>
+                        <button title={t('doc.filterOut')} aria-label={t('doc.filterOut')} onClick={() => props.onAddFilter(f.name, v.value, true)}>
                           −
                         </button>
                       </span>

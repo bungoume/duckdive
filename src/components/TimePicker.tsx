@@ -38,7 +38,10 @@ export function TimePicker(props: { range: TimeRange; onChange: (r: TimeRange) =
         align="right"
         button={
           <button class="btn" onClick={openPicker} title={resolved ? `${formatDate(resolved.from)} → ${formatDate(resolved.to)}` : ''}>
-            <span>◷</span> {describeRange(props.range)} <span style="color:#98a2b3">▾</span>
+            <span aria-hidden="true">◷</span> {describeRange(props.range)}{' '}
+            <span class="subdued" aria-hidden="true">
+              ▾
+            </span>
           </button>
         }
       >

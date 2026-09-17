@@ -75,15 +75,15 @@ export function DataSource(props: {
           {t('ds.intro')}
         </p>
         <div class="kinds">
-          <button class={cfg.kind === 'url' ? 'active' : ''} onClick={() => set({ kind: 'url' })}>
+          <button class={cfg.kind === 'url' ? 'active' : ''} aria-pressed={cfg.kind === 'url'} onClick={() => set({ kind: 'url' })}>
             <b>{t('ds.kind.url')}</b>
             <span>{t('ds.kind.url.sub')}</span>
           </button>
-          <button class={cfg.kind === 'local' ? 'active' : ''} onClick={() => set({ kind: 'local' })}>
+          <button class={cfg.kind === 'local' ? 'active' : ''} aria-pressed={cfg.kind === 'local'} onClick={() => set({ kind: 'local' })}>
             <b>{t('ds.kind.local')}</b>
             <span>{t('ds.kind.local.sub')}</span>
           </button>
-          <button class={cfg.kind === 'demo' ? 'active' : ''} onClick={() => set({ kind: 'demo' })}>
+          <button class={cfg.kind === 'demo' ? 'active' : ''} aria-pressed={cfg.kind === 'demo'} onClick={() => set({ kind: 'demo' })}>
             <b>{t('ds.kind.demo')}</b>
             <span>{t('ds.kind.demo.sub')}</span>
           </button>

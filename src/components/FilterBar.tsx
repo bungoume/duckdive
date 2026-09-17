@@ -128,10 +128,23 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
           }}
           button={
             <span class={'pill' + (f.negate ? ' negate' : '') + (f.disabled ? ' disabled' : '') + (f.untrusted ? ' untrusted' : '')} title={describeFilter(f)} data-not={t('flt.not')}>
-              <span class="txt" style="cursor:pointer" onClick={() => setMenu(menu === f.id ? null : f.id)}>
+              <span
+                class="txt"
+                style="cursor:pointer"
+                role="button"
+                tabIndex={0}
+                aria-expanded={menu === f.id}
+                onClick={() => setMenu(menu === f.id ? null : f.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setMenu(menu === f.id ? null : f.id);
+                  }
+                }}
+              >
                 {describeFilter({ ...f, negate: false })}
               </span>
-              <button title={t('common.remove')} onClick={() => remove(f.id)}>
+              <button title={t('common.remove')} aria-label={t('common.remove')} onClick={() => remove(f.id)}>
                 ✕
               </button>
             </span>

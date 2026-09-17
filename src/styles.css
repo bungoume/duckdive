@@ -91,6 +91,9 @@ textarea.input { font-family: var(--k-mono); font-size: 12px; min-height: 80px; 
 .row { display: flex; gap: 8px; align-items: center; }
 .row.end { justify-content: flex-end; }
 .hint { font-size: 12px; color: var(--k-text-subdued); }
+.subdued { color: var(--k-text-subdued); }
+.error-text { color: var(--k-danger); }
+button:focus-visible, [role='button']:focus-visible, .input:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid var(--k-primary); outline-offset: 1px; }
 
 /* time picker */
 .timepicker { display: flex; align-items: stretch; }
@@ -115,7 +118,7 @@ textarea.input { font-family: var(--k-mono); font-size: 12px; min-height: 80px; 
 .field-item:hover { background: var(--k-hover); }
 .field-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .field-item .act { visibility: hidden; border: 0; background: var(--k-primary); color: #fff; border-radius: 3px; font-size: 11px; padding: 1px 6px; }
-.field-item:hover .act { visibility: visible; }
+.field-item:hover .act, .field-item:focus-visible .act, .field-item:focus-within .act { visibility: visible; }
 .field-item.selected .act { background: var(--k-danger); }
 .ficon { width: 18px; height: 18px; border-radius: 3px; display: inline-grid; place-items: center; font-size: 10px; font-weight: 700; flex: none; color: #fff; }
 .ficon.kind-string { background: #54b399; }
@@ -151,7 +154,7 @@ textarea.input { font-family: var(--k-mono); font-size: 12px; min-height: 80px; 
 table.docs { width: 100%; border-collapse: collapse; font-size: 13px; }
 table.docs th { text-align: left; font-weight: 600; font-size: 12px; padding: 6px 8px; border-bottom: 2px solid var(--k-border); white-space: nowrap; color: var(--k-text-subdued); cursor: pointer; user-select: none; }
 table.docs th:hover { color: var(--k-primary); }
-table.docs th .rm { visibility: hidden; margin-left: 4px; color: var(--k-danger); }
+table.docs th .rm { visibility: hidden; margin-left: 4px; color: var(--k-danger); border: 0; background: transparent; padding: 0; font: inherit; cursor: pointer; }
 table.docs th:hover .rm { visibility: visible; }
 table.docs td { padding: 5px 8px; border-bottom: 1px solid var(--k-border-light); vertical-align: top; }
 table.docs td.time { white-space: nowrap; font-family: var(--k-mono); font-size: 12px; width: 170px; }

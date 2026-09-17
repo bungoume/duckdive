@@ -58,16 +58,16 @@ function DocDetail(props: {
                   <td class="a">
                     {filterable && (
                       <>
-                        <button title={t('doc.filterFor')} onClick={() => props.onFilter(k, val, false)}>
+                        <button title={t('doc.filterFor')} aria-label={t('doc.filterFor')} onClick={() => props.onFilter(k, val, false)}>
                           +
                         </button>
-                        <button title={t('doc.filterOut')} onClick={() => props.onFilter(k, val, true)}>
+                        <button title={t('doc.filterOut')} aria-label={t('doc.filterOut')} onClick={() => props.onFilter(k, val, true)}>
                           −
                         </button>
-                        <button title={t('doc.toggleColumn')} onClick={() => props.onToggleColumn(k)}>
+                        <button title={t('doc.toggleColumn')} aria-label={t('doc.toggleColumn')} onClick={() => props.onToggleColumn(k)}>
                           ⊞
                         </button>
-                        <button title={t('doc.filterExists')} onClick={() => props.onExists(k)}>
+                        <button title={t('doc.filterExists')} aria-label={t('doc.filterExists')} onClick={() => props.onExists(k)}>
                           *
                         </button>
                       </>
@@ -75,7 +75,7 @@ function DocDetail(props: {
                   </td>
                   <td class="k">{k}</td>
                   <td class="v" title={val ?? ''}>
-                    {shown === null ? <i style="color:#98a2b3">null</i> : shown}
+                    {shown === null ? <i class="subdued">null</i> : shown}
                   </td>
                 </tr>
               );
@@ -131,16 +131,17 @@ export function DocTable(props: {
               <th onClick={() => props.onSort(c)}>
                 {c}
                 {sortIcon(c)}
-                <span
+                <button
                   class="rm"
                   title={t('doc.removeColumn')}
+                  aria-label={t('doc.removeColumn')}
                   onClick={(e) => {
                     e.stopPropagation();
                     props.onRemoveColumn(c);
                   }}
                 >
                   ✕
-                </span>
+                </button>
               </th>
             ))
           )}
@@ -151,7 +152,7 @@ export function DocTable(props: {
           <>
             <tr key={i}>
               <td class="expand">
-                <button onClick={() => toggle(i)} title={t('doc.toggleDetails')}>
+                <button onClick={() => toggle(i)} title={t('doc.toggleDetails')} aria-label={t('doc.toggleDetails')} aria-expanded={open.has(i)}>
                   {open.has(i) ? '▼' : '▶'}
                 </button>
               </td>

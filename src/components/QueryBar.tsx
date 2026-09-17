@@ -21,7 +21,9 @@ export function QueryBar(props: { query: string; range: TimeRange; error: string
     <div>
       <div class="querybar">
         <div class="qinput">
-          <span style="color:#98a2b3">⌕</span>
+          <span class="subdued" aria-hidden="true">
+            ⌕
+          </span>
           <input
             value={text}
             placeholder={t('q.placeholder')}

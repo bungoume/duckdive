@@ -256,7 +256,7 @@ export function Visualize(props: {
             <div class="body">
               <div class="chart-types">
                 {CHARTS.map((c) => (
-                  <button class={vis.chart === c.id ? 'active' : ''} onClick={() => setVis({ chart: c.id })} title={chartLabel(c.id)}>
+                  <button class={vis.chart === c.id ? 'active' : ''} aria-pressed={vis.chart === c.id} onClick={() => setVis({ chart: c.id })} title={chartLabel(c.id)}>
                     <span class="ic">{c.icon}</span>
                     {chartLabel(c.id)}
                   </button>
@@ -384,7 +384,7 @@ export function Visualize(props: {
                           <span class="sub">{t('vis.dropToChange')}</span>
                         </span>
                         {vis.metrics.length > 1 && (
-                          <button class="x" onClick={() => removeMetric(m.id)} title={t('common.remove')}>
+                          <button class="x" onClick={() => removeMetric(m.id)} title={t('common.remove')} aria-label={t('common.remove')}>
                             ✕
                           </button>
                         )}
@@ -445,10 +445,10 @@ export function Visualize(props: {
               <div class="saved-list">
                 {saved.map((s) => (
                   <div class="item">
-                    <span class="t" onClick={() => load(s)} title={formatDate(new Date(s.savedAt))}>
+                    <span class="t" role="button" tabIndex={0} onClick={() => load(s)} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && load(s)} title={formatDate(new Date(s.savedAt))}>
                       {s.title}
                     </span>
-                    <button class="btn ghost small danger" onClick={() => del(s.id)} title={t('common.delete')}>
+                    <button class="btn ghost small danger" onClick={() => del(s.id)} title={t('common.delete')} aria-label={t('common.delete')}>
                       ✕
                     </button>
                   </div>
