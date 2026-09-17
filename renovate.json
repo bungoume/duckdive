@@ -4,9 +4,10 @@
   "extends": ["config:best-practices", ":pinAllExceptPeerDependencies"],
   "timezone": "Asia/Tokyo",
   "internalChecksFilter": "strict",
+  "osvVulnerabilityAlerts": true,
   "packageRules": [
     {
-      "description": "Wait 7 days after a release before proposing it (npm packages, the pnpm version in packageManager and GitHub Actions alike). Placed after config:best-practices so it overrides the preset's 3-day npm rule; the update types without a release timestamp keep the preset's opt-out.",
+      "description": "Wait 7 days after a release before proposing it (npm packages, the pnpm version in packageManager, GitHub Actions and the duckdb CLI alike). Placed after config:best-practices so it overrides the preset's 3-day npm rule; the update types without a release timestamp keep the preset's opt-out. Security updates bypass the wait.",
       "matchUpdateTypes": ["major", "minor", "patch", "digest", "pinDigest"],
       "minimumReleaseAge": "7 days"
     },
@@ -15,6 +16,17 @@
       "matchPackageNames": ["typescript", "typescript-eslint"],
       "matchUpdateTypes": ["major"],
       "groupName": "TypeScript major"
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "The duckdb CLI pinned in ci.yml: the release tag and the sha256 of duckdb_cli-linux-amd64.zip, both refreshed from the GitHub release.",
+      "managerFilePatterns": ["/^\\.github/workflows/ci\\.ya?ml$/"],
+      "matchStrings": ["DUCKDB_VERSION: (?<currentValue>v\\d+\\.\\d+\\.\\d+)\\n\\s+DUCKDB_CLI_SHA256: (?<currentDigest>[0-9a-f]{64})"],
+      "datasourceTemplate": "github-release-attachments",
+      "depNameTemplate": "duckdb/duckdb",
+      "versioningTemplate": "semver-coerced"
     }
   ]
 }

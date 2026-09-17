@@ -5,6 +5,15 @@ on:
     branches: [main]
   pull_request:
 
+# The GITHUB_TOKEN only needs to read the repository; every job inherits this.
+permissions:
+  contents: read
+
+# One run per branch; a newer push cancels the run it supersedes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 # Every action is pinned to a commit SHA; the comment carries the release it points at and
 # Renovate (helpers:pinGitHubActionDigests) bumps both together.
 
@@ -12,8 +21,11 @@ jobs:
   check:
     name: typecheck, lint, unit tests, smoke e2e
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       # Installs the pnpm release pinned in package.json#packageManager plus Node, restores the
       # store cache and runs `pnpm install --frozen-lockfile`.
       - uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
@@ -36,9 +48,12 @@ jobs:
   cache-e2e:
     name: cache e2e (needs the duckdb CLI)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: check
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
         with:
           runtime: node@22
@@ -46,10 +61,21 @@ jobs:
           require-lockfile: true
       - run: pnpm run build:e2e
       - run: pnpm exec playwright install --with-deps chromium
+      # A pinned release asset verified against its sha256, instead of `curl | sh` of the
+      # unversioned installer. Renovate refreshes the tag and the digest together
+      # (customManagers in renovate.json, github-release-attachments datasource).
       - name: Install the duckdb CLI
+        env:
+          DUCKDB_VERSION: v1.5.5
+          DUCKDB_CLI_SHA256: 08c0ca117111fcede14239d0093792352befdc174218c344d232c13279643d05
         run: |
-          curl -fsSL https://install.duckdb.org | sh
-          echo "$HOME/.duckdb/cli/latest" >> "$GITHUB_PATH"
+          curl -fsSL --retry 3 -o duckdb_cli-linux-amd64.zip \
+            "https://github.com/duckdb/duckdb/releases/download/${DUCKDB_VERSION}/duckdb_cli-linux-amd64.zip"
+          echo "${DUCKDB_CLI_SHA256}  duckdb_cli-linux-amd64.zip" | sha256sum -c -
+          mkdir -p "$HOME/.local/bin"
+          unzip -q -o duckdb_cli-linux-amd64.zip -d "$HOME/.local/bin"
+          rm duckdb_cli-linux-amd64.zip
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - run: duckdb --version
       - run: node e2e/cache.mjs
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
