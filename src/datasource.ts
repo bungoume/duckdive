@@ -18,6 +18,7 @@ import {
   namedTokens,
   parseS3Url,
   resolveS3Patterns,
+  endpointStyle,
   s3Target,
   signObjectGet,
   type TokenValue,
@@ -82,22 +83,14 @@ export function capturedColumns(cfg: SourceConfig): string[] {
 }
 
 /**
- * duckdb-wasm understands s3_region / s3_access_key_id / s3_secret_access_key /
- * s3_session_token / s3_endpoint only (they are built into the runtime, not the httpfs
- * extension, so e.g. `s3_url_style` does not exist here). The URL style is derived from
- * the endpoint: an endpoint with a scheme ("http://minio:9000") means path-style
- * (endpoint/bucket/key); a bare host ("s3.ap-northeast-1.amazonaws.com") means
- * virtual-hosted style (bucket.host/key). No endpoint → bucket.s3.amazonaws.com.
+ * The endpoint for duckdb-wasm, which understands s3_region / s3_access_key_id /
+ * s3_secret_access_key / s3_session_token / s3_endpoint only (they are built into the runtime,
+ * not the httpfs extension, so e.g. `s3_url_style` does not exist here). It derives the URL
+ * style from this string the same way endpointStyle does, which is why the string comes from
+ * there: the listing signs exactly the URL DuckDB then asks for.
  */
 export function s3EndpointFor(s3: SourceConfig['s3']): string {
-  let ep = (s3.endpoint || '').trim().replace(/\/+$/, '');
-  if (s3.urlStyle === 'path') {
-    if (!ep) ep = s3.region ? `s3.${s3.region}.amazonaws.com` : 's3.amazonaws.com';
-    if (!/^https?:\/\//.test(ep)) ep = 'https://' + ep;
-  } else if (/^https?:\/\//.test(ep)) {
-    ep = ep.replace(/^https?:\/\//, '');
-  }
-  return ep;
+  return endpointStyle(s3).endpoint;
 }
 
 /** URLs (one per line, comments stripped) from the config. */
@@ -111,11 +104,7 @@ export function sourceUrls(cfg: SourceConfig): string[] {
 /** Resolve an s3:// URL to the https URL duckdb-wasm will request (for host permissions). */
 export function s3HttpsUrl(url: string, s3: SourceConfig['s3']): string | null {
   const m = /^s3:\/\/([^/]+)(\/.*)?$/.exec(url);
-  if (!m) return null;
-  const bucket = m[1];
-  const ep = s3EndpointFor(s3);
-  if (/^https?:\/\//.test(ep)) return `${ep}/${bucket}${m[2] ?? ''}`;
-  return `https://${bucket}.${ep || 's3.amazonaws.com'}${m[2] ?? ''}`;
+  return m ? `${s3Target(m[1], s3).baseUrl}${m[2] ?? ''}` : null;
 }
 
 /** Host permission patterns needed to read the configured URLs. */

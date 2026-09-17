@@ -45,17 +45,29 @@ function rfc3986(s: string): string {
   return encodeURIComponent(s).replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase());
 }
 
-export function s3Target(bucket: string, s3: S3Config): S3Target {
+/**
+ * How the endpoint is addressed. An endpoint with a scheme ("http://minio:9000") means path-style
+ * (endpoint/bucket/key), as does choosing path style; a bare host ("s3.ap-northeast-1.amazonaws.com")
+ * means virtual-hosted style (bucket.host/key). duckdb-wasm reads the same rule off the endpoint
+ * string it is handed, and the listing signs what DuckDB then requests, so both derive the style
+ * here instead of each making up its own.
+ */
+export function endpointStyle(s3: S3Config): { pathStyle: boolean; endpoint: string } {
   let ep = (s3.endpoint || '').trim().replace(/\/+$/, '');
   const pathStyle = s3.urlStyle === 'path' || /^https?:\/\//.test(ep);
   if (pathStyle) {
     if (!ep) ep = s3.region ? `s3.${s3.region}.amazonaws.com` : 's3.amazonaws.com';
     if (!/^https?:\/\//.test(ep)) ep = 'https://' + ep;
-    const u = new URL(ep);
-    return { bucket, baseUrl: `${ep}/${bucket}`, canonicalBase: `/${bucket}/`, host: u.host };
+  } else {
+    ep = ep.replace(/^https?:\/\//, '') || 's3.amazonaws.com';
   }
-  ep = ep.replace(/^https?:\/\//, '') || 's3.amazonaws.com';
-  return { bucket, baseUrl: `https://${bucket}.${ep}`, canonicalBase: '/', host: `${bucket}.${ep}` };
+  return { pathStyle, endpoint: ep };
+}
+
+export function s3Target(bucket: string, s3: S3Config): S3Target {
+  const { pathStyle, endpoint } = endpointStyle(s3);
+  if (pathStyle) return { bucket, baseUrl: `${endpoint}/${bucket}`, canonicalBase: `/${bucket}/`, host: new URL(endpoint).host };
+  return { bucket, baseUrl: `https://${bucket}.${endpoint}`, canonicalBase: '/', host: `${bucket}.${endpoint}` };
 }
 
 function amzDate(d = new Date()): { date: string; datetime: string } {
