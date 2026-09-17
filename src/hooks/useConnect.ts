@@ -105,6 +105,10 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
   };
 
   const connect = async (cfg: SourceConfig, local: LocalSelection = NO_LOCAL, interactive = true, window: TimeWindow | null = currentWindow()): Promise<AttachedSource | null> => {
+    // Whatever was still connecting belongs to a file set nobody wants any more. Without this its
+    // listing runs to the end and then replaces the view with the older file set, because only
+    // the state updates check `stale()` while the DuckDB steps do not.
+    attemptCtl.current?.abort();
     const attempt = ++attemptSeq.current;
     const ctl = new AbortController();
     attemptCtl.current = ctl;

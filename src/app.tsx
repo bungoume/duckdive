@@ -31,6 +31,10 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   busyRef.current = busy;
+  // What auto refresh waits for. A connect is DuckDB work as well, and a tick during one would
+  // queue a second re-list behind it whose first act is to cancel the queries the tick just
+  // started, so on a source that lists slower than the interval nothing ever finishes.
+  const refreshBusyRef = useRef(false);
 
   useEffect(() => {
     writeUrlState(url);
@@ -71,7 +75,7 @@ export function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  const refreshTick = useAutoRefresh(settings.autoRefreshMs, url.page === 'discover' || url.page === 'visualize' || url.page === 'dashboard', busyRef);
+  const refreshTick = useAutoRefresh(settings.autoRefreshMs, url.page === 'discover' || url.page === 'visualize' || url.page === 'dashboard', refreshBusyRef);
   const {
     ready,
     initError,
@@ -93,6 +97,7 @@ export function App() {
     cancelConnect,
     onTimeField,
   } = useConnect(url, setUrl, busyRef, linkSource, refreshTick);
+  refreshBusyRef.current = busy || attaching;
   const { gate, runAnyway } = useDownloadGate(source, attached, ackedFiles);
   const { refreshError } = useCredentialRefresh(source, attached, setCreds);
   const paused = attaching || gate.status !== 'ok';
