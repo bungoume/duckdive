@@ -1,5 +1,6 @@
 import js from '@eslint/js';
 import globals from 'globals';
+import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
@@ -8,12 +9,18 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     files: ['src/**/*.{ts,tsx}', 'test/**/*.ts', 'vitest.config.ts', 'vite.config.ts'],
-    languageOptions: { globals: { ...globals.browser, chrome: 'readonly' } },
+    languageOptions: { globals: { ...globals.browser, chrome: 'readonly' }, parserOptions: { projectService: true } },
+    plugins: { 'react-hooks': reactHooks },
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],
       '@typescript-eslint/no-non-null-assertion': 'off',
       // the chart code drives Observable Plot's untyped scale objects
       '@typescript-eslint/no-explicit-any': 'warn',
+      // a promise nobody awaits or catches becomes an unhandled rejection
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: false }],
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'error',
     },
   },
   {

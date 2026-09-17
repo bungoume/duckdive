@@ -6,7 +6,6 @@ import { findField } from '../fields';
 import { compileSearch, fetchCount, fetchDocs, fetchHistogram, type Bucket, type Doc } from '../queries';
 import { INTERVALS, autoInterval, bucketOffsetMinutes, intervalByKey, intervalLabel, newId, type Filter, type Interval } from '../sql';
 import { t } from '../i18n';
-import { useSettings } from '../settings';
 import type { DiscoverState, SearchState } from '../state';
 import { DocTable } from './DocTable';
 import { FieldSidebar } from './FieldSidebar';
@@ -32,16 +31,15 @@ export function Discover(props: {
   /** true while the file list is being re-resolved: skip queries against the stale view */
   paused?: boolean;
 }) {
-  const { fields, timeExpr, search, discover } = props;
+  const { fields, timeExpr, search, discover, onBusy, paused } = props;
   const compiled = useMemo(() => compileSearch(search, fields, timeExpr), [search, fields, timeExpr]);
   const interval: Interval | null = useMemo(() => {
     if (!compiled.from || !compiled.to) return null;
     return discover.interval === 'auto' ? autoInterval(compiled.from, compiled.to) : (intervalByKey(discover.interval) ?? autoInterval(compiled.from, compiled.to));
   }, [compiled, discover.interval]);
 
-  // buckets are aligned with the display time zone: re-query when it changes
-  const settings = useSettings();
-  const tzOffset = useMemo(() => bucketOffsetMinutes(compiled.to ?? undefined), [compiled, settings.timeZone]);
+  // buckets are aligned with the display time zone (a settings change re-renders the app, so this follows it)
+  const tzOffset = bucketOffsetMinutes(compiled.to ?? undefined);
 
   const [count, setCount] = useState<number | null>(null);
   const [buckets, setBuckets] = useState<Bucket[]>([]);
@@ -60,13 +58,13 @@ export function Discover(props: {
   const colKey = JSON.stringify(discover.columns);
 
   useEffect(() => {
-    if (compiled.error || props.paused) return;
+    if (compiled.error || paused) return;
     const id = ++runId.current;
     setBusy(true);
-    props.onBusy(true);
+    onBusy(true);
     setError(null);
     const t0 = performance.now();
-    (async () => {
+    void (async () => {
       try {
         // With a time field the histogram already counts every matching row (the range condition
         // excludes NULL times), so the separate count(*) scan is only needed without one.
@@ -88,15 +86,17 @@ export function Discover(props: {
       } finally {
         if (id === runId.current) {
           setBusy(false);
-          props.onBusy(false);
+          onBusy(false);
         }
       }
     })();
-  }, [compiled.where, compiled.error, interval?.key, tzOffset, sortKey, colKey, timeExpr, props.paused]);
+    // sort, columns and interval are compared by value, so a restored URL with the same content does not re-query
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compiled.where, compiled.error, interval?.key, tzOffset, sortKey, colKey, timeExpr, paused, onBusy]);
 
   const loadMore = async () => {
     setBusy(true);
-    props.onBusy(true);
+    onBusy(true);
     try {
       const more = await fetchDocs(compiled.where, timeExpr, fields, discover.sort, discover.columns, PAGE, docs.length);
       setDocs([...docs, ...more.docs]);
@@ -104,7 +104,7 @@ export function Discover(props: {
       if (!(e instanceof QueryCancelled)) setError(withCacheHint(String(e)));
     } finally {
       setBusy(false);
-      props.onBusy(false);
+      onBusy(false);
     }
   };
 

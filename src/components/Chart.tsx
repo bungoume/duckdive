@@ -194,7 +194,7 @@ export function Chart(props: {
     highlighted.current = null;
     setHover(null);
     return () => plot.remove();
-  }, [props.result, props.metrics, props.chart, width, lang, settings]);
+  }, [props.result, props.metrics, props.chart, props.height, width, lang, settings]);
 
   /** The plot's own <svg> (with a legend, Plot renders small swatch svgs before it). */
   const chartSvg = (): SVGSVGElement | null => {

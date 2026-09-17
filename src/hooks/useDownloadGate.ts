@@ -35,7 +35,9 @@ export function useDownloadGate(source: SourceConfig, attached: AttachedSource |
     return () => {
       live = false;
     };
-  }, [attached, cfgKey]);
+    // `source` is compared through cfgKey (see above)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attached, cfgKey, acked]);
   const runAnyway = () => {
     acked.current = attached?.files.join('\n') ?? '';
     setGate({ status: 'ok' });

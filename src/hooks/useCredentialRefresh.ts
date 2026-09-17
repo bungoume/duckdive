@@ -30,6 +30,6 @@ export function useCredentialRefresh(source: SourceConfig, attached: AttachedSou
       }
     }, CHECK_EVERY_MS);
     return () => clearInterval(timer);
-  }, [source, attached]);
+  }, [source, attached, onCreds]);
   return { refreshError };
 }

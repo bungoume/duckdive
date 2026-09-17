@@ -6,7 +6,7 @@ import { isExtension, listGrantedOrigins, removeOrigin } from '../../permissions
 export function HostsCard(props: { refreshKey: unknown }) {
   const [granted, setGranted] = useState<string[]>([]);
   useEffect(() => {
-    listGrantedOrigins().then(setGranted);
+    void listGrantedOrigins().then(setGranted);
   }, [props.refreshKey]);
   if (!isExtension || !granted.length) return null;
   return (

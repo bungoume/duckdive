@@ -35,7 +35,7 @@ export function FieldSidebar(props: {
     return () => {
       alive = false;
     };
-  }, [open, props.where]);
+  }, [open, props.where, props.fields]);
 
   const visible = props.fields.filter((f) => !q || f.name.toLowerCase().includes(q.toLowerCase()));
   const selected = visible.filter((f) => props.selected.includes(f.name));

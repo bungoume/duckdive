@@ -42,6 +42,7 @@
     "@preact/preset-vite": "2.10.6",
     "@types/chrome": "0.2.9",
     "eslint": "10.10.0",
+    "eslint-plugin-react-hooks": "7.1.1",
     "globals": "17.12.0",
     "playwright": "1.63.0",
     "prettier": "3.9.6",

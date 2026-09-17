@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useCallback, useEffect, useState } from 'preact/hooks';
 import { t } from '../i18n';
 import {
   cacheClear,
@@ -35,7 +35,7 @@ export function CachePanel() {
   const [err, setErr] = useState<string | null>(null);
   const [opfsError, setOpfsError] = useState<string | null>(null);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     try {
       const [s, f, e] = await Promise.all([cacheStats(), cacheFiles({ limit }), storageEstimate()]);
       setStats(s.stats);
@@ -48,13 +48,24 @@ export function CachePanel() {
     } catch (e) {
       setErr(String(e));
     }
-  };
+  }, [limit]);
 
   useEffect(() => {
-    refresh();
+    void refresh();
     const t = setInterval(refresh, 3000);
     return () => clearInterval(t);
-  }, [limit]);
+  }, [refresh]);
+
+  /** Wait for a cache operation, then reload the panel; a failure shows in the banner. */
+  const run = async (op: Promise<unknown>) => {
+    try {
+      await op;
+    } catch (e) {
+      setErr(String(e));
+      return;
+    }
+    await refresh();
+  };
 
   const total = (stats?.bytesFromCache ?? 0) + (stats?.bytesFromNetwork ?? 0);
   const ratio = total ? Math.round(((stats?.bytesFromCache ?? 0) / total) * 100) : 0;
@@ -71,38 +82,16 @@ export function CachePanel() {
         <>
           <div class="grid2" style="margin-bottom:8px">
             <label class="row">
-              <input
-                type="checkbox"
-                checked={config.enabled}
-                onChange={async (e) => {
-                  await cacheSetConfig({ enabled: (e.target as HTMLInputElement).checked });
-                  refresh();
-                }}
-              />
+              <input type="checkbox" checked={config.enabled} onChange={(e) => run(cacheSetConfig({ enabled: (e.target as HTMLInputElement).checked }))} />
               {t('cache.enable')}
             </label>
             <label class="row" title={t('cache.repack.title')}>
-              <input
-                type="checkbox"
-                checked={config.normalizeGzip}
-                onChange={async (e) => {
-                  await cacheSetConfig({ normalizeGzip: (e.target as HTMLInputElement).checked });
-                  refresh();
-                }}
-              />
+              <input type="checkbox" checked={config.normalizeGzip} onChange={(e) => run(cacheSetConfig({ normalizeGzip: (e.target as HTMLInputElement).checked }))} />
               {t('cache.repack')}
             </label>
             <div class="row">
               <span class="hint">{t('cache.chunkSize')}</span>
-              <select
-                class="input"
-                style="width:120px"
-                value={config.chunkSize}
-                onChange={async (e) => {
-                  await cacheSetConfig({ chunkSize: Number((e.target as HTMLSelectElement).value) });
-                  refresh();
-                }}
-              >
+              <select class="input" style="width:120px" value={config.chunkSize} onChange={(e) => run(cacheSetConfig({ chunkSize: Number((e.target as HTMLSelectElement).value) }))}>
                 {CHUNK_SIZES.map((c) => (
                   <option value={c.v}>{c.l}</option>
                 ))}
@@ -130,14 +119,7 @@ export function CachePanel() {
                 <td class="v">
                   {est ? t('cache.storage.text', { used: fmtBytes(est.usage), quota: fmtBytes(est.quota), mode: est.persisted ? t('cache.storage.persistent') : t('cache.storage.bestEffort') }) : '–'}
                   {est && !est.persisted && (
-                    <button
-                      class="btn small"
-                      style="margin-left:8px"
-                      onClick={async () => {
-                        await requestPersist();
-                        refresh();
-                      }}
-                    >
+                    <button class="btn small" style="margin-left:8px" onClick={() => run(requestPersist())}>
                       {t('cache.requestPersist')}
                     </button>
                   )}
@@ -154,14 +136,7 @@ export function CachePanel() {
                     {t('cache.onDisk.text', { files: summary.cachedFiles.toLocaleString(), bytes: fmtBytes(summary.cachedBytes), known: summary.known.toLocaleString() })}
                     {summary.wasted > 0 ? t('cache.reclaimable', { bytes: fmtBytes(summary.wasted) }) : ''}
                     {summary.wasted > 16 * 1024 * 1024 && (
-                      <button
-                        class="btn small"
-                        style="margin-left:8px"
-                        onClick={async () => {
-                          await cacheCompact();
-                          refresh();
-                        }}
-                      >
+                      <button class="btn small" style="margin-left:8px" onClick={() => run(cacheCompact())}>
                         {t('cache.compact')}
                       </button>
                     )}
@@ -191,13 +166,7 @@ export function CachePanel() {
                       {fmtBytes(f.cachedBytes)} ({f.size ? Math.min(100, Math.round((f.cachedBytes / f.size) * 100)) : 0}%)
                     </td>
                     <td>
-                      <button
-                        class="btn small"
-                        onClick={async () => {
-                          await cachePurge(f.url);
-                          refresh();
-                        }}
-                      >
+                      <button class="btn small" onClick={() => run(cachePurge(f.url))}>
                         {t('cache.drop')}
                       </button>
                     </td>
@@ -256,13 +225,7 @@ export function CachePanel() {
             <button class="btn small" onClick={refresh}>
               {t('common.refresh')}
             </button>
-            <button
-              class="btn small danger"
-              onClick={async () => {
-                await cacheClear();
-                refresh();
-              }}
-            >
+            <button class="btn small danger" onClick={() => run(cacheClear())}>
               {t('cache.clear')}
             </button>
           </div>

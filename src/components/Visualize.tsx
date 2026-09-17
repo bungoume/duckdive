@@ -7,7 +7,6 @@ import { findField } from '../fields';
 import { NULL_GROUP, OTHER, compileSearch, fetchVis, metricLabel, type VisResult } from '../queries';
 import { INTERVALS, autoInterval, bucketOffsetMinutes, intervalByKey, intervalLabel, newId, type Filter, type Interval } from '../sql';
 import { t, type MsgKey } from '../i18n';
-import { useSettings } from '../settings';
 import { loadSavedVis, storeSavedVis, type ChartType, type MetricAgg, type MetricDef, type SavedVis, type SearchState, type VisState } from '../state';
 import { Chart, type ChartPick } from './Chart';
 import { DataTable, MetricTiles } from './VisTable';
@@ -86,7 +85,7 @@ export function Visualize(props: {
   /** true while the file list is being re-resolved: skip queries against the stale view */
   paused?: boolean;
 }) {
-  const { fields, timeExpr, search, vis } = props;
+  const { fields, timeExpr, search, vis, onBusy, paused } = props;
   const compiled = useMemo(() => compileSearch(search, fields, timeExpr), [search, fields, timeExpr]);
   const effVis: VisState = vis.chart === 'metric' ? { ...vis, x: { ...vis.x, kind: 'none' } } : vis;
   const interval: Interval | null = useMemo(() => {
@@ -94,9 +93,8 @@ export function Visualize(props: {
     return vis.x.interval === 'auto' ? autoInterval(compiled.from, compiled.to, 50) : (intervalByKey(vis.x.interval) ?? autoInterval(compiled.from, compiled.to, 50));
   }, [compiled, vis.x.interval]);
 
-  // buckets are aligned with the display time zone: re-query when it changes
-  const settings = useSettings();
-  const tzOffset = useMemo(() => bucketOffsetMinutes(compiled.to ?? undefined), [compiled, settings.timeZone]);
+  // buckets are aligned with the display time zone (a settings change re-renders the app, so this follows it)
+  const tzOffset = bucketOffsetMinutes(compiled.to ?? undefined);
 
   const [result, setResult] = useState<VisResult | null>(null);
   const [busy, setBusy] = useState(false);
@@ -107,10 +105,10 @@ export function Visualize(props: {
   const visKey = JSON.stringify(effVis);
 
   useEffect(() => {
-    if (compiled.error || props.paused) return;
+    if (compiled.error || paused) return;
     const id = ++runId.current;
     setBusy(true);
-    props.onBusy(true);
+    onBusy(true);
     setError(null);
     fetchVis(effVis, compiled.where, timeExpr, fields, interval, tzOffset)
       .then((r) => {
@@ -122,10 +120,12 @@ export function Visualize(props: {
       .finally(() => {
         if (id === runId.current) {
           setBusy(false);
-          props.onBusy(false);
+          onBusy(false);
         }
       });
-  }, [compiled.where, compiled.error, visKey, interval?.key, tzOffset, timeExpr, props.paused]);
+    // the chart definition and the interval are compared by value, so a restored URL with the same content does not re-query
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compiled.where, compiled.error, visKey, interval?.key, tzOffset, timeExpr, paused, onBusy]);
 
   const setVis = (patch: Partial<VisState>) => props.onVis({ ...vis, ...patch });
   const setX = (patch: Partial<VisState['x']>) => setVis({ x: { ...vis.x, ...patch } });

@@ -67,7 +67,7 @@ export function Histogram(props: { buckets: Bucket[]; interval: Interval; tzOffs
     // Plot renders in UTC for type 'utc'; shift to local time display by using local scale instead
     el.replaceChildren(plot);
     return () => plot.remove();
-  }, [props.buckets, props.interval, props.tzOffset, props.from, props.to, width, lang, settings]);
+  }, [props.buckets, props.interval, props.tzOffset, props.from, props.to, props.height, width, lang, settings]);
 
   const onDown = (e: PointerEvent) => {
     const el = ref.current;

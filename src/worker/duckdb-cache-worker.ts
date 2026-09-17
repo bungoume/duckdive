@@ -688,7 +688,7 @@ function handleExtensionGet(url: string, headers: HeaderMap): NativeResult {
       extFiles.set(url, entry);
     }
     const target = entry;
-    (async () => {
+    void (async () => {
       try {
         await openExt(target);
         if (!target.handle) return;
@@ -1018,7 +1018,7 @@ self.onmessage = (ev: MessageEvent) => {
   else buffered.push(ev);
 };
 
-(async () => {
+void (async () => {
   await initOpfs();
   (self as unknown as { XMLHttpRequest: unknown }).XMLHttpRequest = CachingXHR;
   importScripts(new URL('/duckdb/duckdb-browser-eh.worker.js', self.location.href).href);

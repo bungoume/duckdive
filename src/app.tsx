@@ -120,7 +120,7 @@ export function App() {
             onChange={(e) => {
               const key = (e.target as HTMLSelectElement).value;
               const entry = history.find((h) => h.key === key);
-              if (entry && key !== (attached ? sourceKey(source) : null)) switchSource(entry.config);
+              if (entry && key !== (attached ? sourceKey(source) : null)) void switchSource(entry.config);
             }}
           >
             {(!attached || !history.some((h) => h.key === sourceKey(source))) && <option value="">{attached ? source.name : t('app.status.noSource')}</option>}
@@ -192,8 +192,8 @@ export function App() {
       {page === 'settings' && <Settings />}
       {page === 'source' && (
         <DataSource
+          key={switchSeq}
           config={source}
-          switchSeq={switchSeq}
           history={history}
           attached={attached}
           error={attachError}

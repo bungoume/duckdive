@@ -13,11 +13,16 @@ export function originPattern(url: string): string | null {
   }
 }
 
+/** Whether every pattern is granted; a pattern Chrome rejects counts as not granted. */
 export async function hasHostPermissions(patterns: string[]): Promise<boolean> {
   if (!isExtension || !chrome.permissions) return true;
   const origins = patterns.filter(Boolean);
   if (!origins.length) return true;
-  return chrome.permissions.contains({ origins });
+  try {
+    return await chrome.permissions.contains({ origins });
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -37,8 +42,11 @@ export async function ensureHostPermissions(patterns: string[]): Promise<{ ok: b
 
 export async function listGrantedOrigins(): Promise<string[]> {
   if (!isExtension || !chrome.permissions) return [];
-  const all = await chrome.permissions.getAll();
-  return all.origins ?? [];
+  try {
+    return (await chrome.permissions.getAll()).origins ?? [];
+  } catch {
+    return [];
+  }
 }
 
 export async function removeOrigin(pattern: string): Promise<void> {

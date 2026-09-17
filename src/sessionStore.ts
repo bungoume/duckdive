@@ -3,11 +3,11 @@
 
 import { isExtension } from './permissions';
 
-const useChrome = () => isExtension && !!chrome.storage?.session;
+const hasChromeSession = () => isExtension && !!chrome.storage?.session;
 
 export async function readSession<T>(key: string): Promise<T | null> {
   try {
-    if (useChrome()) {
+    if (hasChromeSession()) {
       const r = await chrome.storage.session.get(key);
       return (r[key] as T | undefined) ?? null;
     }
@@ -21,7 +21,7 @@ export async function readSession<T>(key: string): Promise<T | null> {
 /** `null` removes the entry. */
 export async function writeSession(key: string, value: unknown): Promise<void> {
   try {
-    if (useChrome()) {
+    if (hasChromeSession()) {
       if (value === null) await chrome.storage.session.remove(key);
       else await chrome.storage.session.set({ [key]: value });
       return;

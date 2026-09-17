@@ -4,13 +4,14 @@ import type { FieldKind } from '../fields';
 
 export function Popover(props: { open: boolean; onClose: () => void; button: ComponentChildren; children: ComponentChildren; align?: 'left' | 'right'; width?: number }) {
   const ref = useRef<HTMLDivElement>(null);
+  const { open, onClose } = props;
   useEffect(() => {
-    if (!props.open) return;
+    if (!open) return;
     const onDoc = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) props.onClose();
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') props.onClose();
+      if (e.key === 'Escape') onClose();
     };
     document.addEventListener('mousedown', onDoc);
     document.addEventListener('keydown', onKey);
@@ -18,7 +19,7 @@ export function Popover(props: { open: boolean; onClose: () => void; button: Com
       document.removeEventListener('mousedown', onDoc);
       document.removeEventListener('keydown', onKey);
     };
-  }, [props.open]);
+  }, [open, onClose]);
   return (
     <div class="popover-anchor" ref={ref}>
       {props.button}

@@ -226,13 +226,11 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
 
   // Start-up: hydrate the saved source with this session's secrets, start DuckDB, reconnect.
   useEffect(() => {
-    (async () => {
+    void (async () => {
       try {
         const cfg = await withSecrets(loadSource());
-        if (cfg !== source) {
-          setSource(cfg);
-          setSwitchSeq((n) => n + 1);
-        }
+        setSource(cfg);
+        setSwitchSeq((n) => n + 1);
         await initDuckDB();
         expose({ query, cancelAllQueries, queriesRunning, getQueryLog, registerFileURL: (name: string, url: string) => getDB().registerFileURL(name, url, DataProtocol.HTTP, false) });
         setReady(true);
@@ -251,6 +249,8 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
         setInitError(String(e));
       }
     })();
+    // runs once, with the source saved from the previous session
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sources with date tokens ({yyyy}/{MM}/{dd}) or captured columns depend on the time range and
@@ -272,6 +272,8 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
       connect(source, [], false, currentWindow()).catch(() => undefined);
     }, 250);
     return () => clearTimeout(timer);
+    // the range and the filters are compared through rangeKey; `source` only matters when they changed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rangeKey, attaching]);
 
   return {

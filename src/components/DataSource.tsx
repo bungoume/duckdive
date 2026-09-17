@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { AwsCredentials, OidcConfig } from '../auth';
 import { capturedColumns, requiredOrigins, unselectedTokens, type AttachedSource } from '../datasource';
 import { FORMAT_IDS, TEMPLATES, formatLabel, templateLabel, templateNote } from '../formats';
@@ -13,10 +13,9 @@ import { HostsCard } from './source/HostsCard';
 import { S3Section } from './source/S3Section';
 import { TokenValues } from './source/TokenValues';
 
+/** The Data source page. The form starts from `config`; the parent remounts it (by key) when a remembered source is loaded. */
 export function DataSource(props: {
   config: SourceConfig;
-  /** changes when a remembered source was loaded: the form is reset to `config` */
-  switchSeq: number;
   history: SourceHistoryEntry[];
   attached: AttachedSource | null;
   error: string | null;
@@ -34,9 +33,6 @@ export function DataSource(props: {
   onForgetHistory: (key: string) => void;
 }) {
   const [cfg, setCfg] = useState<SourceConfig>(props.config);
-  useEffect(() => {
-    if (props.switchSeq) setCfg(props.config);
-  }, [props.switchSeq]);
   const [files, setFiles] = useState<File[]>([]);
   const [templateId, setTemplateId] = useState<string>('');
   const [pendingTemplate, setPendingTemplate] = useState<(typeof TEMPLATES)[number] | null>(null);
@@ -61,11 +57,12 @@ export function DataSource(props: {
   const missing = unselectedTokens(cfg);
   const setTokenValues = (name: string, values: string[]) => set({ tokenValues: { ...(cfg.tokenValues ?? {}), [name]: values } });
   const connectLabel = props.busy ? t('ds.connecting') : tokens.length && !vars ? t('ds.listAndConnect') : t('ds.connect');
-  const origins = cfg.kind === 'url' ? requiredOrigins(cfg) : [];
+  const origins = useMemo(() => (cfg.kind === 'url' ? requiredOrigins(cfg) : []), [cfg]);
 
+  // re-checked after a connect, which may have asked for the permission
   useEffect(() => {
-    hasHostPermissions(origins).then((ok) => setNeedPerm(!ok));
-  }, [cfg.urls, cfg.s3.endpoint, cfg.s3.urlStyle, props.attached]);
+    void hasHostPermissions(origins).then((ok) => setNeedPerm(!ok));
+  }, [origins, props.attached]);
 
   return (
     <div class="source-page">
