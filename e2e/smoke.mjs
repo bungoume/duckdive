@@ -202,6 +202,25 @@ await step('histogram-breakdown', async () => {
   await page.selectOption('.chart-head select[title="Break down by"]', '');
   await settled(page);
 });
+await step('patterns', async () => {
+  // the message field grouped by template; "+" keeps one pattern through a custom SQL filter
+  await page.click('.hits button:has-text("Patterns")');
+  await page.waitForSelector('.patterns-table tbody tr', { timeout: 30000 });
+  const rows = await page.locator('.patterns-table tbody tr').allTextContents();
+  const before = await page.textContent('.hits .n');
+  console.log(`     patterns=${rows.length}: ${rows[0].replace(/\s+/g, ' ').slice(0, 90)}`);
+  const row = page.locator('.patterns-table tbody tr', { hasText: '-> <n>' }).first();
+  if (!(await row.count())) throw new Error('no masked pattern');
+  await row.locator('button').click();
+  await settled(page);
+  const pills = await page.locator('.filterbar .pill').allTextContents();
+  const after = await page.textContent('.hits .n');
+  console.log(`     pill=${pills[0]?.slice(0, 40)} hits ${before} -> ${after}`);
+  if (!pills.length || after === before) throw new Error('pattern filter did not apply');
+  await page.click('.filterbar .pill button[title="Remove"]');
+  await settled(page);
+  await page.click('.hits button:has-text("Patterns")');
+});
 await step('saved-search', async () => {
   // save the current query with its column, load it back after changing the query
   await page.click('.hits button:has-text("Saved searches")');

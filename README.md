@@ -4,7 +4,7 @@ A Chrome extension that searches and charts log files. It reads Parquet, CSV and
 
 Six pages:
 
-- Discover: query bar, time histogram (optionally broken down by a field's top values), document table (each row expands to a table, JSON, and the records around it in time), field sidebar (top values, and for numbers a summary with a distribution), filter pills, saved searches, export of the matching rows.
+- Discover: query bar, time histogram (optionally broken down by a field's top values), document table (each row expands to a table, JSON, and the records around it in time), field sidebar (top values, and for numbers a summary with a distribution), message patterns, filter pills, saved searches, export of the matching rows.
 - Visualize: area, line, bar, table and metric charts with date histograms, break-downs and top values; 100 % stacking, a logarithmic axis, the previous period as an overlay, any percentile and a per-second rate as metrics, and the chart as an SVG file. Clicking a chart adds a filter or zooms the time range.
 - Dashboard: saved visualizations side by side over one search and time range; a click on any chart filters or zooms all of them.
 - SQL: one DuckDB statement over the connected source, its rows as a table, downloads as CSV, JSON Lines or Parquet.
@@ -131,6 +131,10 @@ Filters of the type "custom SQL" run verbatim inside DuckDB. Because the URL car
 ## Export
 
 "Export" on the Discover page downloads the rows that match the query, the filters and the time range as CSV, JSON Lines or Parquet, sorted like the table and cut at the chosen number of rows (10,000 by default, at most 1,000,000). With columns selected the file holds the time column and those columns under their field names; without a selection it holds every column of the source, so a gzip ALB prefix can be turned into a Parquet file from the browser. DuckDB writes the file in memory before the download starts, so keep the row limit within what the tab can hold. The Visualize page's table has its own "Download CSV".
+
+## Message patterns
+
+"Patterns" on the Discover page groups the values of a text field by their template: numbers, IP addresses, long hex ids and UUIDs are replaced by `<n>`, `<ip>`, `<hex>` and `<uuid>` inside DuckDB (`regexp_replace`), and the rows are counted per remaining text, most frequent first, with an example each. "+" adds a custom SQL filter (`regexp_matches` with the template turned back into an anchored expression) that keeps the lines of that pattern.
 
 ## Saved searches, visualizations and the dashboard
 

@@ -16,6 +16,7 @@ import { Histogram, fillBuckets } from './Histogram';
 import { DiagnosePanel } from './DiagnosePanel';
 import { ExportMenu } from './ExportMenu';
 import { QueryBar } from './QueryBar';
+import { PatternsPanel, defaultPatternField } from './PatternsPanel';
 import { SavedSearches } from './SavedSearches';
 import { withCacheHint } from '../diagnose';
 import { describeError } from '../errors';
@@ -74,6 +75,9 @@ export function Discover(props: {
   const [error, setError] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [showSql, setShowSql] = useState(false);
+  const [showPatterns, setShowPatterns] = useState(false);
+  const [patternFieldName, setPatternFieldName] = useState<string | null>(null);
+  const patternField = (patternFieldName ? findField(fields, patternFieldName) : undefined) ?? defaultPatternField(fields);
   const runId = useRef(0);
 
   const sortKey = JSON.stringify(discover.sort);
@@ -183,6 +187,9 @@ export function Discover(props: {
               {compiled.from && compiled.to ? ` · ${formatLocal(compiled.from)} → ${formatLocal(compiled.to)}` : ''}
             </span>
             <span class="grow" />
+            <button class={'sql-toggle' + (showPatterns ? ' on' : '')} onClick={() => setShowPatterns(!showPatterns)} aria-pressed={showPatterns}>
+              {t('pat.button')}
+            </button>
             <SavedSearches search={search} discover={discover} onLoad={loadSaved} />
             <ExportMenu where={compiled.where} timeField={props.timeField} timeExpr={timeExpr} fields={fields} sort={discover.sort} columns={discover.columns} disabled={!!compiled.error || paused} />
             <button class="sql-toggle" onClick={() => setShowSql(!showSql)}>
@@ -244,6 +251,11 @@ export function Discover(props: {
               ) : (
                 <Histogram buckets={filled} interval={interval} tzOffset={tzOffset} from={compiled.from} to={compiled.to} onBrush={onBrush} />
               )}
+            </div>
+          )}
+          {showPatterns && (
+            <div class="doc-wrap">
+              <PatternsPanel fields={fields} where={compiled.where} field={patternField} onField={setPatternFieldName} onFilter={(f) => setFilters([...search.filters, f])} refreshTick={refreshTick} />
             </div>
           )}
           <div class="doc-wrap">

@@ -2,6 +2,7 @@ import { query, type Row } from './duck';
 import type { Field } from './fields';
 import { findField, quoteIdent } from './fields';
 import { describeError } from './errors';
+import { templateExpr } from './patterns';
 import { searchToSql } from './search';
 import { VIEW, bucketExpr, buildWhere, fieldCompareExpr, lit, type Interval } from './sql';
 import type { MetricDef, SearchState, SortDir, VisState } from './state';
@@ -152,6 +153,25 @@ export async function fetchNumberStats(where: string, f: Field, bins = 10): Prom
     for (const row of h.rows) counts[Number(row.b)] = Number(row.c);
   } else counts[0] = Number(r.n);
   return { count: Number(r.n), min: mn, max: mx, avg: Number(r.av), p50: Number(r.p50), p95: Number(r.p95), bins: counts, width };
+}
+
+export interface LogPattern {
+  tpl: string;
+  count: number;
+  pct: number;
+  example: string;
+}
+
+/** The templates of a text field's values in the search (see patterns.ts), most frequent first. */
+export async function fetchPatterns(where: string, f: Field, limit = 50): Promise<{ patterns: LogPattern[]; total: number }> {
+  const e = f.kind === 'string' ? f.expr : `(${f.expr})::VARCHAR`;
+  const r = await query(
+    `SELECT tpl, count(*)::DOUBLE AS c, any_value(v) AS ex, sum(count(*)) OVER ()::DOUBLE AS n
+     FROM (SELECT ${templateExpr('v')} AS tpl, v FROM (SELECT ${e} AS v FROM ${VIEW} WHERE ${where}) s WHERE v IS NOT NULL) g
+     GROUP BY tpl ORDER BY c DESC LIMIT ${limit}`,
+  );
+  const total = Number(r.rows[0]?.n ?? 0);
+  return { total, patterns: r.rows.map((x) => ({ tpl: String(x.tpl), count: Number(x.c), pct: total ? Number(x.c) / total : 0, example: String(x.ex ?? '') })) };
 }
 
 // ---------- Visualize aggregations ----------
