@@ -221,7 +221,11 @@ await step('field-sidebar', async () => {
   const statText = (await page.textContent('.stat-grid')).replace(/\s+/g, ' ').trim();
   console.log(`     stats: ${statText.slice(0, 80)} · bars=${bars}`);
   if (bars !== 10 || !/percentile/.test(statText)) throw new Error('no number statistics');
-  await page.keyboard.press('Escape');
+  // a click elsewhere closes the details
+  await page.click('.hits');
+  const stillOpen = await page.locator('.field-details').count();
+  console.log(`     details after an outside click: ${stillOpen}`);
+  if (stillOpen) throw new Error('field details did not close on an outside click');
 });
 await step('histogram-breakdown', async () => {
   // split the histogram by level: stacked bars with a legend, the hit count unchanged
@@ -624,9 +628,26 @@ await step('theme', async () => {
   const dark = await bg();
   const attr = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
   await page.screenshot({ path: `${out}/15-dark.png` });
+  // the histogram's hover box and the filter pills take the panel colour, not Plot's / the light theme's white
+  await page.click('.header nav button:has-text("Discover")');
+  await page.waitForSelector('.chart-panel svg');
+  const box = await page.locator('.chart-panel .chart-box').boundingBox();
+  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.7);
+  await page.waitForSelector('.chart-panel svg g[aria-label="tip"] path', { timeout: 10000 });
+  const tipFill = await page.evaluate(() => getComputedStyle(document.querySelector('.chart-panel svg g[aria-label="tip"] path')).fill);
+  const panel = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--k-panel').trim());
+  await page.click('.field-item:has-text("level")');
+  await page.locator('.topval .pm button').first().click();
+  await settled(page);
+  const pillBg = await page.evaluate(() => getComputedStyle(document.querySelector('.filterbar .pill')).backgroundColor);
+  await page.screenshot({ path: `${out}/16-dark-discover.png` });
+  await page.click('.filterbar .pill button[title="Remove"]');
+  await settled(page);
+  await page.click('.header nav button:has-text("Settings")');
   await page.selectOption('.theme-select', 'system');
-  console.log(`     body background light=${light} dark=${dark} data-theme=${attr}`);
+  console.log(`     body background light=${light} dark=${dark} data-theme=${attr} · tip fill=${tipFill} panel=${panel} pill=${pillBg}`);
   if (light === dark || attr !== 'dark') throw new Error('dark theme not applied');
+  if (tipFill.includes('255, 255, 255') || pillBg.includes('255, 255, 255')) throw new Error('white boxes in the dark theme');
 });
 await step('backup', async () => {
   // the backup file holds the ddv.* entries; restoring it reloads the app

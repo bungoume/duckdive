@@ -131,7 +131,7 @@ code, .mono { font-family: var(--k-mono); font-size: 12px; }
 
 /* filter bar */
 .filterbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.pill { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--k-border); border-radius: 14px; padding: 2px 8px 2px 10px; font-size: 12px; background: #fff; max-width: 400px; }
+.pill { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--k-border); border-radius: 14px; padding: 2px 8px 2px 10px; font-size: 12px; background: var(--k-panel); max-width: 400px; }
 .pill .txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pill.negate { border-color: var(--k-danger); background: var(--k-error-bg); }
 .pill.negate .txt::before { content: attr(data-not); font-weight: 700; color: var(--k-danger); }
@@ -226,6 +226,8 @@ button:focus-visible, [role='button']:focus-visible, .input:focus-visible, selec
 .chart-head .chart-select { width: auto; padding: 2px 6px; font-size: 12px; }
 .chart-box { position: relative; user-select: none; }
 .chart-box svg { display: block; max-width: 100%; }
+/* Plot's tip mark fills its box with --plot-background (white by default): the panel colour in both themes */
+.chart-box figure, .chart-box svg { --plot-background: var(--k-panel); }
 /* Plot wraps the chart in a <figure> when it draws a legend; the UA's 40px figure margins would
    shrink the svg below its coordinate width and shift every hit test */
 .chart-box figure { margin: 0; max-width: 100%; }

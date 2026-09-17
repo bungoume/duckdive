@@ -44,6 +44,18 @@ export function FieldSidebar(props: {
     };
   }, [open, props.where, props.fields]);
 
+  // the details popover closes on a click anywhere else (a click on a field item is handled by the item itself)
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      const el = e.target as Element | null;
+      if (el?.closest('.field-details') || el?.closest('.field-item')) return;
+      setOpen(null);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
   const visible = props.fields.filter((f) => !q || f.name.toLowerCase().includes(q.toLowerCase()));
   const selected = visible.filter((f) => props.selected.includes(f.name));
   const available = visible.filter((f) => !props.selected.includes(f.name));

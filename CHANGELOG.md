@@ -25,6 +25,11 @@ All notable changes to Duckdive. The format follows [Keep a Changelog](https://k
 - "Share" in the header copies a link that carries the view and the data source without its secrets. A source the recipient connected before is used right away; an unknown one is offered in a banner with its destination and authentication mode.
 - Export on the Discover page: the matching rows as CSV, JSON Lines or Parquet, sorted like the table and cut at a chosen number of rows. With columns selected the file holds the time column and those columns; otherwise every column of the source.
 
+### Fixed
+
+- Dark theme: the histogram's hover box and the filter pills kept a white background.
+- The field details popover closes on a click anywhere else.
+
 ### Changed
 
 - Error banners show the message alone (no `Error:` prefix), and a request that timed out is described in the UI language.
