@@ -64,6 +64,13 @@ export const zh_CN: Messages = {
   'settings.quickRanges.hint': 'date-math 语法的 {"from", "to", "display"} JSON 列表。省略 "display" 时标签按界面语言自动生成。',
   'settings.reset': '恢复默认值',
   'settings.saved': '已保存。',
+  'settings.backup': '备份',
+  'settings.backup.hint':
+    '将此浏览器中保存的一切（设置、语言、已保存的搜索和可视化、最近的数据源、查询和 SQL 历史、受信任的 SQL 列表）导出为一个文件。密钥绝不会包含在内；本地文件需要在另一端重新选择。',
+  'settings.backup.download': '下载备份',
+  'settings.backup.restore': '从备份恢复…',
+  'settings.backup.restored': '已恢复 {n} 项，正在重新加载…',
+  'settings.backup.invalid': '不是 Duckdive 备份：{error}',
   'settings.error.json': 'JSON 无效：{error}',
   'settings.error.tz': '未知时区：{value}',
   'settings.error.scaled': '每一项必须是 [ISO 8601 时长, 模式]，例如 ["PT1H", "MM-DD HH:mm"]',

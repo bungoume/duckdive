@@ -598,6 +598,20 @@ await step('theme', async () => {
   console.log(`     body background light=${light} dark=${dark} data-theme=${attr}`);
   if (light === dark || attr !== 'dark') throw new Error('dark theme not applied');
 });
+await step('backup', async () => {
+  // the backup file holds the ddv.* entries; restoring it reloads the app
+  const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 30000 }), page.click('.backup button:has-text("Download backup")')]);
+  const path = await dl.path();
+  const backup = JSON.parse(readFileSync(path, 'utf8'));
+  const keys = Object.keys(backup.items);
+  console.log(`     ${dl.suggestedFilename()}: ${keys.length} entries (${keys.slice(0, 4).join(', ')} …)`);
+  if (backup.app !== 'duckdive' || !keys.includes('ddv.settings') || !keys.includes('ddv.savedVis')) throw new Error('backup lacks entries');
+  await page.setInputFiles('.backup-file', path);
+  await page.waitForSelector('.alert.ok', { timeout: 10000 });
+  await page.waitForFunction(() => !document.querySelector('.backup .alert.ok'), null, { timeout: 30000 }); // the reload
+  await page.waitForSelector('.theme-select', { timeout: 120000 });
+  console.log('     restored and reloaded');
+});
 
 console.log('\nconsole errors/warnings:');
 for (const e of errors.filter((x) => !x.includes('Improper nesting')).slice(0, 20)) console.log('  ' + e.slice(0, 400));

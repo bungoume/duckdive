@@ -1,4 +1,7 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import { makeBackup, parseBackup, restoreBackup } from '../backup';
+import { describeError } from '../errors';
+import { downloadBlob } from '../export';
 import { LANGS, setLang, t, useLang, type Lang } from '../i18n';
 import { parseDateMath } from '../datemath';
 import { browserZone, formatDate, isValidTimeZone, parseIsoDuration } from '../datefmt';
@@ -114,6 +117,24 @@ export function Settings() {
   };
   const days = weekdayNames(lang);
 
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [restoreMsg, setRestoreMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const download = () => {
+    const b = makeBackup();
+    downloadBlob(new Blob([JSON.stringify(b, null, 2)], { type: 'application/json' }), `duckdive-backup-${b.exportedAt.slice(0, 10)}.json`);
+  };
+  const restore = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const n = restoreBackup(parseBackup(await file.text()));
+      setRestoreMsg({ ok: true, text: t('settings.backup.restored', { n }) });
+      // everything reads localStorage at start-up: start over
+      setTimeout(() => location.reload(), 800);
+    } catch (e) {
+      setRestoreMsg({ ok: false, text: t('settings.backup.invalid', { error: describeError(e) }) });
+    }
+  };
+
   return (
     <div class="source-page settings-page">
       <div class="card">
@@ -181,6 +202,21 @@ export function Settings() {
           <button class="btn primary" disabled={!dirty} onClick={save}>
             {t('common.save')}
           </button>
+        </div>
+      </div>
+
+      <div class="card backup">
+        <h2>{t('settings.backup')}</h2>
+        <p class="hint">{t('settings.backup.hint')}</p>
+        {restoreMsg && <div class={'alert ' + (restoreMsg.ok ? 'ok' : 'error')}>{restoreMsg.text}</div>}
+        <div class="row">
+          <button class="btn" onClick={download}>
+            {t('settings.backup.download')}
+          </button>
+          <button class="btn" onClick={() => fileRef.current?.click()}>
+            {t('settings.backup.restore')}
+          </button>
+          <input ref={fileRef} type="file" accept=".json,application/json" class="backup-file" onChange={(e) => void restore(e.currentTarget.files?.[0])} />
         </div>
       </div>
     </div>

@@ -66,6 +66,13 @@ export const de: Messages = {
   'settings.quickRanges.hint': 'JSON-Liste aus {"from", "to", "display"} in Date-Math-Syntax. Ohne "display" wird die Beschriftung in der Oberflächensprache erzeugt.',
   'settings.reset': 'Auf Standard zurücksetzen',
   'settings.saved': 'Gespeichert.',
+  'settings.backup': 'Sicherung',
+  'settings.backup.hint':
+    'Alles, was dieser Browser aufbewahrt, als eine Datei: Einstellungen, Sprache, gespeicherte Suchen und Visualisierungen, letzte Quellen, Abfrage- und SQL-Verlauf und die Liste vertrauter SQL. Geheimnisse sind nie enthalten; lokale Dateien müssen auf der anderen Seite neu gewählt werden.',
+  'settings.backup.download': 'Sicherung herunterladen',
+  'settings.backup.restore': 'Aus einer Sicherung wiederherstellen…',
+  'settings.backup.restored': '{n} Einträge wiederhergestellt; wird neu geladen…',
+  'settings.backup.invalid': 'Keine Duckdive-Sicherung: {error}',
   'settings.error.json': 'Ungültiges JSON: {error}',
   'settings.error.tz': 'Unbekannte Zeitzone: {value}',
   'settings.error.scaled': 'Jeder Eintrag muss [ISO-8601-Dauer, Muster] sein, z. B. ["PT1H", "MM-DD HH:mm"]',

@@ -67,6 +67,13 @@ export const en = {
   'settings.quickRanges.hint': 'JSON list of {"from", "to", "display"} in date-math syntax. Without "display" the label is generated in the UI language.',
   'settings.reset': 'Reset to defaults',
   'settings.saved': 'Saved.',
+  'settings.backup': 'Backup',
+  'settings.backup.hint':
+    'Everything kept in this browser as one file: settings, language, saved searches and visualizations, recent sources, the query and SQL histories and the trusted-SQL list. Secrets are never part of it; local files have to be picked again on the other side.',
+  'settings.backup.download': 'Download backup',
+  'settings.backup.restore': 'Restore from a backup…',
+  'settings.backup.restored': '{n} entries restored; reloading…',
+  'settings.backup.invalid': 'Not a Duckdive backup: {error}',
   'settings.error.json': 'Invalid JSON: {error}',
   'settings.error.tz': 'Unknown time zone: {value}',
   'settings.error.scaled': 'Each entry must be [ISO 8601 duration, pattern], e.g. ["PT1H", "MM-DD HH:mm"]',

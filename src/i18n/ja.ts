@@ -65,6 +65,13 @@ export const ja: Messages = {
   'settings.quickRanges.hint': 'date-math 構文の {"from", "to", "display"} の JSON 配列。"display" を省略するとラベルは UI 言語で自動生成されます。',
   'settings.reset': '既定値に戻す',
   'settings.saved': '保存しました。',
+  'settings.backup': 'バックアップ',
+  'settings.backup.hint':
+    'このブラウザに保存されているもの(設定、言語、保存済み検索と可視化、最近のソース、クエリと SQL の履歴、信頼済み SQL の一覧)を 1 つのファイルにします。秘密情報は含まれません。ローカルファイルは復元先で選び直す必要があります。',
+  'settings.backup.download': 'バックアップをダウンロード',
+  'settings.backup.restore': 'バックアップから復元…',
+  'settings.backup.restored': '{n} 件を復元しました。再読み込みします…',
+  'settings.backup.invalid': 'Duckdive のバックアップではありません: {error}',
   'settings.error.json': 'JSON が不正です: {error}',
   'settings.error.tz': '不明なタイムゾーン: {value}',
   'settings.error.scaled': '各要素は [ISO 8601 の期間, パターン] の形式にしてください(例: ["PT1H", "MM-DD HH:mm"])',

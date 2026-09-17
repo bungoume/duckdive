@@ -67,6 +67,13 @@ export const es: Messages = {
   'settings.quickRanges.hint': 'Lista JSON de {"from", "to", "display"} en sintaxis date-math. Sin "display", la etiqueta se genera en el idioma de la interfaz.',
   'settings.reset': 'Restablecer valores predeterminados',
   'settings.saved': 'Guardado.',
+  'settings.backup': 'Copia de seguridad',
+  'settings.backup.hint':
+    'Todo lo que guarda este navegador en un archivo: ajustes, idioma, búsquedas y visualizaciones guardadas, orígenes recientes, historiales de consultas y SQL y la lista de SQL de confianza. Nunca incluye secretos; los archivos locales deben elegirse de nuevo en el otro lado.',
+  'settings.backup.download': 'Descargar copia',
+  'settings.backup.restore': 'Restaurar desde una copia…',
+  'settings.backup.restored': '{n} entradas restauradas; recargando…',
+  'settings.backup.invalid': 'No es una copia de Duckdive: {error}',
   'settings.error.json': 'JSON no válido: {error}',
   'settings.error.tz': 'Zona horaria desconocida: {value}',
   'settings.error.scaled': 'Cada entrada debe ser [duración ISO 8601, patrón], p. ej. ["PT1H", "MM-DD HH:mm"]',

@@ -67,6 +67,13 @@ export const fr: Messages = {
   'settings.quickRanges.hint': 'Liste JSON de {"from", "to", "display"} en syntaxe date-math. Sans "display", le libellé est généré dans la langue de l\'interface.',
   'settings.reset': 'Rétablir les valeurs par défaut',
   'settings.saved': 'Enregistré.',
+  'settings.backup': 'Sauvegarde',
+  'settings.backup.hint':
+    'Tout ce que ce navigateur conserve, en un fichier : réglages, langue, recherches et visualisations enregistrées, sources récentes, historiques des requêtes et du SQL, liste des SQL de confiance. Aucun secret n’en fait partie ; les fichiers locaux doivent être rechoisis de l’autre côté.',
+  'settings.backup.download': 'Télécharger la sauvegarde',
+  'settings.backup.restore': 'Restaurer depuis une sauvegarde…',
+  'settings.backup.restored': '{n} entrées restaurées ; rechargement…',
+  'settings.backup.invalid': 'Ce n’est pas une sauvegarde Duckdive : {error}',
   'settings.error.json': 'JSON invalide : {error}',
   'settings.error.tz': 'Fuseau horaire inconnu : {value}',
   'settings.error.scaled': 'Chaque entrée doit être [durée ISO 8601, motif], par ex. ["PT1H", "MM-DD HH:mm"]',

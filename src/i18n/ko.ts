@@ -65,6 +65,13 @@ export const ko: Messages = {
   'settings.quickRanges.hint': 'date-math 구문의 {"from", "to", "display"} JSON 목록. "display"를 생략하면 UI 언어로 레이블이 자동 생성됩니다.',
   'settings.reset': '기본값으로 되돌리기',
   'settings.saved': '저장했습니다.',
+  'settings.backup': '백업',
+  'settings.backup.hint':
+    '이 브라우저에 보관된 모든 것(설정, 언어, 저장된 검색과 시각화, 최근 소스, 쿼리와 SQL 기록, 신뢰된 SQL 목록)을 파일 하나로 만듭니다. 비밀 정보는 포함되지 않으며, 로컬 파일은 다른 쪽에서 다시 선택해야 합니다.',
+  'settings.backup.download': '백업 다운로드',
+  'settings.backup.restore': '백업에서 복원…',
+  'settings.backup.restored': '{n}개 항목을 복원했습니다. 다시 불러옵니다…',
+  'settings.backup.invalid': 'Duckdive 백업이 아닙니다: {error}',
   'settings.error.json': '잘못된 JSON: {error}',
   'settings.error.tz': '알 수 없는 시간대: {value}',
   'settings.error.scaled': '각 항목은 [ISO 8601 기간, 패턴] 형식이어야 합니다(예: ["PT1H", "MM-DD HH:mm"])',
