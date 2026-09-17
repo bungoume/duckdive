@@ -169,6 +169,32 @@ export function shareableSource(cfg: SourceConfig): SourceConfig | null {
   return { ...cfg, s3: { ...cfg.s3, accessKeyId: '', secretAccessKey: '', sessionToken: '' } };
 }
 
+/** An AWS region name, or '' when the text is not one. */
+function awsRegion(v: unknown): string {
+  const s = str(v);
+  return /^[a-z0-9-]{1,32}$/.test(s) ? s : '';
+}
+
+const hostOf = (url: string): string | null => {
+  try {
+    const u = new URL(url);
+    return u.protocol === 'https:' ? u.host : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * An STS endpoint a link is allowed to ask for. The sign-in exchanges the identity provider's
+ * id_token there, and that token is enough to assume the role, so a link that could name any host
+ * would be a way to collect it. AWS only; anything else falls back to the region's endpoint.
+ */
+function linkStsEndpoint(v: unknown): string {
+  const s = str(v);
+  const host = s ? hostOf(s) : null;
+  return host && (host === 'amazonaws.com' || host.endsWith('.amazonaws.com')) ? s : '';
+}
+
 /** A source from a link someone sent: every field checked, secrets and key IDs never taken; null when unusable. */
 export function sourceFromLink(raw: unknown): SourceConfig | null {
   if (!isObj(raw)) return null;
@@ -183,16 +209,17 @@ export function sourceFromLink(raw: unknown): SourceConfig | null {
     name: str(raw.name),
     urls: raw.urls,
     format: FORMAT_IDS.includes(raw.format as FormatId) ? (raw.format as FormatId) : 'auto',
-    s3: { region: str(s3.region), accessKeyId: '', secretAccessKey: '', sessionToken: '', endpoint: str(s3.endpoint), urlStyle: s3.urlStyle === 'path' ? 'path' : 'vhost' },
+    s3: { region: awsRegion(s3.region), accessKeyId: '', secretAccessKey: '', sessionToken: '', endpoint: str(s3.endpoint), urlStyle: s3.urlStyle === 'path' ? 'path' : 'vhost' },
     authMode: raw.authMode === 'none' || raw.authMode === 'oidc' ? raw.authMode : 'static',
     oidc: {
-      authUrl: str(o.authUrl, DEFAULT_OIDC.authUrl),
+      // the region is part of the STS host name, so it is checked as strictly as the endpoint
+      authUrl: hostOf(str(o.authUrl)) ? str(o.authUrl) : DEFAULT_OIDC.authUrl,
       clientId: str(o.clientId),
       scope: str(o.scope, DEFAULT_OIDC.scope),
       extraParams: str(o.extraParams),
       roleArn: str(o.roleArn),
-      region: str(o.region, DEFAULT_OIDC.region),
-      stsEndpoint: str(o.stsEndpoint),
+      region: awsRegion(o.region) || DEFAULT_OIDC.region,
+      stsEndpoint: linkStsEndpoint(o.stsEndpoint),
       durationSeconds: typeof o.durationSeconds === 'number' ? o.durationSeconds : DEFAULT_OIDC.durationSeconds,
       sessionName: str(o.sessionName, DEFAULT_OIDC.sessionName),
     },
@@ -202,7 +229,11 @@ export function sourceFromLink(raw: unknown): SourceConfig | null {
   };
 }
 
-/** Where a source reads from, in one line for the link banner: "s3://b/p/*.gz · endpoint · oidc". */
+/**
+ * Where a source reads from, in one line for the link banner: "s3://b/p/*.gz · endpoint · oidc".
+ * A sign-in source also names the identity provider, the STS endpoint and the role, because
+ * pressing Connect sends this browser's identity to them.
+ */
 export function describeSource(cfg: SourceConfig): string {
   if (cfg.kind !== 'url') return cfg.kind;
   const lines = cfg.urls
@@ -212,5 +243,12 @@ export function describeSource(cfg: SourceConfig): string {
   const parts = [lines.slice(0, 2).join(', ') + (lines.length > 2 ? ' …' : '')];
   if (cfg.s3.endpoint) parts.push(cfg.s3.endpoint);
   parts.push(cfg.authMode);
+  if (cfg.authMode === 'oidc') {
+    const idp = hostOf(cfg.oidc.authUrl);
+    if (idp) parts.push(idp);
+    const sts = cfg.oidc.stsEndpoint ? hostOf(cfg.oidc.stsEndpoint) : cfg.oidc.region ? `sts.${cfg.oidc.region}.amazonaws.com` : 'sts.amazonaws.com';
+    if (sts) parts.push(sts);
+    if (cfg.oidc.roleArn) parts.push(cfg.oidc.roleArn);
+  }
   return parts.join(' · ');
 }

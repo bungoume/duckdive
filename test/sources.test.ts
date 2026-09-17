@@ -53,10 +53,34 @@ describe('sourceFromLink', () => {
   });
 });
 
+describe('sourceFromLink, sign-in settings', () => {
+  const link = (oidc: Record<string, unknown>) => sourceFromLink({ kind: 'url', urls: 's3://b/*', authMode: 'oidc', oidc })!.oidc;
+
+  it('refuses an STS endpoint outside AWS, so a link cannot collect the id_token', () => {
+    expect(link({ stsEndpoint: 'https://attacker.example/' }).stsEndpoint).toBe('');
+    expect(link({ stsEndpoint: 'http://sts.amazonaws.com/' }).stsEndpoint).toBe('');
+    expect(link({ stsEndpoint: 'https://evil.example/sts.amazonaws.com' }).stsEndpoint).toBe('');
+    expect(link({ stsEndpoint: 'https://sts.ap-northeast-1.amazonaws.com/' }).stsEndpoint).toBe('https://sts.ap-northeast-1.amazonaws.com/');
+  });
+
+  it('refuses a region that would move the STS host, and a non-https identity provider', () => {
+    expect(link({ region: 'evil.example/x?' }).region).toBe('ap-northeast-1');
+    expect(link({ region: 'us-east-1' }).region).toBe('us-east-1');
+    expect(sourceFromLink({ kind: 'url', urls: 's3://b/*', s3: { region: 'evil.example/x?' } })!.s3.region).toBe('');
+    expect(link({ authUrl: 'http://idp.example/auth' }).authUrl).toBe(DEFAULT_SOURCE.oidc.authUrl);
+    expect(link({ authUrl: 'https://idp.example/auth' }).authUrl).toBe('https://idp.example/auth');
+  });
+});
+
 describe('describeSource', () => {
   it('names the destination, endpoint and authentication mode', () => {
     expect(describeSource(url)).toBe('s3://b/p/{yyyy}/{MM}/{dd}/*.log.gz, s3://b/q/*.gz · http://minio:9000 · static');
     expect(describeSource({ ...DEFAULT_SOURCE, kind: 'demo' })).toBe('demo');
+  });
+
+  it('names the identity provider, the STS endpoint and the role of a sign-in source', () => {
+    const oidc: SourceConfig = { ...url, authMode: 'oidc', oidc: { ...DEFAULT_SOURCE.oidc, authUrl: 'https://idp.example/auth', region: 'us-east-1', roleArn: 'arn:aws:iam::1:role/r' } };
+    expect(describeSource(oidc)).toBe('s3://b/p/{yyyy}/{MM}/{dd}/*.log.gz, s3://b/q/*.gz · http://minio:9000 · oidc · idp.example · sts.us-east-1.amazonaws.com · arn:aws:iam::1:role/r');
   });
 });
 

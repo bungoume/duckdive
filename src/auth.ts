@@ -105,7 +105,8 @@ export async function loginOidc(cfg: OidcConfig, interactive: boolean): Promise<
 
 export function stsEndpointFor(cfg: OidcConfig): string {
   if (cfg.stsEndpoint) return cfg.stsEndpoint;
-  return cfg.region ? `https://sts.${cfg.region}.amazonaws.com/` : 'https://sts.amazonaws.com/';
+  // the region becomes part of the host name, so only a region-shaped one may build it
+  return /^[a-z0-9-]{1,32}$/.test(cfg.region) ? `https://sts.${cfg.region}.amazonaws.com/` : 'https://sts.amazonaws.com/';
 }
 
 /** Exchange an OIDC id_token for temporary credentials. No AWS signature is needed for this call. */
