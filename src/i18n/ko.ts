@@ -6,6 +6,7 @@ export const ko: Messages = {
   'app.nav.visualize': '시각화',
   'app.nav.source': '데이터 소스',
   'app.nav.settings': '설정',
+  'app.nav.sql': 'SQL',
   'app.sources': '최근 데이터 소스',
   'app.status.starting': '시작 중…',
   'app.status.connecting': '연결 중… {message}',
@@ -239,6 +240,16 @@ export const ko: Messages = {
   'share.copiedNoSource': '복사했습니다(로컬 파일 제외)',
   'share.hint': '링크에는 쿼리, 필터, 시간 범위, 차트와 비밀 정보를 뺀 데이터 소스가 담깁니다. 사용자 지정 SQL 필터는 받는 쪽에서 비활성 상태로 표시됩니다.',
   'share.hintNoSource': '로컬 파일은 링크에 담을 수 없습니다. 받는 사람이 직접 선택해야 합니다.',
+
+  // ---- SQL page ----
+  'sql.run': '실행',
+  'sql.running': '실행 중…',
+  'sql.currentSearch': '현재 검색 조건',
+  'sql.history': '기록',
+  'sql.noHistory': '아직 실행한 문이 없습니다.',
+  'sql.hint': '연결된 소스를 담은 뷰 {view}에 대해 한 문을 실행합니다. 결과는 이 컴퓨터를 벗어나지 않습니다. {key}로 실행합니다.',
+  'sql.rows': '{n}행 · {ms} ms',
+  'sql.showAll': '전체 {n}행 표시',
 
   // ---- Visualize page ----
   'vis.chart.area': '영역',

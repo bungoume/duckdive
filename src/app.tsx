@@ -4,6 +4,7 @@ import { useSettings } from './settings';
 import { DataSource } from './components/DataSource';
 import { Discover } from './components/Discover';
 import { ShareButton } from './components/ShareButton';
+import { SqlPage } from './components/SqlPage';
 import { Visualize } from './components/Visualize';
 import { Settings } from './components/Settings';
 import { fmtBytes } from './cache';
@@ -108,6 +109,9 @@ export function App() {
           </button>
           <button class={page === 'visualize' ? 'active' : ''} onClick={() => setPage('visualize')} disabled={noSource}>
             {t('app.nav.visualize')}
+          </button>
+          <button class={page === 'sql' ? 'active' : ''} onClick={() => setPage('sql')} disabled={noSource}>
+            {t('app.nav.sql')}
           </button>
           <button class={page === 'source' ? 'active' : ''} onClick={() => setPage('source')}>
             {t('app.nav.source')}
@@ -251,6 +255,7 @@ export function App() {
           paused={paused}
         />
       )}
+      {page === 'sql' && attached && <SqlPage fields={fields} timeExpr={timeExpr} search={url.search} onBusy={setBusy} paused={paused} />}
       {!ready && !initError && (
         <div class="overlay">
           <div>

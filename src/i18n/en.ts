@@ -8,6 +8,7 @@ export const en = {
   'app.nav.visualize': 'Visualize',
   'app.nav.source': 'Data source',
   'app.nav.settings': 'Settings',
+  'app.nav.sql': 'SQL',
   'app.sources': 'Recent data sources',
   'app.status.starting': 'Starting…',
   'app.status.connecting': 'Connecting… {message}',
@@ -244,6 +245,16 @@ export const en = {
   'share.copiedNoSource': 'Copied (without the local files)',
   'share.hint': 'The link carries the query, filters, time range, chart and the data source without any secret. Custom SQL filters arrive disabled at the other end.',
   'share.hintNoSource': 'Local files cannot travel in a link; the recipient has to pick them.',
+
+  // ---- SQL page ----
+  'sql.run': 'Run',
+  'sql.running': 'Running…',
+  'sql.currentSearch': 'Current search',
+  'sql.history': 'History',
+  'sql.noHistory': 'Nothing has been run yet.',
+  'sql.hint': 'One statement over the view {view}, which holds the connected source; the result stays on this machine. {key} runs it.',
+  'sql.rows': '{n} rows · {ms} ms',
+  'sql.showAll': 'Show all {n} rows',
 
   // ---- Visualize page ----
   'vis.chart.area': 'Area',

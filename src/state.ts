@@ -3,7 +3,7 @@ import type { Filter, FilterOp } from './sql';
 import { shareableSource, sourceFromLink, type SourceConfig } from './sources';
 import { isTrustedSql } from './trust';
 
-export type AppPage = 'discover' | 'visualize' | 'source' | 'settings';
+export type AppPage = 'discover' | 'visualize' | 'sql' | 'source' | 'settings';
 
 export type SortDir = 'asc' | 'desc';
 
@@ -176,7 +176,7 @@ export function sanitizeVis(raw: unknown): VisState {
 export function readUrlState(): UrlState {
   const h = location.hash.replace(/^#\/?/, '');
   const [pageRaw, qs] = h.split('?');
-  const page: AppPage = pageRaw === 'visualize' || pageRaw === 'source' || pageRaw === 'settings' ? pageRaw : 'discover';
+  const page: AppPage = pageRaw === 'visualize' || pageRaw === 'sql' || pageRaw === 'source' || pageRaw === 'settings' ? pageRaw : 'discover';
   let st: Record<string, unknown> = {};
   if (qs) {
     const p = new URLSearchParams(qs);

@@ -6,6 +6,7 @@ export const fr: Messages = {
   'app.nav.visualize': 'Visualiser',
   'app.nav.source': 'Source de données',
   'app.nav.settings': 'Paramètres',
+  'app.nav.sql': 'SQL',
   'app.sources': 'Sources de données récentes',
   'app.status.starting': 'Démarrage…',
   'app.status.connecting': 'Connexion… {message}',
@@ -248,6 +249,16 @@ export const fr: Messages = {
   'share.hint':
     'Le lien contient la requête, les filtres, la plage de temps, le graphique et la source de données sans aucun secret. Les filtres SQL personnalisés arrivent désactivés chez le destinataire.',
   'share.hintNoSource': 'Les fichiers locaux ne peuvent pas voyager dans un lien ; le destinataire doit les choisir lui-même.',
+
+  // ---- SQL page ----
+  'sql.run': 'Exécuter',
+  'sql.running': 'Exécution…',
+  'sql.currentSearch': 'Recherche actuelle',
+  'sql.history': 'Historique',
+  'sql.noHistory': 'Rien n’a encore été exécuté.',
+  'sql.hint': 'Une instruction sur la vue {view}, qui contient la source connectée ; le résultat reste sur cette machine. {key} l’exécute.',
+  'sql.rows': '{n} lignes · {ms} ms',
+  'sql.showAll': 'Afficher les {n} lignes',
 
   // ---- Visualize page ----
   'vis.chart.area': 'Aires',

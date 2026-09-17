@@ -6,6 +6,7 @@ export const zh_CN: Messages = {
   'app.nav.visualize': '可视化',
   'app.nav.source': '数据源',
   'app.nav.settings': '设置',
+  'app.nav.sql': 'SQL',
   'app.sources': '最近的数据源',
   'app.status.starting': '正在启动…',
   'app.status.connecting': '正在连接… {message}',
@@ -235,6 +236,16 @@ export const zh_CN: Messages = {
   'share.copiedNoSource': '已复制（不含本地文件）',
   'share.hint': '链接包含查询、筛选、时间范围、图表以及不含任何密钥的数据源。自定义 SQL 筛选在对方那里以禁用状态出现。',
   'share.hintNoSource': '本地文件无法随链接传递，接收者需要自行选择。',
+
+  // ---- SQL page ----
+  'sql.run': '运行',
+  'sql.running': '运行中…',
+  'sql.currentSearch': '当前搜索条件',
+  'sql.history': '历史',
+  'sql.noHistory': '尚未运行任何语句。',
+  'sql.hint': '对保存已连接数据源的视图 {view} 执行一条语句；结果不会离开本机。按 {key} 运行。',
+  'sql.rows': '{n} 行 · {ms} ms',
+  'sql.showAll': '显示全部 {n} 行',
 
   // ---- Visualize page ----
   'vis.chart.area': '面积图',

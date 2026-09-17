@@ -263,6 +263,34 @@ await step('visualize', async () => {
   const sqlErr = await page.locator('.qerror').count();
   if (sqlErr) throw new Error(await page.textContent('.qerror'));
 });
+await step('sql-page', async () => {
+  await page.click('.header nav button:has-text("SQL")');
+  await page.waitForSelector('.sql-page');
+  await page.fill('.sql-text', 'SELECT level, count(*) AS n FROM src GROUP BY 1 ORDER BY 2 DESC');
+  await page.press('.sql-text', 'Control+Enter');
+  await settled(page);
+  const heads = await page.locator('.sql-result th').allTextContents();
+  const rows = await page.locator('.sql-result tbody tr').count();
+  console.log(`     heads=${heads.join('|')} rows=${rows}`);
+  if (heads.join('|') !== 'level|n' || !rows) throw new Error('no result table');
+  // the current search becomes a statement
+  await page.click('.sql-page button:has-text("Current search")');
+  const text = await page.inputValue('.sql-text');
+  if (!/WHERE .*"@timestamp"/s.test(text)) throw new Error('current search not inserted: ' + text.slice(0, 80));
+  // an error is shown, not thrown
+  await page.fill('.sql-text', 'SELECT nope FROM src');
+  await page.click('.sql-page button:has-text("Run")');
+  await settled(page);
+  const err = await page.locator('.sql-result .alert.error').count();
+  console.log(`     error shown=${err}`);
+  if (!err) throw new Error('no error for a bad statement');
+  // the history keeps the good statement
+  await page.click('.sql-page button:has-text("History")');
+  const hist = await page.locator('.sql-history button').allTextContents();
+  console.log(`     history=${hist.length}: ${hist[0]?.slice(0, 40)}`);
+  if (!hist.some((h) => h.startsWith('SELECT level'))) throw new Error('history without the statement');
+  await page.keyboard.press('Escape');
+});
 await step('source-page', async () => {
   await page.click('.header nav button:has-text("Data source")');
   await page.waitForSelector('.source-page');

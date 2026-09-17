@@ -6,6 +6,7 @@ export const ja: Messages = {
   'app.nav.visualize': 'Visualize',
   'app.nav.source': 'Data source',
   'app.nav.settings': 'Settings',
+  'app.nav.sql': 'SQL',
   'app.sources': '最近のデータソース',
   'app.status.starting': '起動中…',
   'app.status.connecting': '接続中… {message}',
@@ -242,6 +243,16 @@ export const ja: Messages = {
   'share.copiedNoSource': 'コピーしました(ローカルファイルは含みません)',
   'share.hint': 'リンクにはクエリ、フィルタ、時間範囲、グラフと、秘密情報を除いたデータソースが含まれます。カスタム SQL フィルタは受け取り側では無効の状態になります。',
   'share.hintNoSource': 'ローカルファイルはリンクに含められません。受け取った人が自分で選択する必要があります。',
+
+  // ---- SQL page ----
+  'sql.run': '実行',
+  'sql.running': '実行中…',
+  'sql.currentSearch': '現在の検索条件',
+  'sql.history': '履歴',
+  'sql.noHistory': 'まだ何も実行していません。',
+  'sql.hint': '接続中のソースを保持するビュー {view} に対して 1 文を実行します。結果はこの端末から出ません。{key} で実行。',
+  'sql.rows': '{n} 行 · {ms} ms',
+  'sql.showAll': '全 {n} 行を表示',
 
   // ---- Visualize page ----
   'vis.chart.area': '面',

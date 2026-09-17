@@ -2,10 +2,11 @@
 
 A Chrome extension that searches and charts log files. It reads Parquet, CSV and JSON from S3 or S3-compatible storage, from HTTPS URLs, or from local files, and queries them in the browser. Nothing is sent anywhere else.
 
-Four pages:
+Five pages:
 
 - Discover: query bar, time histogram, document table, field sidebar, filter pills, export of the matching rows.
 - Visualize: area, line, bar, table and metric charts with date histograms, break-downs and top values. Clicking a chart adds a filter or zooms the time range.
+- SQL: one DuckDB statement over the connected source, its rows as a table, downloads as CSV, JSON Lines or Parquet.
 - Data source: where the files are, how they are formatted, which field is the time, and how to authenticate.
 - Settings: UI language, date format, time zone, scaled date format for histogram buckets, first day of the week, and the time picker's quick ranges.
 
@@ -127,6 +128,10 @@ Filters of the type "custom SQL" run verbatim inside DuckDB. Because the URL car
 ## Export
 
 "Export" on the Discover page downloads the rows that match the query, the filters and the time range as CSV, JSON Lines or Parquet, sorted like the table and cut at the chosen number of rows (10,000 by default, at most 1,000,000). With columns selected the file holds the time column and those columns under their field names; without a selection it holds every column of the source, so a gzip ALB prefix can be turned into a Parquet file from the browser. DuckDB writes the file in memory before the download starts, so keep the row limit within what the tab can hold. The Visualize page's table has its own "Download CSV".
+
+## SQL page
+
+The SQL page runs one statement against the view `src`, which holds the connected source with the columns the field sidebar shows (struct members are addressed with dots inside quotes, `"http"."status"`; JSON columns with `json_extract_string`). "Current search" turns the query, filters and time range of the other pages into a statement to start from, and the result can be downloaded as CSV, JSON Lines or Parquet. The statement and the last twenty that ran are kept in this browser (`localStorage`, keys `ddv.sql` and `ddv.sqlHistory`), never in the URL. Everything a statement can do, it does inside this browser: the memory limit of DuckDB-Wasm applies, and there is nothing that a statement could send anywhere.
 
 ## Sharing a view
 

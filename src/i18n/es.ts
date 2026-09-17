@@ -6,6 +6,7 @@ export const es: Messages = {
   'app.nav.visualize': 'Visualizar',
   'app.nav.source': 'Origen de datos',
   'app.nav.settings': 'Ajustes',
+  'app.nav.sql': 'SQL',
   'app.sources': 'Orígenes de datos recientes',
   'app.status.starting': 'Iniciando…',
   'app.status.connecting': 'Conectando… {message}',
@@ -247,6 +248,16 @@ export const es: Messages = {
   'share.copiedNoSource': 'Copiado (sin los archivos locales)',
   'share.hint': 'El enlace lleva la consulta, los filtros, el rango de tiempo, el gráfico y el origen de datos sin ningún secreto. Los filtros SQL personalizados llegan desactivados al destinatario.',
   'share.hintNoSource': 'Los archivos locales no pueden viajar en un enlace; el destinatario debe elegirlos.',
+
+  // ---- SQL page ----
+  'sql.run': 'Ejecutar',
+  'sql.running': 'Ejecutando…',
+  'sql.currentSearch': 'Búsqueda actual',
+  'sql.history': 'Historial',
+  'sql.noHistory': 'Aún no se ha ejecutado nada.',
+  'sql.hint': 'Una sentencia sobre la vista {view}, que contiene el origen conectado; el resultado se queda en este equipo. {key} la ejecuta.',
+  'sql.rows': '{n} filas · {ms} ms',
+  'sql.showAll': 'Mostrar las {n} filas',
 
   // ---- Visualize page ----
   'vis.chart.area': 'Área',

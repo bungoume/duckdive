@@ -6,6 +6,7 @@ export const de: Messages = {
   'app.nav.visualize': 'Visualisieren',
   'app.nav.source': 'Datenquelle',
   'app.nav.settings': 'Einstellungen',
+  'app.nav.sql': 'SQL',
   'app.sources': 'Zuletzt verwendete Datenquellen',
   'app.status.starting': 'Wird gestartet…',
   'app.status.connecting': 'Verbinden… {message}',
@@ -246,6 +247,16 @@ export const de: Messages = {
   'share.copiedNoSource': 'Kopiert (ohne die lokalen Dateien)',
   'share.hint': 'Der Link enthält Abfrage, Filter, Zeitbereich, Diagramm und die Datenquelle ohne Geheimnisse. Eigene SQL-Filter kommen beim Empfänger deaktiviert an.',
   'share.hintNoSource': 'Lokale Dateien passen nicht in einen Link; der Empfänger muss sie selbst auswählen.',
+
+  // ---- SQL page ----
+  'sql.run': 'Ausführen',
+  'sql.running': 'Läuft…',
+  'sql.currentSearch': 'Aktuelle Suche',
+  'sql.history': 'Verlauf',
+  'sql.noHistory': 'Noch nichts ausgeführt.',
+  'sql.hint': 'Eine Anweisung über die Sicht {view}, die die verbundene Quelle enthält; das Ergebnis bleibt auf diesem Rechner. {key} führt sie aus.',
+  'sql.rows': '{n} Zeilen · {ms} ms',
+  'sql.showAll': 'Alle {n} Zeilen anzeigen',
 
   // ---- Visualize page ----
   'vis.chart.area': 'Fläche',
