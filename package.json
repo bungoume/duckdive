@@ -27,7 +27,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
-    "pack": "node scripts/pack.mjs",
+    "pack": "pnpm run build && node scripts/pack.mjs",
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "node e2e/smoke.mjs",

@@ -20,7 +20,7 @@ An extension can read from a bucket without any change to the bucket's configura
 ```
 pnpm install
 pnpm run build      # writes dist/
-pnpm run pack       # writes release/duckdive-<version>.zip
+pnpm run pack       # builds, then writes release/duckdive-<version>.zip
 pnpm run icons      # regenerates icons and store images from assets/logo.svg
 pnpm run build:e2e  # build with the test hooks and localhost allowed (for the e2e tests and screenshots)
 ```
@@ -29,7 +29,7 @@ pnpm run build:e2e  # build with the test hooks and localhost allowed (for the e
 
 Open `chrome://extensions`, enable Developer mode, choose "Load unpacked" and select `dist/`. The toolbar button opens the app. `pnpm run dev` rebuilds `dist/` on every change; reload the extension afterwards.
 
-The extension ID is `kohchgcbcmdcoondpjoiaccfkhadkpki`. The manifest carries the Web Store's public key so an unpacked build gets the same ID; `pnpm run pack` removes the key from the zip because the store rejects it.
+The extension ID is `kohchgcbcmdcoondpjoiaccfkhadkpki`. The manifest carries the Web Store's public key so an unpacked build gets the same ID; `pnpm run pack` removes the key from the zip because the store rejects it. It builds first and then refuses to zip anything that is not a store build: an extra host permission or a `__ddv` hook left in a bundle stops it, so the e2e build that `pnpm test` leaves behind can never be uploaded.
 
 ## Languages
 

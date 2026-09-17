@@ -16,10 +16,33 @@ mkdirSync(`${root}release`, { recursive: true });
 const zip = `${root}release/${pkg.name}-${pkg.version}.zip`;
 rmSync(zip, { force: true });
 
+/** The host permissions a store build asks for at install time (vite.config.ts, without DDV_EXTRA_HOSTS). */
+const STORE_HOSTS = ['https://*.amazonaws.com/*'];
+
+/**
+ * `pnpm test` ends with build:e2e, which grants http://localhost/* and publishes the test hooks on
+ * window.__ddv. Zipping that dist/ would upload a build that reaches a local server and exposes
+ * its internals to any page, so the staged copy is checked before it is zipped.
+ */
+function refuseTestBuild(stage, manifest) {
+  const hosts = manifest.host_permissions ?? [];
+  if (hosts.length !== STORE_HOSTS.length || hosts.some((h, i) => h !== STORE_HOSTS[i])) {
+    console.error(`dist/ asks for host permissions ${JSON.stringify(hosts)}; a store build asks for ${JSON.stringify(STORE_HOSTS)}. Run \`pnpm run build\`.`);
+    process.exit(1);
+  }
+  for (const f of readdirSync(join(stage, 'assets'))) {
+    if (f.endsWith('.js') && readFileSync(join(stage, 'assets', f), 'utf8').includes('__ddv')) {
+      console.error(`assets/${f} still carries the __ddv test hooks. Run \`pnpm run build\`.`);
+      process.exit(1);
+    }
+  }
+}
+
 const stage = mkdtempSync(join(tmpdir(), 'ddv-pack-'));
 try {
   cpSync(`${root}dist`, stage, { recursive: true, filter: (src) => !src.endsWith('.map') });
   const manifest = JSON.parse(readFileSync(join(stage, 'manifest.json'), 'utf8'));
+  refuseTestBuild(stage, manifest);
   delete manifest.key;
   // The description comes from _locales/<lang>/messages.json; the store caps every locale at 132 characters.
   for (const lang of readdirSync(join(stage, '_locales'))) {
