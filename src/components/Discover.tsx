@@ -15,7 +15,7 @@ import { Histogram, fillBuckets } from './Histogram';
 import { DiagnosePanel } from './DiagnosePanel';
 import { QueryBar } from './QueryBar';
 import { withCacheHint } from '../diagnose';
-import { QueryCancelled, getQueryLog } from '../duck';
+import { QueryCancelled } from '../duck';
 
 const PAGE = 100;
 
@@ -46,6 +46,8 @@ export function Discover(props: {
   const [count, setCount] = useState<number | null>(null);
   const [buckets, setBuckets] = useState<Bucket[]>([]);
   const [docs, setDocs] = useState<Doc[]>([]);
+  /** the statement behind the document table (what "show SQL" displays) */
+  const [docsSql, setDocsSql] = useState('');
   // bumped for every fresh result (not for "load more"): the table's expanded rows are reset with it
   const [resultSeq, setResultSeq] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -77,7 +79,8 @@ export function Discover(props: {
         if (id !== runId.current) return;
         setCount(n ?? b.reduce((a, x) => a + x.c, 0));
         setBuckets(b);
-        setDocs(d);
+        setDocs(d.docs);
+        setDocsSql(d.sql);
         setResultSeq((s) => s + 1);
         setElapsed(performance.now() - t0);
       } catch (e) {
@@ -93,13 +96,15 @@ export function Discover(props: {
 
   const loadMore = async () => {
     setBusy(true);
+    props.onBusy(true);
     try {
       const more = await fetchDocs(compiled.where, timeExpr, fields, discover.sort, discover.columns, PAGE, docs.length);
-      setDocs([...docs, ...more]);
+      setDocs([...docs, ...more.docs]);
     } catch (e) {
       if (!(e instanceof QueryCancelled)) setError(withCacheHint(String(e)));
     } finally {
       setBusy(false);
+      props.onBusy(false);
     }
   };
 
@@ -127,7 +132,6 @@ export function Discover(props: {
   const submit = (query: string, range: TimeRange) => props.onSearch({ ...search, query, range });
 
   const filled = useMemo(() => (interval && compiled.from && compiled.to ? fillBuckets(buckets, compiled.to, interval, tzOffset) : buckets), [buckets, interval, compiled, tzOffset]);
-  const lastSql = getQueryLog()[0]?.sql;
 
   return (
     <div class="page">
@@ -154,7 +158,7 @@ export function Discover(props: {
           </div>
           {showSql && (
             <div style="padding:0 16px">
-              <div class="sql-box">{lastSql}</div>
+              <div class="sql-box">{docsSql}</div>
             </div>
           )}
           {timeExpr && interval && compiled.from && compiled.to && (

@@ -47,7 +47,15 @@ export interface Doc {
   cols: Record<string, unknown>;
 }
 
-export async function fetchDocs(where: string, timeExpr: string | null, fields: Field[], sort: { field: string; dir: SortDir }[], columns: string[], limit: number, offset: number): Promise<Doc[]> {
+export async function fetchDocs(
+  where: string,
+  timeExpr: string | null,
+  fields: Field[],
+  sort: { field: string; dir: SortDir }[],
+  columns: string[],
+  limit: number,
+  offset: number,
+): Promise<{ docs: Doc[]; sql: string }> {
   const sel: string[] = [];
   sel.push(timeExpr ? `epoch_ms(${timeExpr})::DOUBLE AS "__ts"` : `NULL AS "__ts"`);
   sel.push(`to_json(t)::VARCHAR AS "__src"`);
@@ -61,7 +69,7 @@ export async function fetchDocs(where: string, timeExpr: string | null, fields: 
   if (!order.length && timeExpr) order.push(`${timeExpr} DESC NULLS LAST`);
   const sql = `SELECT ${sel.join(', ')} FROM ${VIEW} t WHERE ${where}${order.length ? ' ORDER BY ' + order.join(', ') : ''} LIMIT ${limit} OFFSET ${offset}`;
   const r = await query(sql);
-  return r.rows.map((row) => {
+  const docs = r.rows.map((row) => {
     let source: Record<string, unknown>;
     try {
       source = JSON.parse(String(row.__src));
@@ -72,6 +80,7 @@ export async function fetchDocs(where: string, timeExpr: string | null, fields: 
     colFields.forEach((f, i) => (cols[f.name] = row[`__c${i}`]));
     return { ts: row.__ts === null ? null : Number(row.__ts), source, cols };
   });
+  return { docs, sql };
 }
 
 export interface TopValue {

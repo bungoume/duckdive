@@ -9,7 +9,7 @@ import { attachSource, capturedColumns, discoverVariables, requiredOrigins, unse
 import { resolveRange } from '../datemath';
 import { expose } from '../debug';
 import { setDiagnoseContext } from '../diagnose';
-import { DataProtocol, cancelAllQueries, getDB, initDuckDB, queriesRunning, query } from '../duck';
+import { DataProtocol, cancelAllQueries, getDB, getQueryLog, initDuckDB, queriesRunning, query } from '../duck';
 import { findField } from '../fields';
 import { t } from '../i18n';
 import { CancelledError } from '../net';
@@ -234,7 +234,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
           setSwitchSeq((n) => n + 1);
         }
         await initDuckDB();
-        expose({ query, cancelAllQueries, queriesRunning, registerFileURL: (name: string, url: string) => getDB().registerFileURL(name, url, DataProtocol.HTTP, false) });
+        expose({ query, cancelAllQueries, queriesRunning, getQueryLog, registerFileURL: (name: string, url: string) => getDB().registerFileURL(name, url, DataProtocol.HTTP, false) });
         setReady(true);
         if (cfg.kind === 'local') {
           setUrl((u) => ({ ...u, page: 'source' }));

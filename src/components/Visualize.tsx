@@ -9,7 +9,8 @@ import { INTERVALS, autoInterval, bucketOffsetMinutes, intervalByKey, intervalLa
 import { t, type MsgKey } from '../i18n';
 import { useSettings } from '../settings';
 import { loadSavedVis, storeSavedVis, type ChartType, type MetricAgg, type MetricDef, type SavedVis, type SearchState, type VisState } from '../state';
-import { Chart, DataTable, MetricTiles, type ChartPick } from './Chart';
+import { Chart, type ChartPick } from './Chart';
+import { DataTable, MetricTiles } from './VisTable';
 import { FieldSidebar } from './FieldSidebar';
 import { FilterBar } from './FilterBar';
 import { DiagnosePanel } from './DiagnosePanel';
