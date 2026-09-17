@@ -395,6 +395,8 @@ export const ko: Messages = {
   // ---- document table ----
   'doc.table': '표',
   'doc.json': 'JSON',
+  'doc.copyJson': 'JSON 복사',
+  'doc.copied': '복사했습니다',
   'doc.context': '앞뒤 기록',
   'doc.context.hint': '쿼리나 필터와 상관없이 시간순으로 이 레코드 앞뒤에 있는 레코드입니다. 같은 시각의 레코드는 강조됩니다.',
   'doc.context.more': '{n}개 더',
@@ -473,6 +475,7 @@ export const ko: Messages = {
   'q.help.datemath': '날짜 필드의 범위에는 날짜 연산을 쓸 수 있습니다: now, now-1h, now/d(그날의 시작), now-1d/d',
   'q.helpNote': '중첩 구조체 / JSON 필드는 점 경로를 사용합니다 (geo.country, extra.user_id). 특수 문자는 \\로 이스케이프하세요 (path:\\/api\\/v1). {enter}를 눌러 실행합니다.',
   'q.completeNote': '입력하는 동안 필드 이름이 제안됩니다. {tab}으로 강조된 항목을 넣습니다. 빈 칸에서는 최근 쿼리를 보여 줍니다.',
+  'q.shortcuts': '단축키: {slash}로 어디서든 검색창에 포커스, {prev}와 {next}로 시간 범위를 그 길이만큼 앞뒤로 이동합니다.',
   'q.running': '실행 중…',
   'q.refresh': '새로 고침',
   'q.autoRefresh': '자동 새로 고침',

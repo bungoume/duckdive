@@ -233,6 +233,7 @@ export function QueryBar(props: { query: string; range: TimeRange; error: string
             </table>
             <p class="hint">{tx('q.helpNote', { enter: <kbd>Enter</kbd> })}</p>
             <p class="hint">{tx('q.completeNote', { tab: <kbd>Tab</kbd> })}</p>
+            <p class="hint">{tx('q.shortcuts', { slash: <kbd>/</kbd>, prev: <kbd>[</kbd>, next: <kbd>]</kbd> })}</p>
           </Popover>
         </div>
         <TimePicker range={props.range} onChange={(r) => submit(text, r)} />

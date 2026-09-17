@@ -4,7 +4,7 @@ A Chrome extension that searches and charts log files. It reads Parquet, CSV and
 
 Six pages:
 
-- Discover: query bar, time histogram (optionally broken down by a field's top values), document table (each row expands to a table, JSON, and the records around it in time), field sidebar (top values, and for numbers a summary with a distribution), message patterns, filter pills, saved searches, export of the matching rows.
+- Discover: query bar, time histogram (optionally broken down by a field's top values), document table (values of a collapsed row filter on hover; each row expands to a table, JSON with a copy button, and the records around it in time), field sidebar (top values, and for numbers a summary with a distribution), message patterns, filter pills, saved searches, export of the matching rows.
 - Visualize: area, line, bar, table and metric charts with date histograms, break-downs and top values; 100 % stacking, a logarithmic axis, the previous period as an overlay, any percentile and a per-second rate as metrics, and the chart as an SVG file. Clicking a chart adds a filter or zooms the time range.
 - Dashboard: saved visualizations side by side over one search and time range; a click on any chart filters or zooms all of them.
 - SQL: one DuckDB statement over the connected source, its rows as a table, downloads as CSV, JSON Lines or Parquet.
@@ -125,7 +125,7 @@ The query bar uses Lucene syntax.
 | `@timestamp:[now-1d/d TO now/d]` | date math in ranges of a date field: `now`, `now-1h`, `now/d` (start of the day) |
 | `a AND (b OR c)`                 | `AND` `OR` `NOT` in upper case, or `&&` `                                        |     | ` `!`; adjacent terms are OR-ed |
 
-Field names are suggested while you type (Tab inserts the highlighted one) and an empty query box lists the last twenty queries run in this browser (`localStorage`, key `ddv.queryHistory`). Special characters are escaped with `\`. `term~2` and `term^3` are accepted and ignored. Struct columns are addressed with dots (`geo.country`); JSON columns are sampled for keys and exposed the same way (`extra.user_id`). "show SQL" displays the generated statement.
+Field names are suggested while you type (Tab inserts the highlighted one) and an empty query box lists the last twenty queries run in this browser (`localStorage`, key `ddv.queryHistory`). Outside of a form control, `/` focuses the query box and `[` / `]` move the time range by its own length. Special characters are escaped with `\`. `term~2` and `term^3` are accepted and ignored. Struct columns are addressed with dots (`geo.country`); JSON columns are sampled for keys and exposed the same way (`extra.user_id`). "show SQL" displays the generated statement.
 
 Filters of the type "custom SQL" run verbatim inside DuckDB. Because the URL carries the filters, a link from someone else could contain SQL that reads this extension's S3 credentials or reaches the network; such filters are restored disabled and marked with ⚠ until you open them, read the SQL and enable them (SQL written or reviewed in this browser is remembered in `localStorage`, key `ddv.trustedSql`).
 

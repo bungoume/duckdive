@@ -405,6 +405,8 @@ export const fr: Messages = {
   // ---- document table ----
   'doc.table': 'Tableau',
   'doc.json': 'JSON',
+  'doc.copyJson': 'Copier le JSON',
+  'doc.copied': 'Copié',
   'doc.context': 'Contexte',
   'doc.context.hint': 'Les enregistrements qui précèdent et suivent celui-ci dans le temps, quels que soient la requête et les filtres ; ceux du même instant sont surlignés.',
   'doc.context.more': '{n} de plus',
@@ -484,6 +486,7 @@ export const fr: Messages = {
   'q.helpNote':
     'Les champs struct / JSON imbriqués utilisent des chemins pointés (geo.country, extra.user_id). Échappez les caractères spéciaux avec \\ (path:\\/api\\/v1). Appuyez sur {enter} pour exécuter.',
   'q.completeNote': 'Les noms de champs sont proposés pendant la saisie ; {tab} insère celui qui est surligné. Une zone vide liste les requêtes récentes.',
+  'q.shortcuts': 'Raccourcis : {slash} place le curseur dans la recherche depuis n’importe où, {prev} et {next} déplacent la plage de temps de sa propre durée.',
   'q.running': 'Exécution…',
   'q.refresh': 'Actualiser',
   'q.autoRefresh': 'Actualisation automatique',

@@ -403,6 +403,8 @@ export const de: Messages = {
   // ---- document table ----
   'doc.table': 'Tabelle',
   'doc.json': 'JSON',
+  'doc.copyJson': 'JSON kopieren',
+  'doc.copied': 'Kopiert',
   'doc.context': 'Kontext',
   'doc.context.hint': 'Die Datensätze zeitlich vor und nach diesem, unabhängig von Abfrage und Filtern; die zur selben Zeit sind hervorgehoben.',
   'doc.context.more': '{n} weitere',
@@ -481,6 +483,7 @@ export const de: Messages = {
   'q.help.datemath': 'Datumsarithmetik in Bereichen eines Datumsfelds: now, now-1h, now/d (Tagesbeginn), now-1d/d',
   'q.helpNote': 'Verschachtelte Struct-/JSON-Felder verwenden Punktpfade (geo.country, extra.user_id). Sonderzeichen mit \\ maskieren (path:\\/api\\/v1). {enter} drücken, um auszuführen.',
   'q.completeNote': 'Beim Tippen werden Feldnamen vorgeschlagen; {tab} fügt den markierten ein. Ein leeres Feld zeigt die letzten Abfragen.',
+  'q.shortcuts': 'Tastenkürzel: {slash} springt von überall in die Suche, {prev} und {next} verschieben den Zeitbereich um seine eigene Länge.',
   'q.running': 'Läuft…',
   'q.refresh': 'Aktualisieren',
   'q.autoRefresh': 'Automatisch aktualisieren',

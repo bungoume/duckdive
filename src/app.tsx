@@ -9,6 +9,7 @@ import { SqlPage } from './components/SqlPage';
 import { Visualize } from './components/Visualize';
 import { Settings } from './components/Settings';
 import { fmtBytes } from './cache';
+import { resolveRange } from './datemath';
 import { expose } from './debug';
 import { timeExprFor, type Field } from './fields';
 import { useAutoRefresh } from './hooks/useAutoRefresh';
@@ -34,6 +35,31 @@ export function App() {
   useEffect(() => {
     writeUrlState(url);
   }, [url]);
+
+  // Keyboard shortcuts outside of form controls: "/" focuses the search, "[" and "]" move the time range by its length.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      const tag = el?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el?.isContentEditable) return;
+      if (e.key === '/') {
+        const input = document.querySelector<HTMLInputElement>('.qinput input');
+        if (!input) return;
+        e.preventDefault();
+        input.focus();
+        input.select();
+      } else if (e.key === '[' || e.key === ']') {
+        const r = resolveRange(url.search.range);
+        if (!r) return;
+        const shift = (e.key === '[' ? -1 : 1) * (r.to.getTime() - r.from.getTime());
+        const range = { from: new Date(r.from.getTime() + shift).toISOString(), to: new Date(r.to.getTime() + shift).toISOString() };
+        setUrl((u) => ({ ...u, search: { ...u.search, range } }));
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [url.search.range]);
 
   useEffect(() => {
     // Back / Forward (and manual hash edits): restore the whole state from the URL

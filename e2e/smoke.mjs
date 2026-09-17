@@ -40,6 +40,19 @@ await step('discover-initial', async () => {
   if (!rows) throw new Error('no rows');
   await page.screenshot({ path: `${out}/01-discover.png` });
 });
+await step('summary-filter', async () => {
+  // hovering a value of a collapsed row reveals +/−: "+" filters by it
+  const first = page.locator('table.docs tbody tr').first().locator('.source-summary .sv').first();
+  await first.hover();
+  const key = (await first.locator('.k').textContent()).trim();
+  await first.locator('.pm button').first().click();
+  await settled(page);
+  const pills = await page.locator('.filterbar .pill').allTextContents();
+  console.log(`     ${key} -> pill ${pills[0]?.trim()}`);
+  if (!pills.length || !pills[0].startsWith(key.replace(/:$/, ''))) throw new Error('summary value did not filter');
+  await page.click('.filterbar .pill button[title="Remove"]');
+  await settled(page);
+});
 await step('search-query', async () => {
   await page.fill('.qinput input', 'http.status:>=500 AND geo.country:JP AND NOT host.name:web-1');
   await page.press('.qinput input', 'Enter');
@@ -142,7 +155,8 @@ await step('expand-doc', async () => {
   await page.waitForSelector('.doc-detail');
   await page.click('.doc-detail .tabs button:nth-child(2)');
   const json = await page.textContent('.doc-detail pre');
-  console.log(`     json length=${json.length}`);
+  const copyBtn = await page.locator('.doc-detail .json-view .copy').count();
+  console.log(`     json length=${json.length} copy button=${copyBtn}`);
   await page.screenshot({ path: `${out}/03-doc.png` });
   // the Context tab shows neighbours in time and grows on request
   await page.click('.doc-detail .tabs button:has-text("Context")');
@@ -557,6 +571,20 @@ await step('share-link', async () => {
   if (await page.locator('.link-source').count()) throw new Error('banner still shown');
 });
 
+await step('shortcuts', async () => {
+  // "/" focuses the search box from the page; "]" moves the time range forward by its length
+  await page.click('.hits');
+  await page.keyboard.press('/');
+  const focused = await page.evaluate(() => document.activeElement?.closest('.qinput') !== null);
+  await page.keyboard.press('Escape');
+  await page.click('.hits');
+  const before = (await page.textContent('.timepicker .btn')).trim();
+  await page.keyboard.press(']');
+  await settled(page);
+  const after = (await page.textContent('.timepicker .btn')).trim();
+  console.log(`     focused=${focused} range: ${before} -> ${after}`);
+  if (!focused || before === after) throw new Error('shortcuts');
+});
 await step('theme', async () => {
   await page.click('.header nav button:has-text("Settings")');
   await page.waitForSelector('.theme-select');

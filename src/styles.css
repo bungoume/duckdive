@@ -249,6 +249,12 @@ table.docs tr:hover td { background: var(--k-row-hover); }
 .doc-detail .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--k-border-light); padding: 4px 8px 0; }
 .doc-detail .tabs button { border: 0; background: transparent; padding: 6px 10px; border-bottom: 2px solid transparent; color: var(--k-text-subdued); font-weight: 500; }
 .doc-detail .tabs button.active { color: var(--k-primary); border-bottom-color: var(--k-primary); }
+.source-summary .pm { display: none; margin-left: 2px; }
+.source-summary .sv:hover .pm { display: inline; }
+.source-summary .pm button { border: 1px solid var(--k-border); background: var(--k-panel); border-radius: 3px; width: 16px; height: 16px; padding: 0; font-size: 10px; line-height: 1; vertical-align: middle; }
+.source-summary .pm button:hover { color: var(--k-primary); }
+.json-view { position: relative; }
+.json-view .copy { position: absolute; top: 6px; right: 8px; }
 .context-view { padding: 8px 10px; }
 .context-view table.docs { margin: 6px 0; }
 .context-view tr.same td { background: var(--k-highlight); }

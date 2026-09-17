@@ -401,6 +401,8 @@ export const en = {
   // ---- document table ----
   'doc.table': 'Table',
   'doc.json': 'JSON',
+  'doc.copyJson': 'Copy JSON',
+  'doc.copied': 'Copied',
   'doc.context': 'Context',
   'doc.context.hint': 'The records before and after this one in time, whatever the query and filters; those at the same time are highlighted.',
   'doc.context.more': '{n} more',
@@ -479,6 +481,7 @@ export const en = {
   'q.help.datemath': 'Date math in ranges of a date field: now, now-1h, now/d (start of the day), now-1d/d',
   'q.helpNote': 'Nested struct / JSON fields use dot paths (geo.country, extra.user_id). Escape special characters with \\ (path:\\/api\\/v1). Press {enter} to run.',
   'q.completeNote': 'Field names are suggested while you type; {tab} inserts the highlighted one. An empty box lists the recent queries.',
+  'q.shortcuts': 'Shortcuts: {slash} focuses the search from anywhere, {prev} and {next} move the time range by its own length.',
   'q.running': 'Running…',
   'q.refresh': 'Refresh',
   'q.autoRefresh': 'Auto refresh',

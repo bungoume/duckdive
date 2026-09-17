@@ -404,6 +404,8 @@ export const es: Messages = {
   // ---- document table ----
   'doc.table': 'Tabla',
   'doc.json': 'JSON',
+  'doc.copyJson': 'Copiar JSON',
+  'doc.copied': 'Copiado',
   'doc.context': 'Contexto',
   'doc.context.hint': 'Los registros anteriores y posteriores a este en el tiempo, sin importar la consulta ni los filtros; los del mismo instante se resaltan.',
   'doc.context.more': '{n} más',
@@ -482,6 +484,7 @@ export const es: Messages = {
   'q.help.datemath': 'Aritmética de fechas en rangos de un campo de fecha: now, now-1h, now/d (inicio del día), now-1d/d',
   'q.helpNote': 'Los campos struct / JSON anidados usan rutas con puntos (geo.country, extra.user_id). Escape los caracteres especiales con \\ (path:\\/api\\/v1). Pulse {enter} para ejecutar.',
   'q.completeNote': 'Se sugieren nombres de campo mientras escribe; {tab} inserta el resaltado. Una caja vacía lista las consultas recientes.',
+  'q.shortcuts': 'Atajos: {slash} lleva el foco a la búsqueda desde cualquier sitio, {prev} y {next} desplazan el rango de tiempo su propia duración.',
   'q.running': 'Ejecutando…',
   'q.refresh': 'Actualizar',
   'q.autoRefresh': 'Actualización automática',

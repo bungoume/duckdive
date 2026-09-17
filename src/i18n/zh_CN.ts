@@ -390,6 +390,8 @@ export const zh_CN: Messages = {
   // ---- document table ----
   'doc.table': '表格',
   'doc.json': 'JSON',
+  'doc.copyJson': '复制 JSON',
+  'doc.copied': '已复制',
   'doc.context': '上下文',
   'doc.context.hint': '不论查询和筛选，按时间排列在此记录前后的记录；同一时刻的记录会高亮显示。',
   'doc.context.more': '再显示 {n} 条',
@@ -467,6 +469,7 @@ export const zh_CN: Messages = {
   'q.help.datemath': '日期字段的范围可用日期运算：now、now-1h、now/d（当天开始）、now-1d/d',
   'q.helpNote': '嵌套的 struct / JSON 字段使用点路径（geo.country、extra.user_id）。特殊字符用 \\ 转义（path:\\/api\\/v1）。按 {enter} 运行。',
   'q.completeNote': '输入时会提示字段名；按 {tab} 插入高亮的候选。输入框为空时列出最近的查询。',
+  'q.shortcuts': '快捷键：{slash} 在任意位置聚焦搜索框，{prev} 和 {next} 将时间范围按其长度前后移动。',
   'q.running': '运行中…',
   'q.refresh': '刷新',
   'q.autoRefresh': '自动刷新',

@@ -7,6 +7,7 @@ All notable changes to Duckdive. The format follows [Keep a Changelog](https://k
 ### Added
 
 - Local files: drop files or a folder on the Data source page, or pick them with the file and folder dialogs. The handles are kept in IndexedDB, so a local source appears under Recent sources and can be reopened after a restart (Chrome asks for read permission again).
+- Keyboard shortcuts: `/` focuses the search, `[` and `]` move the time range; the values of a collapsed row show filter buttons on hover; the JSON tab has a copy button.
 - A dark theme: Settings → Appearance, following the system preference by default.
 - "Patterns" on the Discover page: the templates of a text field (numbers, addresses and ids masked) with counts and an example; "+" filters for one pattern.
 - The query bar suggests field names while typing (Tab inserts one), lists the last twenty queries when empty, and accepts date math (`now-1h`, `now/d`) in ranges of a date field.

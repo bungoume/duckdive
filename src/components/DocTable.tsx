@@ -30,9 +30,20 @@ function DocDetail(props: {
   onToggleColumn: (name: string) => void;
 }) {
   const [tab, setTab] = useState<'table' | 'json' | 'context'>('table');
+  const [copied, setCopied] = useState(false);
   const entries = flatten(props.doc.source);
   const known = new Set(props.fields.map((f) => f.name));
   const canContext = props.doc.ts !== null && !!props.timeExpr;
+  const json = JSON.stringify(props.doc.source, null, 2);
+  const copy = () => {
+    navigator.clipboard
+      .writeText(json)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      })
+      .catch(() => undefined);
+  };
   return (
     <div class="doc-detail">
       <div class="tabs">
@@ -51,7 +62,12 @@ function DocDetail(props: {
       {tab === 'context' && canContext ? (
         <ContextView ts={props.doc.ts!} fields={props.fields} timeExpr={props.timeExpr!} timeFieldName={props.timeFieldName} />
       ) : tab === 'json' ? (
-        <pre>{JSON.stringify(props.doc.source, null, 2)}</pre>
+        <div class="json-view">
+          <button class="btn small copy" onClick={copy}>
+            {copied ? t('doc.copied') : t('doc.copyJson')}
+          </button>
+          <pre>{json}</pre>
+        </div>
       ) : (
         <table class="kv">
           <tbody>
@@ -126,6 +142,8 @@ export function DocTable(props: {
   };
   const cols = props.columns;
   const colSpan = 2 + (cols.length || 1);
+  const known = new Set(props.fields.map((f) => f.name));
+  const asValue = (v: unknown): string | null => (v === null || v === undefined ? null : typeof v === 'object' ? JSON.stringify(v) : String(v));
   return (
     <table class="docs">
       <thead>
@@ -177,9 +195,19 @@ export function DocTable(props: {
                       .filter(([k]) => k !== props.timeFieldName)
                       .slice(0, 40)
                       .map(([k, v]) => (
-                        <span>
+                        <span class="sv" key={k}>
                           <span class="k">{k}: </span>
                           <span class="v">{fmtValue(v)}</span>
+                          {known.has(k) && (
+                            <span class="pm">
+                              <button title={t('doc.filterFor')} aria-label={t('doc.filterFor')} onClick={() => props.onFilter(k, asValue(v), false)}>
+                                +
+                              </button>
+                              <button title={t('doc.filterOut')} aria-label={t('doc.filterOut')} onClick={() => props.onFilter(k, asValue(v), true)}>
+                                −
+                              </button>
+                            </span>
+                          )}
                         </span>
                       ))}
                   </div>

@@ -398,6 +398,8 @@ export const ja: Messages = {
   // ---- document table ----
   'doc.table': 'テーブル',
   'doc.json': 'JSON',
+  'doc.copyJson': 'JSON をコピー',
+  'doc.copied': 'コピーしました',
   'doc.context': '前後のログ',
   'doc.context.hint': 'クエリやフィルタに関係なく、時間順でこのレコードの前後にあるレコードです。同じ時刻のものは強調表示されます。',
   'doc.context.more': 'さらに {n} 件',
@@ -476,6 +478,7 @@ export const ja: Messages = {
   'q.help.datemath': '日付フィールドの範囲には日付演算が使えます: now、now-1h、now/d(その日の開始)、now-1d/d',
   'q.helpNote': 'ネストした構造体 / JSON のフィールドはドット区切りのパスで指定します(geo.country、extra.user_id)。特殊文字は \\ でエスケープします(path:\\/api\\/v1)。{enter} で実行します。',
   'q.completeNote': '入力中はフィールド名の候補が出ます。{tab} で選択中の候補を挿入します。空欄のときは最近のクエリを一覧します。',
+  'q.shortcuts': 'ショートカット: {slash} でどこからでも検索欄へ、{prev} と {next} で時間範囲をその長さ分だけ前後に移動します。',
   'q.running': '実行中…',
   'q.refresh': '更新',
   'q.autoRefresh': '自動更新',
