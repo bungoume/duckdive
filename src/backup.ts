@@ -5,6 +5,15 @@
 
 const PREFIX = 'ddv.';
 
+/**
+ * The list of custom SQL this browser has reviewed never travels in a backup. A backup file
+ * arrives the same way a link does, and a WHERE clause runs verbatim inside DuckDB where it can
+ * read the S3 credentials, so a file must not be able to decide on its reader's behalf that some
+ * SQL is safe here. Custom SQL filters in restored searches and visualizations come back
+ * disabled and marked, the way they do from a link.
+ */
+const NEVER_IN_A_BACKUP = new Set(['ddv.trustedSql']);
+
 export interface Backup {
   app: 'duckdive';
   version: 1;
@@ -16,7 +25,7 @@ export function makeBackup(now = new Date()): Backup {
   const items: Record<string, string> = {};
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (!key || !key.startsWith(PREFIX)) continue;
+    if (!key || !key.startsWith(PREFIX) || NEVER_IN_A_BACKUP.has(key)) continue;
     const value = localStorage.getItem(key);
     if (value !== null) items[key] = value;
   }
@@ -34,7 +43,7 @@ export function parseBackup(text: string): Record<string, string> {
   const b = raw as Partial<Backup> | null;
   if (!b || typeof b !== 'object' || b.app !== 'duckdive' || !b.items || typeof b.items !== 'object') throw new Error('not a Duckdive backup');
   const items: Record<string, string> = {};
-  for (const [k, v] of Object.entries(b.items)) if (k.startsWith(PREFIX) && typeof v === 'string') items[k] = v;
+  for (const [k, v] of Object.entries(b.items)) if (k.startsWith(PREFIX) && !NEVER_IN_A_BACKUP.has(k) && typeof v === 'string') items[k] = v;
   return items;
 }
 

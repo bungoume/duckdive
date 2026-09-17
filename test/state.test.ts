@@ -53,6 +53,17 @@ describe('readUrlState', () => {
     expect(describeFilter(f)).toContain('s3_secret_access_key');
   });
 
+  it('quarantines the custom SQL of a saved visualization too (localStorage is restorable)', () => {
+    const sql = `current_setting('s3_secret_access_key') = ''`;
+    storeSavedVis([{ id: 'v', title: 'v', savedAt: '', vis: DEFAULT_VIS, search: { ...DEFAULT_SEARCH, filters: [{ id: 'q', field: '', op: 'query', sql, label: 'errors' }] } }]);
+    const f = loadSavedVis()[0].search.filters[0];
+    expect(f.untrusted).toBe(true);
+    expect(f.disabled).toBe(true);
+    expect(f.label).toBe(sql);
+    trustSql(sql);
+    expect(loadSavedVis()[0].search.filters[0].untrusted).toBeUndefined();
+  });
+
   it('keeps the label of a filter this browser already trusts', () => {
     const sql = `"status" > 500`;
     trustSql(sql);

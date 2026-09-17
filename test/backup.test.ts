@@ -20,4 +20,12 @@ describe('backup', () => {
     expect(() => parseBackup('{"app":"x"}')).toThrow(/backup/);
     expect(parseBackup('{"app":"duckdive","items":{"ddv.x":"1","evil":"2","ddv.y":3}}')).toEqual({ 'ddv.x': '1' });
   });
+
+  it('never carries the list of custom SQL this browser has reviewed', () => {
+    localStorage.setItem('ddv.trustedSql', '["DROP TABLE x"]');
+    localStorage.setItem('ddv.lang', 'ja');
+    expect(makeBackup().items).toEqual({ 'ddv.lang': 'ja' });
+    // nor does a hand-made file get to put one back
+    expect(parseBackup('{"app":"duckdive","items":{"ddv.trustedSql":"[\\"evil\\"]","ddv.lang":"en"}}')).toEqual({ 'ddv.lang': 'en' });
+  });
 });

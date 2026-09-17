@@ -71,7 +71,7 @@ export const fr: Messages = {
   'settings.saved': 'Enregistré.',
   'settings.backup': 'Sauvegarde',
   'settings.backup.hint':
-    'Tout ce que ce navigateur conserve, en un fichier : réglages, langue, recherches et visualisations enregistrées, sources récentes, historiques des requêtes et du SQL, liste des SQL de confiance. Aucun secret n’en fait partie ; les fichiers locaux doivent être rechoisis de l’autre côté.',
+    'Tout ce que ce navigateur conserve, en un fichier : réglages, langue, recherches et visualisations enregistrées, sources récentes, historiques des requêtes et du SQL. Aucun secret n’en fait partie, ni la liste des SQL que vous avez relus : les filtres SQL personnalisés restaurés reviennent désactivés jusqu’à ce que vous les lisiez. Les fichiers locaux doivent être rechoisis de l’autre côté.',
   'settings.backup.download': 'Télécharger la sauvegarde',
   'settings.backup.restore': 'Restaurer depuis une sauvegarde…',
   'settings.backup.restored': '{n} entrées restaurées ; rechargement…',

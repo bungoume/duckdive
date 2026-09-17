@@ -68,7 +68,7 @@ export const zh_CN: Messages = {
   'settings.saved': '已保存。',
   'settings.backup': '备份',
   'settings.backup.hint':
-    '将此浏览器中保存的一切（设置、语言、已保存的搜索和可视化、最近的数据源、查询和 SQL 历史、受信任的 SQL 列表）导出为一个文件。密钥绝不会包含在内；本地文件需要在另一端重新选择。',
+    '将此浏览器中保存的一切（设置、语言、已保存的搜索和可视化、最近的数据源、查询和 SQL 历史）导出为一个文件。密钥和已确认的 SQL 列表绝不会包含在内，因此恢复后的自定义 SQL 过滤器在你阅读之前保持停用。本地文件需要在另一端重新选择。',
   'settings.backup.download': '下载备份',
   'settings.backup.restore': '从备份恢复…',
   'settings.backup.restored': '已恢复 {n} 项，正在重新加载…',

@@ -47,7 +47,7 @@ The Settings page keeps preferences in this browser (`localStorage`, key `ddv.se
 - Day of week: the first day of the week for `now/w` and weekly buckets (Monday by default).
 - Time filter quick ranges: `{"from", "to", "display"}` entries in date-math syntax for the time picker's "Commonly used" list. Without `display` the label is generated in the UI language.
 - Format sizes and durations by field name (on by default): in the document table, number fields named `…bytes` or `…size` show as KB / MB and fields ending in `_ms` as seconds; the raw value is in the tooltip.
-- Backup: "Download backup" writes every `ddv.*` entry of `localStorage` (settings, language, saved searches and visualizations, recent sources, query and SQL histories, trusted SQL) to a JSON file; "Restore" reads one back and reloads. Secrets are never in it, and local files have to be picked again.
+- Backup: "Download backup" writes every `ddv.*` entry of `localStorage` (settings, language, saved searches and visualizations, recent sources, query and SQL histories) to a JSON file; "Restore" reads one back and reloads. Secrets are never in it, and neither is the trusted-SQL list: a backup file arrives the way a link does, so custom SQL filters in restored searches and visualizations come back disabled and marked until you read them. Local files have to be picked again.
 - Appearance: light, dark, or the system preference (the default). The colours are CSS variables in `src/styles.css`, with a second set for dark.
 - Auto refresh: chosen next to the Refresh button on Discover and Visualize (off, or every 10 s to 15 min). Each tick resolves `now` again and re-runs the search; sources with date tokens or captured columns re-list their files first, so new objects appear. A tick is skipped while a query is still running or the tab is hidden.
 
@@ -141,7 +141,7 @@ Filters of the type "custom SQL" run verbatim inside DuckDB. Because the URL car
 
 ## Saved searches, visualizations and the dashboard
 
-"Saved searches" on the Discover page keeps the query, filters, columns, sort and histogram interval under a name (`localStorage`, key `ddv.savedSearches`); loading one restores them and keeps the current time range. "Save" on the Visualize page keeps the chart definition together with the query and filters (`ddv.savedVis`). The Dashboard page shows the saved visualizations that were added to it, each running its own query and filters on top of the page's search and time range; a click on a chart filters or zooms every tile, "Open" takes the tile to the Visualize page. Everything saved is in this browser only; see Settings for the backup file.
+"Saved searches" on the Discover page keeps the query, filters, columns, sort and histogram interval under a name (`localStorage`, key `ddv.savedSearches`); loading one restores them and keeps the current time range. Custom SQL filters are checked against the trusted-SQL list when a saved search or visualization is read back, just as they are for a link, because `localStorage` can be restored from a backup file. "Save" on the Visualize page keeps the chart definition together with the query and filters (`ddv.savedVis`). The Dashboard page shows the saved visualizations that were added to it, each running its own query and filters on top of the page's search and time range; a click on a chart filters or zooms every tile, "Open" takes the tile to the Visualize page. Everything saved is in this browser only; see Settings for the backup file.
 
 ## SQL page
 

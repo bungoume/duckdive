@@ -70,7 +70,7 @@ export const de: Messages = {
   'settings.saved': 'Gespeichert.',
   'settings.backup': 'Sicherung',
   'settings.backup.hint':
-    'Alles, was dieser Browser aufbewahrt, als eine Datei: Einstellungen, Sprache, gespeicherte Suchen und Visualisierungen, letzte Quellen, Abfrage- und SQL-Verlauf und die Liste vertrauter SQL. Geheimnisse sind nie enthalten; lokale Dateien müssen auf der anderen Seite neu gewählt werden.',
+    'Alles, was dieser Browser aufbewahrt, als eine Datei: Einstellungen, Sprache, gespeicherte Suchen und Visualisierungen, letzte Quellen sowie Abfrage- und SQL-Verlauf. Geheimnisse sind nie enthalten und die Liste des geprüften SQL ebenso wenig, deshalb kommen wiederhergestellte eigene SQL-Filter deaktiviert zurück, bis Sie sie gelesen haben. Lokale Dateien müssen auf der anderen Seite neu gewählt werden.',
   'settings.backup.download': 'Sicherung herunterladen',
   'settings.backup.restore': 'Aus einer Sicherung wiederherstellen…',
   'settings.backup.restored': '{n} Einträge wiederhergestellt; wird neu geladen…',

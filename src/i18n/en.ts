@@ -71,7 +71,7 @@ export const en = {
   'settings.saved': 'Saved.',
   'settings.backup': 'Backup',
   'settings.backup.hint':
-    'Everything kept in this browser as one file: settings, language, saved searches and visualizations, recent sources, the query and SQL histories and the trusted-SQL list. Secrets are never part of it; local files have to be picked again on the other side.',
+    'Everything kept in this browser as one file: settings, language, saved searches and visualizations, recent sources and the query and SQL histories. Secrets are never part of it, nor is the list of custom SQL you have reviewed, so restored custom SQL filters come back disabled until you read them. Local files have to be picked again on the other side.',
   'settings.backup.download': 'Download backup',
   'settings.backup.restore': 'Restore from a backup…',
   'settings.backup.restored': '{n} entries restored; reloading…',

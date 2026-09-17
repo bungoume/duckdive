@@ -72,7 +72,7 @@ export const es: Messages = {
   'settings.saved': 'Guardado.',
   'settings.backup': 'Copia de seguridad',
   'settings.backup.hint':
-    'Todo lo que guarda este navegador en un archivo: ajustes, idioma, búsquedas y visualizaciones guardadas, orígenes recientes, historiales de consultas y SQL y la lista de SQL de confianza. Nunca incluye secretos; los archivos locales deben elegirse de nuevo en el otro lado.',
+    'Todo lo que guarda este navegador en un archivo: ajustes, idioma, búsquedas y visualizaciones guardadas, orígenes recientes e historiales de consultas y SQL. Nunca incluye secretos ni la lista del SQL que has revisado, así que los filtros de SQL personalizado restaurados vuelven desactivados hasta que los leas. Los archivos locales deben elegirse de nuevo en el otro lado.',
   'settings.backup.download': 'Descargar copia',
   'settings.backup.restore': 'Restaurar desde una copia…',
   'settings.backup.restored': '{n} entradas restauradas; recargando…',

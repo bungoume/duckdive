@@ -69,7 +69,7 @@ export const ko: Messages = {
   'settings.saved': '저장했습니다.',
   'settings.backup': '백업',
   'settings.backup.hint':
-    '이 브라우저에 보관된 모든 것(설정, 언어, 저장된 검색과 시각화, 최근 소스, 쿼리와 SQL 기록, 신뢰된 SQL 목록)을 파일 하나로 만듭니다. 비밀 정보는 포함되지 않으며, 로컬 파일은 다른 쪽에서 다시 선택해야 합니다.',
+    '이 브라우저에 보관된 모든 것(설정, 언어, 저장된 검색과 시각화, 최근 소스, 쿼리와 SQL 기록)을 파일 하나로 만듭니다. 비밀 정보와 확인한 SQL 목록은 포함되지 않으므로, 복원된 사용자 SQL 필터는 내용을 읽을 때까지 비활성 상태로 남습니다. 로컬 파일은 다른 쪽에서 다시 선택해야 합니다.',
   'settings.backup.download': '백업 다운로드',
   'settings.backup.restore': '백업에서 복원…',
   'settings.backup.restored': '{n}개 항목을 복원했습니다. 다시 불러옵니다…',

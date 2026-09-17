@@ -110,10 +110,10 @@ const X_KINDS: readonly XAxisDef['kind'][] = ['date_histogram', 'terms', 'histog
 /**
  * Filters carried by a URL. Anything malformed is dropped. Custom SQL filters run verbatim inside
  * DuckDB, so SQL that was not written in this browser (a link someone sent) is restored disabled
- * and marked untrusted; FilterBar lets the user review and enable it. `quarantine` is off for
- * filters read back from this browser's own localStorage (saved visualizations).
+ * and marked untrusted; FilterBar lets the user review and enable it. This holds for saved
+ * searches and visualizations too: localStorage is restorable from a file someone sent.
  */
-function sanitizeFilters(raw: unknown, quarantine = true): Filter[] {
+function sanitizeFilters(raw: unknown): Filter[] {
   if (!Array.isArray(raw)) return [];
   const out: Filter[] = [];
   for (const item of raw) {
@@ -128,7 +128,7 @@ function sanitizeFilters(raw: unknown, quarantine = true): Filter[] {
     if (isStr(item.label)) f.label = item.label;
     if (f.op === 'query') {
       f.sql = isStr(item.sql) ? item.sql : '';
-      if (quarantine && !isTrustedSql(f.sql)) {
+      if (!isTrustedSql(f.sql)) {
         f.disabled = true;
         f.untrusted = true;
         // the label travels in the link too: a quarantined filter must not be able to call itself
@@ -141,10 +141,10 @@ function sanitizeFilters(raw: unknown, quarantine = true): Filter[] {
   return out;
 }
 
-export function sanitizeSearch(raw: unknown, quarantine = true): SearchState {
+export function sanitizeSearch(raw: unknown): SearchState {
   const r = isObj(raw) ? raw : {};
   const range = isObj(r.range) && isStr(r.range.from) && isStr(r.range.to) ? { from: r.range.from, to: r.range.to } : DEFAULT_SEARCH.range;
-  return { query: isStr(r.query) ? r.query : '', range, filters: sanitizeFilters(r.filters, quarantine) };
+  return { query: isStr(r.query) ? r.query : '', range, filters: sanitizeFilters(r.filters) };
 }
 
 export function sanitizeDiscover(raw: unknown): DiscoverState {
@@ -278,13 +278,12 @@ export function loadSavedVis(): SavedVis[] {
   try {
     const list: unknown = JSON.parse(localStorage.getItem(LS_VIS) ?? '[]');
     if (!Array.isArray(list)) return [];
-    // written by this browser: no quarantine of custom SQL, but the shapes are still checked
     return list.filter(isObj).map((e, i) => ({
       id: isStr(e.id) ? e.id : `saved${i}`,
       title: isStr(e.title) ? e.title : '',
       savedAt: isStr(e.savedAt) ? e.savedAt : '',
       vis: sanitizeVis(e.vis),
-      search: sanitizeSearch(e.search, false),
+      search: sanitizeSearch(e.search),
       pinned: e.pinned === true,
     }));
   } catch {
@@ -319,7 +318,7 @@ export function loadSavedSearches(): SavedSearch[] {
       id: isStr(e.id) ? e.id : `search${i}`,
       title: isStr(e.title) ? e.title : '',
       savedAt: isStr(e.savedAt) ? e.savedAt : '',
-      search: sanitizeSearch(e.search, false),
+      search: sanitizeSearch(e.search),
       discover: sanitizeDiscover(e.discover),
     }));
   } catch {
