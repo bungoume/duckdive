@@ -630,6 +630,18 @@ const HEAD_TIMEOUT_MS = 10_000;
 const CHUNK_TIMEOUT_MS = 60_000; // one 1 MB range chunk
 const WHOLE_FILE_TIMEOUT_MS = 600_000; // passthrough GET of a whole (non-range) file
 
+/**
+ * A request that did not come back: the connection failed or the deadline passed. It is kept
+ * apart from the other errors of the handling because there is nothing to gain by asking again,
+ * while OPFS raises DOMExceptions too and those are worth falling back to the network for.
+ */
+class RequestFailed extends Error {
+  constructor(readonly reason: unknown) {
+    super(String(reason));
+    this.name = 'RequestFailed';
+  }
+}
+
 function nativeSync(method: string, url: string, headers: HeaderMap, wantBody: boolean, timeoutMs = method === 'HEAD' ? HEAD_TIMEOUT_MS : CHUNK_TIMEOUT_MS): NativeResult {
   const x = new NativeXHR();
   x.open(method, url, false);
@@ -642,7 +654,11 @@ function nativeSync(method: string, url: string, headers: HeaderMap, wantBody: b
       /* forbidden header */
     }
   }
-  x.send(null);
+  try {
+    x.send(null);
+  } catch (e) {
+    throw new RequestFailed(e);
+  }
   const raw = x.getAllResponseHeaders();
   return { status: x.status, statusText: x.statusText, headers: parseHeaders(raw), rawHeaders: raw, body: wantBody ? (x.response as ArrayBuffer) : null };
 }
@@ -933,11 +949,11 @@ class CachingXHR {
       else this.result = handleExtensionGet(this.url, this.reqHeaders);
       this.describe(entry);
     } catch (e) {
-      // A request that failed on the network already waited out its deadline; asking for the same
-      // thing again would only double the wait, with the worker and every queued query blocked
-      // meanwhile. Let it through as the IO error a plain XHR would have raised. The fallback is
-      // for a bug in the handling above, which is what the cache has to stay out of the way of.
-      if (e instanceof DOMException) throw e;
+      // A request that already waited out its deadline is not worth repeating: the second one
+      // costs the same wait again with the worker, and every query behind it, blocked throughout.
+      // Report it the way a plain XHR would. Any other error is a fault of the handling above,
+      // and there the fallback is the point: the cache stays out of DuckDB's way.
+      if (e instanceof RequestFailed) throw e.reason;
       console.warn('[ddv-cache] falling back to network', e);
       entry.outcome = `handler-error:${String(e).slice(0, 80)}`;
       stats.passthrough++;

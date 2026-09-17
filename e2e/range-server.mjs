@@ -62,7 +62,9 @@ const server = createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   if (url.pathname === '/__stats') {
     res.writeHead(200, { 'content-type': 'application/json', 'access-control-allow-origin': '*' });
-    res.end(JSON.stringify({ requests, bytesSent, signedRequests, tokenRequests, headRequests }));
+    // `run` identifies this process: the suite polls until it sees its own, so it can never read
+    // the counters of a server another run left behind on this port.
+    res.end(JSON.stringify({ run: process.env.DDV_RUN ?? '', requests, bytesSent, signedRequests, tokenRequests, headRequests }));
     return;
   }
   const cors = noCors
@@ -186,4 +188,10 @@ const server = createServer((req, res) => {
   createReadStream(file).pipe(res);
 });
 
+server.on('error', (e) => {
+  // most often EADDRINUSE from a server an interrupted run left behind: say so and stop, instead
+  // of letting the suite drive whatever else is answering on this port
+  console.error(`range-server cannot listen on ${port}: ${e.message}`);
+  process.exit(1);
+});
 server.listen(port, () => console.log(`range-server serving ${dir} on http://localhost:${port}`));

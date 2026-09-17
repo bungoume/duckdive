@@ -286,9 +286,25 @@ for (const d of [today, yesterday, old]) {
   w(`cwl-export/task-1/2026/09/11/[$LATEST]abc/000000.gz`, gzipSync(Array.from({ length: 3 }, (_, i) => `${new Date(t.getTime() - i * 1000).toISOString()} lambda ${i}`).join('\n') + '\n'));
 }
 
-const server = spawn(process.execPath, [new URL('./range-server.mjs', import.meta.url).pathname, dataDir, String(dataPort)], { stdio: 'inherit', env: { ...process.env, NOCORS: '1' } });
-await new Promise((r) => setTimeout(r, 500));
+// One run per port: the id goes into the server's environment and comes back from /__stats, so a
+// server another run left behind (or a half-second that was not enough) is noticed here instead
+// of showing up later as counters that do not add up.
+const runId = `run-${process.pid}`;
+const server = spawn(process.execPath, [new URL('./range-server.mjs', import.meta.url).pathname, dataDir, String(dataPort)], {
+  stdio: 'inherit',
+  env: { ...process.env, NOCORS: '1', DDV_RUN: runId },
+});
+let serverExited = null;
+server.on('exit', (code) => (serverExited = code));
+process.on('exit', () => server.kill());
 const serverStats = async () => (await fetch(`http://localhost:${dataPort}/__stats`)).json();
+for (let i = 0; ; i++) {
+  if (serverExited !== null) throw new Error(`range-server exited with ${serverExited}; is port ${dataPort} already taken?`);
+  const seen = await serverStats().catch(() => null);
+  if (seen?.run === runId) break;
+  if (i >= 50) throw new Error(seen ? `another range-server is already serving port ${dataPort}` : `range-server did not come up on port ${dataPort}`);
+  await new Promise((r) => setTimeout(r, 100));
+}
 
 const { context, page, appUrl } = await launchExtension();
 const base = appUrl;

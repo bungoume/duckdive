@@ -326,6 +326,7 @@ await step('auto-refresh', async () => {
   console.log(`     refreshed: ${before.trim()} -> ${(await page.textContent('.hits .meta')).trim()}`);
 });
 await step('brush', async () => {
+  const rangeBefore = await page.textContent('.timepicker .btn');
   const dbg = await page.evaluate(() => {
     const svg = document.querySelector('.chart-panel svg');
     const sc = svg && svg.scale ? svg.scale('x') : null;
@@ -340,6 +341,7 @@ await step('brush', async () => {
   await settled(page);
   const label = await page.textContent('.timepicker .btn');
   console.log(`     range=${label}`);
+  if (label === rangeBefore) throw new Error('dragging across the histogram did not change the time range');
 });
 await step('visualize', async () => {
   await page.click('.header nav button:has-text("Visualize")');
@@ -348,6 +350,8 @@ await step('visualize', async () => {
   const paths = await page.locator('.vis-panel svg path').count();
   const cerr = await page.locator('.chart-error').count();
   console.log(`     svg paths=${paths} chartErrors=${cerr}` + (cerr ? ' ' + (await page.textContent('.chart-error')) : ''));
+  if (cerr) throw new Error(`the chart failed to load: ${await page.textContent('.chart-error')}`);
+  if (!paths) throw new Error('the chart drew nothing');
   await page.screenshot({ path: `${out}/05-visualize.png` });
   // breakdown by http.status
   await page.selectOption('.cfg-section:has-text("Break down by") select', 'http.status');
@@ -674,6 +678,8 @@ await step('backup', async () => {
   console.log('     restored and reloaded');
 });
 
+// A thrown exception the page swallowed is still a regression: count it like a failed step.
+failed += errors.filter((e) => e.startsWith('[pageerror]')).length;
 console.log('\nconsole errors/warnings:');
 for (const e of errors.filter((x) => !x.includes('Improper nesting')).slice(0, 20)) console.log('  ' + e.slice(0, 400));
 await context.close();

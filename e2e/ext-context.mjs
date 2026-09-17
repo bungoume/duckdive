@@ -26,9 +26,14 @@ export async function launchExtension({ dist = new URL('../dist', import.meta.ur
   if (!sw) sw = await context.waitForEvent('serviceworker', { timeout: 30000 });
   const extId = new URL(sw.url()).host;
   const appUrl = `chrome-extension://${extId}/index.html`;
-  // onInstalled opens the app tab; wait briefly for it and reuse it so only one DuckDB runs.
-  await new Promise((r) => setTimeout(r, 800));
-  let page = context.pages().find((p) => p.url().startsWith(appUrl));
+  // onInstalled opens the app tab: wait for it and reuse it, because a second one would start a
+  // second DuckDB and the cache would hand this tab a read-only copy. On a slow machine a fixed
+  // wait ran out and the tab opened late, behind the one the test had made for itself.
+  let page = null;
+  for (let i = 0; i < 50 && !page; i++) {
+    page = context.pages().find((p) => p.url().startsWith(appUrl));
+    if (!page) await new Promise((r) => setTimeout(r, 100));
+  }
   for (const p of context.pages()) if (p !== page) await p.close().catch(() => undefined);
   if (!page) page = await context.newPage();
   return { context, page, extId, appUrl, userDataDir };
