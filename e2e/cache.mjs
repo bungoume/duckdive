@@ -336,7 +336,75 @@ const runQuery = async (q) => {
   return page.textContent('.hits .n');
 };
 
-try {
+// Each section is one independent scenario: an exception ends that section (counted as a
+// failure, with a screenshot) and the next one still runs. Later sections do not rely on state
+// left by earlier ones beyond the fixtures on disk.
+const section = async (name, fn) => {
+  try {
+    await fn();
+  } catch (e) {
+    failed++;
+    console.log(`FAIL ${name}: exception ${e.message.split('\n')[0]}`);
+    await page.screenshot({ path: `${out}/fail-cache-${name}.png` }).catch(() => undefined);
+  }
+};
+let srv3;
+let r;
+let rows;
+const q = (sql) =>
+  page.evaluate(
+    (x) =>
+      window.__ddv
+        .query(x)
+        .then((r) => r.rows)
+        .catch((e) => [{ error: String(e) }]),
+    sql,
+  );
+const connectTemplate = async (label, urlsFix, marker) => {
+  await openSource();
+  await page.selectOption('.template-box select', { label });
+  const warn = page.locator('.alert.warn button:has-text("Replace")');
+  if (await warn.count()) await warn.click();
+  const filled = urlsFix(await page.inputValue('.source-page textarea'));
+  await page.fill('.source-page textarea', filled);
+  await pressConnect();
+  // wait for THIS connection's result (the previous source's card stays visible meanwhile)
+  await page.waitForFunction(
+    (m) =>
+      (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect' &&
+      ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) || !!document.querySelector('.alert.error')),
+    marker,
+    { timeout: 60000 },
+  );
+  const err = await page
+    .locator('.alert.error')
+    .textContent()
+    .catch(() => null);
+  const tf = err ? null : await page.inputValue('.source-page .field-row:has-text("Time field") select');
+  return { err, tf };
+};
+const bucketize = (u) => u.replace('<bucket>', 'bucket');
+const connectPattern = async (urls, marker) => {
+  await openSource();
+  await page.fill('.source-page textarea', urls);
+  await page.selectOption('.source-page .field-row:has-text("Format") select', 'auto');
+  await page.click('.source-page button:has-text("Connect")');
+  await page.waitForFunction(
+    (m) =>
+      (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect' &&
+      ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) || !!document.querySelector('.alert.error')),
+    marker,
+    { timeout: 60000 },
+  );
+  const err = await page
+    .locator('.alert.error')
+    .textContent()
+    .catch(() => null);
+  const tf = err ? null : await page.inputValue('.source-page .field-row:has-text("Time field") select');
+  return { err, tf };
+};
+
+await section('opfs-and-http-parquet', async () => {
   await openSource();
   const ping = await page.evaluate(() => window.__ddv.cachePing());
   check('OPFS range cache available', !ping.opfsError, ping.opfsError ?? '');
@@ -374,7 +442,7 @@ try {
   await page.waitForSelector('.hits .n', { timeout: 120000 });
   const hits3 = await runQuery('status:>=500');
   const s3 = await swStats();
-  const srv3 = await serverStats();
+  srv3 = await serverStats();
   check('after reload: served from disk cache', s3.bytesFromCache > 0 && s3.bytesFromNetwork === 0 && s3.chunkMisses === 0, `network=${s3.bytesFromNetwork} cache=${s3.bytesFromCache} hits=${hits3}`);
   check('after reload: origin bytes unchanged', srv3.bytesSent === srv2.bytesSent, `${srv2.bytesSent} -> ${srv3.bytesSent}`);
   // the fixture spans exactly the last 7 days, so the sliding window may move by a few rows
@@ -387,7 +455,9 @@ try {
   const row = await page.textContent('table.data tbody tr');
   check('cache panel lists file', row.includes('logs.parquet'), row.replace(/\s+/g, ' ').trim());
   await page.screenshot({ path: `${out}/21-cache-panel.png` });
+});
 
+await section('cache-disabled', async () => {
   // Disable the cache and start a fresh DuckDB (reload): reads go to origin again.
   await page.evaluate(() => window.__ddv.cacheSetConfig({ enabled: false }));
   await page.reload();
@@ -398,7 +468,9 @@ try {
   const srv4 = await serverStats();
   check('disabled cache reads from origin', srv4.bytesSent > srv3.bytesSent, `${srv3.bytesSent} -> ${srv4.bytesSent}`);
   await page.evaluate(() => window.__ddv.cacheSetConfig({ enabled: true }));
+});
 
+await section('s3-static-keys', async () => {
   // S3-compatible access (path style, SigV4 signed by duckdb-wasm) with static keys.
   await openSource();
   await page.click('.kinds button:has-text("S3 / HTTPS URL")');
@@ -428,7 +500,9 @@ try {
     srvAfter.signedRequests > srvBefore.signedRequests && !!s3file,
     `signed=${srvAfter.signedRequests - srvBefore.signedRequests} hits=${hitsS3} cachedFile=${s3file}`,
   );
+});
 
+await section('sts-credentials', async () => {
   // OIDC → STS mode: exchange a (fake) id_token at the fake STS endpoint, then connect with the
   // temporary credentials; requests must carry the session token. (The browser login itself
   // needs a real identity provider and is not covered here.)
@@ -483,7 +557,9 @@ try {
     `token requests +${srvT1.tokenRequests - srvT0.tokenRequests} of ${srvT1.requests - srvT0.requests}, hits=${stsHits}`,
   );
   await page.screenshot({ path: `${out}/22-ext-source.png` });
+});
 
+await section('named-wildcards', async () => {
   // Named wildcards: {alb} becomes a column; an "is" filter on it prunes the file list.
   await page.click('.header nav button:has-text("Discover")');
   await page.waitForSelector('.timepicker .btn');
@@ -558,7 +634,9 @@ try {
   );
   await page.click('.filterbar .pill button[title="Remove"]');
   await settled(page);
+});
 
+await section('date-tokens', async () => {
   // Glob + date tokens on S3: only the partitions inside the time range are listed and read.
   await page.click('.header nav button:has-text("Discover")');
   await page.waitForSelector('.timepicker .btn');
@@ -598,7 +676,9 @@ try {
     status.includes(`${utcDays} file(s)`) && rangeRows === 600000 * utcDays,
     `${status.trim()} rows=${rangeRows}`,
   );
+});
 
+await section('alb-logs', async () => {
   // ALB access logs (.log.gz): format auto-detected from the path, columns typed.
   await page.click('.timepicker .btn');
   await page.click('.quick-grid button:has-text("Last 7 days")');
@@ -648,7 +728,6 @@ try {
       Number(albCount?.ips) === 1000,
     albErr ?? `${albOk.trim().slice(0, 80)}… fields=${albFields.length} rows=${JSON.stringify(albCount)}`,
   );
-  const listReqs = await serverStats();
   // Last 1 hour: only the file stamped "now" survives the name-timestamp filter
   await page.click('.header nav button:has-text("Discover")');
   await page.waitForSelector('.hits .n');
@@ -661,7 +740,9 @@ try {
   const nowMin = new Date().getUTCHours() * 60 + new Date().getUTCMinutes();
   const expectPruned = nowMin < 125 ? 2 : 1;
   check(`ALB logs: name timestamps prune files outside the range (${expectPruned} file)`, Number(albFiles) === 500 * expectPruned, `${albStatus.trim()} rows=${albFiles}`);
+});
 
+await section('large-source-confirmation', async () => {
   // Large-source confirmation: with the threshold at 1 file, the 3 gz files of the last 7 days
   // must stop the connect BEFORE DuckDB is touched (no request at all), until the user continues.
   // A confirmed file set is not questioned again by the query-time download guard.
@@ -713,43 +794,12 @@ try {
   await page.fill('.source-page .field-row:has-text("Warn when more files") input', '');
   await page.click('.source-page button:has-text("Connect")');
   await connectDone('log.gz');
+});
 
+await section('templates', async () => {
   // Templates for the other AWS log families: connect each and check the derived schema.
-  const q = (sql) =>
-    page.evaluate(
-      (x) =>
-        window.__ddv
-          .query(x)
-          .then((r) => r.rows)
-          .catch((e) => [{ error: String(e) }]),
-      sql,
-    );
-  const connectTemplate = async (label, urlsFix, marker) => {
-    await openSource();
-    await page.selectOption('.template-box select', { label });
-    const warn = page.locator('.alert.warn button:has-text("Replace")');
-    if (await warn.count()) await warn.click();
-    const filled = urlsFix(await page.inputValue('.source-page textarea'));
-    await page.fill('.source-page textarea', filled);
-    await pressConnect();
-    // wait for THIS connection's result (the previous source's card stays visible meanwhile)
-    await page.waitForFunction(
-      (m) =>
-        (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect' &&
-        ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) || !!document.querySelector('.alert.error')),
-      marker,
-      { timeout: 60000 },
-    );
-    const err = await page
-      .locator('.alert.error')
-      .textContent()
-      .catch(() => null);
-    const tf = err ? null : await page.inputValue('.source-page .field-row:has-text("Time field") select');
-    return { err, tf };
-  };
-  const bucketize = (u) => u.replace('<bucket>', 'bucket');
   // CloudTrail
-  let r = await connectTemplate('CloudTrail', bucketize, '_CloudTrail_');
+  r = await connectTemplate('CloudTrail', bucketize, '_CloudTrail_');
   {
     await openSource();
     const before = await page.inputValue('.source-page textarea');
@@ -759,7 +809,7 @@ try {
     const after = await page.inputValue('.source-page textarea');
     check('template dropdown warns before replacing an existing pattern', warned === 1 && before === after && before.includes('CloudTrail'), `warned=${warned} unchanged=${before === after}`);
   }
-  let rows = r.err ? null : await q('SELECT count(*) n, count(DISTINCT eventName) e, min(eventTime)::VARCHAR t, max(userIdentity.userName) u FROM src');
+  rows = r.err ? null : await q('SELECT count(*) n, count(DISTINCT eventName) e, min(eventTime)::VARCHAR t, max(userIdentity.userName) u FROM src');
   check(
     'CloudTrail template: Records unnested, eventTime is the time field',
     !r.err && r.tf === 'eventTime' && Number(rows?.[0]?.n) === 2 && Number(rows?.[0]?.e) === 2 && rows?.[0]?.u === 'alice',
@@ -790,25 +840,6 @@ try {
     r.err ?? `tf=${r.tf} ${JSON.stringify(rows)}`,
   );
   // LTSV is a file format, not a delivery layout: no template, the pattern is typed directly
-  const connectPattern = async (urls, marker) => {
-    await openSource();
-    await page.fill('.source-page textarea', urls);
-    await page.selectOption('.source-page .field-row:has-text("Format") select', 'auto');
-    await page.click('.source-page button:has-text("Connect")');
-    await page.waitForFunction(
-      (m) =>
-        (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect' &&
-        ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) || !!document.querySelector('.alert.error')),
-      marker,
-      { timeout: 60000 },
-    );
-    const err = await page
-      .locator('.alert.error')
-      .textContent()
-      .catch(() => null);
-    const tf = err ? null : await page.inputValue('.source-page .field-row:has-text("Time field") select');
-    return { err, tf };
-  };
   r = await connectPattern('s3://bucket/ltsv/{yyyy}/{MM}/{dd}/*.ltsv.gz', 'ltsv/');
   const ltsvFields = r.err ? [] : (await q('DESCRIBE SELECT * FROM src')).map((x) => x.column_name);
   rows = r.err ? null : await q("SELECT count(*) n, count(*) FILTER (WHERE json_extract_string(log, '$.status') = '502') e FROM src");
@@ -883,6 +914,9 @@ try {
     !r.err && r.tf === 'timestamp' && Number(rows?.[0]?.n) === 11 && Number(rows?.[0]?.f) === 2 && rows?.[0]?.m === 'lambda 2' && Number(rows?.[0]?.ts) === 11,
     r.err ?? `tf=${r.tf} ${JSON.stringify(rows)}`,
   );
+});
+
+await section('concatenated-gzip', async () => {
   // ---- concatenated gzip: re-packed at connect, every row visible, second connect reuses the copy ----
   await openSource();
   await page.fill('.source-page textarea', 's3://bucket/multigz/{yyyy}/{MM}/{dd}/*.log.gz');
@@ -917,6 +951,9 @@ try {
     Number(multiRows2?.[0]?.n) === 23100 && srvM2.bytesSent === srvM1.bytesSent && srvM1.bytesSent > srvM0.bytesSent,
     `bytes ${srvM0.bytesSent} -> ${srvM1.bytesSent} -> ${srvM2.bytesSent} rows=${JSON.stringify(multiRows2)}`,
   );
+});
+
+await section('damaged-gzip', async () => {
   // ---- damaged gz: the query fails, "Find the failing file" isolates and inspects the culprit ----
   await openSource();
   await page.fill('.source-page textarea', 's3://bucket/badgz/{yyyy}/{MM}/{dd}/*.log.gz');
@@ -954,14 +991,9 @@ try {
   await page.click('.cache-log-box summary');
   const logText = await page.textContent('.cache-log-box summary');
   check('cache panel shows the request log', /Request log \(last \d+/.test(logText), logText.trim());
-  void listReqs;
-} catch (e) {
-  failed++;
-  console.log('FAIL exception:', e.message);
-  await page.screenshot({ path: `${out}/fail-cache.png` });
-} finally {
-  if (errors.length) console.log('console errors:', errors.slice(0, 10));
-  await context.close();
-  server.kill();
-}
+});
+
+if (errors.length) console.log('console errors:', errors.slice(0, 10));
+await context.close();
+server.kill();
 process.exit(failed ? 1 : 0);
