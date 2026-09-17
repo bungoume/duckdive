@@ -1,5 +1,6 @@
 import type { TimeRange } from './datemath';
 import type { Filter, FilterOp } from './sql';
+import { sqlLabel } from './sql';
 import { shareableSource, sourceFromLink, type SourceConfig } from './sources';
 import { isTrustedSql } from './trust';
 
@@ -130,6 +131,9 @@ function sanitizeFilters(raw: unknown, quarantine = true): Filter[] {
       if (quarantine && !isTrustedSql(f.sql)) {
         f.disabled = true;
         f.untrusted = true;
+        // the label travels in the link too: a quarantined filter must not be able to call itself
+        // "status: 500" while its SQL reads the S3 credentials
+        f.label = sqlLabel(f.sql);
       }
     }
     out.push(f);

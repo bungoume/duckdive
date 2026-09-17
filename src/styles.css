@@ -150,6 +150,7 @@ code, .mono { font-family: var(--k-mono); font-size: 12px; }
 .popover h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; color: var(--k-text-subdued); letter-spacing: 0.03em; }
 .menu button { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 6px 8px; border-radius: 4px; }
 .menu button:hover { background: var(--k-hover); }
+.menu .sql { display: block; max-width: 320px; max-height: 140px; overflow: auto; margin: 2px 8px 6px; padding: 6px 8px; border-radius: 4px; background: var(--k-code-bg); font-size: 11px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .field-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
 .field-row label { font-size: 12px; color: var(--k-text-subdued); }
 .input, select.input, textarea.input { border: 1px solid var(--k-border); border-radius: 4px; padding: 6px 8px; background: var(--k-input-bg); width: 100%; }

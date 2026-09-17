@@ -129,7 +129,7 @@ The query bar uses Lucene syntax.
 
 Field names are suggested while you type (Tab inserts the highlighted one) and an empty query box lists the last twenty queries run in this browser (`localStorage`, key `ddv.queryHistory`). Outside of a form control, `/` focuses the query box and `[` / `]` move the time range by its own length. Special characters are escaped with `\`. `term~2` and `term^3` are accepted and ignored. Struct columns are addressed with dots (`geo.country`); JSON columns are sampled for keys and exposed the same way (`extra.user_id`). "show SQL" displays the generated statement.
 
-Filters of the type "custom SQL" run verbatim inside DuckDB. Because the URL carries the filters, a link from someone else could contain SQL that reads this extension's S3 credentials or reaches the network; such filters are restored disabled and marked with ⚠ until you open them, read the SQL and enable them (SQL written or reviewed in this browser is remembered in `localStorage`, key `ddv.trustedSql`).
+Filters of the type "custom SQL" run verbatim inside DuckDB. Because the URL carries the filters, a link from someone else could contain SQL that reads this extension's S3 credentials or reaches the network; such filters are restored disabled and marked with ⚠ until you open them, read the SQL and enable them. A quarantined filter is labelled with its own statement, never with the name the link gave it, and the menu shows the statement next to the button that enables it (SQL written or reviewed in this browser is remembered in `localStorage`, key `ddv.trustedSql`).
 
 ## Export
 

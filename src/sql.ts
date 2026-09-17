@@ -239,6 +239,11 @@ export function filterToSQL(fl: Filter, fields: Field[]): string | null {
   return fl.negate ? notSql(`(${sql})`) : `(${sql})`;
 }
 
+/** What a custom SQL filter's pill says: the statement itself, shortened. Never free text. */
+export function sqlLabel(sql: string): string {
+  return sql.length > 60 ? sql.slice(0, 57) + '…' : sql;
+}
+
 export function describeFilter(fl: Filter): string {
   const neg = fl.negate ? t('flt.not') : '';
   switch (fl.op) {

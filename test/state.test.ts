@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_SOURCE, rememberSource, sourceKey, stripSecrets, loadSourceHistory } from '../src/sources';
+import { describeFilter } from '../src/sql';
 import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS, loadSavedSearches, loadSavedVis, readUrlState, storeSavedSearches, storeSavedVis, syncUrlStateFromLocation, writeUrlState } from '../src/state';
 import { trustSql } from '../src/trust';
 import { historyLog } from './setup';
@@ -41,6 +42,22 @@ describe('readUrlState', () => {
     const g = readUrlState().search.filters[0];
     expect(g.disabled).toBeUndefined();
     expect(g.untrusted).toBeUndefined();
+  });
+
+  it('a quarantined filter cannot keep a label that hides its SQL', () => {
+    const sql = `current_setting('s3_secret_access_key') = ''`;
+    setHash('discover', { search: { filters: [{ id: 'q', field: '', op: 'query', sql, label: 'status: 500' }] } });
+    const f = readUrlState().search.filters[0];
+    expect(f.untrusted).toBe(true);
+    expect(f.label).toBe(sql);
+    expect(describeFilter(f)).toContain('s3_secret_access_key');
+  });
+
+  it('keeps the label of a filter this browser already trusts', () => {
+    const sql = `"status" > 500`;
+    trustSql(sql);
+    setHash('discover', { search: { filters: [{ id: 'q', field: '', op: 'query', sql, label: 'slow' }] } });
+    expect(readUrlState().search.filters[0].label).toBe('slow');
   });
 });
 

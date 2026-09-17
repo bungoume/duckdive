@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { t } from '../i18n';
 import type { Field } from '../fields';
-import { describeFilter, newId, type Filter, type FilterOp } from '../sql';
+import { describeFilter, newId, sqlLabel, type Filter, type FilterOp } from '../sql';
 import { trustSql } from '../trust';
 import { FormField, Popover } from './ui';
 
@@ -79,7 +79,7 @@ function FilterEditor(props: { fields: Field[]; initial?: Filter; onSave: (f: Fi
             }
             if (custom) {
               f.sql = sql;
-              f.label = sql.length > 60 ? sql.slice(0, 57) + '…' : sql;
+              f.label = sqlLabel(sql);
               f.field = '';
             }
             props.onSave(f);
@@ -174,15 +174,19 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
                 {f.negate ? t('flt.menu.include') : t('flt.menu.exclude')}
               </button>
               {f.untrusted ? (
-                <button
-                  onClick={() => {
-                    const { untrusted: _u, disabled: _d, ...rest } = f;
-                    replace(f.id, saved(rest));
-                    setMenu(null);
-                  }}
-                >
-                  {t('flt.menu.trust')}
-                </button>
+                <>
+                  {/* the statement itself, so that "I checked this SQL" is about something the user has seen */}
+                  <code class="sql">{f.sql}</code>
+                  <button
+                    onClick={() => {
+                      const { untrusted: _u, disabled: _d, ...rest } = f;
+                      replace(f.id, saved(rest));
+                      setMenu(null);
+                    }}
+                  >
+                    {t('flt.menu.trust')}
+                  </button>
+                </>
               ) : (
                 <button
                   onClick={() => {
