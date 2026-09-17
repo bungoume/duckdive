@@ -1,0 +1,20 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Dependency updates with the same 7-day cooldown as pnpm-workspace.yaml (minimumReleaseAge), exact versions in package.json and GitHub Actions pinned to commit SHAs with a version comment.",
+  "extends": ["config:best-practices", ":pinAllExceptPeerDependencies"],
+  "timezone": "Asia/Tokyo",
+  "internalChecksFilter": "strict",
+  "packageRules": [
+    {
+      "description": "Wait 7 days after a release before proposing it (npm packages, the pnpm version in packageManager and GitHub Actions alike). Placed after config:best-practices so it overrides the preset's 3-day npm rule; the update types without a release timestamp keep the preset's opt-out.",
+      "matchUpdateTypes": ["major", "minor", "patch", "digest", "pinDigest"],
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "typescript-eslint declares the TypeScript majors it supports as a peer range; land TypeScript majors together with it.",
+      "matchPackageNames": ["typescript", "typescript-eslint"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "TypeScript major"
+    }
+  ]
+}
