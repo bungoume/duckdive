@@ -83,6 +83,15 @@ function readRegex(s: string, i: number): [string, number] | null {
   return null;
 }
 
+/**
+ * What `\c` contributes to a value. The backslash is dropped, because by then the character has
+ * lost its meaning to the parser — except before a wildcard, where it has to survive into the
+ * value so that `path:a\*b` can ask for a literal asterisk (see wildcardChars).
+ */
+function keepEscape(c: string): string {
+  return c === '*' || c === '?' ? '\\' + c : c;
+}
+
 function tokenize(s: string): Tok[] {
   const toks: Tok[] = [];
   const last = () => toks[toks.length - 1];
@@ -116,7 +125,7 @@ function tokenize(s: string): Tok[] {
       let closed = false;
       while (j < s.length) {
         if (s[j] === '\\' && j + 1 < s.length) {
-          v += s[j + 1];
+          v += keepEscape(s[j + 1]);
           j += 2;
           continue;
         }
@@ -144,7 +153,7 @@ function tokenize(s: string): Tok[] {
       let v = '';
       while (j < s.length && !/\s/.test(s[j]) && !SPECIAL.has(s[j]) && !s.startsWith('&&', j) && !s.startsWith('||', j)) {
         if (s[j] === '\\' && j + 1 < s.length) {
-          v += s[j + 1];
+          v += keepEscape(s[j + 1]);
           j += 2;
           continue;
         }
@@ -370,19 +379,38 @@ function reEscape(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/** The characters of a value, saying for each whether a backslash took its wildcard meaning away. */
+function wildcardChars(value: string): { c: string; wild: boolean }[] {
+  const out: { c: string; wild: boolean }[] = [];
+  for (let i = 0; i < value.length; i++) {
+    const c = value[i];
+    if (c === '\\' && (value[i + 1] === '*' || value[i + 1] === '?')) {
+      out.push({ c: value[++i], wild: false });
+    } else out.push({ c, wild: c === '*' || c === '?' });
+  }
+  return out;
+}
+
 /** Lucene wildcard (* and ?) → regex body. `within` is the class a wildcard may expand to. */
 function wildcardRe(value: string, within: string): string {
   let out = '';
-  for (const c of value) {
-    if (c === '*') out += `${within}*`;
-    else if (c === '?') out += within;
+  for (const { c, wild } of wildcardChars(value)) {
+    if (wild && c === '*') out += `${within}*`;
+    else if (wild) out += within;
     else out += reEscape(c);
   }
   return out;
 }
 
 function hasWildcard(v: string): boolean {
-  return v.includes('*') || v.includes('?');
+  return wildcardChars(v).some((x) => x.wild);
+}
+
+/** The value as plain text: the escapes that kept a * or ? from being a wildcard are gone. */
+function literalValue(v: string): string {
+  return wildcardChars(v)
+    .map((x) => x.c)
+    .join('');
 }
 
 /** Token-bounded, case-insensitive match; * and ? are wildcards within a token. */
@@ -395,7 +423,7 @@ function tokenMatch(expr: string, value: string): string {
 
 function phraseMatch(expr: string, value: string): string {
   if (hasWildcard(value)) return `regexp_matches(${expr}, ${lit(wildcardRe(value, '.'))}, 'i')`;
-  const esc = value.replace(/[\\%_]/g, '\\$&');
+  const esc = literalValue(value).replace(/[\\%_]/g, '\\$&');
   return `${expr} ILIKE ${lit('%' + esc + '%')} ESCAPE '\\'`;
 }
 
@@ -429,7 +457,7 @@ function scalarLiteral(f: Field, v: string, roundUp = false): string {
     return tsLit(d);
   }
   if (f.kind === 'boolean') return v.toLowerCase() === 'true' ? 'TRUE' : 'FALSE';
-  return lit(v);
+  return lit(literalValue(v));
 }
 
 function termSql(f: Field, value: string, phrase: boolean, prox: boolean): string {

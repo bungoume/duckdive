@@ -92,6 +92,16 @@ describe('searchToSql', () => {
     expect(searchToSql('message:/a.b/', fields)).toBe(`regexp_matches("message", 'a.b')`);
   });
 
+  it('a backslash makes * and ? plain characters again', () => {
+    // without the escape these would be "any characters" and "field exists"
+    expect(searchToSql('message:a\\*b', fields)).toBe(`(regexp_matches("message", '(^|[^A-Za-z0-9_])a\\*b([^A-Za-z0-9_]|$)', 'i'))`);
+    expect(searchToSql('message:\\*', fields)).toBe(`(regexp_matches("message", '(^|[^A-Za-z0-9_])\\*([^A-Za-z0-9_]|$)', 'i'))`);
+    expect(searchToSql('message:"a\\?b"', fields)).toBe(`("message" ILIKE '%a?b%' ESCAPE '\\')`);
+    expect(parseQuery('message:\\*')).toMatchObject({ t: 'term', value: '\\*' });
+    // an unescaped one still is a wildcard
+    expect(searchToSql('message:*', fields)).toBe(`"message" IS NOT NULL`);
+  });
+
   it('spreads free text over the searchable fields and combines with AND / OR / NOT', () => {
     const sql = searchToSql('timeout AND NOT status:200', fields);
     expect(sql).toMatch(/^\(\(regexp_matches\("message".* OR regexp_matches\("host".*\) AND NOT coalesce\(\("status" = 200\), FALSE\)\)$/);
