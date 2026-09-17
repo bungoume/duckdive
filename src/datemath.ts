@@ -72,13 +72,38 @@ function addCalendar(d: Date, unit: 'M' | 'y', n: number, tz: string): Date {
   return zonedToUtc(w, tz);
 }
 
+// YYYY-MM-DD, optionally with a time, optionally with a trailing Z or ±HH:MM.
+const ABSOLUTE = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3})\d*)?)?)?\s*(Z|[+-]\d{2}:?(?:\d{2})?)?$/i;
+
+/**
+ * An absolute timestamp a person typed. With a trailing Z or offset it names an instant; without
+ * one it is a wall clock of the display time zone, which is the zone every date on screen uses.
+ * DuckDB-Wasm carries no ICU extension, so letting it cast the text would drop the offset and
+ * read the rest as UTC. Returns null when the text is not a timestamp.
+ */
+export function parseAbsolute(s: string): Date | null {
+  const m = ABSOLUTE.exec(s.trim());
+  if (!m) return null;
+  const [, y, mo, da, hh, mi, se, frac, zone] = m;
+  const w: WallTime = { year: +y, month: +mo, day: +da, hour: +(hh ?? 0), minute: +(mi ?? 0), second: +(se ?? 0), ms: Number((frac ?? '').padEnd(3, '0')) };
+  if (w.month < 1 || w.month > 12 || w.day < 1 || w.day > 31 || w.hour > 23 || w.minute > 59 || w.second > 59) return null;
+  if (!zone) return zonedToUtc(w, effectiveTimeZone());
+  const offset = zone.toUpperCase() === 'Z' ? 0 : (zone[0] === '-' ? -1 : 1) * (Number(zone.slice(1, 3)) * 60 + Number(zone.slice(3).replace(':', '') || 0));
+  return new Date(Date.UTC(w.year, w.month - 1, w.day, w.hour, w.minute, w.second, w.ms) - offset * 60_000);
+}
+
+/** An absolute timestamp, falling back to whatever the browser makes of the text (RFC 2822 and such). */
+function absolute(s: string): Date | null {
+  const d = parseAbsolute(s);
+  if (d) return d;
+  const loose = new Date(s);
+  return isNaN(loose.getTime()) ? null : loose;
+}
+
 export function parseDateMath(expr: string, roundUp = false, now: Date = new Date()): Date | null {
   const s = expr.trim();
   if (!s) return null;
-  if (!s.startsWith('now')) {
-    const d = new Date(s);
-    return isNaN(d.getTime()) ? null : d;
-  }
+  if (!s.startsWith('now')) return absolute(s);
   const tz = effectiveTimeZone();
   let d = new Date(now);
   let rest = s.slice(3);
@@ -141,8 +166,8 @@ export function describeRange(r: TimeRange): string {
   if (auto) return auto;
   const fmt = (s: string) => {
     if (s.startsWith('now')) return s;
-    const d = new Date(s);
-    return isNaN(d.getTime()) ? s : formatLocal(d);
+    const d = absolute(s);
+    return d ? formatLocal(d) : s;
   };
   return `${fmt(r.from)} → ${fmt(r.to)}`;
 }

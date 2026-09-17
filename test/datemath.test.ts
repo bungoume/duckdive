@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { describeRange, fromDatetimeLocal, parseDateMath, resolveRange, toDatetimeLocal } from '../src/datemath';
+import { describeRange, fromDatetimeLocal, parseAbsolute, parseDateMath, resolveRange, toDatetimeLocal } from '../src/datemath';
 import { resetSettings, updateSettings } from '../src/settings';
 
 const now = new Date('2026-09-16T10:30:00.000Z'); // a Wednesday
@@ -49,6 +49,32 @@ describe('parseDateMath', () => {
     expect(parseDateMath('now-3x')).toBeNull();
     expect(parseDateMath('yesterday')).toBeNull();
     expect(parseDateMath('')).toBeNull();
+  });
+});
+
+describe('parseAbsolute', () => {
+  beforeEach(() => {
+    resetSettings();
+    updateSettings({ timeZone: 'Asia/Tokyo' });
+  });
+
+  it('honours a trailing Z or offset', () => {
+    expect(parseAbsolute('2026-09-16T01:02:03.456Z')?.toISOString()).toBe('2026-09-16T01:02:03.456Z');
+    expect(parseAbsolute('2026-09-16T10:02:03+09:00')?.toISOString()).toBe('2026-09-16T01:02:03.000Z');
+    expect(parseAbsolute('2026-09-16T10:02:03+0900')?.toISOString()).toBe('2026-09-16T01:02:03.000Z');
+    expect(parseAbsolute('2026-09-15T20:02:03-05:00')?.toISOString()).toBe('2026-09-16T01:02:03.000Z');
+  });
+
+  it('reads a timestamp without an offset as the display zone, not as UTC', () => {
+    expect(parseAbsolute('2026-09-16T10:02:03')?.toISOString()).toBe('2026-09-16T01:02:03.000Z');
+    expect(parseAbsolute('2026-09-16 10:02')?.toISOString()).toBe('2026-09-16T01:02:00.000Z');
+    expect(parseAbsolute('2026-09-16')?.toISOString()).toBe('2026-09-15T15:00:00.000Z');
+    updateSettings({ timeZone: 'UTC' });
+    expect(parseAbsolute('2026-09-16T10:02:03')?.toISOString()).toBe('2026-09-16T10:02:03.000Z');
+  });
+
+  it('rejects what is not a timestamp', () => {
+    for (const s of ['', 'now-1h', 'the first', '2026-13-01', '2026-09-16T25:00:00']) expect(parseAbsolute(s), s).toBeNull();
   });
 });
 

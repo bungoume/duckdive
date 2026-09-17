@@ -17,7 +17,7 @@
 //   fuzzy / boost        term~ term~2 term^3 are accepted; the fuzziness and boost are ignored
 //   nested fields        geo.country:JP   extra.user_id:42
 
-import { parseDateMath } from './datemath';
+import { parseAbsolute, parseDateMath } from './datemath';
 import type { Field } from './fields';
 import { findField } from './fields';
 import { lit, notSql, numberLiteral, tsLit } from './sql';
@@ -424,12 +424,9 @@ function scalarLiteral(f: Field, v: string, roundUp = false): string {
     return n;
   }
   if (f.kind === 'date') {
-    if (v.startsWith('now')) {
-      const d = parseDateMath(v, roundUp);
-      if (!d) throw new SearchQueryError(`"${v}" is not a date expression (field ${f.name})`);
-      return tsLit(d);
-    }
-    return `TRY_CAST(${lit(v)} AS TIMESTAMP)`;
+    const d = v.startsWith('now') ? parseDateMath(v, roundUp) : parseAbsolute(v);
+    if (!d) throw new SearchQueryError(`"${v}" is not a date (field ${f.name})`);
+    return tsLit(d);
   }
   if (f.kind === 'boolean') return v.toLowerCase() === 'true' ? 'TRUE' : 'FALSE';
   return lit(v);

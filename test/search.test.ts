@@ -1,6 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { Field } from '../src/fields';
 import { SearchQueryError, parseQuery, searchToSql } from '../src/search';
+import { resetSettings, updateSettings } from '../src/settings';
+
+beforeEach(() => {
+  resetSettings();
+  updateSettings({ timeZone: 'UTC' });
+});
 
 const f = (name: string, kind: Field['kind'], duckType = kind.toUpperCase()): Field => ({ name, expr: `"${name}"`, kind, duckType, column: name, searchable: kind === 'string' });
 const fields: Field[] = [f('status', 'number', 'INTEGER'), f('message', 'string', 'VARCHAR'), f('host', 'string', 'VARCHAR'), f('ts', 'date', 'TIMESTAMP'), f('ok', 'boolean', 'BOOLEAN')];
@@ -60,7 +66,17 @@ describe('searchToSql', () => {
     expect(searchToSql('status:>=500', fields)).toBe('("status" >= 500)');
     expect(searchToSql('status:[100 TO 200}', fields)).toBe('("status" >= 100 AND "status" < 200)');
     expect(searchToSql('ok:true', fields)).toBe('("ok" = TRUE)');
-    expect(searchToSql('ts:>="2026-01-01"', fields)).toBe(`("ts" >= TRY_CAST('2026-01-01' AS TIMESTAMP))`);
+    expect(searchToSql('ts:>="2026-01-01"', fields)).toBe(`("ts" >= TIMESTAMP '2026-01-01 00:00:00.000')`);
+  });
+
+  it('reads an absolute bound in the display zone, and its offset when it carries one', () => {
+    updateSettings({ timeZone: 'Asia/Tokyo' });
+    // no offset: the wall clock of the zone the table shows
+    expect(searchToSql('ts:>="2026-01-01T09:00:00"', fields)).toBe(`("ts" >= TIMESTAMP '2026-01-01 00:00:00.000')`);
+    // an offset names an instant, wherever the display zone is
+    expect(searchToSql('ts:>="2026-01-01T00:00:00+09:00"', fields)).toBe(`("ts" >= TIMESTAMP '2025-12-31 15:00:00.000')`);
+    expect(searchToSql('ts:>="2026-01-01T00:00:00Z"', fields)).toBe(`("ts" >= TIMESTAMP '2026-01-01 00:00:00.000')`);
+    expect(() => searchToSql('ts:>"the first"', fields)).toThrow(/not a date/);
   });
 
   it('compares a large integer id digit by digit', () => {
@@ -103,7 +119,7 @@ describe('date math in ranges', () => {
     expect(searchToSql('ts:>now-1h', fields)).toMatch(/^\("ts" > TIMESTAMP '\d{4}-\d\d-\d\d \d\d:\d\d:\d\d\.\d{3}'\)$/);
     const sql = searchToSql('ts:[now/d TO now/d]', fields);
     expect(sql).toMatch(/"ts" >= TIMESTAMP '\d{4}-\d\d-\d\d \d\d:00:00\.000' AND "ts" <= TIMESTAMP '\d{4}-\d\d-\d\d \d\d:59:59\.999'/);
-    expect(searchToSql('ts:>="2026-01-01"', fields)).toBe(`("ts" >= TRY_CAST('2026-01-01' AS TIMESTAMP))`);
-    expect(() => searchToSql('ts:>now-1x', fields)).toThrow(/not a date expression/);
+    expect(searchToSql('ts:>="2026-01-01"', fields)).toBe(`("ts" >= TIMESTAMP '2026-01-01 00:00:00.000')`);
+    expect(() => searchToSql('ts:>now-1x', fields)).toThrow(/not a date/);
   });
 });

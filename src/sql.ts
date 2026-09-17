@@ -1,5 +1,5 @@
 import type { TimeRange } from './datemath';
-import { resolveRange } from './datemath';
+import { parseAbsolute, parseDateMath, resolveRange } from './datemath';
 import { effectiveTimeZone, zonedParts } from './datefmt';
 import type { Field } from './fields';
 import { findField } from './fields';
@@ -40,7 +40,7 @@ export function notSql(inner: string): string {
 
 /** Naive UTC TIMESTAMP literal. */
 export function tsLit(d: Date): string {
-  return `TIMESTAMP '${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}.${pad(d.getMilliseconds(), 3)}'`;
+  return `TIMESTAMP '${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}.${pad(d.getUTCMilliseconds(), 3)}'`;
 }
 
 export type IntervalKey = '1s' | '5s' | '10s' | '30s' | '1m' | '5m' | '10m' | '30m' | '1h' | '3h' | '12h' | '1d' | '1w' | '1M' | '1y';
@@ -172,7 +172,10 @@ export function newId(): string {
 function valueLiteral(f: Field, v: string): string | null {
   if (f.kind === 'number') return numberLiteral(v);
   if (f.kind === 'boolean') return v.toLowerCase() === 'true' ? 'TRUE' : 'FALSE';
-  if (f.kind === 'date') return `TRY_CAST(${lit(v)} AS TIMESTAMP)`;
+  if (f.kind === 'date') {
+    const d = v.startsWith('now') ? parseDateMath(v) : parseAbsolute(v);
+    return d ? tsLit(d) : null;
+  }
   return lit(v);
 }
 
