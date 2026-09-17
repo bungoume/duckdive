@@ -15,6 +15,9 @@ export const en = {
   'app.status.files': '{name} · {n} file(s)',
   'app.status.noSource': 'No data source',
   'app.status.sourceFallback': 'source',
+  'app.link.text': 'This link carries a data source: {name} ({detail}). Connect to it?',
+  'app.link.connect': 'Connect',
+  'app.link.ignore': 'Ignore',
   'app.failedToStart': 'Failed to start: {error}',
   'app.note.queued': ' (queued behind the running query; DuckDB steps cannot be interrupted)',
   'app.note.inDb': ' (inside DuckDB; cannot be interrupted)',
@@ -233,6 +236,14 @@ export const en = {
   'exp.hint.all': 'Every column of the source, sorted like the table. Add columns to export only those.',
   'exp.download': 'Download',
   'exp.running': 'Exporting…',
+
+  // ---- share link ----
+  'share.button': 'Share',
+  'share.title': 'Link to this view',
+  'share.copied': 'Link copied',
+  'share.copiedNoSource': 'Copied (without the local files)',
+  'share.hint': 'The link carries the query, filters, time range, chart and the data source without any secret. Custom SQL filters arrive disabled at the other end.',
+  'share.hintNoSource': 'Local files cannot travel in a link; the recipient has to pick them.',
 
   // ---- Visualize page ----
   'vis.chart.area': 'Area',

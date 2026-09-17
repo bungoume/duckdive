@@ -18,7 +18,7 @@ import { CancelledError } from '../net';
 import { ensureHostPermissions } from '../permissions';
 import type { TokenValue } from '../s3list';
 import { forgetSecrets, storeSecrets, withSecrets } from '../secrets';
-import { forgetSource, loadSource, loadSourceHistory, rememberSource, saveSource, type SourceConfig, type SourceHistoryEntry } from '../sources';
+import { forgetSource, loadSource, loadSourceHistory, rememberSource, saveSource, sourceKey, type SourceConfig, type SourceHistoryEntry } from '../sources';
 import { newId } from '../sql';
 import { type UrlState } from '../state';
 
@@ -64,8 +64,9 @@ export function valueFiltersFor(cfg: SourceConfig, url: UrlState): ValueFilters 
  * @param url current URL state (time range and filters feed the file resolution)
  * @param setUrl for page switches and for dropping state that a new source cannot satisfy
  * @param queryBusy whether a Discover / Visualize query is in flight (DuckDB steps queue behind it)
+ * @param linkSource the source a shared link carries: connected at start-up instead of the saved one when it is already known here
  */
-export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState>>, queryBusy: { current: boolean }) {
+export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState>>, queryBusy: { current: boolean }, linkSource: SourceConfig | null = null) {
   const [ready, setReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [source, setSource] = useState<SourceConfig>(() => loadSource());
@@ -247,11 +248,12 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
     saveSource(cfg);
   };
 
-  // Start-up: hydrate the saved source with this session's secrets, start DuckDB, reconnect.
+  // Start-up: hydrate the saved source (or a known one from the link) with this session's secrets, start DuckDB, reconnect.
   useEffect(() => {
     void (async () => {
       try {
-        const cfg = await withSecrets(loadSource());
+        const known = linkSource ? history.find((h) => h.key === sourceKey(linkSource)) : undefined;
+        const cfg = await withSecrets(known ? known.config : loadSource());
         setSource(cfg);
         setSwitchSeq((n) => n + 1);
         await initDuckDB();

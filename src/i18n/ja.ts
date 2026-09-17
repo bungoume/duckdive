@@ -13,6 +13,9 @@ export const ja: Messages = {
   'app.status.files': '{name} · {n} ファイル',
   'app.status.noSource': 'データソースなし',
   'app.status.sourceFallback': 'ソース',
+  'app.link.text': 'このリンクにはデータソースが含まれています: {name}({detail})。接続しますか?',
+  'app.link.connect': '接続',
+  'app.link.ignore': '無視',
   'app.failedToStart': '起動に失敗しました: {error}',
   'app.note.queued': '(実行中のクエリの後に待機中。DuckDB の処理は中断できません)',
   'app.note.inDb': '(DuckDB 内で処理中。中断できません)',
@@ -231,6 +234,14 @@ export const ja: Messages = {
   'exp.hint.all': 'ソースの全列を、テーブルと同じ順序で書き出します。列を追加するとその列だけになります。',
   'exp.download': 'ダウンロード',
   'exp.running': 'エクスポート中…',
+
+  // ---- share link ----
+  'share.button': '共有',
+  'share.title': 'このビューへのリンク',
+  'share.copied': 'リンクをコピーしました',
+  'share.copiedNoSource': 'コピーしました(ローカルファイルは含みません)',
+  'share.hint': 'リンクにはクエリ、フィルタ、時間範囲、グラフと、秘密情報を除いたデータソースが含まれます。カスタム SQL フィルタは受け取り側では無効の状態になります。',
+  'share.hintNoSource': 'ローカルファイルはリンクに含められません。受け取った人が自分で選択する必要があります。',
 
   // ---- Visualize page ----
   'vis.chart.area': '面',

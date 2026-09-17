@@ -13,6 +13,9 @@ export const ko: Messages = {
   'app.status.files': '{name} · {n}개 파일',
   'app.status.noSource': '데이터 소스 없음',
   'app.status.sourceFallback': '소스',
+  'app.link.text': '이 링크에는 데이터 소스가 들어 있습니다: {name}({detail}). 연결할까요?',
+  'app.link.connect': '연결',
+  'app.link.ignore': '무시',
   'app.failedToStart': '시작 실패: {error}',
   'app.note.queued': ' (실행 중인 쿼리 뒤에 대기 중; DuckDB 단계는 중단할 수 없습니다)',
   'app.note.inDb': ' (DuckDB 내부 처리 중; 중단할 수 없습니다)',
@@ -228,6 +231,14 @@ export const ko: Messages = {
   'exp.hint.all': '소스의 모든 열을 테이블과 같은 순서로 내보냅니다. 열을 추가하면 그 열만 내보냅니다.',
   'exp.download': '다운로드',
   'exp.running': '내보내는 중…',
+
+  // ---- share link ----
+  'share.button': '공유',
+  'share.title': '이 보기의 링크',
+  'share.copied': '링크를 복사했습니다',
+  'share.copiedNoSource': '복사했습니다(로컬 파일 제외)',
+  'share.hint': '링크에는 쿼리, 필터, 시간 범위, 차트와 비밀 정보를 뺀 데이터 소스가 담깁니다. 사용자 지정 SQL 필터는 받는 쪽에서 비활성 상태로 표시됩니다.',
+  'share.hintNoSource': '로컬 파일은 링크에 담을 수 없습니다. 받는 사람이 직접 선택해야 합니다.',
 
   // ---- Visualize page ----
   'vis.chart.area': '영역',

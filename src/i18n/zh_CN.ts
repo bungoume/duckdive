@@ -13,6 +13,9 @@ export const zh_CN: Messages = {
   'app.status.files': '{name} · {n} 个文件',
   'app.status.noSource': '没有数据源',
   'app.status.sourceFallback': '数据源',
+  'app.link.text': '此链接包含一个数据源：{name}（{detail}）。是否连接？',
+  'app.link.connect': '连接',
+  'app.link.ignore': '忽略',
   'app.failedToStart': '启动失败：{error}',
   'app.note.queued': '（排在正在运行的查询之后；DuckDB 步骤无法中断）',
   'app.note.inDb': '（DuckDB 内部执行中；无法中断）',
@@ -224,6 +227,14 @@ export const zh_CN: Messages = {
   'exp.hint.all': '导出数据源的全部列，顺序与表格相同。添加列后只导出这些列。',
   'exp.download': '下载',
   'exp.running': '正在导出…',
+
+  // ---- share link ----
+  'share.button': '分享',
+  'share.title': '此视图的链接',
+  'share.copied': '链接已复制',
+  'share.copiedNoSource': '已复制（不含本地文件）',
+  'share.hint': '链接包含查询、筛选、时间范围、图表以及不含任何密钥的数据源。自定义 SQL 筛选在对方那里以禁用状态出现。',
+  'share.hintNoSource': '本地文件无法随链接传递，接收者需要自行选择。',
 
   // ---- Visualize page ----
   'vis.chart.area': '面积图',

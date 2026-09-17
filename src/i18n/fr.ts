@@ -13,6 +13,9 @@ export const fr: Messages = {
   'app.status.files': '{name} · {n} fichier(s)',
   'app.status.noSource': 'Aucune source de données',
   'app.status.sourceFallback': 'source',
+  'app.link.text': 'Ce lien contient une source de données : {name} ({detail}). S’y connecter ?',
+  'app.link.connect': 'Connecter',
+  'app.link.ignore': 'Ignorer',
   'app.failedToStart': 'Échec du démarrage : {error}',
   'app.note.queued': ' (en attente derrière la requête en cours ; les étapes DuckDB ne peuvent pas être interrompues)',
   'app.note.inDb': ' (dans DuckDB ; ne peut pas être interrompu)',
@@ -236,6 +239,15 @@ export const fr: Messages = {
   'exp.hint.all': 'Toutes les colonnes de la source, triées comme le tableau. Ajoutez des colonnes pour n’exporter que celles-ci.',
   'exp.download': 'Télécharger',
   'exp.running': 'Export en cours…',
+
+  // ---- share link ----
+  'share.button': 'Partager',
+  'share.title': 'Lien vers cette vue',
+  'share.copied': 'Lien copié',
+  'share.copiedNoSource': 'Copié (sans les fichiers locaux)',
+  'share.hint':
+    'Le lien contient la requête, les filtres, la plage de temps, le graphique et la source de données sans aucun secret. Les filtres SQL personnalisés arrivent désactivés chez le destinataire.',
+  'share.hintNoSource': 'Les fichiers locaux ne peuvent pas voyager dans un lien ; le destinataire doit les choisir lui-même.',
 
   // ---- Visualize page ----
   'vis.chart.area': 'Aires',

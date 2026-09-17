@@ -13,6 +13,9 @@ export const de: Messages = {
   'app.status.files': '{name} · {n} Datei(en)',
   'app.status.noSource': 'Keine Datenquelle',
   'app.status.sourceFallback': 'Quelle',
+  'app.link.text': 'Dieser Link enthält eine Datenquelle: {name} ({detail}). Verbinden?',
+  'app.link.connect': 'Verbinden',
+  'app.link.ignore': 'Ignorieren',
   'app.failedToStart': 'Start fehlgeschlagen: {error}',
   'app.note.queued': ' (wartet hinter der laufenden Abfrage; DuckDB-Schritte können nicht unterbrochen werden)',
   'app.note.inDb': ' (in DuckDB; kann nicht unterbrochen werden)',
@@ -235,6 +238,14 @@ export const de: Messages = {
   'exp.hint.all': 'Alle Spalten der Quelle, sortiert wie die Tabelle. Fügen Sie Spalten hinzu, um nur diese zu exportieren.',
   'exp.download': 'Herunterladen',
   'exp.running': 'Wird exportiert…',
+
+  // ---- share link ----
+  'share.button': 'Teilen',
+  'share.title': 'Link zu dieser Ansicht',
+  'share.copied': 'Link kopiert',
+  'share.copiedNoSource': 'Kopiert (ohne die lokalen Dateien)',
+  'share.hint': 'Der Link enthält Abfrage, Filter, Zeitbereich, Diagramm und die Datenquelle ohne Geheimnisse. Eigene SQL-Filter kommen beim Empfänger deaktiviert an.',
+  'share.hintNoSource': 'Lokale Dateien passen nicht in einen Link; der Empfänger muss sie selbst auswählen.',
 
   // ---- Visualize page ----
   'vis.chart.area': 'Fläche',

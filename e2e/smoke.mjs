@@ -300,6 +300,39 @@ await step('local-source', async () => {
   if (!/smoke-export\.parquet · 20 rows/.test(again)) throw new Error('local source not reopened: ' + again);
 });
 
+await step('share-link', async () => {
+  // still on the local source: its files cannot travel, so the link carries no source
+  await page.click('.header .share');
+  // (made on the Data source page: point it at Discover so the reload lands on the hit count)
+  const l1 = (await page.evaluate(() => window.__ddv.shareLink())).replace('#/source?', '#/discover?');
+  if (/[?&]src=/.test(l1)) throw new Error('local files in a link');
+  console.log(`     button: ${(await page.textContent('.header .share')).trim()} · link ${l1.length} chars, no source`);
+  const withSrc = (link, src) => link + '&src=' + Buffer.from(JSON.stringify(src)).toString('base64url');
+  // a hash-only navigation would not reload the app: leave the page first
+  const open = async (link) => {
+    await page.goto('about:blank');
+    await page.goto(link);
+  };
+  // a source already in the history (the demo data) is connected straight away
+  await open(withSrc(l1, { kind: 'demo' }));
+  await page.waitForSelector('.hits .n', { timeout: 120000 });
+  await settled(page);
+  const status = (await page.textContent('.header .status')).trim();
+  console.log(`     demo link: ${status}`);
+  if (!/demo-logs · 120,000 rows/.test(status)) throw new Error('known source not connected from the link: ' + status);
+  const l2 = await page.evaluate(() => window.__ddv.shareLink());
+  if (!/[?&]src=/.test(l2)) throw new Error('link carries no source');
+  // an unknown source is offered with its destination, and can be ignored
+  await open(withSrc(l1, { kind: 'url', urls: 'http://localhost:5299/logs.parquet', authMode: 'none' }));
+  await page.waitForSelector('.link-source', { timeout: 120000 });
+  const banner = (await page.textContent('.link-source')).trim().replace(/\s+/g, ' ');
+  console.log(`     banner: ${banner.slice(0, 140)}`);
+  if (!banner.includes('localhost:5299')) throw new Error('banner without the destination');
+  await page.screenshot({ path: `${out}/11-link-source.png` });
+  await page.click('.link-source button:has-text("Ignore")');
+  if (await page.locator('.link-source').count()) throw new Error('banner still shown');
+});
+
 console.log('\nconsole errors/warnings:');
 for (const e of errors.filter((x) => !x.includes('Improper nesting')).slice(0, 20)) console.log('  ' + e.slice(0, 400));
 await context.close();

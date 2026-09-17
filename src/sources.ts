@@ -2,7 +2,7 @@
 // static S3 secrets) and the history of recently connected sources for quick switching.
 
 import { DEFAULT_OIDC, type OidcConfig } from './auth';
-import type { FormatId } from './formats';
+import { FORMAT_IDS, type FormatId } from './formats';
 
 export interface S3Config {
   region: string;
@@ -155,4 +155,62 @@ export function forgetSource(key: string): SourceHistoryEntry[] {
   const list = loadSourceHistory().filter((e) => e.key !== key);
   storeSourceHistory(list);
   return list;
+}
+
+// ---------- sources carried by shared links ----------
+
+const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+const str = (v: unknown, fallback = '') => (typeof v === 'string' ? v : fallback);
+
+/** The source as a link carries it: no secrets, no key ID, and never a local one (its files are on this machine). */
+export function shareableSource(cfg: SourceConfig): SourceConfig | null {
+  if (cfg.kind === 'local') return null;
+  if (cfg.kind === 'demo') return { ...DEFAULT_SOURCE, kind: 'demo', name: cfg.name || 'demo-logs' };
+  return { ...cfg, s3: { ...cfg.s3, accessKeyId: '', secretAccessKey: '', sessionToken: '' } };
+}
+
+/** A source from a link someone sent: every field checked, secrets and key IDs never taken; null when unusable. */
+export function sourceFromLink(raw: unknown): SourceConfig | null {
+  if (!isObj(raw)) return null;
+  if (raw.kind === 'demo') return { ...DEFAULT_SOURCE, kind: 'demo', name: 'demo-logs' };
+  if (raw.kind !== 'url' || typeof raw.urls !== 'string' || !raw.urls.trim()) return null;
+  const s3 = isObj(raw.s3) ? raw.s3 : {};
+  const o = isObj(raw.oidc) ? raw.oidc : {};
+  const tokenValues: Record<string, string[]> = {};
+  if (isObj(raw.tokenValues)) for (const [k, v] of Object.entries(raw.tokenValues)) if (Array.isArray(v)) tokenValues[k] = v.filter((x): x is string => typeof x === 'string');
+  return {
+    kind: 'url',
+    name: str(raw.name),
+    urls: raw.urls,
+    format: FORMAT_IDS.includes(raw.format as FormatId) ? (raw.format as FormatId) : 'auto',
+    s3: { region: str(s3.region), accessKeyId: '', secretAccessKey: '', sessionToken: '', endpoint: str(s3.endpoint), urlStyle: s3.urlStyle === 'path' ? 'path' : 'vhost' },
+    authMode: raw.authMode === 'none' || raw.authMode === 'oidc' ? raw.authMode : 'static',
+    oidc: {
+      authUrl: str(o.authUrl, DEFAULT_OIDC.authUrl),
+      clientId: str(o.clientId),
+      scope: str(o.scope, DEFAULT_OIDC.scope),
+      extraParams: str(o.extraParams),
+      roleArn: str(o.roleArn),
+      region: str(o.region, DEFAULT_OIDC.region),
+      stsEndpoint: str(o.stsEndpoint),
+      durationSeconds: typeof o.durationSeconds === 'number' ? o.durationSeconds : DEFAULT_OIDC.durationSeconds,
+      sessionName: str(o.sessionName, DEFAULT_OIDC.sessionName),
+    },
+    maxFiles: typeof raw.maxFiles === 'number' && raw.maxFiles >= 0 ? Math.floor(raw.maxFiles) : 0,
+    tokenValues,
+    timeField: typeof raw.timeField === 'string' ? raw.timeField : null,
+  };
+}
+
+/** Where a source reads from, in one line for the link banner: "s3://b/p/*.gz · endpoint · oidc". */
+export function describeSource(cfg: SourceConfig): string {
+  if (cfg.kind !== 'url') return cfg.kind;
+  const lines = cfg.urls
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith('#'));
+  const parts = [lines.slice(0, 2).join(', ') + (lines.length > 2 ? ' …' : '')];
+  if (cfg.s3.endpoint) parts.push(cfg.s3.endpoint);
+  parts.push(cfg.authMode);
+  return parts.join(' · ');
 }

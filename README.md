@@ -128,6 +128,10 @@ Filters of the type "custom SQL" run verbatim inside DuckDB. Because the URL car
 
 "Export" on the Discover page downloads the rows that match the query, the filters and the time range as CSV, JSON Lines or Parquet, sorted like the table and cut at the chosen number of rows (10,000 by default, at most 1,000,000). With columns selected the file holds the time column and those columns under their field names; without a selection it holds every column of the source, so a gzip ALB prefix can be turned into a Parquet file from the browser. DuckDB writes the file in memory before the download starts, so keep the row limit within what the tab can hold. The Visualize page's table has its own "Download CSV".
 
+## Sharing a view
+
+"Share" in the header copies a link to the current page: query, filters, time range, columns, chart definition and, as a separate `src` parameter, the data source without any secret (URL lines, format, region, endpoint, authentication mode, identity provider settings, role ARN, chosen pattern values and time field; never an access key ID or a secret). On the receiving side a source that was connected in that browser before is connected right away; an unknown one is shown in a banner with its destination, endpoint and authentication mode and connected only when Connect is pressed. Static keys and a sign-in are still entered by the recipient. Local files cannot travel in a link, and custom SQL filters arrive disabled (see Query syntax).
+
 ## Range cache
 
 `src/worker/duckdb-cache-worker.ts` wraps the duckdb-wasm worker and replaces its `XMLHttpRequest`; the page controls the cache over a `MessagePort` handed to the worker as its first message (`src/cache.ts`), so re-packed gzip copies are transferred rather than copied. Range requests are aligned to chunks (1 MB by default) and stored in one append-only file in OPFS with a JSON index. Chunks are dropped when the object's ETag changes. Presigned-URL parameters are excluded from the cache key. DuckDB extensions are cached too, so later starts work offline. Only one tab can hold the cache at a time; a second tab runs without it.
@@ -176,7 +180,7 @@ e2e/                               Playwright tests and the local range server
 
 - Full-text search is a regular expression with word boundaries, not an analyzer.
 - DuckDB-Wasm is single-threaded and limited to under 4 GB of memory. Use the time range and partitions to keep scans small.
-- Saved visualizations and settings are in the extension's localStorage. The URL carries the query and chart definition, so links work for anyone with the extension installed.
+- Saved visualizations and settings are in the extension's localStorage. The URL carries the query and chart definition, and "Share" adds the data source, so links work for anyone with the extension installed.
 - Chrome and Edge only.
 
 ## Changelog

@@ -1,0 +1,84 @@
+import { describe, expect, it } from 'vitest';
+import { DEFAULT_SOURCE, describeSource, shareableSource, sourceFromLink, type SourceConfig } from '../src/sources';
+import { readLinkSource, shareLink, type UrlState } from '../src/state';
+import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS } from '../src/state';
+
+const url: SourceConfig = {
+  ...DEFAULT_SOURCE,
+  kind: 'url',
+  name: 'alb',
+  urls: 's3://b/p/{yyyy}/{MM}/{dd}/*.log.gz\n# a comment\ns3://b/q/*.gz',
+  format: 'alb',
+  s3: { region: 'ap-northeast-1', accessKeyId: 'AKIA', secretAccessKey: 'shh', sessionToken: 'tok', endpoint: 'http://minio:9000', urlStyle: 'path' },
+  authMode: 'static',
+  tokenValues: { alb: ['a', 'b'] },
+  timeField: 'time',
+};
+
+describe('shareableSource', () => {
+  it('drops secrets and the key ID, and never shares local files', () => {
+    const s = shareableSource(url)!;
+    expect(s.s3).toEqual({ ...url.s3, accessKeyId: '', secretAccessKey: '', sessionToken: '' });
+    expect(s.urls).toBe(url.urls);
+    expect(shareableSource({ ...DEFAULT_SOURCE, kind: 'local', localId: 'x' })).toBeNull();
+    expect(shareableSource({ ...DEFAULT_SOURCE, kind: 'demo' })!.kind).toBe('demo');
+  });
+});
+
+describe('sourceFromLink', () => {
+  it('takes only the fields a source needs, with secrets always empty', () => {
+    const s = sourceFromLink({ ...url, s3: { ...url.s3, accessKeyId: 'AKIA', secretAccessKey: 'leak' }, oidc: { clientId: 'c', roleArn: 'arn' }, extra: 1 })!;
+    expect(s.kind).toBe('url');
+    expect(s.s3).toEqual({ region: 'ap-northeast-1', accessKeyId: '', secretAccessKey: '', sessionToken: '', endpoint: 'http://minio:9000', urlStyle: 'path' });
+    expect(s.oidc.clientId).toBe('c');
+    expect(s.oidc.roleArn).toBe('arn');
+    expect(s.oidc.authUrl).toBe(DEFAULT_SOURCE.oidc.authUrl);
+    expect(s.format).toBe('alb');
+    expect(s.tokenValues).toEqual({ alb: ['a', 'b'] });
+    expect(s.timeField).toBe('time');
+    expect((s as unknown as Record<string, unknown>).extra).toBeUndefined();
+  });
+
+  it('falls back on malformed values and refuses what is not a source', () => {
+    expect(sourceFromLink({ kind: 'url', urls: 's3://b/*', format: 'nope', authMode: 'root', s3: 'x', tokenValues: { a: [1, 'b'] } })).toMatchObject({
+      format: 'auto',
+      authMode: 'static',
+      tokenValues: { a: ['b'] },
+    });
+    expect(sourceFromLink({ kind: 'demo' })!.kind).toBe('demo');
+    expect(sourceFromLink({ kind: 'local', localId: 'x' })).toBeNull();
+    expect(sourceFromLink({ kind: 'url', urls: '' })).toBeNull();
+    expect(sourceFromLink('s3://b/*')).toBeNull();
+    expect(sourceFromLink(null)).toBeNull();
+  });
+});
+
+describe('describeSource', () => {
+  it('names the destination, endpoint and authentication mode', () => {
+    expect(describeSource(url)).toBe('s3://b/p/{yyyy}/{MM}/{dd}/*.log.gz, s3://b/q/*.gz · http://minio:9000 · static');
+    expect(describeSource({ ...DEFAULT_SOURCE, kind: 'demo' })).toBe('demo');
+  });
+});
+
+describe('shareLink', () => {
+  const state: UrlState = { page: 'visualize', search: { ...DEFAULT_SEARCH, query: 'level:error' }, discover: DEFAULT_DISCOVER, vis: DEFAULT_VIS };
+
+  it('carries the view and the source without secrets, and reads back', () => {
+    const link = shareLink(state, url);
+    expect(link.startsWith('http://localhost/#/visualize?s=')).toBe(true);
+    expect(link).toMatch(/&src=/);
+    expect(link).not.toContain('shh');
+    location.hash = link.slice(link.indexOf('#'));
+    const back = readLinkSource()!;
+    expect(back.urls).toBe(url.urls);
+    expect(back.s3.secretAccessKey).toBe('');
+    expect(back.s3.accessKeyId).toBe('');
+  });
+
+  it('leaves local files out and reads null without a source', () => {
+    const link = shareLink(state, { ...DEFAULT_SOURCE, kind: 'local', localId: 'x' });
+    expect(link).not.toMatch(/src=/);
+    location.hash = link.slice(link.indexOf('#'));
+    expect(readLinkSource()).toBeNull();
+  });
+});

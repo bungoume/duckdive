@@ -3,6 +3,7 @@ import { t, tx, useLang } from './i18n';
 import { useSettings } from './settings';
 import { DataSource } from './components/DataSource';
 import { Discover } from './components/Discover';
+import { ShareButton } from './components/ShareButton';
 import { Visualize } from './components/Visualize';
 import { Settings } from './components/Settings';
 import { fmtBytes } from './cache';
@@ -11,14 +12,17 @@ import { timeExprFor, type Field } from './fields';
 import { useConnect } from './hooks/useConnect';
 import { useCredentialRefresh } from './hooks/useCredentialRefresh';
 import { useDownloadGate } from './hooks/useDownloadGate';
-import { sourceKey } from './sources';
-import { DEFAULT_VIS, type VisState, readUrlState, syncUrlStateFromLocation, writeUrlState, type AppPage, type UrlState } from './state';
+import { describeSource, sourceKey } from './sources';
+import { DEFAULT_VIS, type VisState, readLinkSource, readUrlState, shareLink, syncUrlStateFromLocation, writeUrlState, type AppPage, type UrlState } from './state';
 
 export function App() {
   // Re-render the whole tree when the UI language changes (every t() call reads the current one).
   useLang();
   useSettings();
   const [url, setUrl] = useState<UrlState>(() => readUrlState());
+  // the data source a shared link carries: read before the first writeUrlState drops it from the hash
+  const [linkSource] = useState(() => readLinkSource());
+  const [linkIgnored, setLinkIgnored] = useState(false);
   // Discover / Visualize query in flight: DuckDB steps of a connect queue behind it.
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
@@ -58,11 +62,13 @@ export function App() {
     forget,
     cancelConnect,
     onTimeField,
-  } = useConnect(url, setUrl, busyRef);
+  } = useConnect(url, setUrl, busyRef, linkSource);
   const { gate, runAnyway } = useDownloadGate(source, attached, ackedFiles);
   const { refreshError } = useCredentialRefresh(source, attached, setCreds);
   const paused = attaching || gate.status !== 'ok';
-  expose({ gate, switchSeq, attaching });
+  // A source from a link that was never connected here is offered, not connected: the banner shows where it reads from.
+  const linkOffer = linkSource && !linkIgnored && !history.some((h) => h.key === sourceKey(linkSource)) ? linkSource : null;
+  expose({ gate, switchSeq, attaching, shareLink: () => shareLink(url, source) });
 
   const fields: Field[] = attached?.fields ?? [];
   const timeField = attached?.timeField ?? null;
@@ -111,6 +117,7 @@ export function App() {
           </button>
         </nav>
         <span class="spacer" />
+        <ShareButton link={() => shareLink(url, source)} withSource={source.kind !== 'local'} disabled={!attached} />
         {history.length > 0 && (
           <select
             class="input src-select"
@@ -151,6 +158,17 @@ export function App() {
           <span class="text">{t('app.creds.refreshFailed', { error: refreshError })}</span>
           <button class="btn small primary" onClick={() => setPage('source')}>
             {t('app.nav.source')}
+          </button>
+        </div>
+      )}
+      {linkOffer && ready && !attaching && (
+        <div class="alert warn banner link-source">
+          <span class="text">{tx('app.link.text', { name: <b>{linkOffer.name || linkOffer.kind}</b>, detail: describeSource(linkOffer) })}</span>
+          <button class="btn small primary" onClick={() => void switchSource(linkOffer)}>
+            {t('app.link.connect')}
+          </button>
+          <button class="btn small" onClick={() => setLinkIgnored(true)}>
+            {t('app.link.ignore')}
           </button>
         </div>
       )}

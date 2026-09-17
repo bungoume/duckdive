@@ -1,5 +1,6 @@
 import type { TimeRange } from './datemath';
 import type { Filter, FilterOp } from './sql';
+import { shareableSource, sourceFromLink, type SourceConfig } from './sources';
 import { isTrustedSql } from './trust';
 
 export type AppPage = 'discover' | 'visualize' | 'source' | 'settings';
@@ -190,6 +191,26 @@ export function readUrlState(): UrlState {
     }
   }
   return { page, search: sanitizeSearch(st.search), discover: sanitizeDiscover(st.discover), vis: sanitizeVis(st.vis) };
+}
+
+/** The data source a shared link carries (its `src` parameter), or null. Read once at start-up: writeUrlState drops it. */
+export function readLinkSource(): SourceConfig | null {
+  const qs = location.hash.split('?')[1];
+  const v = qs ? new URLSearchParams(qs).get('src') : null;
+  if (!v) return null;
+  try {
+    return sourceFromLink(JSON.parse(b64decode(v)));
+  } catch {
+    return null;
+  }
+}
+
+/** A link to this view for someone else: the state plus, when it can travel, the data source without its secrets. */
+export function shareLink(u: UrlState, source: SourceConfig | null): string {
+  const { page, ...rest } = u;
+  const share = source && shareableSource(source);
+  const src = share ? `&src=${b64encode(JSON.stringify(share))}` : '';
+  return `${location.href.split('#')[0]}#/${page}?s=${b64encode(JSON.stringify(rest))}${src}`;
 }
 
 let lastSearchKey: string | null = null;

@@ -13,6 +13,9 @@ export const es: Messages = {
   'app.status.files': '{name} · {n} archivo(s)',
   'app.status.noSource': 'Sin origen de datos',
   'app.status.sourceFallback': 'origen',
+  'app.link.text': 'Este enlace lleva un origen de datos: {name} ({detail}). ¿Conectar?',
+  'app.link.connect': 'Conectar',
+  'app.link.ignore': 'Ignorar',
   'app.failedToStart': 'Error al iniciar: {error}',
   'app.note.queued': ' (en cola detrás de la consulta en curso; los pasos de DuckDB no se pueden interrumpir)',
   'app.note.inDb': ' (dentro de DuckDB; no se puede interrumpir)',
@@ -236,6 +239,14 @@ export const es: Messages = {
   'exp.hint.all': 'Todas las columnas del origen, ordenadas como la tabla. Añada columnas para exportar solo esas.',
   'exp.download': 'Descargar',
   'exp.running': 'Exportando…',
+
+  // ---- share link ----
+  'share.button': 'Compartir',
+  'share.title': 'Enlace a esta vista',
+  'share.copied': 'Enlace copiado',
+  'share.copiedNoSource': 'Copiado (sin los archivos locales)',
+  'share.hint': 'El enlace lleva la consulta, los filtros, el rango de tiempo, el gráfico y el origen de datos sin ningún secreto. Los filtros SQL personalizados llegan desactivados al destinatario.',
+  'share.hintNoSource': 'Los archivos locales no pueden viajar en un enlace; el destinatario debe elegirlos.',
 
   // ---- Visualize page ----
   'vis.chart.area': 'Área',
