@@ -9,7 +9,7 @@ import { join } from 'node:path';
 const root = new URL('..', import.meta.url).pathname;
 const pkg = JSON.parse(readFileSync(`${root}package.json`, 'utf8'));
 if (!existsSync(`${root}dist/manifest.json`)) {
-  console.error('dist/manifest.json not found – run `npm run build` first');
+  console.error('dist/manifest.json not found – run `pnpm run build` first');
   process.exit(1);
 }
 mkdirSync(`${root}release`, { recursive: true });

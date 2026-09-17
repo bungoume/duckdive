@@ -2,6 +2,6 @@ dist
 release
 public/duckdb
 public/THIRD_PARTY_LICENSES.txt
-package-lock.json
+pnpm-lock.yaml
 src/styles.css
 *.png

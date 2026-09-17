@@ -1,6 +1,6 @@
 // Render assets/logo.svg into the extension icons (public/icons, committed) and the
 // Chrome Web Store images (release/store). Uses the Chromium that Playwright installs
-// for the e2e tests, so this is a dev-time step: `npm run icons`.
+// for the e2e tests, so this is a dev-time step: `pnpm run icons`.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 

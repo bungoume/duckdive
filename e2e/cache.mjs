@@ -1,6 +1,6 @@
 // End-to-end test of the extension against an S3 stand-in WITHOUT any CORS headers:
 // host permissions, OPFS range cache (persistence across reload), SigV4 signing and STS credentials.
-// Prereqs: `DDV_EXTRA_HOSTS="http://localhost/*" npm run build`, `duckdb` CLI on PATH.
+// Prereqs: `DDV_EXTRA_HOSTS="http://localhost/*" pnpm run build`, `duckdb` CLI on PATH.
 //   node e2e/cache.mjs
 import { spawn, execSync } from 'node:child_process';
 import { launchExtension, settled, waitReady } from './ext-context.mjs';

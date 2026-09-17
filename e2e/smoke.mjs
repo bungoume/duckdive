@@ -1,5 +1,5 @@
 // Smoke test of the extension UI (Discover / Visualize) on the demo dataset.
-//   npm run build && node e2e/smoke.mjs
+//   pnpm run build && node e2e/smoke.mjs
 import { launchExtension, settled } from './ext-context.mjs';
 
 const out = process.env.OUT ?? '.';

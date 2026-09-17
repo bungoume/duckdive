@@ -1,5 +1,5 @@
 // Copy the duckdb-wasm runtime (worker + wasm) into public/duckdb so the extension
-// ships it without any CDN dependency. Runs before every build (npm "prebuild").
+// ships it without any CDN dependency. Runs before every build (pnpm "prebuild").
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 

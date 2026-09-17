@@ -1,5 +1,5 @@
 // Chrome Web Store screenshots (1280×800) of the extension on the built-in demo dataset.
-//   npm run build && npm run screenshots        → release/screenshots/*.png
+//   pnpm run build && pnpm run screenshots        → release/screenshots/*.png
 import { mkdirSync } from 'node:fs';
 import { launchExtension, waitReady } from './ext-context.mjs';
 

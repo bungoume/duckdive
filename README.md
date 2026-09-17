@@ -16,22 +16,24 @@ An extension can read from a bucket without any change to the bucket's configura
 ## Build and install
 
 ```
-npm install
-npm run build      # writes dist/
-npm run pack       # writes release/duckdive-<version>.zip
-npm run icons      # regenerates icons and store images from assets/logo.svg
-npm run build:e2e  # build with the test hooks and localhost allowed (for the e2e tests and screenshots)
+pnpm install
+pnpm run build      # writes dist/
+pnpm run pack       # writes release/duckdive-<version>.zip
+pnpm run icons      # regenerates icons and store images from assets/logo.svg
+pnpm run build:e2e  # build with the test hooks and localhost allowed (for the e2e tests and screenshots)
 ```
 
-Open `chrome://extensions`, enable Developer mode, choose "Load unpacked" and select `dist/`. The toolbar button opens the app. `npm run dev` rebuilds `dist/` on every change; reload the extension afterwards.
+`package.json#packageManager` pins the pnpm version and the hash of its tarball, so `pnpm` resolves to that exact release through Corepack (0.34.7 or newer for pnpm 12) or pnpm's own version management. `pnpm-workspace.yaml` sets a 7-day cooldown (`minimumReleaseAge`): a version published more recently is never installed, transitive dependencies included, and `pnpm-lock.yaml` pins every package by its integrity hash. `renovate.json` opens update PRs with the same cooldown and keeps the GitHub Actions pinned to commit SHAs.
 
-The extension ID is `kohchgcbcmdcoondpjoiaccfkhadkpki`. The manifest carries the Web Store's public key so an unpacked build gets the same ID; `npm run pack` removes the key from the zip because the store rejects it.
+Open `chrome://extensions`, enable Developer mode, choose "Load unpacked" and select `dist/`. The toolbar button opens the app. `pnpm run dev` rebuilds `dist/` on every change; reload the extension afterwards.
+
+The extension ID is `kohchgcbcmdcoondpjoiaccfkhadkpki`. The manifest carries the Web Store's public key so an unpacked build gets the same ID; `pnpm run pack` removes the key from the zip because the store rejects it.
 
 ## Languages
 
 The UI is available in English, Japanese, Simplified Chinese, Korean, German, French and Spanish. The language follows Chrome's UI language on first start and can be changed on the Settings page; the choice is kept in this browser (`localStorage`, key `ddv.lang`). English is the fallback for unknown locales.
 
-Strings live in `src/i18n/<lang>.ts`, one flat dictionary per language typed against `src/i18n/en.ts`, so a missing key is a compile error. `t('key', { n })` fills `{n}` placeholders; `tx()` does the same when a placeholder is a JSX node. The extension name and store description come from `public/_locales/<lang>/messages.json` (each description must stay within the store's 132-character limit; `npm run pack` checks it). To add a language: copy `en.ts`, register it in `src/i18n/index.ts` (`LANGS` and the dictionary table) and add a `_locales` folder. Field names, SQL, pattern examples, DuckDB / STS error messages, the diagnose report's technical verdicts and the Visualize panel's function vocabulary (Function, Minimum interval, Date histogram / Top values / Intervals, Count / Sum / Average / … ) stay in English on purpose.
+Strings live in `src/i18n/<lang>.ts`, one flat dictionary per language typed against `src/i18n/en.ts`, so a missing key is a compile error. `t('key', { n })` fills `{n}` placeholders; `tx()` does the same when a placeholder is a JSX node. The extension name and store description come from `public/_locales/<lang>/messages.json` (each description must stay within the store's 132-character limit; `pnpm run pack` checks it). To add a language: copy `en.ts`, register it in `src/i18n/index.ts` (`LANGS` and the dictionary table) and add a `_locales` folder. Field names, SQL, pattern examples, DuckDB / STS error messages, the diagnose report's technical verdicts and the Visualize panel's function vocabulary (Function, Minimum interval, Date histogram / Top values / Intervals, Count / Sum / Average / … ) stay in English on purpose.
 
 ## Settings
 
@@ -131,17 +133,17 @@ duckdb-wasm downloads whole HTTP files by default. `src/duck.ts` opens the datab
 ## Tests
 
 ```
-npm test               # typecheck, lint, unit tests, then the e2e build and both Playwright suites
-npm run test:unit      # vitest: query parser, date math, ticks, pattern expansion, gzip members, SQL, URL state
-npm run lint           # eslint + prettier --check   (npm run format rewrites)
-npm run build:e2e      # the e2e build alone (VITE_DDV_DEBUG=1, http://localhost/* allowed)
+pnpm test              # typecheck, lint, unit tests, then the e2e build and both Playwright suites
+pnpm run test:unit     # vitest: query parser, date math, ticks, pattern expansion, gzip members, SQL, URL state
+pnpm run lint          # eslint + prettier --check   (pnpm run format rewrites)
+pnpm run build:e2e     # the e2e build alone (VITE_DDV_DEBUG=1, http://localhost/* allowed)
 node e2e/smoke.mjs     # Discover and Visualize on the demo dataset
 node e2e/cache.mjs     # permissions, OPFS persistence, SigV4 and STS against a local range server
 ```
 
 The unit tests in `test/` run in Node against the pure modules (with Web Storage and `location` stubbed in `test/setup.ts`); everything that needs DuckDB or Chrome is covered by the Playwright suites. `.github/workflows/ci.yml` runs the same steps on every push and pull request.
 
-`e2e/cache.mjs` needs the `duckdb` CLI to generate fixtures. Both use Playwright's headless Chromium with the built extension loaded and drive the app through `window.__ddv`, hooks that exist only in dev builds and in builds made with `VITE_DDV_DEBUG=1` (`src/debug.ts`); a store build publishes nothing on the page. The tests assert English text, so `e2e/ext-context.mjs` pins the UI language to English before the page loads; set `DDV_LANG=ja` (or another language id) to run `npm run screenshots` (after `npm run build:e2e`) in that language.
+`e2e/cache.mjs` needs the `duckdb` CLI to generate fixtures. Both use Playwright's headless Chromium with the built extension loaded and drive the app through `window.__ddv`, hooks that exist only in dev builds and in builds made with `VITE_DDV_DEBUG=1` (`src/debug.ts`); a store build publishes nothing on the page. The tests assert English text, so `e2e/ext-context.mjs` pins the UI language to English before the page loads; set `DDV_LANG=ja` (or another language id) to run `pnpm run screenshots` (after `pnpm run build:e2e`) in that language.
 
 ## Layout
 
