@@ -9,5 +9,6 @@ export default defineConfig({
     include: ['test/**/*.test.ts'],
     environment: 'node',
     setupFiles: ['test/setup.ts'],
+    coverage: { include: ['src/**'], reporter: ['text-summary', 'html'] },
   },
 });

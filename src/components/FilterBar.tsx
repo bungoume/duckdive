@@ -46,10 +46,10 @@ function FilterEditor(props: { fields: Field[]; initial?: Filter; onSave: (f: Fi
       )}
       {op === 'between' && (
         <div class="row">
-          <FormField label={t('flt.from')} style="flex:1">
+          <FormField label={t('flt.from')} class="grow">
             <input class="input" value={from} onInput={(e) => setFrom(e.currentTarget.value)} />
           </FormField>
-          <FormField label={t('flt.to')} style="flex:1">
+          <FormField label={t('flt.to')} class="grow">
             <input class="input" value={to} onInput={(e) => setTo(e.currentTarget.value)} />
           </FormField>
         </div>

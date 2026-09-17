@@ -33,7 +33,7 @@ export function S3Section(props: {
   const input = (value: string, onInput: (v: string) => void, extra: Record<string, unknown> = {}) => <input class="input" value={value} onInput={(e) => onInput(e.currentTarget.value)} {...extra} />;
 
   return (
-    <div style="margin-top:8px">
+    <div class="mt8">
       <h4 style="margin:8px 0 6px;font-size:13px">{t('ds.s3.title')}</h4>
       <div class="grid2">
         <FormField label={t('ds.s3.region')}>{input(cfg.s3.region, (v) => props.onS3({ region: v }))}</FormField>
@@ -84,7 +84,7 @@ export function S3Section(props: {
               {input(cfg.oidc.stsEndpoint, (v) => props.onOidc({ stsEndpoint: v }), { placeholder: `https://sts.${cfg.s3.region || 'ap-northeast-1'}.amazonaws.com/` })}
             </FormField>
           </div>
-          <div class="row" style="margin-top:8px">
+          <div class="row mt8">
             <button class="btn" disabled={authBusy || !isExtension} onClick={doSignIn}>
               {authBusy ? t('ds.oidc.signingIn') : t('ds.oidc.signIn')}
             </button>
@@ -105,11 +105,7 @@ export function S3Section(props: {
               <span class="hint">{t('ds.oidc.notSignedIn', { ext: isExtension ? '' : t('ds.oidc.extOnly') })}</span>
             )}
           </div>
-          {authError && (
-            <div class="alert error" style="margin-top:8px">
-              {authError}
-            </div>
-          )}
+          {authError && <div class="alert error mt8">{authError}</div>}
         </>
       )}
     </div>

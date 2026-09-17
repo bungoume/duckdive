@@ -74,14 +74,12 @@ export function CachePanel() {
   return (
     <div class="card">
       <h2>{t('cache.title')}</h2>
-      <p class="hint" style="margin-top:-6px">
-        {t('cache.intro')}
-      </p>
+      <p class="hint">{t('cache.intro')}</p>
       {err && <div class="alert error">{err}</div>}
       {opfsError && <div class="alert error">{t('cache.opfsDisabled', { error: opfsError })}</div>}
       {config && (
         <>
-          <div class="grid2" style="margin-bottom:8px">
+          <div class="grid2 mb8">
             <label class="row">
               <input type="checkbox" checked={config.enabled} onChange={(e) => run(cacheSetConfig({ enabled: e.currentTarget.checked }))} />
               {t('cache.enable')}
@@ -99,7 +97,7 @@ export function CachePanel() {
               </select>
             </div>
           </div>
-          <table class="kv" style="margin-bottom:8px">
+          <table class="kv mb8">
             <tbody>
               <tr>
                 <td class="k">{t('cache.session')}</td>
@@ -120,7 +118,7 @@ export function CachePanel() {
                 <td class="v">
                   {est ? t('cache.storage.text', { used: fmtBytes(est.usage), quota: fmtBytes(est.quota), mode: est.persisted ? t('cache.storage.persistent') : t('cache.storage.bestEffort') }) : '–'}
                   {est && !est.persisted && (
-                    <button class="btn small" style="margin-left:8px" onClick={() => run(requestPersist())}>
+                    <button class="btn small ml8" onClick={() => run(requestPersist())}>
                       {t('cache.requestPersist')}
                     </button>
                   )}
@@ -129,7 +127,7 @@ export function CachePanel() {
             </tbody>
           </table>
           {summary && (
-            <table class="kv" style="margin-bottom:8px">
+            <table class="kv mb8">
               <tbody>
                 <tr>
                   <td class="k">{t('cache.onDisk')}</td>
@@ -137,7 +135,7 @@ export function CachePanel() {
                     {t('cache.onDisk.text', { files: summary.cachedFiles.toLocaleString(), bytes: fmtBytes(summary.cachedBytes), known: summary.known.toLocaleString() })}
                     {summary.wasted > 0 ? t('cache.reclaimable', { bytes: fmtBytes(summary.wasted) }) : ''}
                     {summary.wasted > 16 * 1024 * 1024 && (
-                      <button class="btn small" style="margin-left:8px" onClick={() => run(cacheCompact())}>
+                      <button class="btn small ml8" onClick={() => run(cacheCompact())}>
                         {t('cache.compact')}
                       </button>
                     )}
@@ -147,7 +145,7 @@ export function CachePanel() {
             </table>
           )}
           {files.length > 0 && (
-            <table class="data" style="margin-bottom:8px">
+            <table class="data mb8">
               <thead>
                 <tr>
                   <th>{t('cache.th.file')}</th>
@@ -159,9 +157,7 @@ export function CachePanel() {
               <tbody>
                 {files.map((f) => (
                   <tr key={f.url}>
-                    <td class="mono" style="word-break:break-all">
-                      {f.url}
-                    </td>
+                    <td class="mono break-all">{f.url}</td>
                     <td class="num">{fmtBytes(f.size)}</td>
                     <td class="num">
                       {fmtBytes(f.cachedBytes)} ({f.size ? Math.min(100, Math.round((f.cachedBytes / f.size) * 100)) : 0}%)
@@ -177,7 +173,7 @@ export function CachePanel() {
             </table>
           )}
           {summary && summary.cachedFiles > files.length && (
-            <div class="hint" style="margin-bottom:8px">
+            <div class="hint mb8">
               {t('cache.showing', { n: files.length, total: summary.cachedFiles.toLocaleString() })}{' '}
               <button class="btn ghost small" onClick={() => setLimit(limit + 200)}>
                 {t('cache.showMore')}
@@ -185,7 +181,7 @@ export function CachePanel() {
             </div>
           )}
           {stats && stats.log.length > 0 && (
-            <details class="cache-log-box" style="margin-bottom:8px">
+            <details class="cache-log-box mb8">
               <summary>
                 {t('cache.log.summary', { n: stats.log.length, anomalies: stats.log.filter((l) => /corrupt|short-body|passthrough:|handler-error|range-ignored/.test(l.outcome)).length })}
               </summary>

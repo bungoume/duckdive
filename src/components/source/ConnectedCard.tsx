@@ -59,7 +59,7 @@ export function ConnectedCard(props: { attached: AttachedSource; onTimeField: (n
         <summary class="hint" style="cursor:pointer">
           {t('ds.connected.fieldsTitle')}
         </summary>
-        <table class="kv" style="margin-top:6px">
+        <table class="kv mt6">
           <tbody>
             {a.fields.map((f) => (
               <tr key={f.name}>

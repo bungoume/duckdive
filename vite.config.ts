@@ -52,6 +52,8 @@ export default defineConfig({
   worker: { format: 'iife' },
   build: {
     target: 'es2022',
+    // .map files next to the bundles for readable stack traces from bug reports; pack.mjs leaves them out of the store zip
+    sourcemap: 'hidden',
     chunkSizeWarningLimit: 4000,
     rollupOptions: {
       input: { main: 'index.html', background: 'src/background.ts' },

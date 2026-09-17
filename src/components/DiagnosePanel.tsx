@@ -58,9 +58,7 @@ export function DiagnosePanel(props: { error: string | null }) {
           )}
           {report.failing.map((f) => (
             <div key={f.file} class="diag-file">
-              <div class="mono" style="word-break:break-all">
-                {f.file}
-              </div>
+              <div class="mono break-all">{f.file}</div>
               <table class="kv">
                 <tbody>
                   <tr>

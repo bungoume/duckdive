@@ -59,6 +59,8 @@ export function DataSource(props: {
   const setTokenValues = (name: string, values: string[]) => set({ tokenValues: { ...(cfg.tokenValues ?? {}), [name]: values } });
   const connectLabel = props.busy ? t('ds.connecting') : tokens.length && !vars ? t('ds.listAndConnect') : t('ds.connect');
   const origins = useMemo(() => (cfg.kind === 'url' ? requiredOrigins(cfg) : []), [cfg]);
+  // signed requests and log data would travel in clear; localhost (MinIO on this machine) is the usual exception
+  const plainHttp = origins.filter((o) => o.startsWith('http://') && !/^http:\/\/(localhost|127\.0\.0\.1)[:/]/.test(o));
 
   // re-checked after a connect, which may have asked for the permission
   useEffect(() => {
@@ -69,9 +71,7 @@ export function DataSource(props: {
     <div class="source-page">
       <div class="card">
         <h2>{t('ds.title')}</h2>
-        <p class="hint" style="margin-top:-6px">
-          {t('ds.intro')}
-        </p>
+        <p class="hint">{t('ds.intro')}</p>
         <div class="kinds">
           <button class={cfg.kind === 'url' ? 'active' : ''} aria-pressed={cfg.kind === 'url'} onClick={() => set({ kind: 'url' })}>
             <b>{t('ds.kind.url')}</b>
@@ -103,7 +103,7 @@ export function DataSource(props: {
               {pendingTemplate && (
                 <div class="alert warn" style="margin:8px 0 0">
                   {t('ds.template.confirm', { label: templateLabel(pendingTemplate) })}
-                  <span style="margin-left:8px">
+                  <span class="ml8">
                     <button class="btn small primary" onClick={() => applyTemplate(pendingTemplate)}>
                       {t('ds.template.replace')}
                     </button>{' '}
@@ -113,11 +113,7 @@ export function DataSource(props: {
                   </span>
                 </div>
               )}
-              {!pendingTemplate && templateId && TEMPLATES.find((x) => x.id === templateId) && (
-                <div class="hint" style="margin-top:6px">
-                  {templateNote(TEMPLATES.find((x) => x.id === templateId)!)}
-                </div>
-              )}
+              {!pendingTemplate && templateId && TEMPLATES.find((x) => x.id === templateId) && <div class="hint mt6">{templateNote(TEMPLATES.find((x) => x.id === templateId)!)}</div>}
             </div>
             <FormField label={t('ds.urls.label')}>
               <textarea
@@ -168,18 +164,19 @@ export function DataSource(props: {
             <span class="hint">{t('ds.listingHint')}</span>
             {usesS3 && <S3Section cfg={cfg} creds={props.creds} onChange={set} onS3={setS3} onOidc={setOidc} onCreds={props.onCreds} />}
             {isExtension && origins.length > 0 && (
-              <div class={'alert ' + (needPerm ? 'info' : 'ok')} style="margin-top:8px">
+              <div class={'alert mt8 ' + (needPerm ? 'info' : 'ok')}>
                 {needPerm ? t('ds.perm.ask') : t('ds.perm.granted')}
                 {origins.join(', ')}
               </div>
             )}
+            {plainHttp.length > 0 && <div class="alert warn">{t('ds.plainHttp', { hosts: plainHttp.join(', ') })}</div>}
           </>
         )}
 
         {cfg.kind === 'local' && (
           <FormField label={t('ds.local.files')}>
             <input type="file" multiple accept=".parquet,.csv,.tsv,.json,.jsonl,.ndjson,.gz" onChange={(e) => setFiles(Array.from(e.currentTarget.files ?? []))} />
-            <label class="row hint" style="margin-top:6px">
+            <label class="row hint mt6">
               {t('common.format')}
               <select class="input" style="width:260px" value={cfg.format} onChange={(e) => set({ format: e.currentTarget.value as SourceConfig['format'] })}>
                 {FORMAT_IDS.map((id) => (

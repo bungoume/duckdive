@@ -145,22 +145,18 @@ export function App() {
                 : t('app.status.noSource')}
         </span>
       </header>
-      {initError && (
-        <div class="alert error" style="margin:16px">
-          {t('app.failedToStart', { error: initError })}
-        </div>
-      )}
+      {initError && <div class="alert error page">{t('app.failedToStart', { error: initError })}</div>}
       {refreshError && page !== 'source' && (
-        <div class="alert warn creds-refresh" style="margin:16px 16px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-          <span style="flex:1 1 320px">{t('app.creds.refreshFailed', { error: refreshError })}</span>
+        <div class="alert warn banner creds-refresh">
+          <span class="text">{t('app.creds.refreshFailed', { error: refreshError })}</span>
           <button class="btn small primary" onClick={() => setPage('source')}>
             {t('app.nav.source')}
           </button>
         </div>
       )}
       {largeConfirm && (
-        <div class="alert warn connect-confirm" style="margin:16px 16px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-          <span style="flex:1 1 320px">
+        <div class="alert warn banner connect-confirm">
+          <span class="text">
             {tx('app.large.text', {
               files: <b>{t('app.large.files', { n: largeConfirm.info.files.toLocaleString() })}</b>,
               bytes: largeConfirm.info.bytes !== null ? ` (${fmtBytes(largeConfirm.info.bytes)})` : '',
@@ -176,8 +172,8 @@ export function App() {
         </div>
       )}
       {page !== 'source' && gate.status === 'blocked' && gate.estimate && (
-        <div class="alert warn download-gate" style="margin:16px 16px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-          <span style="flex:1 1 320px">
+        <div class="alert warn banner download-gate">
+          <span class="text">
             {tx('app.gate.text', {
               files: <b>{t('app.gate.files', { n: gate.estimate.files.toLocaleString() })}</b>,
               threshold: gate.estimate.threshold.toLocaleString(),

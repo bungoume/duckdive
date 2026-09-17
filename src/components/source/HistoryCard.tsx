@@ -9,9 +9,7 @@ export function HistoryCard(props: { history: SourceHistoryEntry[]; currentKey: 
   return (
     <div class="card source-history">
       <h2>{t('ds.history.title')}</h2>
-      <p class="hint" style="margin-top:-6px">
-        {t('ds.history.hint', { n: SOURCE_HISTORY_MAX })}
-      </p>
+      <p class="hint">{t('ds.history.hint', { n: SOURCE_HISTORY_MAX })}</p>
       <table class="kv">
         <tbody>
           {props.history.map((h) => {
@@ -27,7 +25,7 @@ export function HistoryCard(props: { history: SourceHistoryEntry[]; currentKey: 
                   <b>{h.config.name || h.config.kind}</b>
                   {current ? <span class="hint"> · {t('ds.history.current')}</span> : ''}
                 </td>
-                <td class="v mono" style="word-break:break-all">
+                <td class="v mono break-all">
                   {h.config.kind === 'demo' ? t('ds.kind.demo.sub') : lines}
                   {h.lastUsed ? (
                     <span class="hint" style="font-family:inherit">

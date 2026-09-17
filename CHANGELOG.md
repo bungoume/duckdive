@@ -2,6 +2,22 @@
 
 All notable changes to Duckdive. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- Error banners show the message alone (no `Error:` prefix), and a request that timed out is described in the UI language.
+- A render error shows a message with a Reload button instead of a blank page.
+- The Data source page warns when a destination is plain `http://` (localhost excepted).
+- Form labels are linked to their controls, so screen readers announce them and clicking a label focuses the field.
+
+### Internal
+
+- ESLint checks hook dependencies (`react-hooks`) and unhandled promises (type-aware rules); `tsc` covers `test/` and the config files.
+- Translation keys built from interval, format and template ids are checked at compile time; event handlers read `e.currentTarget`; repeated lists carry keys.
+- `sources.ts` (source settings and history) split out of `state.ts`; `store.ts` behind `useSettings` / `useLang`; `errors.ts` with `describeError()`.
+- Recurring inline styles replaced with classes; hidden source maps next to the bundles (left out of the store zip); `pnpm run test:coverage`; `engines.node >= 22`.
+
 ## [0.2.0] - 2026-09-17
 
 ### Changed (behaviour)

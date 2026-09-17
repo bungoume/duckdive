@@ -152,7 +152,7 @@ export function Discover(props: {
               {elapsed ? `${Math.round(elapsed)} ms` : ''}
               {compiled.from && compiled.to ? ` · ${formatLocal(compiled.from)} → ${formatLocal(compiled.to)}` : ''}
             </span>
-            <span style="flex:1" />
+            <span class="grow" />
             <button class="sql-toggle" onClick={() => setShowSql(!showSql)}>
               {showSql ? t('disc.hideSql') : t('disc.showSql')}
             </button>

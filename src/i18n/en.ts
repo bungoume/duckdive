@@ -145,6 +145,7 @@ export const en = {
   'ds.oidc.extOnly': ' (only available inside the extension)',
   'ds.perm.ask': 'Connecting will ask for permission to access: ',
   'ds.perm.granted': 'Access granted for: ',
+  'ds.plainHttp': 'Plain http:// destination: requests and log data travel unencrypted ({hosts}).',
   'ds.local.files': 'Files',
   'ds.local.hint': 'Files are read in place through the browser File API; they are never uploaded.',
   'ds.demo.hint': 'A synthetic access-log table (host/http/geo structs, tags list, JSON extra column) is generated in DuckDB so you can try every feature without any storage.',

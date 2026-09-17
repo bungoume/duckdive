@@ -145,6 +145,7 @@ export const es: Messages = {
   'ds.oidc.extOnly': ' (solo disponible dentro de la extensión)',
   'ds.perm.ask': 'Al conectar se pedirá permiso para acceder a: ',
   'ds.perm.granted': 'Acceso concedido para: ',
+  'ds.plainHttp': 'Destino http:// sin cifrar: las solicitudes y los datos de registro viajan en claro ({hosts}).',
   'ds.local.files': 'Archivos',
   'ds.local.hint': 'Los archivos se leen en su sitio mediante la File API del navegador; nunca se suben.',
   'ds.demo.hint':

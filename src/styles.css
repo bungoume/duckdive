@@ -91,6 +91,18 @@ textarea.input { font-family: var(--k-mono); font-size: 12px; min-height: 80px; 
 .row { display: flex; gap: 8px; align-items: center; }
 .row.end { justify-content: flex-end; }
 .hint { font-size: 12px; color: var(--k-text-subdued); }
+.card > h2 + .hint { margin-top: -6px; }
+/* the few spacing and layout tweaks that recur across components */
+.mt6 { margin-top: 6px; }
+.mt8 { margin-top: 8px; }
+.mb8 { margin-bottom: 8px; }
+.ml8 { margin-left: 8px; }
+.grow { flex: 1; }
+.break-all { word-break: break-all; }
+/* notices between the header and the page */
+.alert.page { margin: 16px; }
+.alert.banner { margin: 16px 16px 0; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.alert.banner .text { flex: 1 1 320px; }
 .subdued { color: var(--k-text-subdued); }
 .error-text { color: var(--k-danger); }
 button:focus-visible, [role='button']:focus-visible, .input:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid var(--k-primary); outline-offset: 1px; }

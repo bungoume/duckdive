@@ -18,7 +18,7 @@ rmSync(zip, { force: true });
 
 const stage = mkdtempSync(join(tmpdir(), 'ddv-pack-'));
 try {
-  cpSync(`${root}dist`, stage, { recursive: true });
+  cpSync(`${root}dist`, stage, { recursive: true, filter: (src) => !src.endsWith('.map') });
   const manifest = JSON.parse(readFileSync(join(stage, 'manifest.json'), 'utf8'));
   delete manifest.key;
   // The description comes from _locales/<lang>/messages.json; the store caps every locale at 132 characters.

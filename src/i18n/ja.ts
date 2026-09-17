@@ -143,6 +143,7 @@ export const ja: Messages = {
   'ds.oidc.extOnly': '(拡張機能内でのみ利用可能)',
   'ds.perm.ask': '接続時に次のホストへのアクセス許可を求めます: ',
   'ds.perm.granted': 'アクセス許可済み: ',
+  'ds.plainHttp': 'http:// の宛先です。リクエストとログデータは暗号化されずに送受信されます({hosts})。',
   'ds.local.files': 'ファイル',
   'ds.local.hint': 'ファイルはブラウザの File API でその場で読み込まれ、アップロードされることはありません。',
   'ds.demo.hint': '合成アクセスログのテーブル(host/http/geo 構造体、tags リスト、JSON の extra 列)を DuckDB 内で生成するため、ストレージなしですべての機能を試せます。',

@@ -143,6 +143,7 @@ export const ko: Messages = {
   'ds.oidc.extOnly': ' (확장 프로그램 안에서만 사용 가능)',
   'ds.perm.ask': '연결 시 다음 호스트에 대한 접근 권한을 요청합니다: ',
   'ds.perm.granted': '접근 허용됨: ',
+  'ds.plainHttp': '암호화되지 않은 http:// 주소입니다. 요청과 로그 데이터가 평문으로 전송됩니다({hosts}).',
   'ds.local.files': '파일',
   'ds.local.hint': '파일은 브라우저 File API로 그 자리에서 읽으며 업로드되지 않습니다.',
   'ds.demo.hint': '합성 액세스 로그 테이블(host/http/geo 구조체, tags 목록, JSON extra 열)이 DuckDB에서 생성되므로 스토리지 없이 모든 기능을 사용해 볼 수 있습니다.',

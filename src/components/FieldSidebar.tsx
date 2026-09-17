@@ -125,7 +125,7 @@ export function FieldSidebar(props: {
               </>
             )}
             {props.onVisualize && f.kind !== 'object' && (
-              <div class="row end" style="margin-top:8px">
+              <div class="row end mt8">
                 <button
                   class="btn small primary"
                   onClick={() => {

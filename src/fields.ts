@@ -1,4 +1,5 @@
 import { query } from './duck';
+import { lit } from './sql';
 
 export type FieldKind = 'string' | 'number' | 'date' | 'boolean' | 'object' | 'list' | 'json' | 'unknown';
 
@@ -158,7 +159,7 @@ async function expandJson(view: string, col: string, out: Field[]) {
  * which for remote files means another round of HEAD / footer requests.
  */
 export async function introspectFields(view: string): Promise<Field[]> {
-  const r = await query(`SELECT column_name, data_type FROM duckdb_columns() WHERE table_name = '${view.replace(/'/g, "''")}' AND schema_name = current_schema() ORDER BY column_index`);
+  const r = await query(`SELECT column_name, data_type FROM duckdb_columns() WHERE table_name = ${lit(view)} AND schema_name = current_schema() ORDER BY column_index`);
   const out: Field[] = [];
   for (const row of r.rows) {
     const col = String(row.column_name);

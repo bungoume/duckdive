@@ -13,7 +13,7 @@ export class ErrorBoundary extends Component<{ children: ComponentChildren }, { 
   override render() {
     if (this.state.error === null) return this.props.children;
     return (
-      <div class="alert error" style="margin:16px">
+      <div class="alert error page">
         {t('app.crashed', { error: this.state.error })}{' '}
         <button class="btn small" onClick={() => location.reload()}>
           {t('app.reload')}

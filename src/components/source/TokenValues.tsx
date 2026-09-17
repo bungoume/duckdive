@@ -24,11 +24,7 @@ export function TokenValues(props: {
           </span>
         )}
       </div>
-      {!vars && (
-        <div class="hint" style="margin-top:6px">
-          {t('ds.vars.hint', { button: t('ds.listAndConnect'), names: tokens.join(', ') })}
-        </div>
-      )}
+      {!vars && <div class="hint mt6">{t('ds.vars.hint', { button: t('ds.listAndConnect'), names: tokens.join(', ') })}</div>}
       {vars &&
         tokens.map((n) => {
           const opts = vars.values[n] ?? [];
@@ -68,11 +64,7 @@ export function TokenValues(props: {
             </div>
           );
         })}
-      {vars && props.missing.length > 0 && (
-        <div class="alert warn" style="margin-top:8px">
-          {t('ds.vars.missing', { names: props.missing.join(', ') })}
-        </div>
-      )}
+      {vars && props.missing.length > 0 && <div class="alert warn mt8">{t('ds.vars.missing', { names: props.missing.join(', ') })}</div>}
     </div>
   );
 }

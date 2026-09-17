@@ -144,6 +144,7 @@ export const de: Messages = {
   'ds.oidc.extOnly': ' (nur innerhalb der Erweiterung verfügbar)',
   'ds.perm.ask': 'Beim Verbinden wird die Berechtigung für den Zugriff angefragt auf: ',
   'ds.perm.granted': 'Zugriff gewährt für: ',
+  'ds.plainHttp': 'Unverschlüsselter http://-Endpunkt: Anfragen und Logdaten werden im Klartext übertragen ({hosts}).',
   'ds.local.files': 'Dateien',
   'ds.local.hint': 'Dateien werden über die File API des Browsers an Ort und Stelle gelesen; sie werden nie hochgeladen.',
   'ds.demo.hint':

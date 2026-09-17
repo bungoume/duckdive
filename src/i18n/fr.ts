@@ -145,6 +145,7 @@ export const fr: Messages = {
   'ds.oidc.extOnly': " (disponible uniquement dans l'extension)",
   'ds.perm.ask': "La connexion demandera la permission d'accéder à : ",
   'ds.perm.granted': 'Accès accordé pour : ',
+  'ds.plainHttp': 'Destination http:// non chiffrée : les requêtes et les données de journaux circulent en clair ({hosts}).',
   'ds.local.files': 'Fichiers',
   'ds.local.hint': "Les fichiers sont lus sur place via l'API File du navigateur ; ils ne sont jamais téléversés.",
   'ds.demo.hint':

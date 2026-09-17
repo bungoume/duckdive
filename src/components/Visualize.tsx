@@ -219,7 +219,7 @@ export function Visualize(props: {
         <div class="center">
           <div class="canvas">
             <div class="vis-panel">
-              <div class="row" style="margin-bottom:8px">
+              <div class="row mb8">
                 <input class="input" style="font-weight:600;flex:1" placeholder={t('vis.untitled')} value={vis.title} onInput={(e) => setVis({ title: e.currentTarget.value })} />
                 <button class="btn small" onClick={() => setShowSql(!showSql)}>
                   {showSql ? t('vis.hideSql') : t('vis.showSql')}
@@ -228,11 +228,7 @@ export function Visualize(props: {
                   {t('common.save')}
                 </button>
               </div>
-              {showSql && result && (
-                <div class="sql-box" style="margin-bottom:8px">
-                  {result.sql}
-                </div>
-              )}
+              {showSql && result && <div class="sql-box mb8">{result.sql}</div>}
               {result && vis.chart === 'table' && <DataTable result={result} metrics={vis.metrics} xLabel={xLabel} gLabel={gLabel} />}
               {result && vis.chart === 'metric' && <MetricTiles result={result} metrics={vis.metrics} />}
               {result && (vis.chart === 'area' || vis.chart === 'line' || vis.chart === 'bar') && (
@@ -321,10 +317,10 @@ export function Visualize(props: {
                       <FieldSelect fields={fields} value={vis.x.field} onChange={(v) => setX({ field: v })} />
                     </FormField>
                     <div class="row">
-                      <FormField label={t('vis.numValues')} style="flex:1">
+                      <FormField label={t('vis.numValues')} class="grow">
                         <input class="input" type="number" min={1} max={500} value={vis.x.size} onInput={(e) => setX({ size: Number(e.currentTarget.value) || 10 })} />
                       </FormField>
-                      <FormField label={t('vis.rankBy')} style="flex:1">
+                      <FormField label={t('vis.rankBy')} class="grow">
                         <select class="input" value={vis.x.orderBy} onChange={(e) => setX({ orderBy: e.currentTarget.value as 'metric' | 'alpha' })}>
                           <option value="metric">{metricLabel(vis.metrics[0])}</option>
                           <option value="alpha">{t('vis.alphabetical')}</option>
@@ -414,7 +410,7 @@ export function Visualize(props: {
               <FieldSelect fields={fields} value={vis.breakdown.field} onChange={(v) => setBreakdown({ field: v })} />
               {vis.breakdown.field && (
                 <div class="row">
-                  <FormField label={t('vis.numValues')} style="flex:1">
+                  <FormField label={t('vis.numValues')} class="grow">
                     <input class="input" type="number" min={1} max={50} value={vis.breakdown.size} onInput={(e) => setBreakdown({ size: Number(e.currentTarget.value) || 5 })} />
                   </FormField>
                   <label class="row" style="margin-top:14px">

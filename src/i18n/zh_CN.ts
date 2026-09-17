@@ -140,6 +140,7 @@ export const zh_CN: Messages = {
   'ds.oidc.extOnly': '（仅在扩展内可用）',
   'ds.perm.ask': '连接时将请求以下主机的访问权限：',
   'ds.perm.granted': '已获得以下主机的访问权限：',
+  'ds.plainHttp': '明文 http:// 地址：请求和日志数据将不加密传输（{hosts}）。',
   'ds.local.files': '文件',
   'ds.local.hint': '文件通过浏览器 File API 就地读取，绝不会上传。',
   'ds.demo.hint': '会在 DuckDB 中生成一张合成的访问日志表（host/http/geo 结构体、tags 列表、JSON extra 列），无需任何存储即可试用全部功能。',
