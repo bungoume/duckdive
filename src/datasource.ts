@@ -13,7 +13,7 @@ import {
   HAS_WILDCARD,
   captureRegex,
   discoverTokenValues,
-  expandDateTokens,
+  concretePatterns,
   namedToGlob,
   namedTokens,
   parseS3Url,
@@ -193,7 +193,17 @@ export async function resolveFiles(
   range: TimeWindow | null,
   valueFilters: ValueFilters = {},
   opts: AttachOptions = {},
-): Promise<{ urls: string[]; sizes: (number | null)[]; seeds: SeedFile[]; patterns: number; skippedByTime: number; skippedByFilter: number; totalBytes: number | null; warning: string | null }> {
+): Promise<{
+  urls: string[];
+  sizes: (number | null)[];
+  seeds: SeedFile[];
+  patterns: number;
+  skippedByTime: number;
+  skippedByFilter: number;
+  timePruned: boolean;
+  totalBytes: number | null;
+  warning: string | null;
+}> {
   const lines = sourceUrls(cfg);
   const placeholder = lines.find((u) => /<[a-z-]+>/i.test(u));
   if (placeholder) {
@@ -208,11 +218,12 @@ export async function resolveFiles(
   let patterns = 0;
   let skippedByTime = 0;
   let skippedByFilter = 0;
+  let timePruned = false;
   let totalBytes: number | null = null;
   let warning: string | null = null;
   for (const u0 of others) {
     const u = namedToGlob(u0);
-    const concrete = HAS_DATE_TOKEN.test(u) ? (range ? expandDateTokens(u, range.from, range.to) : []) : [u];
+    const concrete = concretePatterns(u, range);
     patterns += concrete.length;
     if (concrete.some((c) => HAS_WILDCARD.test(c))) throw new Error(t('src.wildcardS3Only', { url: u }));
     out.push(...concrete);
@@ -234,6 +245,7 @@ export async function resolveFiles(
     );
     patterns += r.patterns;
     skippedByTime = r.skippedByTime;
+    timePruned = r.timePruned;
     skippedByFilter = r.skippedByFilter;
     out.push(...r.urls);
     const listed = r.objects.length === r.urls.length;
@@ -247,7 +259,7 @@ export async function resolveFiles(
     }
     warning = r.warning;
   }
-  return { urls: out, sizes, seeds, patterns, skippedByTime, skippedByFilter, totalBytes, warning };
+  return { urls: out, sizes, seeds, patterns, skippedByTime, skippedByFilter, timePruned, totalBytes, warning };
 }
 
 /**
@@ -290,13 +302,15 @@ interface ViewInfo {
   fileSizes: (number | null)[];
   totalBytes: number | null;
   warning: string | null;
+  /** the file list depends on the time range, so a new range has to re-resolve it */
+  rangeDependent: boolean;
 }
 
 async function attachDemo(progress: Progress): Promise<ViewInfo> {
   progress(t('src.demo.progress'), 'db');
   await createDemoTable();
   await exec(`CREATE OR REPLACE VIEW ${VIEW} AS SELECT * FROM demo_logs`);
-  return { description: t('src.demo.description'), files: [], fileSizes: [], totalBytes: null, warning: null };
+  return { description: t('src.demo.description'), files: [], fileSizes: [], totalBytes: null, warning: null, rangeDependent: false };
 }
 
 async function attachLocal(cfg: SourceConfig, localFiles: File[], progress: Progress): Promise<ViewInfo> {
@@ -310,7 +324,7 @@ async function attachLocal(cfg: SourceConfig, localFiles: File[], progress: Prog
   }
   await exec(`CREATE OR REPLACE VIEW ${VIEW} AS ${viewSelect(resolveFormat(cfg.format, names), names, null)}`);
   const description = t('src.local.description', { n: names.length, names: names.slice(0, 3).join(', '), more: names.length > 3 ? '…' : '' });
-  return { description, files: names, fileSizes: [], totalBytes: null, warning: null };
+  return { description, files: names, fileSizes: [], totalBytes: null, warning: null, rangeDependent: false };
 }
 
 /**
@@ -403,7 +417,10 @@ async function attachRemote(cfg: SourceConfig, creds: AwsCredentials | null, ran
   const description = expanded
     ? t('src.description.matched', { n: files.length, size, patterns: lines.length, notes: skipped, first: files[0], more })
     : t('src.description.urls', { n: files.length, first: files[0], more });
-  return { description, files, fileSizes: resolved.sizes, totalBytes, warning };
+  // Date tokens are not the only way the range decides which files there are: a key whose name
+  // carries a timestamp is dropped when it falls outside the range, so such a source has to
+  // re-list when the range moves, or it keeps showing the files the first range asked for.
+  return { description, files, fileSizes: resolved.sizes, totalBytes, warning, rangeDependent: isRangeDependent(cfg) || resolved.timePruned };
 }
 
 /** The remembered choice if it still looks like a time column, else the format's preference, else the best-named date column. */
@@ -450,7 +467,7 @@ export async function attachSource(
       rowCount = null;
     }
   }
-  return { fields, timeField, rowCount, ...view, rangeDependent: isRangeDependent(cfg), captures: cfg.kind === 'url' ? capturedColumns(cfg) : [] };
+  return { fields, timeField, rowCount, ...view, captures: cfg.kind === 'url' ? capturedColumns(cfg) : [] };
 }
 
 export async function createDemoTable() {

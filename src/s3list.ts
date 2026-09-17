@@ -272,6 +272,21 @@ function globSegmentToRegex(seg: string): RegExp {
   return new RegExp(re + '$');
 }
 
+/**
+ * How far past the end of the range the prefixes still matter. A log file is named after the end
+ * of the interval it covers and AWS delivers it late, so the records of 23:58 sit in a file named
+ * 00:00 under the *next* day's prefix. withinRange accepts such a file; without the same slack
+ * here its prefix would never be listed and the last minutes of every day would be missing.
+ */
+const DELIVERY_LAG_MS = 3 * 3600_000;
+
+/** The concrete prefixes a pattern covers for a range: date tokens expanded, delivery lag included. */
+export function concretePatterns(pattern: string, range: { from: Date; to: Date } | null): string[] {
+  if (!HAS_DATE_TOKEN.test(pattern)) return [pattern];
+  if (!range) return [];
+  return expandDateTokens(pattern, range.from, new Date(range.to.getTime() + DELIVERY_LAG_MS));
+}
+
 /** Expand {yyyy}/{MM}/{dd}/{HH} tokens over [from, to] (UTC, like AWS log prefixes). */
 export function expandDateTokens(pattern: string, from: Date, to: Date, maxPatterns = 5000): string[] {
   if (!HAS_DATE_TOKEN.test(pattern)) return [pattern];
@@ -496,11 +511,12 @@ export async function resolveS3Patterns(
   valueFilters: Record<string, string[]> = {},
   opts: ListOptions = {},
   selections: Record<string, string[]> = {},
-): Promise<ResolvedFiles & { skippedByTime: number; skippedByFilter: number }> {
+): Promise<ResolvedFiles & { skippedByTime: number; skippedByFilter: number; timePruned: boolean }> {
   const urls: string[] = [];
   const objects: S3Object[] = [];
   let skippedByTime = 0;
   let skippedByFilter = 0;
+  let timePruned = false;
   const seen = new Set<string>();
   // Expand every pattern first (date tokens → one concrete pattern per prefix) …
   const jobs: { cap: ReturnType<typeof captureRegex>; concrete: string; wild: boolean }[] = [];
@@ -512,8 +528,7 @@ export async function resolveS3Patterns(
     const cap = captureRegex(original);
     for (const sub of substituteTokens(original, selections)) {
       const pat = namedToGlob(sub);
-      const concrete = HAS_DATE_TOKEN.test(pat) ? (range ? expandDateTokens(pat, range.from, range.to) : []) : [pat];
-      for (const c of concrete) jobs.push({ cap, concrete: c, wild: HAS_WILDCARD.test(c) });
+      for (const c of concretePatterns(pat, range)) jobs.push({ cap, concrete: c, wild: HAS_WILDCARD.test(c) });
     }
   }
   // … then list the prefixes in parallel; the merge below keeps the pattern order. A literal key
@@ -549,9 +564,13 @@ export async function resolveS3Patterns(
       if (seen.has(u)) continue;
       seen.add(u);
       // a key the user typed out is never dropped by the name-timestamp heuristic
-      if (wild && !withinRange(o.key, range)) {
-        skippedByTime++;
-        continue;
+      if (wild && keyTimestamp(o.key)) {
+        // the range decides which of these files there are, so it has to be re-listed when it moves
+        timePruned = true;
+        if (!withinRange(o.key, range)) {
+          skippedByTime++;
+          continue;
+        }
       }
       if (cap.names.length) {
         const values = extractCaptures(u, cap);
@@ -570,5 +589,5 @@ export async function resolveS3Patterns(
     const bytes = objects.reduce((a, o) => a + o.size, 0);
     warning = tr('src.warning.many', { files: urls.length.toLocaleString(), mb: (bytes / 1048576).toFixed(0), max: maxFiles.toLocaleString() });
   }
-  return { urls, objects, patterns: jobs.length, skippedByTime, skippedByFilter, warning };
+  return { urls, objects, patterns: jobs.length, skippedByTime, skippedByFilter, timePruned, warning };
 }

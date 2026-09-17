@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { captureRegex, expandDateTokens, keyTimestamp, namedToGlob, namedTokens, parseS3Url, s3Target, substituteTokens, withinRange } from '../src/s3list';
+import { captureRegex, concretePatterns, expandDateTokens, keyTimestamp, namedToGlob, namedTokens, parseS3Url, s3Target, substituteTokens, withinRange } from '../src/s3list';
 
 const alb = 's3://logs/AWSLogs/{account}/elasticloadbalancing/{region}/{yyyy}/{MM}/{dd}/{account}_elasticloadbalancing_{region}_app.{alb}.*.log.gz';
 
@@ -44,6 +44,18 @@ describe('date tokens', () => {
     expect(expandDateTokens('s3://b/{yyyy}/{MM}/{dd}/{HH}/*', new Date('2026-09-15T23:10:00Z'), new Date('2026-09-16T01:00:00Z'))).toHaveLength(3);
     expect(expandDateTokens('s3://b/{yyyy}/{MM}/*', new Date('2026-08-31T00:00:00Z'), new Date('2026-09-01T00:00:00Z'))).toEqual(['s3://b/2026/08/*', 's3://b/2026/09/*']);
     expect(expandDateTokens('s3://b/{yy}/*', new Date('2026-08-31T00:00:00Z'), new Date('2026-09-01T00:00:00Z'))).toEqual(['s3://b/26/*']);
+  });
+
+  it('reach past the range far enough for a late-delivered file', () => {
+    // 23:58 is delivered in a file named 00:00 under tomorrow's prefix, and withinRange accepts it
+    const day = concretePatterns('s3://b/{yyyy}/{MM}/{dd}/*.gz', { from: new Date('2026-09-15T00:00:00Z'), to: new Date('2026-09-15T23:59:59Z') });
+    expect(day).toEqual(['s3://b/2026/09/15/*.gz', 's3://b/2026/09/16/*.gz']);
+    // mid-day there is nothing to reach for
+    expect(concretePatterns('s3://b/{yyyy}/{MM}/{dd}/*.gz', { from: new Date('2026-09-15T00:00:00Z'), to: new Date('2026-09-15T12:00:00Z') })).toEqual(['s3://b/2026/09/15/*.gz']);
+    const hours = concretePatterns('s3://b/{yyyy}/{MM}/{dd}/{HH}/*', { from: new Date('2026-09-15T02:00:00Z'), to: new Date('2026-09-15T03:00:00Z') });
+    expect(hours).toEqual(['s3://b/2026/09/15/02/*', 's3://b/2026/09/15/03/*', 's3://b/2026/09/15/04/*', 's3://b/2026/09/15/05/*', 's3://b/2026/09/15/06/*']);
+    expect(concretePatterns('s3://b/{yyyy}/{MM}/{dd}/*.gz', null)).toEqual([]);
+    expect(concretePatterns('s3://b/plain/*.gz', null)).toEqual(['s3://b/plain/*.gz']);
   });
 
   it('leaves patterns without tokens alone and refuses absurd ranges', () => {

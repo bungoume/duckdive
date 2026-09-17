@@ -69,7 +69,7 @@ Every successful connect to an S3 / HTTPS or demo source is remembered (up to 20
 The extension lists the bucket itself and expands the pattern into a file list. A pattern may contain:
 
 - wildcards: `*`, `?`, `**`, `[abc]`
-- date tokens `{yyyy}` `{MM}` `{dd}` `{HH}`, expanded from the time picker (UTC). Only partitions inside the range are listed. Changing the range re-lists.
+- date tokens `{yyyy}` `{MM}` `{dd}` `{HH}`, expanded from the time picker (UTC). Only partitions inside the range are listed, plus three hours past its end because a log file named after the end of its interval arrives late (the records of 23:58 sit under the next day's prefix). Changing the range re-lists.
 - named tokens such as `{account}`, `{region}`, `{alb}`. Pressing Connect lists the newest partition, shows each token's values with counts, and asks you to pick one or more before connecting. The chosen values become part of the listing prefix, and the matched text becomes a column of the same name. The original object key is in `_file`.
 
 Examples:
@@ -80,7 +80,7 @@ s3://my-alb-logs/AWSLogs/{account}/elasticloadbalancing/{region}/{yyyy}/{MM}/{dd
 s3://my-bucket/events/dt={yyyy}-{MM}-{dd}/*.parquet
 ```
 
-Everything before the first wildcard is used as the S3 prefix, so put as much of the file name in the pattern as you can when a date folder holds files from many load balancers. Files whose names contain a timestamp (`_20260909T0105Z_`, as in ALB and NLB logs) are dropped when they fall outside the time range. Listing needs the `s3:ListBucket` permission; see `docs/iam-role-policy.json`. A key without wildcards is listed too (one request) so that its size and ETag feed the cache and the gzip re-packing; when that listing is denied the key is used as typed. `https://` URLs support date tokens only.
+Everything before the first wildcard is used as the S3 prefix, so put as much of the file name in the pattern as you can when a date folder holds files from many load balancers. Files whose names contain a timestamp (`_20260909T0105Z_`, as in ALB and NLB logs) are dropped when they fall outside the time range; such a source re-lists when the range changes, date tokens or not. Listing needs the `s3:ListBucket` permission; see `docs/iam-role-policy.json`. A key without wildcards is listed too (one request) so that its size and ETag feed the cache and the gzip re-packing; when that listing is denied the key is used as typed. `https://` URLs support date tokens only.
 
 The Template menu fills in the pattern and format for the usual AWS layouts: ALB, NLB, CloudFront, CloudTrail, VPC Flow Logs (text and Parquet), WAF, Network Firewall, Route 53 Resolver, S3 server access logs, Kinesis Data Firehose, CloudWatch Logs exports and SSM session logs. Replace `<bucket>` and `<prefix>` with your own values.
 
