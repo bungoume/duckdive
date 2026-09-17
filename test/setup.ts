@@ -22,8 +22,22 @@ class MemoryStorage implements Storage {
   }
 }
 
+/** Records pushState / replaceState calls and mirrors the hash into `location`, like a browser would. */
+export const historyLog: { kind: 'push' | 'replace'; url: string }[] = [];
+const history = {
+  pushState: (_s: unknown, _t: string, url: string) => {
+    historyLog.push({ kind: 'push', url });
+    location.hash = url.slice(url.indexOf('#'));
+  },
+  replaceState: (_s: unknown, _t: string, url: string) => {
+    historyLog.push({ kind: 'replace', url });
+    location.hash = url.slice(url.indexOf('#'));
+  },
+};
+
 Object.assign(globalThis, {
   localStorage: new MemoryStorage(),
   sessionStorage: new MemoryStorage(),
   location: { hash: '', origin: 'http://localhost', href: 'http://localhost/' },
+  history,
 });

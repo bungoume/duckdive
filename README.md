@@ -134,7 +134,7 @@ duckdb-wasm downloads whole HTTP files by default. `src/duck.ts` opens the datab
 
 ```
 pnpm test              # typecheck, lint, unit tests, then the e2e build and both Playwright suites
-pnpm run test:unit     # vitest: query parser, date math, ticks, pattern expansion, gzip members, SQL, URL state
+pnpm run test:unit     # vitest: query parser, date math, ticks, patterns, gzip members, SQL, URL state, formats, cache helpers, secrets
 pnpm run lint          # eslint + prettier --check   (pnpm run format rewrites)
 pnpm run build:e2e     # the e2e build alone (VITE_DDV_DEBUG=1, http://localhost/* allowed)
 node e2e/smoke.mjs     # Discover and Visualize on the demo dataset

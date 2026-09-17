@@ -1,6 +1,19 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DEFAULT_SOURCE, readUrlState, rememberSource, sourceKey, stripSecrets, loadSourceHistory } from '../src/state';
+import {
+  DEFAULT_DISCOVER,
+  DEFAULT_SEARCH,
+  DEFAULT_SOURCE,
+  DEFAULT_VIS,
+  readUrlState,
+  rememberSource,
+  sourceKey,
+  stripSecrets,
+  loadSourceHistory,
+  syncUrlStateFromLocation,
+  writeUrlState,
+} from '../src/state';
 import { trustSql } from '../src/trust';
+import { historyLog } from './setup';
 
 const setHash = (page: string, state: unknown) => {
   location.hash = `#/${page}?s=${Buffer.from(JSON.stringify(state)).toString('base64url')}`;
@@ -115,5 +128,27 @@ describe('malformed URL state', () => {
     expect(u.vis).toEqual(vis);
     expect(u.discover).toEqual({ columns: ['a'], sort: [{ field: 'a', dir: 'desc' }], interval: '1h' });
     expect(u.search.range).toEqual({ from: 'now-1d', to: 'now' });
+  });
+});
+
+describe('writeUrlState', () => {
+  it('replaces the entry for view changes and pushes one for search changes; a round trip restores the state', () => {
+    historyLog.length = 0;
+    location.hash = '';
+    const base = { page: 'discover' as const, search: DEFAULT_SEARCH, discover: DEFAULT_DISCOVER, vis: DEFAULT_VIS };
+    writeUrlState(base);
+    expect(historyLog.at(-1)?.kind).toBe('replace');
+    writeUrlState({ ...base, page: 'visualize' });
+    expect(historyLog.at(-1)?.kind).toBe('replace');
+    expect(location.hash.startsWith('#/visualize?s=')).toBe(true);
+    const searched = { ...base, page: 'visualize' as const, search: { ...DEFAULT_SEARCH, query: 'status:500' } };
+    writeUrlState(searched);
+    expect(historyLog.at(-1)?.kind).toBe('push');
+    const n = historyLog.length;
+    writeUrlState(searched);
+    expect(historyLog.length).toBe(n); // unchanged URL: nothing written
+    const { state, full } = syncUrlStateFromLocation();
+    expect(full).toBe(true);
+    expect(state).toEqual(searched);
   });
 });
