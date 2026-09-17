@@ -37,6 +37,11 @@ export interface LargeConfirm {
   resolve: (ok: boolean) => void;
 }
 
+/** What a file resolution depends on: the time range and the captured-column filters of `cfg`. */
+function rangeKeyFor(cfg: SourceConfig, url: UrlState): string {
+  return `${url.search.range.from}|${url.search.range.to}|${JSON.stringify(valueFiltersFor(cfg, url))}`;
+}
+
 /** Active "is" / "is one of" filters on columns captured from file names → file pruning. */
 export function valueFiltersFor(cfg: SourceConfig, url: UrlState): ValueFilters {
   const names = capturedColumns(cfg);
@@ -77,6 +82,8 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
   // sequence number so a cancelled or superseded attempt never applies its result.
   const attemptSeq = useRef(0);
   const attemptCtl = useRef<AbortController | null>(null);
+  /** The range / filter key the last connect attempt resolved files for (see the effect below). */
+  const attemptedKey = useRef('');
 
   /** Credentials for cfg (null for static / none). Interactive login only when `interactive`. */
   const resolveCreds = async (cfg: SourceConfig, interactive: boolean): Promise<AwsCredentials | null> => {
@@ -95,6 +102,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
     const attempt = ++attemptSeq.current;
     const ctl = new AbortController();
     attemptCtl.current = ctl;
+    attemptedKey.current = rangeKeyFor(cfg, url);
     const stale = () => attemptSeq.current !== attempt;
     const report = (message: string, phase: AttachProgress['phase']) => {
       if (stale()) return;
@@ -246,24 +254,25 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
   }, []);
 
   // Sources with date tokens ({yyyy}/{MM}/{dd}) or captured columns depend on the time range and
-  // the filters: re-resolve the file list whenever they change (debounced; the pages pause their
-  // queries meanwhile).
-  const rangeKey = `${url.search.range.from}|${url.search.range.to}|${JSON.stringify(valueFiltersFor(source, url))}`;
-  const lastRangeKey = useRef(rangeKey);
-  // A (re)connect always uses the current window and filters, so it settles the key.
+  // the filters: re-resolve the file list whenever they differ from what the last attempt used
+  // (debounced; the pages pause their queries meanwhile). A change made while a connect is
+  // running is picked up as soon as that connect ends, because the effect also runs when
+  // `attaching` flips; comparing against the attempted key (not the last successful one) keeps a
+  // failing source from reconnecting in a loop.
+  const rangeKey = rangeKeyFor(source, url);
+  if (!attemptedKey.current) attemptedKey.current = rangeKey;
   useEffect(() => {
-    lastRangeKey.current = rangeKey;
-  }, [attached]);
-  useEffect(() => {
-    if (lastRangeKey.current === rangeKey) return;
-    lastRangeKey.current = rangeKey;
+    if (attaching || attemptedKey.current === rangeKey) return;
     const dependent = attached?.rangeDependent || (attached?.captures.length ?? 0) > 0;
-    if (!dependent || attaching) return;
+    if (!dependent) {
+      attemptedKey.current = rangeKey;
+      return;
+    }
     const timer = setTimeout(() => {
       connect(source, [], false, currentWindow()).catch(() => undefined);
     }, 250);
     return () => clearTimeout(timer);
-  }, [rangeKey]);
+  }, [rangeKey, attaching]);
 
   return {
     ready,
