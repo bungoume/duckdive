@@ -200,8 +200,6 @@ export const fr: Messages = {
   'cache.maxBytes': 'Conserver au plus',
   'cache.unlimited': 'illimité',
   'cache.session': 'Cette session',
-  'cache.maxBytes': 'Conserver au plus',
-  'cache.unlimited': 'illimité',
   'cache.session.text':
     "DuckDB a lu {total} : {fromCache} depuis le disque ({ratio}%) · {downloaded} téléchargés depuis l'origine en {misses} blocs · {hits} blocs en cache · {passthrough} passthrough",
   'cache.storage': 'Stockage',
@@ -214,7 +212,6 @@ export const fr: Messages = {
   'cache.reclaimable': ' · {bytes} récupérables',
   'cache.evicted': ' · {n} fichier(s) évincé(s) pour la limite dans cette session',
   'cache.compact': 'Compacter',
-  'cache.evicted': ' · {n} fichier(s) évincé(s) pour la limite dans cette session',
   'cache.th.file': 'Fichier',
   'cache.th.size': 'Taille',
   'cache.th.cached': 'En cache',
@@ -283,6 +280,17 @@ export const fr: Messages = {
   'dash.empty.text': 'Enregistrez une visualisation sur la page Visualiser, puis ajoutez-la ici.',
   'dash.open': 'Ouvrir',
   'dash.remove': 'Retirer du tableau de bord',
+
+  // ---- log patterns ----
+  'pat.button': 'Motifs',
+  'pat.title': 'Motifs des messages',
+  'pat.hint':
+    'Les nombres, adresses IP, longs identifiants hexadécimaux et UUID sont remplacés par <n>, <ip>, <hex> et <uuid> ; les lignes sont regroupées par ce qui reste. « + » ne garde que les lignes d’un motif (un filtre SQL personnalisé).',
+  'pat.showing': '{n} motifs dans {total} enregistrements',
+  'pat.count': 'Nombre',
+  'pat.pattern': 'Motif et un exemple',
+  'pat.filter': 'Filtrer sur ce motif',
+  'pat.none': 'La source n’a pas de champ texte à analyser.',
 
   // ---- Visualize page ----
   'vis.chart.area': 'Aires',

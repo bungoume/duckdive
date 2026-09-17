@@ -195,8 +195,6 @@ export const ja: Messages = {
   'cache.maxBytes': '保持上限',
   'cache.unlimited': '無制限',
   'cache.session': 'このセッション',
-  'cache.maxBytes': '保持上限',
-  'cache.unlimited': '無制限',
   'cache.session.text':
     'DuckDB の読み込み {total}: ディスクから {fromCache}({ratio}%) · オリジンから {downloaded} を {misses} チャンクでダウンロード · チャンクヒット {hits} · パススルー {passthrough}',
   'cache.storage': 'ストレージ',
@@ -209,7 +207,6 @@ export const ja: Messages = {
   'cache.reclaimable': ' · 回収可能 {bytes}',
   'cache.evicted': ' · 上限のためこのセッションで {n} ファイルを破棄',
   'cache.compact': 'コンパクト化',
-  'cache.evicted': ' · 上限のためこのセッションで {n} ファイルを破棄',
   'cache.th.file': 'ファイル',
   'cache.th.size': 'サイズ',
   'cache.th.cached': 'キャッシュ済み',
@@ -277,6 +274,16 @@ export const ja: Messages = {
   'dash.empty.text': 'Visualize ページで可視化を保存し、ここに追加してください。',
   'dash.open': '開く',
   'dash.remove': 'ダッシュボードから外す',
+
+  // ---- log patterns ----
+  'pat.button': 'パターン',
+  'pat.title': 'メッセージのパターン',
+  'pat.hint': '数値、IP アドレス、長い 16 進 ID、UUID を <n>、<ip>、<hex>、<uuid> に置き換え、残りの文字列でグループ化します。「+」でそのパターンの行だけに絞り込みます(カスタム SQL フィルタ)。',
+  'pat.showing': '{total} 件中のパターン {n} 種',
+  'pat.count': '件数',
+  'pat.pattern': 'パターンと例',
+  'pat.filter': 'このパターンで絞り込む',
+  'pat.none': 'ソースに分析できるテキストフィールドがありません。',
 
   // ---- Visualize page ----
   'vis.chart.area': '面',

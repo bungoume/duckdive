@@ -200,8 +200,6 @@ export const es: Messages = {
   'cache.maxBytes': 'Conservar como máximo',
   'cache.unlimited': 'sin límite',
   'cache.session': 'Esta sesión',
-  'cache.maxBytes': 'Conservar como máximo',
-  'cache.unlimited': 'sin límite',
   'cache.session.text':
     'DuckDB leyó {total}: {fromCache} desde disco ({ratio}%) · {downloaded} descargados del origen en {misses} fragmentos · {hits} aciertos de fragmento · {passthrough} passthrough',
   'cache.storage': 'Almacenamiento',
@@ -214,7 +212,6 @@ export const es: Messages = {
   'cache.reclaimable': ' · {bytes} recuperables',
   'cache.evicted': ' · {n} archivo(s) descartado(s) por el límite en esta sesión',
   'cache.compact': 'Compactar',
-  'cache.evicted': ' · {n} archivo(s) descartado(s) por el límite en esta sesión',
   'cache.th.file': 'Archivo',
   'cache.th.size': 'Tamaño',
   'cache.th.cached': 'En caché',
@@ -282,6 +279,17 @@ export const es: Messages = {
   'dash.empty.text': 'Guarde una visualización en la página Visualizar y añádala aquí.',
   'dash.open': 'Abrir',
   'dash.remove': 'Quitar del panel',
+
+  // ---- log patterns ----
+  'pat.button': 'Patrones',
+  'pat.title': 'Patrones de los mensajes',
+  'pat.hint':
+    'Los números, direcciones IP, identificadores hexadecimales largos y UUID se sustituyen por <n>, <ip>, <hex> y <uuid>; las líneas se agrupan por lo que queda. «+» conserva las líneas de un patrón (un filtro SQL personalizado).',
+  'pat.showing': '{n} patrones en {total} registros',
+  'pat.count': 'Recuento',
+  'pat.pattern': 'Patrón y un ejemplo',
+  'pat.filter': 'Filtrar por este patrón',
+  'pat.none': 'El origen no tiene ningún campo de texto que analizar.',
 
   // ---- Visualize page ----
   'vis.chart.area': 'Área',

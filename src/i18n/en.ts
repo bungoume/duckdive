@@ -199,8 +199,6 @@ export const en = {
   'cache.maxBytes': 'Keep at most',
   'cache.unlimited': 'unlimited',
   'cache.session': 'This session',
-  'cache.maxBytes': 'Keep at most',
-  'cache.unlimited': 'unlimited',
   'cache.session.text': 'DuckDB read {total}: {fromCache} from disk ({ratio}%) · downloaded {downloaded} from origin in {misses} chunks · {hits} chunk hits · {passthrough} passthrough',
   'cache.storage': 'Storage',
   'cache.storage.text': '{used} used of {quota} quota · {mode}',
@@ -212,7 +210,6 @@ export const en = {
   'cache.reclaimable': ' · {bytes} reclaimable',
   'cache.evicted': ' · {n} file(s) dropped for the limit this session',
   'cache.compact': 'Compact',
-  'cache.evicted': ' · {n} file(s) dropped for the limit this session',
   'cache.th.file': 'File',
   'cache.th.size': 'Size',
   'cache.th.cached': 'Cached',
@@ -279,6 +276,17 @@ export const en = {
   'dash.empty.text': 'Save a visualization on the Visualize page, then add it here.',
   'dash.open': 'Open',
   'dash.remove': 'Remove from dashboard',
+
+  // ---- log patterns ----
+  'pat.button': 'Patterns',
+  'pat.title': 'Message patterns',
+  'pat.hint':
+    'Numbers, IP addresses, long hex ids and UUIDs are replaced by <n>, <ip>, <hex> and <uuid>; the lines are grouped by what is left. "+" keeps the lines of a pattern (a custom SQL filter).',
+  'pat.showing': '{n} patterns in {total} records',
+  'pat.count': 'Count',
+  'pat.pattern': 'Pattern and an example',
+  'pat.filter': 'Filter for this pattern',
+  'pat.none': 'The source has no text field to analyse.',
 
   // ---- Visualize page ----
   'vis.chart.area': 'Area',

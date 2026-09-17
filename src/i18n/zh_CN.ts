@@ -190,8 +190,6 @@ export const zh_CN: Messages = {
   'cache.maxBytes': '最多保留',
   'cache.unlimited': '不限',
   'cache.session': '本次会话',
-  'cache.maxBytes': '最多保留',
-  'cache.unlimited': '不限',
   'cache.session.text': 'DuckDB 读取了 {total}：其中 {fromCache} 来自磁盘（{ratio}%） · 从源站下载 {downloaded}，共 {misses} 个块 · {hits} 次块命中 · {passthrough} 次直通',
   'cache.storage': '存储',
   'cache.storage.text': '已用 {used}，配额 {quota} · {mode}',
@@ -203,7 +201,6 @@ export const zh_CN: Messages = {
   'cache.reclaimable': ' · 可回收 {bytes}',
   'cache.evicted': ' · 本次会话因上限淘汰 {n} 个文件',
   'cache.compact': '压缩整理',
-  'cache.evicted': ' · 本次会话因上限淘汰 {n} 个文件',
   'cache.th.file': '文件',
   'cache.th.size': '大小',
   'cache.th.cached': '已缓存',
@@ -270,6 +267,16 @@ export const zh_CN: Messages = {
   'dash.empty.text': '在可视化页面保存一个可视化，然后在此添加。',
   'dash.open': '打开',
   'dash.remove': '从仪表板移除',
+
+  // ---- log patterns ----
+  'pat.button': '模式',
+  'pat.title': '消息模式',
+  'pat.hint': '数字、IP 地址、长十六进制 ID 和 UUID 会被替换为 <n>、<ip>、<hex> 和 <uuid>，然后按剩余文本分组。“+”只保留该模式的行（自定义 SQL 筛选）。',
+  'pat.showing': '{total} 条记录中的 {n} 种模式',
+  'pat.count': '数量',
+  'pat.pattern': '模式与示例',
+  'pat.filter': '按此模式筛选',
+  'pat.none': '数据源没有可分析的文本字段。',
 
   // ---- Visualize page ----
   'vis.chart.area': '面积图',

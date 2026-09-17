@@ -199,8 +199,6 @@ export const de: Messages = {
   'cache.maxBytes': 'Höchstens behalten',
   'cache.unlimited': 'unbegrenzt',
   'cache.session': 'Diese Sitzung',
-  'cache.maxBytes': 'Höchstens behalten',
-  'cache.unlimited': 'unbegrenzt',
   'cache.session.text':
     'DuckDB hat {total} gelesen: {fromCache} von der Festplatte ({ratio}%) · {downloaded} vom Ursprung in {misses} Chunks heruntergeladen · {hits} Chunk-Treffer · {passthrough} Passthrough',
   'cache.storage': 'Speicher',
@@ -213,7 +211,6 @@ export const de: Messages = {
   'cache.reclaimable': ' · {bytes} freigebbar',
   'cache.evicted': ' · {n} Datei(en) in dieser Sitzung wegen des Limits verworfen',
   'cache.compact': 'Verdichten',
-  'cache.evicted': ' · {n} Datei(en) in dieser Sitzung wegen des Limits verworfen',
   'cache.th.file': 'Datei',
   'cache.th.size': 'Größe',
   'cache.th.cached': 'Gecacht',
@@ -281,6 +278,17 @@ export const de: Messages = {
   'dash.empty.text': 'Speichern Sie eine Visualisierung auf der Seite Visualisieren und fügen Sie sie hier hinzu.',
   'dash.open': 'Öffnen',
   'dash.remove': 'Vom Dashboard entfernen',
+
+  // ---- log patterns ----
+  'pat.button': 'Muster',
+  'pat.title': 'Muster der Meldungen',
+  'pat.hint':
+    'Zahlen, IP-Adressen, lange Hex-IDs und UUIDs werden durch <n>, <ip>, <hex> und <uuid> ersetzt; gruppiert wird nach dem Rest. „+“ behält die Zeilen eines Musters (ein eigener SQL-Filter).',
+  'pat.showing': '{n} Muster in {total} Datensätzen',
+  'pat.count': 'Anzahl',
+  'pat.pattern': 'Muster und ein Beispiel',
+  'pat.filter': 'Nach diesem Muster filtern',
+  'pat.none': 'Die Quelle hat kein Textfeld zum Auswerten.',
 
   // ---- Visualize page ----
   'vis.chart.area': 'Fläche',

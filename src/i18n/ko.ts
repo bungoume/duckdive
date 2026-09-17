@@ -194,8 +194,6 @@ export const ko: Messages = {
   'cache.maxBytes': '최대 보관 용량',
   'cache.unlimited': '제한 없음',
   'cache.session': '이번 세션',
-  'cache.maxBytes': '최대 보관 용량',
-  'cache.unlimited': '제한 없음',
   'cache.session.text': 'DuckDB 읽기 {total}: 디스크에서 {fromCache} ({ratio}%) · 원본에서 {downloaded} 다운로드 ({misses}개 청크) · 청크 적중 {hits}회 · 패스스루 {passthrough}회',
   'cache.storage': '스토리지',
   'cache.storage.text': '할당량 {quota} 중 {used} 사용 · {mode}',
@@ -207,7 +205,6 @@ export const ko: Messages = {
   'cache.reclaimable': ' · {bytes} 회수 가능',
   'cache.evicted': ' · 이번 세션에서 용량 제한으로 {n}개 파일 제거',
   'cache.compact': '압축 정리',
-  'cache.evicted': ' · 이번 세션에서 용량 제한으로 {n}개 파일 제거',
   'cache.th.file': '파일',
   'cache.th.size': '크기',
   'cache.th.cached': '캐시됨',
@@ -274,6 +271,16 @@ export const ko: Messages = {
   'dash.empty.text': '시각화 페이지에서 시각화를 저장한 뒤 여기에 추가하세요.',
   'dash.open': '열기',
   'dash.remove': '대시보드에서 제거',
+
+  // ---- log patterns ----
+  'pat.button': '패턴',
+  'pat.title': '메시지 패턴',
+  'pat.hint': '숫자, IP 주소, 긴 16진수 ID, UUID를 <n>, <ip>, <hex>, <uuid>로 바꾸고 남은 문자열로 묶습니다. "+"는 그 패턴의 행만 남깁니다(사용자 지정 SQL 필터).',
+  'pat.showing': '{total}개 레코드의 패턴 {n}종',
+  'pat.count': '건수',
+  'pat.pattern': '패턴과 예',
+  'pat.filter': '이 패턴으로 필터',
+  'pat.none': '소스에 분석할 텍스트 필드가 없습니다.',
 
   // ---- Visualize page ----
   'vis.chart.area': '영역',
