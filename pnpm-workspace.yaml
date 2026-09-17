@@ -8,3 +8,14 @@ minimumReleaseAge: 10080
 
 # Write exact versions to package.json; pnpm-lock.yaml pins every tarball by its integrity hash.
 saveExact: true
+
+# Trust policy: refuse a version whose publish evidence (trusted publishing, provenance) is
+# weaker than an earlier release of the same package, the signature of a hijacked maintainer
+# account. Releases older than a year are exempt: backports such as semver 6.3.1 and
+# undici-types 6.21.0 were published without provenance after newer majors had it, and would
+# otherwise need name-based exclusions.
+trustPolicy: no-downgrade
+trustPolicyIgnoreAfter: 525600
+
+# Fail closed when a registry omits publish dates instead of skipping the cooldown check.
+minimumReleaseAgeIgnoreMissingTime: false
