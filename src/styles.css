@@ -48,6 +48,9 @@ code, .mono { font-family: var(--k-mono); font-size: 12px; }
 .topbar { background: var(--k-panel); border-bottom: 1px solid var(--k-border); padding: 8px 16px; display: flex; flex-direction: column; gap: 8px; flex: none; }
 .querybar { display: flex; gap: 8px; align-items: stretch; }
 .querybar .auto-refresh { width: auto; font-size: 12px; }
+.qinput .suggest { position: absolute; top: 100%; left: -1px; right: -1px; z-index: 40; background: var(--k-panel); border: 1px solid var(--k-border); border-radius: 0 0 var(--k-radius) var(--k-radius); box-shadow: var(--k-shadow); max-height: 240px; overflow: auto; font-family: var(--k-mono); font-size: 12px; }
+.qinput .suggest .item { padding: 5px 10px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qinput .suggest .item.active, .qinput .suggest .item:hover { background: var(--k-hover); }
 .querybar .qinput { flex: 1; display: flex; align-items: center; border: 1px solid var(--k-border); border-radius: var(--k-radius); background: #fbfcfd; padding: 0 8px; gap: 8px; position: relative; }
 .querybar .qinput:focus-within { border-color: var(--k-primary); box-shadow: 0 0 0 2px rgba(11, 100, 221, 0.15); background: #fff; }
 .querybar .qinput input { flex: 1; border: 0; background: transparent; outline: 0; padding: 8px 0; font-family: var(--k-mono); font-size: 13px; }
@@ -158,6 +161,7 @@ button:focus-visible, [role='button']:focus-visible, .input:focus-visible, selec
 .hits .meta { color: var(--k-text-subdued); font-size: 12px; }
 .chart-panel { padding: 8px 16px; }
 .chart-panel .chart-head { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--k-text-subdued); margin-bottom: 4px; }
+.chart-head .chart-select { width: auto; padding: 2px 6px; font-size: 12px; }
 .chart-box { position: relative; user-select: none; }
 .chart-box svg { display: block; max-width: 100%; }
 /* Plot wraps the chart in a <figure> when it draws a legend; the UA's 40px figure margins would
@@ -183,6 +187,9 @@ table.docs tr:hover td { background: #fafbfd; }
 .doc-detail .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--k-border-light); padding: 4px 8px 0; }
 .doc-detail .tabs button { border: 0; background: transparent; padding: 6px 10px; border-bottom: 2px solid transparent; color: var(--k-text-subdued); font-weight: 500; }
 .doc-detail .tabs button.active { color: var(--k-primary); border-bottom-color: var(--k-primary); }
+.context-view { padding: 8px 10px; }
+.context-view table.docs { margin: 6px 0; }
+.context-view tr.same td { background: #fff7e0; }
 .doc-detail pre { margin: 0; padding: 10px; font-size: 12px; overflow: auto; max-height: 480px; }
 table.kv { width: 100%; border-collapse: collapse; }
 table.kv td { padding: 3px 8px; font-size: 12px; border: 0; vertical-align: top; }
@@ -199,6 +206,21 @@ table.kv td.a button:hover { color: var(--k-primary); }
 .export-menu { width: 300px; }
 .export-menu .hint { margin: 0 0 8px; }
 .sql-box { font-family: var(--k-mono); font-size: 11px; white-space: pre-wrap; background: #f4f6fa; border: 1px solid var(--k-border-light); padding: 8px; border-radius: 4px; max-height: 200px; overflow: auto; margin-top: 4px; }
+
+.config .percentile { width: 72px; flex: none; }
+
+/* field statistics (sidebar popover) */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; font-size: 12px; margin-bottom: 6px; }
+.dist { display: flex; align-items: flex-end; gap: 2px; height: 36px; margin-bottom: 8px; }
+.dist div { flex: 1; background: var(--k-primary); border-radius: 2px 2px 0 0; opacity: 0.8; }
+
+/* dashboard */
+.dashboard { flex: 1; min-height: 0; overflow: auto; padding: 12px 16px 24px; }
+.dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 12px; }
+.tile { background: var(--k-panel); border: 1px solid var(--k-border); border-radius: var(--k-radius); padding: 10px 12px; min-height: 200px; display: flex; flex-direction: column; }
+.tile-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.tile-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile .metric-big .val { font-size: 40px; }
 
 /* sql page */
 .sql-text { font-family: var(--k-mono); font-size: 12px; min-height: 110px; resize: vertical; }

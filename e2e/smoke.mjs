@@ -50,6 +50,35 @@ await step('search-query', async () => {
   if (err) throw new Error('query error: ' + (await page.textContent('.qerror')));
   await page.screenshot({ path: `${out}/02-search.png` });
 });
+await step('completion', async () => {
+  // field names are suggested for the token at the caret; Tab inserts "name:"; an empty box lists recent queries
+  await page.fill('.qinput input', '');
+  await page.type('.qinput input', 'http.la');
+  await page.waitForSelector('.qinput .suggest .item');
+  const items = await page.locator('.qinput .suggest .item').allTextContents();
+  await page.keyboard.press('Tab');
+  const text = await page.inputValue('.qinput input');
+  console.log(`     suggested=${items.join('|')} after Tab="${text}"`);
+  if (text !== 'http.latency_ms:') throw new Error('completion did not insert the field');
+  await page.type('.qinput input', '>800');
+  await page.keyboard.press('Enter');
+  await settled(page);
+  if (await page.locator('.qerror').count()) throw new Error(await page.textContent('.qerror'));
+  await page.fill('.qinput input', '');
+  await page.click('.qinput input');
+  await page.waitForSelector('.qinput .suggest .item');
+  const hist = await page.locator('.qinput .suggest .item').allTextContents();
+  console.log(`     history=${hist.map((h) => h.trim()).join('|')}`);
+  if (!hist.some((h) => h.includes('http.latency_ms:>800'))) throw new Error('history misses the last query');
+  await page.keyboard.press('Escape');
+  // date math in a range of the time field
+  await page.fill('.qinput input', '@timestamp:>now-1h');
+  await page.press('.qinput input', 'Enter');
+  await settled(page);
+  const hits = await page.textContent('.hits .n');
+  console.log(`     @timestamp:>now-1h hits=${hits}`);
+  if (await page.locator('.qerror').count()) throw new Error(await page.textContent('.qerror'));
+});
 await step('free-text', async () => {
   await page.fill('.qinput input', '"connection failure" OR extra.ab_test:variant-a');
   await page.press('.qinput input', 'Enter');
@@ -115,6 +144,17 @@ await step('expand-doc', async () => {
   const json = await page.textContent('.doc-detail pre');
   console.log(`     json length=${json.length}`);
   await page.screenshot({ path: `${out}/03-doc.png` });
+  // the Context tab shows neighbours in time and grows on request
+  await page.click('.doc-detail .tabs button:has-text("Context")');
+  await page.waitForSelector('.context-view table', { timeout: 30000 });
+  const ctx1 = await page.locator('.context-view tbody tr').count();
+  // the first row is the newest of the range: only "more before" can grow the list
+  await page.locator('.context-view button').first().click();
+  await page.waitForFunction((n) => document.querySelectorAll('.context-view tbody tr').length > n, ctx1, { timeout: 30000 });
+  const ctx2 = await page.locator('.context-view tbody tr').count();
+  const same = await page.locator('.context-view tr.same').count();
+  console.log(`     context rows ${ctx1} -> ${ctx2}, same time=${same}`);
+  if (ctx1 < 6 || ctx2 <= ctx1 || !same) throw new Error('context view');
   await page.click('.doc-detail .tabs button:nth-child(1)');
   // add filter "+" on the level row
   const row = page.locator('table.kv tr', { hasText: 'level' }).first();
@@ -139,6 +179,48 @@ await step('field-sidebar', async () => {
   await settled(page);
   const th = await page.locator('table.docs th').allTextContents();
   console.log(`     columns=${th.join('|')}`);
+  // a number field shows a summary and a ten-bar distribution above its top values
+  await page.click('.field-item:has-text("http.latency_ms")');
+  await page.waitForSelector('.stat-grid', { timeout: 10000 });
+  const bars = await page.locator('.dist div').count();
+  const statText = (await page.textContent('.stat-grid')).replace(/\s+/g, ' ').trim();
+  console.log(`     stats: ${statText.slice(0, 80)} · bars=${bars}`);
+  if (bars !== 10 || !/percentile/.test(statText)) throw new Error('no number statistics');
+  await page.keyboard.press('Escape');
+});
+await step('histogram-breakdown', async () => {
+  // split the histogram by level: stacked bars with a legend, the hit count unchanged
+  const before = await page.textContent('.hits .n');
+  await page.selectOption('.chart-head select[title="Break down by"]', 'level');
+  await settled(page);
+  const rects = await page.locator('.chart-panel .chart-box svg rect').count();
+  const legend = await page.locator('.chart-panel .chart-box svg').count();
+  console.log(`     hits=${before} -> ${await page.textContent('.hits .n')} rects=${rects} svgs=${legend}`);
+  if (!rects || legend < 2) throw new Error('no stacked histogram');
+  if ((await page.textContent('.hits .n')) !== before) throw new Error('hit count changed with the break-down');
+  await page.screenshot({ path: `${out}/13-histogram-breakdown.png` });
+  await page.selectOption('.chart-head select[title="Break down by"]', '');
+  await settled(page);
+});
+await step('saved-search', async () => {
+  // save the current query with its column, load it back after changing the query
+  await page.click('.hits button:has-text("Saved searches")');
+  await page.fill('.popover input', 'smoke search');
+  await page.click('.popover .btn.primary');
+  const items = await page.locator('.popover .saved-list .item .t').allTextContents();
+  console.log(`     saved: ${items.join('|')}`);
+  if (!items.includes('smoke search')) throw new Error('search not saved');
+  await page.keyboard.press('Escape');
+  await page.fill('.qinput input', 'level:error');
+  await page.press('.qinput input', 'Enter');
+  await settled(page);
+  await page.click('.hits button:has-text("Saved searches")');
+  await page.click('.popover .saved-list .item .t:has-text("smoke search")');
+  await settled(page);
+  const q = await page.inputValue('.qinput input');
+  const th = await page.locator('table.docs th').allTextContents();
+  console.log(`     loaded: query=${q} columns=${th.join('|')}`);
+  if (!q.includes('connection failure') || !th.some((h) => h.includes('http.method'))) throw new Error('saved search not restored');
 });
 await step('export', async () => {
   // the table has the http.method column from the previous step: CSV carries Time + that column
@@ -271,6 +353,92 @@ await step('visualize', async () => {
   await page.screenshot({ path: `${out}/09-metric.png` });
   const sqlErr = await page.locator('.qerror').count();
   if (sqlErr) throw new Error(await page.textContent('.qerror'));
+  // options: 100 % stacking with a breakdown, log axis, the previous period as dashed lines, a percentile and a rate metric
+  await page.click('.chart-types button[title="Bar"]');
+  await settled(page);
+  await page.selectOption('.cfg-section:has-text("Horizontal axis") .field-row:has-text("Function") select', 'date_histogram');
+  await settled(page);
+  await page.selectOption('.cfg-section:has-text("Break down by") select', 'http.method');
+  await settled(page);
+  await page.check('.cfg-section:has-text("Options") label:has-text("100 %") input');
+  await settled(page);
+  await page.check('.cfg-section:has-text("Options") label:has-text("Logarithmic") input');
+  await settled(page);
+  await page.check('.cfg-section:has-text("Options") label:has-text("previous period") input');
+  await settled(page);
+  // Plot puts constant styles on the mark's group: the previous period is a dashed group of paths
+  const dashed = await page.locator('.vis-panel svg g[stroke-dasharray] path').count();
+  const note = await page.locator('.legend-note', { hasText: 'Dashed' }).count();
+  const optErr = (await page.locator('.chart-error').count()) + (await page.locator('.qerror').count());
+  console.log(`     options: dashed paths=${dashed} note=${note} errors=${optErr}`);
+  if (!dashed || !note || optErr)
+    throw new Error(
+      'compare / percent / log options: ' +
+        ((await page
+          .locator('.qerror')
+          .textContent()
+          .catch(() => '')) ?? ''),
+    );
+  await page.screenshot({ path: `${out}/14-visualize-options.png` });
+  const sections = page.locator('.cfg-section:has-text("Vertical axis") .cfg-section');
+  await sections.first().locator('select').first().selectOption('percentile');
+  await sections.first().locator('select').nth(1).selectOption('http.latency_ms');
+  await page.fill('.config .percentile', '75');
+  await settled(page);
+  const pctLabel = await sections.first().locator('.lbl').textContent();
+  console.log(`     percentile metric: ${pctLabel.trim().slice(0, 40)}`);
+  if (!/p75/.test(pctLabel)) throw new Error('percentile metric label');
+  await sections.first().locator('select').first().selectOption('rate');
+  await settled(page);
+  if (await page.locator('.qerror').count()) throw new Error('rate metric: ' + (await page.textContent('.qerror')));
+  // the chart as an SVG file
+  const [svg] = await Promise.all([page.waitForEvent('download', { timeout: 30000 }), page.click('.vis-panel button[title*="SVG"]')]);
+  const svgText = readFileSync(await svg.path(), 'utf8');
+  console.log(`     ${svg.suggestedFilename()}: ${svgText.length} chars`);
+  if (!svgText.startsWith('<svg')) throw new Error('not an SVG file');
+  for (const l of ['100 %', 'Logarithmic', 'previous period']) await page.uncheck(`.cfg-section:has-text("Options") label:has-text("${l}") input`);
+  await sections.first().locator('select').first().selectOption('count');
+  await page.selectOption('.cfg-section:has-text("Break down by") select', '');
+  await page.selectOption('.cfg-section:has-text("Horizontal axis") .field-row:has-text("Function") select', 'terms');
+  await page.selectOption('.cfg-section:has-text("Horizontal axis") .field-row:has-text("Field") select', 'http.path');
+  await settled(page);
+  // save the bar chart for the dashboard step
+  await page.fill('.vis-panel input[placeholder]', 'paths by status');
+  await page.click('.vis-panel button:has-text("Save")');
+  const saved = await page.locator('.saved-list .item .t').allTextContents();
+  console.log(`     saved visualizations: ${saved.join('|')}`);
+  if (!saved.includes('paths by status')) throw new Error('visualization not saved');
+});
+await step('dashboard', async () => {
+  await page.click('.header nav button:has-text("Dashboard")');
+  await page.waitForSelector('.dashboard');
+  await page.click('.dashboard button:has-text("Add visualization")');
+  await page.click('.popover .menu button:has-text("paths by status")');
+  await settled(page);
+  const tiles = await page.locator('.tile').count();
+  const bars = await page.locator('.tile svg rect').count();
+  console.log(`     tiles=${tiles} bars=${bars}`);
+  if (tiles !== 1 || !bars) throw new Error('tile without a chart');
+  await page.screenshot({ path: `${out}/12-dashboard.png` });
+  // a click on a bar filters the page
+  const box = await page.locator('.tile .chart-box').boundingBox();
+  let added = false;
+  for (const f of [0.85, 0.75, 0.6]) {
+    await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * f);
+    await settled(page);
+    if (!(await page.locator('.chart-tip').count())) continue;
+    await page.mouse.down();
+    await page.mouse.up();
+    await settled(page);
+    added = (await page.locator('.filterbar .pill').count()) > 0;
+    break;
+  }
+  console.log(`     click added a filter: ${added}`);
+  if (!added) throw new Error('click on a tile did not filter');
+  await page.click('.filterbar .pill button[title="Remove"]');
+  await settled(page);
+  await page.click('.tile button[title="Remove from dashboard"]');
+  if (await page.locator('.tile').count()) throw new Error('tile not removed');
 });
 await step('sql-page', async () => {
   await page.click('.header nav button:has-text("SQL")');

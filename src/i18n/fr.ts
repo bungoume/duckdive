@@ -4,6 +4,7 @@ export const fr: Messages = {
   // ---- header / app shell ----
   'app.nav.discover': 'Explorer',
   'app.nav.visualize': 'Visualiser',
+  'app.nav.dashboard': 'Tableau de bord',
   'app.nav.source': 'Source de données',
   'app.nav.settings': 'Paramètres',
   'app.nav.sql': 'SQL',
@@ -196,6 +197,8 @@ export const fr: Messages = {
   'cache.repack.title':
     'La livraison de journaux AWS écrit parfois des fichiers gzip qui ne peuvent pas être lus de manière fiable tels quels. Quand cette option est activée, chaque fichier .gz est récupéré une fois à la connexion, corrigé si nécessaire, et conservé dans le cache.',
   'cache.chunkSize': 'Taille de bloc (nouveaux fichiers)',
+  'cache.maxBytes': 'Conserver au plus',
+  'cache.unlimited': 'illimité',
   'cache.session': 'Cette session',
   'cache.maxBytes': 'Conserver au plus',
   'cache.unlimited': 'illimité',
@@ -209,6 +212,7 @@ export const fr: Messages = {
   'cache.onDisk': 'Sur disque',
   'cache.onDisk.text': '{files} fichier(s) avec données en cache, {bytes} · métadonnées pour {known} fichier(s)',
   'cache.reclaimable': ' · {bytes} récupérables',
+  'cache.evicted': ' · {n} fichier(s) évincé(s) pour la limite dans cette session',
   'cache.compact': 'Compacter',
   'cache.evicted': ' · {n} fichier(s) évincé(s) pour la limite dans cette session',
   'cache.th.file': 'Fichier',
@@ -226,9 +230,16 @@ export const fr: Messages = {
   'disc.showSql': 'afficher le SQL',
   'disc.hideSql': 'masquer le SQL',
   'disc.perInterval': '{field} par {interval} · glissez pour zoomer',
+  'disc.breakdown': 'Répartir par',
+  'disc.noBreakdown': 'Sans répartition',
+  'disc.interval': 'Intervalle',
   'disc.empty.title': 'Aucun résultat ne correspond à vos critères de recherche',
   'disc.empty.text': 'Élargissez la plage de temps ou ajustez la requête et les filtres.',
   'disc.loadMore': 'Charger plus ({shown} sur {total})',
+  'disc.saved': 'Recherches enregistrées',
+  'disc.saved.placeholder': 'Nom (la requête si vide)',
+  'disc.saved.untitled': 'Recherche {n}',
+  'disc.saved.none': 'Rien d’enregistré pour l’instant. Les recherches enregistrées restent dans ce navigateur (localStorage).',
   'disc.cacheHint':
     '{error}\n\nUtilisez « {button} » ci-dessous pour localiser et inspecter le fichier que DuckDB rejette. Si le cache est suspecté : Source de données → Cache local de plages → « {clear} » ou décochez « {enable} ».',
 
@@ -263,6 +274,16 @@ export const fr: Messages = {
   'sql.rows': '{n} lignes · {ms} ms',
   'sql.showAll': 'Afficher les {n} lignes',
 
+  // ---- dashboard ----
+  'dash.hint': 'Les visualisations enregistrées, sur la recherche et la plage de temps ci-dessus ; un clic sur un graphique filtre ou zoome toutes les autres.',
+  'dash.add': 'Ajouter une visualisation',
+  'dash.allAdded': 'Toutes les visualisations enregistrées sont sur le tableau de bord.',
+  'dash.noneSaved': 'Rien d’enregistré : enregistrez d’abord une visualisation sur la page Visualiser.',
+  'dash.empty.title': 'Le tableau de bord est vide',
+  'dash.empty.text': 'Enregistrez une visualisation sur la page Visualiser, puis ajoutez-la ici.',
+  'dash.open': 'Ouvrir',
+  'dash.remove': 'Retirer du tableau de bord',
+
   // ---- Visualize page ----
   'vis.chart.area': 'Aires',
   'vis.chart.line': 'Courbe',
@@ -278,6 +299,8 @@ export const fr: Messages = {
   'vis.agg.p95': '95th percentile',
   'vis.agg.p99': '99th percentile',
   'vis.agg.unique': 'Unique count',
+  'vis.agg.percentile': 'Percentile',
+  'vis.agg.rate': 'Taux par seconde',
   'vis.selectField': 'Sélectionner un champ',
   'vis.untitled': 'Visualisation sans titre',
   'vis.showSql': 'Afficher le SQL',
@@ -315,6 +338,14 @@ export const fr: Messages = {
   'vis.topValues': 'top values',
   'vis.groupOther': 'Regrouper le reste dans « Autre »',
   'vis.other': 'Autre',
+  'vis.options': 'Options',
+  'vis.opt.percent': 'Empiler à 100 %',
+  'vis.opt.log': 'Axe logarithmique',
+  'vis.opt.compare': 'Comparer avec la période précédente',
+  'vis.percentile': 'Percentile (0–100)',
+  'vis.previousNote': 'En pointillés : la période précédente de même durée.',
+  'vis.downloadSvg': 'SVG',
+  'vis.downloadSvg.title': 'Télécharger le graphique en fichier SVG',
   'vis.saved': 'Visualisations enregistrées',
   'vis.nothingSaved': "Rien d'enregistré pour l'instant. Les éléments enregistrés restent dans ce navigateur (localStorage).",
   'vis.xLabel.date': '{field} par {interval}',
@@ -362,6 +393,9 @@ export const fr: Messages = {
   // ---- document table ----
   'doc.table': 'Tableau',
   'doc.json': 'JSON',
+  'doc.context': 'Contexte',
+  'doc.context.hint': 'Les enregistrements qui précèdent et suivent celui-ci dans le temps, quels que soient la requête et les filtres ; ceux du même instant sont surlignés.',
+  'doc.context.more': '{n} de plus',
   'doc.filterFor': 'Filtrer sur la valeur',
   'doc.filterOut': 'Exclure la valeur',
   'doc.toggleColumn': 'Afficher/masquer la colonne dans le tableau',
@@ -376,6 +410,8 @@ export const fr: Messages = {
   'fs.add': 'ajouter',
   'fs.objectField': 'Champ objet. Dépliez ses sous-champs depuis la liste.',
   'fs.top5': 'Top 5 des valeurs',
+  'fs.stats': 'Statistiques',
+  'fs.dist': 'Distribution de {from} à {to}',
   'fs.inRecords': ' sur {n} enregistrements',
   'fs.noValues': 'Aucune valeur dans la plage de temps actuelle.',
   'fs.visualize': 'Visualiser',
@@ -432,8 +468,10 @@ export const fr: Messages = {
   'q.help.exists': 'Le champ existe (aussi _exists_:extra.user_id)',
   'q.help.not': 'Négation. +terme : obligatoire',
   'q.help.bool': 'Opérateurs booléens AND, OR, NOT (en majuscules), &&, ||, !. Les termes adjacents sont combinés par OR.',
+  'q.help.datemath': 'Arithmétique de dates dans les plages d’un champ date : now, now-1h, now/d (début du jour), now-1d/d',
   'q.helpNote':
     'Les champs struct / JSON imbriqués utilisent des chemins pointés (geo.country, extra.user_id). Échappez les caractères spéciaux avec \\ (path:\\/api\\/v1). Appuyez sur {enter} pour exécuter.',
+  'q.completeNote': 'Les noms de champs sont proposés pendant la saisie ; {tab} insère celui qui est surligné. Une zone vide liste les requêtes récentes.',
   'q.running': 'Exécution…',
   'q.refresh': 'Actualiser',
   'q.autoRefresh': 'Actualisation automatique',
@@ -486,6 +524,8 @@ export const fr: Messages = {
   // ---- metrics ----
   'metric.count': "Nombre d'enregistrements",
   'metric.of': '{agg} de {field}',
+  'metric.rate': 'Enregistrements par seconde',
+  'metric.percentile': 'p{p} de {field}',
 
   // ---- file formats ----
   'fmt.auto': "Auto (selon le chemin / l'extension)",

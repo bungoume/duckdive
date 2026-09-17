@@ -18,8 +18,8 @@ interface Series {
   y: number;
 }
 
-/** Turn a VisResult into long-form series data, one series per (metric x group). */
-export function toSeries(r: VisResult, metrics: MetricDef[]): { data: Series[]; series: string[]; xDomain: (Date | string | number)[] } {
+/** Turn a VisResult into long-form series data, one series per (metric x group); `percent` scales every x to 100. */
+export function toSeries(r: VisResult, metrics: MetricDef[], percent = false): { data: Series[]; series: string[]; xDomain: (Date | string | number)[] } {
   const hasG = r.groups.length > 0;
   const metricIdx = hasG ? [0] : metrics.map((_, i) => i);
   const series: string[] = [];
@@ -42,10 +42,16 @@ export function toSeries(r: VisResult, metrics: MetricDef[]): { data: Series[]; 
   const data: Series[] = [];
   const conv = (x: number | string) => (r.xKind === 'date_histogram' ? new Date(x as number) : x);
   for (const x of xs) {
+    const at: Series[] = [];
     for (const s of series) {
       const v = map.get(key(x, s));
-      data.push({ x: conv(x), s, y: v === undefined || Number.isNaN(v) ? 0 : v });
+      at.push({ x: conv(x), s, y: v === undefined || Number.isNaN(v) ? 0 : v });
     }
+    if (percent) {
+      const total = at.reduce((a, d) => a + d.y, 0);
+      for (const d of at) d.y = total ? (d.y / total) * 100 : 0;
+    }
+    data.push(...at);
   }
   return { data, series, xDomain: xs.map(conv) };
 }
@@ -75,6 +81,12 @@ export function Chart(props: {
   /** click on a point / band → filter by it */
   onPick?: (pick: ChartPick) => void;
   height?: number;
+  /** stacked charts add up to 100 % per x */
+  percent?: boolean;
+  /** symlog vertical axis */
+  log?: boolean;
+  /** the previous period (already shifted onto this one's x), drawn as dashed lines */
+  compare?: VisResult | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(800);
@@ -110,7 +122,9 @@ export function Chart(props: {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const { data, series, xDomain } = toSeries(props.result, props.metrics);
+    const stacked = props.chart === 'area' || props.chart === 'bar';
+    const percent = !!props.percent && stacked;
+    const { data, series, xDomain } = toSeries(props.result, props.metrics, percent);
     const isTime = props.result.xKind === 'date_histogram';
     const isBand = props.result.xKind === 'terms';
     const color = {
@@ -119,13 +133,18 @@ export function Chart(props: {
       legend: series.length > 1 || props.result.groups.length > 0,
       tickFormat: groupLabel,
     };
-    const yLabel = props.result.groups.length ? metricLabel(props.metrics[0]) : props.metrics.length === 1 ? metricLabel(props.metrics[0]) : t('chart.value');
+    const baseLabel = props.result.groups.length ? metricLabel(props.metrics[0]) : props.metrics.length === 1 ? metricLabel(props.metrics[0]) : t('chart.value');
+    const yLabel = percent ? `${baseLabel} (%)` : baseLabel;
     const marks: unknown[] = [Plot.ruleY([0])];
     const ivMs = props.result.interval?.ms ?? 0;
     // end of the bucket starting at t (calendar months differ in length)
     const iv = props.result.interval;
     const bucketEnd = (t: number) => (iv ? nextBucketStart(t, iv, props.result.tzOffset) : t + ivMs);
-    const stacked = props.chart === 'area' || props.chart === 'bar';
+    if (props.compare && isTime) {
+      // the previous period: dashed lines of the same series, under the marks of this period
+      const prev = toSeries(props.compare, props.metrics, percent).data.filter((d) => series.includes(d.s));
+      marks.push(Plot.lineY(prev, { x: 'x', y: 'y', stroke: 's', strokeWidth: 1.5, strokeDasharray: '4 3', strokeOpacity: 0.8, curve: 'monotone-x' }));
+    }
     if (props.chart === 'line') {
       marks.push(Plot.lineY(data, { x: 'x', y: 'y', stroke: 's', strokeWidth: 2, curve: 'monotone-x' }));
     } else if (props.chart === 'area') {
@@ -178,6 +197,7 @@ export function Chart(props: {
           grid: true,
           nice: true,
           tickFormat: fmtAxisNumber,
+          ...(props.log ? { type: 'symlog' } : {}),
         },
         marks: marks as Plot.Markish[],
       });
@@ -195,7 +215,7 @@ export function Chart(props: {
     highlighted.current = null;
     setHover(null);
     return () => plot.remove();
-  }, [props.result, props.metrics, props.chart, props.height, width, lang, settings]);
+  }, [props.result, props.metrics, props.chart, props.height, props.percent, props.log, props.compare, width, lang, settings]);
 
   /** The plot's own <svg> (with a legend, Plot renders small swatch svgs before it). */
   const chartSvg = (): SVGSVGElement | null => {
@@ -383,7 +403,7 @@ export function Chart(props: {
           </div>
           <div class="chart-tip-row">
             <span class="chart-tip-key">{groupLabel(hover.series)}</span>
-            <span class="chart-tip-val">{fmtNum(hover.value)}</span>
+            <span class="chart-tip-val">{props.percent && (props.chart === 'area' || props.chart === 'bar') ? `${fmtNum(hover.value, 1)} %` : fmtNum(hover.value)}</span>
           </div>
           {props.onPick && (
             <div class="chart-tip-hint">{(hasBreakdown && hover.series !== OTHER) || props.result.xKind === 'terms' ? t('chart.clickFilter') : hover.isTime ? t('chart.clickZoom') : ''}</div>

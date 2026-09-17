@@ -5,6 +5,7 @@ import { findField } from '../fields';
 import type { Field } from '../fields';
 import type { Doc } from '../queries';
 import type { SortDir } from '../state';
+import { ContextView } from './ContextView';
 import { fmtValue } from './ui';
 
 export function flatten(o: unknown, prefix = '', out: [string, unknown][] = []): [string, unknown][] {
@@ -22,13 +23,16 @@ function DocDetail(props: {
   doc: Doc;
   fields: Field[];
   columns: string[];
+  timeExpr: string | null;
+  timeFieldName: string | null;
   onFilter: (field: string, value: string | null, negate: boolean) => void;
   onExists: (field: string) => void;
   onToggleColumn: (name: string) => void;
 }) {
-  const [tab, setTab] = useState<'table' | 'json'>('table');
+  const [tab, setTab] = useState<'table' | 'json' | 'context'>('table');
   const entries = flatten(props.doc.source);
   const known = new Set(props.fields.map((f) => f.name));
+  const canContext = props.doc.ts !== null && !!props.timeExpr;
   return (
     <div class="doc-detail">
       <div class="tabs">
@@ -38,8 +42,15 @@ function DocDetail(props: {
         <button class={tab === 'json' ? 'active' : ''} onClick={() => setTab('json')}>
           {t('doc.json')}
         </button>
+        {canContext && (
+          <button class={tab === 'context' ? 'active' : ''} onClick={() => setTab('context')}>
+            {t('doc.context')}
+          </button>
+        )}
       </div>
-      {tab === 'json' ? (
+      {tab === 'context' && canContext ? (
+        <ContextView ts={props.doc.ts!} fields={props.fields} timeExpr={props.timeExpr!} timeFieldName={props.timeFieldName} />
+      ) : tab === 'json' ? (
         <pre>{JSON.stringify(props.doc.source, null, 2)}</pre>
       ) : (
         <table class="kv">
@@ -93,6 +104,8 @@ export function DocTable(props: {
   columns: string[];
   hasTime: boolean;
   timeFieldName: string | null;
+  /** SQL of the time field (the Context tab needs it); null without a time field */
+  timeExpr: string | null;
   sort: { field: string; dir: SortDir }[];
   onSort: (field: string) => void;
   onRemoveColumn: (name: string) => void;
@@ -178,7 +191,16 @@ export function DocTable(props: {
             {open.has(i) && (
               <tr>
                 <td colSpan={colSpan + (props.hasTime ? 0 : -1)}>
-                  <DocDetail doc={d} fields={props.fields} columns={cols} onFilter={props.onFilter} onExists={props.onExists} onToggleColumn={props.onToggleColumn} />
+                  <DocDetail
+                    doc={d}
+                    fields={props.fields}
+                    columns={cols}
+                    timeExpr={props.timeExpr}
+                    timeFieldName={props.timeFieldName}
+                    onFilter={props.onFilter}
+                    onExists={props.onExists}
+                    onToggleColumn={props.onToggleColumn}
+                  />
                 </td>
               </tr>
             )}

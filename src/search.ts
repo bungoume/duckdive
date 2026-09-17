@@ -17,9 +17,10 @@
 //   fuzzy / boost        term~ term~2 term^3 are accepted; the fuzziness and boost are ignored
 //   nested fields        geo.country:JP   extra.user_id:42
 
+import { parseDateMath } from './datemath';
 import type { Field } from './fields';
 import { findField } from './fields';
-import { lit } from './sql';
+import { lit, tsLit } from './sql';
 
 export type Node =
   | { t: 'and'; a: Node[] }
@@ -415,13 +416,21 @@ function stringExpr(f: Field): string {
   return f.kind === 'string' ? f.expr : `(${f.expr})::VARCHAR`;
 }
 
-function scalarLiteral(f: Field, v: string): string {
+/** A bound of a range. Dates accept date math (now-1h, now/d: `roundUp` picks the end of a rounded unit for an upper bound). */
+function scalarLiteral(f: Field, v: string, roundUp = false): string {
   if (f.kind === 'number') {
     const n = Number(v);
     if (!Number.isFinite(n)) throw new SearchQueryError(`"${v}" is not a number (field ${f.name})`);
     return String(n);
   }
-  if (f.kind === 'date') return `TRY_CAST(${lit(v)} AS TIMESTAMP)`;
+  if (f.kind === 'date') {
+    if (v.startsWith('now')) {
+      const d = parseDateMath(v, roundUp);
+      if (!d) throw new SearchQueryError(`"${v}" is not a date expression (field ${f.name})`);
+      return tsLit(d);
+    }
+    return `TRY_CAST(${lit(v)} AS TIMESTAMP)`;
+  }
   if (f.kind === 'boolean') return v.toLowerCase() === 'true' ? 'TRUE' : 'FALSE';
   return lit(v);
 }
@@ -483,13 +492,13 @@ export function nodeToSql(n: Node, fields: Field[]): string {
       return `${resolve(fields, n.field).expr} IS NOT NULL`;
     case 'range': {
       const f = resolve(fields, n.field);
-      return `(${f.expr} ${n.op} ${scalarLiteral(f, n.value)})`;
+      return `(${f.expr} ${n.op} ${scalarLiteral(f, n.value, n.op === '<=')})`;
     }
     case 'between': {
       const f = resolve(fields, n.field);
       const c: string[] = [];
       if (n.lo !== null) c.push(`${f.expr} ${n.incLo ? '>=' : '>'} ${scalarLiteral(f, n.lo)}`);
-      if (n.hi !== null) c.push(`${f.expr} ${n.incHi ? '<=' : '<'} ${scalarLiteral(f, n.hi)}`);
+      if (n.hi !== null) c.push(`${f.expr} ${n.incHi ? '<=' : '<'} ${scalarLiteral(f, n.hi, n.incHi)}`);
       return c.length ? '(' + c.join(' AND ') + ')' : 'TRUE';
     }
   }

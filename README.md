@@ -2,10 +2,11 @@
 
 A Chrome extension that searches and charts log files. It reads Parquet, CSV and JSON from S3 or S3-compatible storage, from HTTPS URLs, or from local files, and queries them in the browser. Nothing is sent anywhere else.
 
-Five pages:
+Six pages:
 
-- Discover: query bar, time histogram, document table, field sidebar, filter pills, export of the matching rows.
-- Visualize: area, line, bar, table and metric charts with date histograms, break-downs and top values. Clicking a chart adds a filter or zooms the time range.
+- Discover: query bar, time histogram (optionally broken down by a field's top values), document table (each row expands to a table, JSON, and the records around it in time), field sidebar (top values, and for numbers a summary with a distribution), filter pills, saved searches, export of the matching rows.
+- Visualize: area, line, bar, table and metric charts with date histograms, break-downs and top values; 100 % stacking, a logarithmic axis, the previous period as an overlay, any percentile and a per-second rate as metrics, and the chart as an SVG file. Clicking a chart adds a filter or zooms the time range.
+- Dashboard: saved visualizations side by side over one search and time range; a click on any chart filters or zooms all of them.
 - SQL: one DuckDB statement over the connected source, its rows as a table, downloads as CSV, JSON Lines or Parquet.
 - Data source: where the files are, how they are formatted, which field is the time, and how to authenticate.
 - Settings: UI language, date format, time zone, scaled date format for histogram buckets, first day of the week, and the time picker's quick ranges.
@@ -108,27 +109,32 @@ Access key mode keeps the access key ID with the source configuration and the se
 
 The query bar uses Lucene syntax.
 
-| Example                         | Meaning                                                               |
-| ------------------------------- | --------------------------------------------------------------------- |
-| `error timeout`                 | free text; each word matches any searchable field, words are OR-ed    |
-| `"connection reset"`            | phrase; `"a b"~3` requires all words in the same field                |
-| `http.status:503`               | field match (exact for numbers and booleans, token match for strings) |
-| `host.name:web-*`               | wildcard; `?` matches one character                                   |
-| `path:/api\/v[12]\/.*/`         | regular expression                                                    |
-| `http.status:(500 OR 503)`      | list of values                                                        |
-| `http.latency_ms:>800`          | range; `:>` `:>=` `:<` `:<=`                                          |
-| `http.bytes:[1000 TO 5000]`     | bracket range; `{}` excludes the bound, `*` leaves it open            |
-| `extra.user_id:*`               | field exists                                                          |
-| `NOT level:info`, `-level:info` | negation; `+term` requires                                            |
-| `a AND (b OR c)`                | `AND` `OR` `NOT` in upper case, or `&&` `                             |     | ` `!`; adjacent terms are OR-ed |
+| Example                          | Meaning                                                                          |
+| -------------------------------- | -------------------------------------------------------------------------------- |
+| `error timeout`                  | free text; each word matches any searchable field, words are OR-ed               |
+| `"connection reset"`             | phrase; `"a b"~3` requires all words in the same field                           |
+| `http.status:503`                | field match (exact for numbers and booleans, token match for strings)            |
+| `host.name:web-*`                | wildcard; `?` matches one character                                              |
+| `path:/api\/v[12]\/.*/`          | regular expression                                                               |
+| `http.status:(500 OR 503)`       | list of values                                                                   |
+| `http.latency_ms:>800`           | range; `:>` `:>=` `:<` `:<=`                                                     |
+| `http.bytes:[1000 TO 5000]`      | bracket range; `{}` excludes the bound, `*` leaves it open                       |
+| `extra.user_id:*`                | field exists                                                                     |
+| `NOT level:info`, `-level:info`  | negation; `+term` requires                                                       |
+| `@timestamp:[now-1d/d TO now/d]` | date math in ranges of a date field: `now`, `now-1h`, `now/d` (start of the day) |
+| `a AND (b OR c)`                 | `AND` `OR` `NOT` in upper case, or `&&` `                                        |     | ` `!`; adjacent terms are OR-ed |
 
-Special characters are escaped with `\`. `term~2` and `term^3` are accepted and ignored. Struct columns are addressed with dots (`geo.country`); JSON columns are sampled for keys and exposed the same way (`extra.user_id`). "show SQL" displays the generated statement.
+Field names are suggested while you type (Tab inserts the highlighted one) and an empty query box lists the last twenty queries run in this browser (`localStorage`, key `ddv.queryHistory`). Special characters are escaped with `\`. `term~2` and `term^3` are accepted and ignored. Struct columns are addressed with dots (`geo.country`); JSON columns are sampled for keys and exposed the same way (`extra.user_id`). "show SQL" displays the generated statement.
 
 Filters of the type "custom SQL" run verbatim inside DuckDB. Because the URL carries the filters, a link from someone else could contain SQL that reads this extension's S3 credentials or reaches the network; such filters are restored disabled and marked with ⚠ until you open them, read the SQL and enable them (SQL written or reviewed in this browser is remembered in `localStorage`, key `ddv.trustedSql`).
 
 ## Export
 
 "Export" on the Discover page downloads the rows that match the query, the filters and the time range as CSV, JSON Lines or Parquet, sorted like the table and cut at the chosen number of rows (10,000 by default, at most 1,000,000). With columns selected the file holds the time column and those columns under their field names; without a selection it holds every column of the source, so a gzip ALB prefix can be turned into a Parquet file from the browser. DuckDB writes the file in memory before the download starts, so keep the row limit within what the tab can hold. The Visualize page's table has its own "Download CSV".
+
+## Saved searches, visualizations and the dashboard
+
+"Saved searches" on the Discover page keeps the query, filters, columns, sort and histogram interval under a name (`localStorage`, key `ddv.savedSearches`); loading one restores them and keeps the current time range. "Save" on the Visualize page keeps the chart definition together with the query and filters (`ddv.savedVis`). The Dashboard page shows the saved visualizations that were added to it, each running its own query and filters on top of the page's search and time range; a click on a chart filters or zooms every tile, "Open" takes the tile to the Visualize page. Everything saved is in this browser only; see Settings for the backup file.
 
 ## SQL page
 

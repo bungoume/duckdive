@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'preact/hooks';
 import { t } from '../i18n';
 import type { Field } from '../fields';
-import { fetchTopValues, type TopValue } from '../queries';
-import { FieldIcon } from './ui';
+import { fetchNumberStats, fetchTopValues, type NumberStats, type TopValue } from '../queries';
+import { FieldIcon, fmtNum } from './ui';
 
 export function FieldSidebar(props: {
   fields: Field[];
@@ -18,18 +18,25 @@ export function FieldSidebar(props: {
   // where to place the details popover (position: fixed, so it floats above scrolling lists)
   const [anchor, setAnchor] = useState<{ left: number; top: number } | null>(null);
   const [tops, setTops] = useState<{ values: TopValue[]; total: number } | null>(null);
+  const [stats, setStats] = useState<NumberStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [showTypes, setShowTypes] = useState(true);
 
   useEffect(() => {
     setTops(null);
+    setStats(null);
     if (!open) return;
     const f = props.fields.find((x) => x.name === open);
     if (!f || f.kind === 'object') return;
     let alive = true;
     setLoading(true);
-    fetchTopValues(props.where, f)
-      .then((r) => alive && setTops(r))
+    // numbers get a summary and a small distribution on top of their most frequent values
+    Promise.all([fetchTopValues(props.where, f), f.kind === 'number' ? fetchNumberStats(props.where, f) : Promise.resolve(null)])
+      .then(([r, st]) => {
+        if (!alive) return;
+        setTops(r);
+        setStats(st);
+      })
       .catch(() => alive && setTops(null))
       .finally(() => alive && setLoading(false));
     return () => {
@@ -94,6 +101,35 @@ export function FieldSidebar(props: {
               <div class="hint">{t('fs.objectField')}</div>
             ) : (
               <>
+                {stats && (
+                  <>
+                    <h4>{t('fs.stats')}</h4>
+                    <div class="stat-grid">
+                      {(
+                        [
+                          [t('vis.agg.min'), stats.min],
+                          [t('vis.agg.max'), stats.max],
+                          [t('vis.agg.avg'), stats.avg],
+                          [t('vis.agg.median'), stats.p50],
+                          [t('vis.agg.p95'), stats.p95],
+                        ] as [string, number][]
+                      ).map(([k, v]) => (
+                        <span key={k}>
+                          <span class="hint">{k}</span> <b class="mono">{fmtNum(v)}</b>
+                        </span>
+                      ))}
+                    </div>
+                    <div class="dist" title={t('fs.dist', { from: fmtNum(stats.min), to: fmtNum(stats.max) })}>
+                      {stats.bins.map((c, i) => (
+                        <div
+                          key={i}
+                          style={{ height: `${Math.max(2, Math.round((c / Math.max(1, ...stats.bins)) * 100))}%` }}
+                          title={`${fmtNum(stats.min + i * stats.width)} – ${fmtNum(stats.min + (i + 1) * stats.width)}: ${c.toLocaleString()}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
                 <h4>
                   {t('fs.top5')}
                   {tops ? t('fs.inRecords', { n: tops.total.toLocaleString() }) : ''}

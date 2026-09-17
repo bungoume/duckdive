@@ -84,3 +84,14 @@ describe('searchToSql', () => {
     expect(() => searchToSql('status:>abc', fields)).toThrow(/not a number/);
   });
 });
+
+describe('date math in ranges', () => {
+  const fields = [f('ts', 'date')];
+  it('resolves now-based bounds to timestamp literals, rounding an inclusive upper bound up', () => {
+    expect(searchToSql('ts:>now-1h', fields)).toMatch(/^\("ts" > TIMESTAMP '\d{4}-\d\d-\d\d \d\d:\d\d:\d\d\.\d{3}'\)$/);
+    const sql = searchToSql('ts:[now/d TO now/d]', fields);
+    expect(sql).toMatch(/"ts" >= TIMESTAMP '\d{4}-\d\d-\d\d \d\d:00:00\.000' AND "ts" <= TIMESTAMP '\d{4}-\d\d-\d\d \d\d:59:59\.999'/);
+    expect(searchToSql('ts:>="2026-01-01"', fields)).toBe(`("ts" >= TRY_CAST('2026-01-01' AS TIMESTAMP))`);
+    expect(() => searchToSql('ts:>now-1x', fields)).toThrow(/not a date expression/);
+  });
+});

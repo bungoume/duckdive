@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_SOURCE, rememberSource, sourceKey, stripSecrets, loadSourceHistory } from '../src/sources';
-import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS, readUrlState, syncUrlStateFromLocation, writeUrlState } from '../src/state';
+import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS, loadSavedSearches, loadSavedVis, readUrlState, storeSavedSearches, storeSavedVis, syncUrlStateFromLocation, writeUrlState } from '../src/state';
 import { trustSql } from '../src/trust';
 import { historyLog } from './setup';
 
@@ -83,7 +83,7 @@ describe('malformed URL state', () => {
     const u = readUrlState();
     expect(u.search.query).toBe('');
     expect(u.search.range).toEqual({ from: 'now-6h', to: 'now' });
-    expect(u.discover).toEqual({ columns: [], sort: [{ field: 'b', dir: 'asc' }], interval: 'auto' });
+    expect(u.discover).toEqual({ columns: [], sort: [{ field: 'b', dir: 'asc' }], interval: 'auto', breakdown: null });
     expect(u.vis.chart).toBe('bar');
     expect(u.vis.x).toMatchObject({ kind: 'date_histogram', size: 10 });
     expect(u.vis.metrics).toEqual([{ id: 'm0', agg: 'count', field: null }]);
@@ -115,7 +115,7 @@ describe('malformed URL state', () => {
     setHash('visualize', { search: { query: 'q', range: { from: 'now-1d', to: 'now' }, filters: [] }, discover: { columns: ['a'], sort: [{ field: 'a', dir: 'desc' }], interval: '1h' }, vis });
     const u = readUrlState();
     expect(u.vis).toEqual(vis);
-    expect(u.discover).toEqual({ columns: ['a'], sort: [{ field: 'a', dir: 'desc' }], interval: '1h' });
+    expect(u.discover).toEqual({ columns: ['a'], sort: [{ field: 'a', dir: 'desc' }], interval: '1h', breakdown: null });
     expect(u.search.range).toEqual({ from: 'now-1d', to: 'now' });
   });
 });
@@ -139,5 +139,49 @@ describe('writeUrlState', () => {
     const { state, full } = syncUrlStateFromLocation();
     expect(full).toBe(true);
     expect(state).toEqual(searched);
+  });
+});
+
+describe('saved searches and visualizations', () => {
+  it('round-trip through localStorage with their shapes checked', () => {
+    storeSavedSearches([
+      {
+        id: 's1',
+        title: 'errors',
+        savedAt: '2026-09-17T00:00:00Z',
+        search: { query: 'level:error', range: { from: 'now-1d', to: 'now' }, filters: [] },
+        discover: { columns: ['host'], sort: [], interval: '1h', breakdown: null },
+      },
+    ]);
+    expect(loadSavedSearches()).toEqual([
+      {
+        id: 's1',
+        title: 'errors',
+        savedAt: '2026-09-17T00:00:00Z',
+        search: { query: 'level:error', range: { from: 'now-1d', to: 'now' }, filters: [] },
+        discover: { columns: ['host'], sort: [], interval: '1h', breakdown: null },
+      },
+    ]);
+    localStorage.setItem('ddv.savedSearches', JSON.stringify([{ id: 1, discover: { columns: 'x' } }, 'junk']));
+    expect(loadSavedSearches()).toEqual([
+      { id: 'search0', title: '', savedAt: '', search: { query: '', range: { from: 'now-6h', to: 'now' }, filters: [] }, discover: { columns: [], sort: [], interval: 'auto', breakdown: null } },
+    ]);
+    storeSavedVis([
+      {
+        id: 'v1',
+        title: 'a',
+        savedAt: '',
+        vis: {
+          chart: 'line',
+          x: { kind: 'none', field: null, interval: 'auto', size: 5, orderBy: 'metric', orderDir: 'desc' },
+          metrics: [{ id: 'm0', agg: 'count', field: null }],
+          breakdown: { field: null, size: 5, other: true },
+          title: 'a',
+        },
+        search: { query: '', range: { from: 'now-6h', to: 'now' }, filters: [] },
+        pinned: true,
+      },
+    ]);
+    expect(loadSavedVis()[0].pinned).toBe(true);
   });
 });

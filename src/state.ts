@@ -3,7 +3,7 @@ import type { Filter, FilterOp } from './sql';
 import { shareableSource, sourceFromLink, type SourceConfig } from './sources';
 import { isTrustedSql } from './trust';
 
-export type AppPage = 'discover' | 'visualize' | 'sql' | 'source' | 'settings';
+export type AppPage = 'discover' | 'visualize' | 'dashboard' | 'sql' | 'source' | 'settings';
 
 export type SortDir = 'asc' | 'desc';
 
@@ -11,9 +11,11 @@ export interface DiscoverState {
   columns: string[];
   sort: { field: string; dir: SortDir }[];
   interval: string; // 'auto' or Interval.key
+  /** field whose top values split the histogram bars (null = plain count) */
+  breakdown: string | null;
 }
 
-export type MetricAgg = 'count' | 'sum' | 'avg' | 'min' | 'max' | 'median' | 'unique' | 'p95' | 'p99';
+export type MetricAgg = 'count' | 'sum' | 'avg' | 'min' | 'max' | 'median' | 'unique' | 'p95' | 'p99' | 'percentile' | 'rate';
 export type ChartType = 'area' | 'line' | 'bar' | 'table' | 'metric';
 
 export interface MetricDef {
@@ -21,6 +23,8 @@ export interface MetricDef {
   agg: MetricAgg;
   field: string | null;
   label?: string;
+  /** the percentile (0–100) of a 'percentile' metric */
+  param?: number;
 }
 
 export interface XAxisDef {
@@ -44,6 +48,12 @@ export interface VisState {
   metrics: MetricDef[];
   breakdown: BreakdownDef;
   title: string;
+  /** stacked charts: every x adds up to 100 % */
+  percent?: boolean;
+  /** logarithmic (symlog) vertical axis */
+  log?: boolean;
+  /** date histograms: the previous period of the same length as a dashed overlay */
+  compare?: boolean;
 }
 
 export interface SearchState {
@@ -60,7 +70,7 @@ export interface UrlState {
 }
 
 export const DEFAULT_SEARCH: SearchState = { query: '', range: { from: 'now-6h', to: 'now' }, filters: [] };
-export const DEFAULT_DISCOVER: DiscoverState = { columns: [], sort: [], interval: 'auto' };
+export const DEFAULT_DISCOVER: DiscoverState = { columns: [], sort: [], interval: 'auto', breakdown: null };
 export const DEFAULT_VIS: VisState = {
   chart: 'bar',
   x: { kind: 'date_histogram', field: null, interval: 'auto', size: 10, orderBy: 'metric', orderDir: 'desc' },
@@ -93,7 +103,7 @@ const strList = (v: unknown): string[] => (Array.isArray(v) ? v.filter(isStr) : 
 
 const FILTER_OPS: readonly FilterOp[] = ['is', 'is_not', 'is_one_of', 'is_not_one_of', 'exists', 'does_not_exist', 'between', 'query'];
 const CHARTS: readonly ChartType[] = ['area', 'line', 'bar', 'table', 'metric'];
-const AGGS: readonly MetricAgg[] = ['count', 'sum', 'avg', 'min', 'max', 'median', 'unique', 'p95', 'p99'];
+const AGGS: readonly MetricAgg[] = ['count', 'sum', 'avg', 'min', 'max', 'median', 'unique', 'p95', 'p99', 'percentile', 'rate'];
 const X_KINDS: readonly XAxisDef['kind'][] = ['date_histogram', 'terms', 'histogram', 'none'];
 
 /**
@@ -133,12 +143,12 @@ export function sanitizeSearch(raw: unknown, quarantine = true): SearchState {
   return { query: isStr(r.query) ? r.query : '', range, filters: sanitizeFilters(r.filters, quarantine) };
 }
 
-function sanitizeDiscover(raw: unknown): DiscoverState {
+export function sanitizeDiscover(raw: unknown): DiscoverState {
   const r = isObj(raw) ? raw : {};
   const sort = Array.isArray(r.sort)
     ? r.sort.filter((s): s is { field: string; dir: SortDir } => isObj(s) && isStr(s.field) && (s.dir === 'asc' || s.dir === 'desc')).map((s) => ({ field: s.field, dir: s.dir }))
     : [];
-  return { columns: strList(r.columns), sort, interval: isStr(r.interval) ? r.interval : DEFAULT_DISCOVER.interval };
+  return { columns: strList(r.columns), sort, interval: isStr(r.interval) ? r.interval : DEFAULT_DISCOVER.interval, breakdown: strOrNull(r.breakdown) };
 }
 
 export function sanitizeVis(raw: unknown): VisState {
@@ -149,6 +159,7 @@ export function sanitizeVis(raw: unknown): VisState {
     ? r.metrics.filter(isObj).map((m, i) => {
         const def: MetricDef = { id: isStr(m.id) ? m.id : `m${i}`, agg: oneOf(m.agg, AGGS, 'count'), field: strOrNull(m.field) };
         if (isStr(m.label)) def.label = m.label;
+        if (typeof m.param === 'number' && m.param >= 0 && m.param <= 100) def.param = m.param;
         return def;
       })
     : [];
@@ -170,13 +181,16 @@ export function sanitizeVis(raw: unknown): VisState {
       other: typeof b.other === 'boolean' ? b.other : DEFAULT_VIS.breakdown.other,
     },
     title: isStr(r.title) ? r.title : '',
+    ...(r.percent === true ? { percent: true } : {}),
+    ...(r.log === true ? { log: true } : {}),
+    ...(r.compare === true ? { compare: true } : {}),
   };
 }
 
 export function readUrlState(): UrlState {
   const h = location.hash.replace(/^#\/?/, '');
   const [pageRaw, qs] = h.split('?');
-  const page: AppPage = pageRaw === 'visualize' || pageRaw === 'sql' || pageRaw === 'source' || pageRaw === 'settings' ? pageRaw : 'discover';
+  const page: AppPage = pageRaw === 'visualize' || pageRaw === 'dashboard' || pageRaw === 'sql' || pageRaw === 'source' || pageRaw === 'settings' ? pageRaw : 'discover';
   let st: Record<string, unknown> = {};
   if (qs) {
     const p = new URLSearchParams(qs);
@@ -252,6 +266,8 @@ export interface SavedVis {
   savedAt: string;
   vis: VisState;
   search: SearchState;
+  /** shown on the Dashboard page */
+  pinned?: boolean;
 }
 
 export function loadSavedVis(): SavedVis[] {
@@ -265,6 +281,7 @@ export function loadSavedVis(): SavedVis[] {
       savedAt: isStr(e.savedAt) ? e.savedAt : '',
       vis: sanitizeVis(e.vis),
       search: sanitizeSearch(e.search, false),
+      pinned: e.pinned === true,
     }));
   } catch {
     return [];
@@ -274,6 +291,41 @@ export function loadSavedVis(): SavedVis[] {
 export function storeSavedVis(list: SavedVis[]) {
   try {
     localStorage.setItem(LS_VIS, JSON.stringify(list));
+  } catch {
+    /* ignore */
+  }
+}
+
+const LS_SEARCHES = 'ddv.savedSearches';
+
+/** A Discover view kept under a name: query, filters and time range, plus columns, sort and interval. */
+export interface SavedSearch {
+  id: string;
+  title: string;
+  savedAt: string;
+  search: SearchState;
+  discover: DiscoverState;
+}
+
+export function loadSavedSearches(): SavedSearch[] {
+  try {
+    const list: unknown = JSON.parse(localStorage.getItem(LS_SEARCHES) ?? '[]');
+    if (!Array.isArray(list)) return [];
+    return list.filter(isObj).map((e, i) => ({
+      id: isStr(e.id) ? e.id : `search${i}`,
+      title: isStr(e.title) ? e.title : '',
+      savedAt: isStr(e.savedAt) ? e.savedAt : '',
+      search: sanitizeSearch(e.search, false),
+      discover: sanitizeDiscover(e.discover),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export function storeSavedSearches(list: SavedSearch[]) {
+  try {
+    localStorage.setItem(LS_SEARCHES, JSON.stringify(list));
   } catch {
     /* ignore */
   }

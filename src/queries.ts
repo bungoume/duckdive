@@ -56,13 +56,14 @@ export async function fetchDocs(
   columns: string[],
   limit: number,
   offset: number,
+  timeDir: SortDir = 'desc',
 ): Promise<{ docs: Doc[]; sql: string }> {
   const sel: string[] = [];
   sel.push(timeExpr ? `epoch_ms(${timeExpr})::DOUBLE AS "__ts"` : `NULL AS "__ts"`);
   sel.push(`to_json(t)::VARCHAR AS "__src"`);
   const colFields = columns.map((c) => findField(fields, c)).filter((f): f is Field => !!f);
   colFields.forEach((f, i) => sel.push(`(${f.expr})::VARCHAR AS "__c${i}"`));
-  const sql = `SELECT ${sel.join(', ')} FROM ${VIEW} t WHERE ${where}${docsOrder(sort, fields, timeExpr)} LIMIT ${limit} OFFSET ${offset}`;
+  const sql = `SELECT ${sel.join(', ')} FROM ${VIEW} t WHERE ${where}${docsOrder(sort, fields, timeExpr, timeDir)} LIMIT ${limit} OFFSET ${offset}`;
   const r = await query(sql);
   const docs = r.rows.map((row) => {
     let source: Record<string, unknown>;
@@ -78,14 +79,14 @@ export async function fetchDocs(
   return { docs, sql };
 }
 
-/** ORDER BY of the document table: the chosen sorts, else newest first ('' without a time field). */
-export function docsOrder(sort: { field: string; dir: SortDir }[], fields: Field[], timeExpr: string | null): string {
+/** ORDER BY of the document table: the chosen sorts, else by time (newest first unless `timeDir` says asc; '' without a time field). */
+export function docsOrder(sort: { field: string; dir: SortDir }[], fields: Field[], timeExpr: string | null, timeDir: SortDir = 'desc'): string {
   const order: string[] = [];
   for (const s of sort) {
     const f = findField(fields, s.field);
     if (f) order.push(`${fieldCompareExpr(f)} ${s.dir === 'asc' ? 'ASC' : 'DESC'} NULLS LAST`);
   }
-  if (!order.length && timeExpr) order.push(`${timeExpr} DESC NULLS LAST`);
+  if (!order.length && timeExpr) order.push(`${timeExpr} ${timeDir === 'asc' ? 'ASC' : 'DESC'} NULLS LAST`);
   return order.length ? ' ORDER BY ' + order.join(', ') : '';
 }
 
@@ -122,11 +123,46 @@ export async function fetchTopValues(where: string, f: Field, size = 5): Promise
   return { total, values: r.rows.map((x) => ({ value: x.v === null ? null : String(x.v), count: Number(x.c), pct: total ? Number(x.c) / total : 0 })) };
 }
 
+export interface NumberStats {
+  count: number;
+  min: number;
+  max: number;
+  avg: number;
+  p50: number;
+  p95: number;
+  /** counts of `bins` equal-width buckets from min to max */
+  bins: number[];
+  width: number;
+}
+
+/** Summary and a small distribution of a numeric field (two statements: the bounds decide the buckets). */
+export async function fetchNumberStats(where: string, f: Field, bins = 10): Promise<NumberStats | null> {
+  const x = f.kind === 'number' ? f.expr : `TRY_CAST(${f.expr} AS DOUBLE)`;
+  const s = await query(
+    `SELECT count(${x})::DOUBLE AS n, min(${x})::DOUBLE AS mn, max(${x})::DOUBLE AS mx, avg(${x})::DOUBLE AS av, quantile_cont(${x}, 0.5)::DOUBLE AS p50, quantile_cont(${x}, 0.95)::DOUBLE AS p95 FROM ${VIEW} WHERE ${where}`,
+  );
+  const r = s.rows[0];
+  if (!r || !Number(r.n)) return null;
+  const mn = Number(r.mn);
+  const mx = Number(r.mx);
+  const width = (mx - mn) / bins;
+  const counts: number[] = new Array<number>(bins).fill(0);
+  if (width > 0) {
+    const h = await query(`SELECT least(${bins - 1}, floor((${x} - (${mn})) / ${width}))::INT AS b, count(*)::DOUBLE AS c FROM ${VIEW} WHERE ${where} AND ${x} IS NOT NULL GROUP BY 1`);
+    for (const row of h.rows) counts[Number(row.b)] = Number(row.c);
+  } else counts[0] = Number(r.n);
+  return { count: Number(r.n), min: mn, max: mx, avg: Number(r.av), p50: Number(r.p50), p95: Number(r.p95), bins: counts, width };
+}
+
 // ---------- Visualize aggregations ----------
 
-/** How a metric is computed: the column expression it reads (null for count) and the aggregate over that column. */
-export function metricPlan(m: MetricDef, fields: Field[]): { input: string | null; agg: (col: string) => string } {
+/**
+ * How a metric is computed: the column expression it reads (null for count) and the aggregate over
+ * that column. `secs` is the length of one bucket (or of the whole range) for the rate per second.
+ */
+export function metricPlan(m: MetricDef, fields: Field[], secs = 1): { input: string | null; agg: (col: string) => string } {
   if (m.agg === 'count') return { input: null, agg: () => 'count(*)::DOUBLE' };
+  if (m.agg === 'rate') return { input: null, agg: () => `(count(*)::DOUBLE / ${secs > 0 ? secs : 1})` };
   const f = m.field ? findField(fields, m.field) : undefined;
   if (!f) return { input: null, agg: () => 'NULL::DOUBLE' };
   const num = f.kind === 'number' ? f.expr : `TRY_CAST(${f.expr} AS DOUBLE)`;
@@ -145,6 +181,8 @@ export function metricPlan(m: MetricDef, fields: Field[]): { input: string | nul
       return { input: num, agg: (c) => `quantile_cont(${c}, 0.95)::DOUBLE` };
     case 'p99':
       return { input: num, agg: (c) => `quantile_cont(${c}, 0.99)::DOUBLE` };
+    case 'percentile':
+      return { input: num, agg: (c) => `quantile_cont(${c}, ${Math.min(100, Math.max(0, m.param ?? 90)) / 100})::DOUBLE` };
     case 'unique':
       return { input: f.expr, agg: (c) => `count(DISTINCT ${c})::DOUBLE` };
   }
@@ -153,6 +191,8 @@ export function metricPlan(m: MetricDef, fields: Field[]): { input: string | nul
 export function metricLabel(m: MetricDef): string {
   if (m.label) return m.label;
   if (m.agg === 'count') return t('metric.count');
+  if (m.agg === 'rate') return t('metric.rate');
+  if (m.agg === 'percentile') return t('metric.percentile', { p: m.param ?? 90, field: m.field ?? '?' });
   return t('metric.of', { agg: t(`vis.agg.${m.agg}`), field: m.field ?? '?' });
 }
 
@@ -188,8 +228,10 @@ export function groupLabel(g: string): string {
  * final aggregation all read that instead of scanning the source view again, which for gzip
  * sources means one decompression instead of three or four.
  */
-export async function fetchVis(vis: VisState, where: string, timeExpr: string | null, fields: Field[], iv: Interval | null, tzOffset: number): Promise<VisResult> {
-  const plans = vis.metrics.map((m) => metricPlan(m, fields));
+export async function fetchVis(vis: VisState, where: string, timeExpr: string | null, fields: Field[], iv: Interval | null, tzOffset: number, spanSec = 0): Promise<VisResult> {
+  // a rate is per bucket second on a date histogram, per second of the whole range otherwise
+  const secs = vis.x.kind === 'date_histogram' && iv ? iv.ms / 1000 : spanSec;
+  const plans = vis.metrics.map((m) => metricPlan(m, fields, secs));
   const ms = plans.map((p, i) => p.agg(`v${i}`));
   const mSel = ms.map((s, i) => `${s} AS m${i}`).join(', ');
   const xf = vis.x.field ? findField(fields, vis.x.field) : undefined;

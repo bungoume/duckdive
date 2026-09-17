@@ -6,8 +6,14 @@ All notable changes to Duckdive. The format follows [Keep a Changelog](https://k
 
 ### Added
 
-- The range cache keeps its data within a size limit (4 GB by default, set under Local range cache): beyond it whole files are dropped, least recently used first, and the slab is compacted when the dropped chunks make up a fifth of it.
 - Local files: drop files or a folder on the Data source page, or pick them with the file and folder dialogs. The handles are kept in IndexedDB, so a local source appears under Recent sources and can be reopened after a restart (Chrome asks for read permission again).
+- The query bar suggests field names while typing (Tab inserts one), lists the last twenty queries when empty, and accepts date math (`now-1h`, `now/d`) in ranges of a date field.
+- Visualize options: stack to 100 %, a logarithmic (symlog) axis, and the previous period of the same length as dashed lines on a date histogram; "Percentile" (any value 0–100) and "Rate per second" as metrics; "SVG" downloads the chart.
+- An expanded row has a Context tab: the records before and after it in time, whatever the query and filters, five more in each direction on request.
+- The field sidebar shows minimum, maximum, average, median, p95 and a ten-bucket distribution for number fields, above the top values.
+- The Discover histogram can be broken down by a field: stacked bars of its top five values (plus Other), a click on a bar filters by that value.
+- Saved searches on the Discover page (query, filters, columns, sort and interval under a name), and a Dashboard page that shows saved visualizations side by side over one search and time range, with click-to-filter across all tiles.
+- The range cache keeps its data within a size limit (4 GB by default, set under Local range cache): beyond it whole files are dropped, least recently used first, and the slab is compacted when the dropped chunks make up a fifth of it.
 - Auto refresh next to the Refresh button: the search re-runs every 10 s to 15 min while the tab is visible; sources with date tokens re-list their files each time.
 - SQL page: one DuckDB statement over the source view, with "Current search" to start from the search of the other pages, a history of the last twenty statements, and downloads of the result as CSV, JSON Lines or Parquet.
 - "Share" in the header copies a link that carries the view and the data source without its secrets. A source the recipient connected before is used right away; an unknown one is offered in a banner with its destination and authentication mode.

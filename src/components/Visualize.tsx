@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { TimeRange } from '../datemath';
 import type { Field } from '../fields';
 import { findField } from '../fields';
-import { NULL_GROUP, OTHER, compileSearch, fetchVis, metricLabel, type VisResult } from '../queries';
+import { compileSearch, fetchVis, metricLabel, type VisResult } from '../queries';
 import { INTERVALS, autoInterval, bucketOffsetMinutes, intervalByKey, intervalLabel, newId, type Filter, type Interval } from '../sql';
 import { t } from '../i18n';
 import { loadSavedVis, storeSavedVis, type ChartType, type MetricAgg, type MetricDef, type SavedVis, type SearchState, type VisState } from '../state';
@@ -16,7 +16,9 @@ import { FilterBar } from './FilterBar';
 import { DiagnosePanel } from './DiagnosePanel';
 import { QueryBar } from './QueryBar';
 import { withCacheHint } from '../diagnose';
+import { downloadBlob } from '../export';
 import { FormField } from './ui';
+import { breakdownLabel, searchAfterPick, xAxisLabel } from './visutil';
 
 const CHARTS: { id: ChartType; icon: string }[] = [
   { id: 'area', icon: '⛰' },
@@ -36,7 +38,9 @@ const AGGS: { id: MetricAgg; needsField: boolean }[] = [
   { id: 'median', needsField: true },
   { id: 'p95', needsField: true },
   { id: 'p99', needsField: true },
+  { id: 'percentile', needsField: true },
   { id: 'unique', needsField: true },
+  { id: 'rate', needsField: false },
 ];
 const aggLabel = (id: MetricAgg) => t(`vis.agg.${id}`);
 
@@ -103,12 +107,23 @@ export function Visualize(props: {
   const tzOffset = bucketOffsetMinutes(compiled.to ?? undefined);
 
   const [result, setResult] = useState<VisResult | null>(null);
+  /** the previous period, its buckets shifted onto this period's (compare mode) */
+  const [previous, setPrevious] = useState<VisResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSql, setShowSql] = useState(false);
   const [saved, setSaved] = useState<SavedVis[]>(() => loadSavedVis());
   const runId = useRef(0);
   const visKey = JSON.stringify(effVis);
+  const spanMs = compiled.from && compiled.to ? compiled.to.getTime() - compiled.from.getTime() : 0;
+  const isTimeChart = vis.x.kind === 'date_histogram' && (vis.chart === 'area' || vis.chart === 'line' || vis.chart === 'bar');
+  const compare = !!vis.compare && isTimeChart && spanMs > 0;
+  // the same search over the period of the same length just before this one
+  const previousWhere = useMemo(() => {
+    if (!compare || !compiled.from || !compiled.to) return null;
+    const range = { from: new Date(compiled.from.getTime() - spanMs).toISOString(), to: new Date(compiled.to.getTime() - spanMs).toISOString() };
+    return compileSearch({ ...search, range }, fields, timeExpr).where;
+  }, [compare, compiled.from, compiled.to, spanMs, search, fields, timeExpr]);
 
   useEffect(() => {
     if (compiled.error || paused) return;
@@ -116,9 +131,16 @@ export function Visualize(props: {
     setBusy(true);
     onBusy(true);
     setError(null);
-    fetchVis(effVis, compiled.where, timeExpr, fields, interval, tzOffset)
-      .then((r) => {
-        if (id === runId.current) setResult(r);
+    Promise.all([
+      fetchVis(effVis, compiled.where, timeExpr, fields, interval, tzOffset, spanMs / 1000),
+      previousWhere ? fetchVis(effVis, previousWhere, timeExpr, fields, interval, tzOffset, spanMs / 1000) : Promise.resolve(null),
+    ])
+      .then(([r, p]) => {
+        if (id !== runId.current) return;
+        setResult(r);
+        setPrevious(
+          p ? { ...p, rows: p.rows.map((row) => ({ ...row, x: typeof row.x === 'number' ? row.x + spanMs : row.x })), xOrder: p.xOrder.map((x) => (typeof x === 'number' ? x + spanMs : x)) } : null,
+        );
       })
       .catch((e) => {
         if (id === runId.current && !(e instanceof CancelledError)) setError(withCacheHint(describeError(e)));
@@ -132,7 +154,7 @@ export function Visualize(props: {
     // the chart definition and the interval are compared by value, so a restored URL with the same content does not re-query;
     // refreshTick re-runs an unchanged search (absolute range) on auto refresh
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compiled.where, compiled.error, visKey, interval?.key, tzOffset, timeExpr, paused, onBusy, refreshTick]);
+  }, [compiled.where, previousWhere, compiled.error, visKey, interval?.key, tzOffset, timeExpr, paused, onBusy, refreshTick]);
 
   const setVis = (patch: Partial<VisState>) => props.onVis({ ...vis, ...patch });
   const setX = (patch: Partial<VisState['x']>) => setVis({ x: { ...vis.x, ...patch } });
@@ -165,21 +187,8 @@ export function Visualize(props: {
   const onBrush = (from: Date, to: Date) => props.onSearch({ ...search, range: { from: from.toISOString(), to: to.toISOString() } });
   /** Click on the chart: breakdown value → filter, terms bucket → filter, time bucket → zoom. */
   const onPick = (pick: ChartPick) => {
-    const groups = result?.groups ?? [];
-    if (vis.breakdown.field && groups.length) {
-      if (pick.series === OTHER) {
-        const top = groups.filter((g) => g !== OTHER);
-        if (top.length) props.onSearch({ ...search, filters: [...search.filters, { id: newId(), field: vis.breakdown.field, op: 'is_not_one_of', values: top }] });
-        return;
-      }
-      addFilter(vis.breakdown.field, pick.series === NULL_GROUP ? null : pick.series, false);
-      return;
-    }
-    if (vis.x.kind === 'terms' && vis.x.field) {
-      addFilter(vis.x.field, pick.x === NULL_GROUP ? null : String(pick.x), false);
-      return;
-    }
-    if (pick.isTime && pick.x instanceof Date && pick.intervalMs) onBrush(pick.x, new Date(pick.x.getTime() + pick.intervalMs));
+    const next = searchAfterPick(vis, result?.groups ?? [], pick, search);
+    if (next) props.onSearch(next);
   };
 
   const save = () => {
@@ -201,20 +210,23 @@ export function Visualize(props: {
     storeSavedVis(list);
   };
 
-  const xLabel =
-    vis.x.kind === 'date_histogram'
-      ? t('vis.xLabel.date', { field: vis.x.field ?? props.timeField?.name ?? t('vis.time'), interval: interval ? intervalLabel(interval).toLowerCase() : '' })
-      : vis.x.kind === 'terms'
-        ? t('vis.xLabel.terms', { n: vis.x.size, field: vis.x.field ?? '?' })
-        : vis.x.kind === 'histogram'
-          ? t('vis.xLabel.hist', { field: vis.x.field ?? '?', size: vis.x.interval })
-          : '';
-  const gLabel = vis.breakdown.field ? t('vis.xLabel.terms', { n: vis.breakdown.size, field: vis.breakdown.field }) : null;
+  const xLabel = xAxisLabel(vis, interval, props.timeField?.name ?? null);
+  const gLabel = breakdownLabel(vis);
+
+  /** The chart's own <svg> (Plot renders small legend swatches before it) as a file. */
+  const downloadSvg = () => {
+    let best: SVGSVGElement | null = null;
+    for (const el of document.querySelectorAll<SVGSVGElement>('.vis-panel .chart-box svg')) if (!best || el.clientWidth > best.clientWidth) best = el;
+    if (!best) return;
+    const clone = best.cloneNode(true) as SVGSVGElement;
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    downloadBlob(new Blob([new XMLSerializer().serializeToString(clone)], { type: 'image/svg+xml' }), `duckdive-${vis.title.trim() || 'chart'}.svg`);
+  };
 
   return (
     <div class="page">
       <div class="topbar">
-        <QueryBar query={search.query} range={search.range} error={compiled.error ?? error} busy={busy} onSubmit={submit} />
+        <QueryBar query={search.query} range={search.range} error={compiled.error ?? error} busy={busy} fields={fields} onSubmit={submit} />
         <DiagnosePanel error={error} />
         <FilterBar filters={search.filters} fields={fields} onChange={(filters) => props.onSearch({ ...search, filters })} />
       </div>
@@ -229,6 +241,11 @@ export function Visualize(props: {
                 <button class="btn small" onClick={() => setShowSql(!showSql)}>
                   {showSql ? t('vis.hideSql') : t('vis.showSql')}
                 </button>
+                {result && (vis.chart === 'area' || vis.chart === 'line' || vis.chart === 'bar') && result.xKind !== 'none' && (
+                  <button class="btn small" onClick={downloadSvg} title={t('vis.downloadSvg.title')}>
+                    {t('vis.downloadSvg')}
+                  </button>
+                )}
                 <button class="btn primary small" onClick={save}>
                   {t('common.save')}
                 </button>
@@ -244,9 +261,20 @@ export function Visualize(props: {
                       <p>{t('vis.chooseAxis.text', { axis: t('vis.xAxis') })}</p>
                     </div>
                   ) : (
-                    <Chart result={result} metrics={vis.metrics} chart={vis.chart} onBrush={onBrush} onPick={onPick} height={380} />
+                    <Chart
+                      result={result}
+                      metrics={vis.metrics}
+                      chart={vis.chart}
+                      onBrush={onBrush}
+                      onPick={onPick}
+                      height={380}
+                      percent={vis.percent}
+                      log={vis.log}
+                      compare={compare ? previous : null}
+                    />
                   )}
                   {result.groups.length > 0 && vis.metrics.length > 1 && <div class="legend-note">{t('vis.breakdownNote')}</div>}
+                  {compare && previous && <div class="legend-note">{t('vis.previousNote')}</div>}
                 </>
               )}
               {!result && !error && <div class="empty">{t('common.loading')}</div>}
@@ -286,7 +314,17 @@ export function Visualize(props: {
                   </span>
                 </DropZone>
                 <FormField label={t('vis.function')}>
-                  <select class="input" value={vis.x.kind} onChange={(e) => setX({ kind: e.currentTarget.value as VisState['x']['kind'] })}>
+                  <select
+                    class="input"
+                    value={vis.x.kind}
+                    onChange={(e) => {
+                      // a field that does not fit the new function (a path on a date histogram) is dropped
+                      const kind = e.currentTarget.value as VisState['x']['kind'];
+                      const f = vis.x.field ? findField(fields, vis.x.field) : undefined;
+                      const fits = !f || (kind === 'date_histogram' ? f.kind === 'date' : kind === 'histogram' ? f.kind === 'number' : true);
+                      setX({ kind, field: fits ? vis.x.field : null });
+                    }}
+                  >
                     <option value="none">–</option>
                     <option value="date_histogram">{t('vis.fn.dateHistogram')}</option>
                     <option value="terms">{t('vis.fn.terms')}</option>
@@ -387,6 +425,19 @@ export function Visualize(props: {
                         {agg.needsField && (
                           <FieldSelect fields={fields} value={m.field} onChange={(v) => setMetric(m.id, { field: v })} allow={(f) => (m.agg === 'unique' ? true : f.kind === 'number')} />
                         )}
+                        {m.agg === 'percentile' && (
+                          <input
+                            class="input percentile"
+                            type="number"
+                            min={0}
+                            max={100}
+                            step="any"
+                            title={t('vis.percentile')}
+                            aria-label={t('vis.percentile')}
+                            value={m.param ?? 90}
+                            onInput={(e) => setMetric(m.id, { param: Math.min(100, Math.max(0, Number(e.currentTarget.value) || 0)) })}
+                          />
+                        )}
                       </div>
                       <input class="input" placeholder={t('vis.customLabel')} value={m.label ?? ''} onInput={(e) => setMetric(m.id, { label: e.currentTarget.value || undefined })} />
                     </div>
@@ -425,6 +476,27 @@ export function Visualize(props: {
               )}
             </div>
           </div>
+
+          {(vis.chart === 'area' || vis.chart === 'line' || vis.chart === 'bar') && (
+            <div class="cfg-section">
+              <div class="head">{t('vis.options')}</div>
+              <div class="body">
+                {vis.chart !== 'line' && (
+                  <label class="row">
+                    <input type="checkbox" checked={!!vis.percent} onChange={(e) => setVis({ percent: e.currentTarget.checked || undefined })} /> {t('vis.opt.percent')}
+                  </label>
+                )}
+                <label class="row">
+                  <input type="checkbox" checked={!!vis.log} onChange={(e) => setVis({ log: e.currentTarget.checked || undefined })} /> {t('vis.opt.log')}
+                </label>
+                {vis.x.kind === 'date_histogram' && (
+                  <label class="row">
+                    <input type="checkbox" checked={!!vis.compare} onChange={(e) => setVis({ compare: e.currentTarget.checked || undefined })} /> {t('vis.opt.compare')}
+                  </label>
+                )}
+              </div>
+            </div>
+          )}
 
           <div class="cfg-section">
             <div class="head">{t('vis.saved')}</div>

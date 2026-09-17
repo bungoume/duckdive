@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { t, tx, useLang } from './i18n';
 import { useSettings } from './settings';
+import { Dashboard } from './components/Dashboard';
 import { DataSource } from './components/DataSource';
 import { Discover } from './components/Discover';
 import { ShareButton } from './components/ShareButton';
@@ -44,7 +45,7 @@ export function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  const refreshTick = useAutoRefresh(settings.autoRefreshMs, url.page === 'discover' || url.page === 'visualize', busyRef);
+  const refreshTick = useAutoRefresh(settings.autoRefreshMs, url.page === 'discover' || url.page === 'visualize' || url.page === 'dashboard', busyRef);
   const {
     ready,
     initError,
@@ -111,6 +112,9 @@ export function App() {
           </button>
           <button class={page === 'visualize' ? 'active' : ''} onClick={() => setPage('visualize')} disabled={noSource}>
             {t('app.nav.visualize')}
+          </button>
+          <button class={page === 'dashboard' ? 'active' : ''} onClick={() => setPage('dashboard')} disabled={noSource}>
+            {t('app.nav.dashboard')}
           </button>
           <button class={page === 'sql' ? 'active' : ''} onClick={() => setPage('sql')} disabled={noSource}>
             {t('app.nav.sql')}
@@ -237,8 +241,8 @@ export function App() {
           timeExpr={timeExpr}
           search={url.search}
           discover={url.discover}
-          onSearch={(search) => setUrl({ ...url, search })}
-          onDiscover={(discover) => setUrl({ ...url, discover })}
+          onSearch={(search) => setUrl((u) => ({ ...u, search }))}
+          onDiscover={(discover) => setUrl((u) => ({ ...u, discover }))}
           onVisualizeField={visualizeField}
           onBusy={setBusy}
           paused={paused}
@@ -252,8 +256,21 @@ export function App() {
           timeExpr={timeExpr}
           search={url.search}
           vis={url.vis}
-          onSearch={(search) => setUrl({ ...url, search })}
-          onVis={(vis) => setUrl({ ...url, vis })}
+          onSearch={(search) => setUrl((u) => ({ ...u, search }))}
+          onVis={(vis) => setUrl((u) => ({ ...u, vis }))}
+          onBusy={setBusy}
+          paused={paused}
+          refreshTick={refreshTick}
+        />
+      )}
+      {page === 'dashboard' && attached && (
+        <Dashboard
+          fields={fields}
+          timeField={timeField}
+          timeExpr={timeExpr}
+          search={url.search}
+          onSearch={(search) => setUrl((u) => ({ ...u, search }))}
+          onOpen={(s) => setUrl((u) => ({ ...u, page: 'visualize', vis: s.vis, search: { ...u.search, query: s.search.query, filters: s.search.filters } }))}
           onBusy={setBusy}
           paused={paused}
           refreshTick={refreshTick}
