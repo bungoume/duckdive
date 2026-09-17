@@ -164,7 +164,7 @@ export function filterToSQL(fl: Filter, fields: Field[]): string | null {
     switch (fl.op) {
       case 'is': {
         const v = one(fl.value);
-        sql = fl.value === null || fl.value === undefined || fl.value === '__null__' ? `${e} IS NULL` : v === null ? 'FALSE' : `${e} = ${v}`;
+        sql = fl.value === undefined ? `${e} IS NULL` : v === null ? 'FALSE' : `${e} = ${v}`;
         break;
       }
       case 'is_not': {

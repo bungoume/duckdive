@@ -5,6 +5,9 @@
 import { gzip } from 'pako';
 import { inflateGzipMembers } from '../gzmembers';
 
+/** A stalled download would otherwise hold the connect until the user cancels it. */
+const FETCH_TIMEOUT_MS = 10 * 60_000;
+
 interface Job {
   id: number;
   url: string;
@@ -26,7 +29,7 @@ function analyze(buf: Uint8Array): { gzip: boolean; multi: boolean; members: num
 self.onmessage = async (ev: MessageEvent<Job>) => {
   const job = ev.data;
   try {
-    const res = await fetch(job.fetchUrl, { headers: job.headers });
+    const res = await fetch(job.fetchUrl, { headers: job.headers, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
     if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
     const buf = new Uint8Array(await res.arrayBuffer());
     const a = analyze(buf);

@@ -31,9 +31,10 @@ export async function initDuckDB(): Promise<void> {
     } catch {
       /* icu not available: default is UTC */
     }
-    // DuckDB 1.3+ keeps bytes of remote files in its own in-memory cache. The OPFS range cache
-    // in the worker already serves that purpose (persistently, with ETag checks), and the wasm
-    // heap is the scarcer resource, so the in-memory copy is switched off.
+    // DuckDB 1.3+ has an in-memory cache of remote file bytes; the OPFS range cache in the worker
+    // serves that purpose persistently and with ETag checks, so it is switched off to spare the
+    // wasm heap. Note that DuckDB-Wasm 1.4 still keeps Parquet footers and blocks it has read
+    // for the session regardless of this setting (see e2e/cache.mjs, the STS check).
     try {
       await conn.query(`SET enable_external_file_cache = false`);
     } catch {

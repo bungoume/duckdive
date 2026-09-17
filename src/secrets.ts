@@ -4,7 +4,7 @@
 // rest of the configuration, access key ID included, so after a restart the form shows which key
 // was in use and asks for its secret again.
 
-import { isExtension } from './permissions';
+import { readSession, writeSession } from './sessionStore';
 import { sourceKey, type SourceConfig } from './state';
 
 const SESSION_KEY = 'ddv.s3secrets';
@@ -16,26 +16,8 @@ interface Secret {
 
 type Store = Record<string, Secret>;
 
-async function readAll(): Promise<Store> {
-  try {
-    if (isExtension && chrome.storage?.session) {
-      const r = await chrome.storage.session.get(SESSION_KEY);
-      return (r[SESSION_KEY] as Store | undefined) ?? {};
-    }
-    return JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? '{}') as Store;
-  } catch {
-    return {};
-  }
-}
-
-async function writeAll(store: Store): Promise<void> {
-  try {
-    if (isExtension && chrome.storage?.session) await chrome.storage.session.set({ [SESSION_KEY]: store });
-    else sessionStorage.setItem(SESSION_KEY, JSON.stringify(store));
-  } catch {
-    /* ignore */
-  }
-}
+const readAll = async (): Promise<Store> => (await readSession<Store>(SESSION_KEY)) ?? {};
+const writeAll = (store: Store): Promise<void> => writeSession(SESSION_KEY, store);
 
 function secretKey(cfg: SourceConfig): string | null {
   const key = sourceKey(cfg);

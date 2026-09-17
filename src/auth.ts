@@ -5,6 +5,7 @@
 import { fetchWithTimeout } from './net';
 import { expose } from './debug';
 import { isExtension } from './permissions';
+import { readSession, writeSession } from './sessionStore';
 
 export interface OidcConfig {
   /** Authorization endpoint, e.g. https://accounts.google.com/o/oauth2/v2/auth */
@@ -153,26 +154,9 @@ export async function signIn(cfg: OidcConfig, interactive: boolean): Promise<Aws
   return creds;
 }
 
-// Temporary credentials live in chrome.storage.session (memory only, cleared when the
-// browser closes). Outside the extension they are kept in sessionStorage.
-export async function storeCredentials(c: AwsCredentials | null): Promise<void> {
-  if (isExtension && chrome.storage?.session) {
-    if (c) await chrome.storage.session.set({ [SESSION_KEY]: c });
-    else await chrome.storage.session.remove(SESSION_KEY);
-    return;
-  }
-  if (c) sessionStorage.setItem(SESSION_KEY, JSON.stringify(c));
-  else sessionStorage.removeItem(SESSION_KEY);
-}
-
-export async function loadCredentials(): Promise<AwsCredentials | null> {
-  if (isExtension && chrome.storage?.session) {
-    const r = await chrome.storage.session.get(SESSION_KEY);
-    return (r[SESSION_KEY] as AwsCredentials | undefined) ?? null;
-  }
-  const raw = sessionStorage.getItem(SESSION_KEY);
-  return raw ? (JSON.parse(raw) as AwsCredentials) : null;
-}
+// Temporary credentials live for the browser session only (src/sessionStore.ts).
+export const storeCredentials = (c: AwsCredentials | null): Promise<void> => writeSession(SESSION_KEY, c);
+export const loadCredentials = (): Promise<AwsCredentials | null> => readSession<AwsCredentials>(SESSION_KEY);
 
 export function secondsUntilExpiry(c: AwsCredentials | null): number {
   if (!c?.expiration) return Infinity;

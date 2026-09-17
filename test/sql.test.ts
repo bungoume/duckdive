@@ -16,7 +16,7 @@ describe('literals', () => {
 describe('filterToSQL', () => {
   it('renders the operators', () => {
     expect(filterToSQL({ id: '1', field: 'host', op: 'is', value: 'a' }, fields)).toBe(`("host" = 'a')`);
-    expect(filterToSQL({ id: '1', field: 'host', op: 'is', value: '__null__' }, fields)).toBe(`("host" IS NULL)`);
+    expect(filterToSQL({ id: '1', field: 'host', op: 'is' }, fields)).toBe(`("host" IS NULL)`);
     expect(filterToSQL({ id: '1', field: 'status', op: 'is_one_of', values: ['1', '2'] }, fields)).toBe(`("status" IN (1, 2))`);
     expect(filterToSQL({ id: '1', field: 'host', op: 'exists' }, fields)).toBe(`("host" IS NOT NULL)`);
     expect(filterToSQL({ id: '1', field: 'status', op: 'between', from: '1', to: '5' }, fields)).toBe(`("status" >= 1 AND "status" < 5)`);
