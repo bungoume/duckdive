@@ -12,24 +12,24 @@
  * (src/cache.ts): stats / files / config / clear / purge / seed / store / complete.
  */
 
+import {
+  cacheKey,
+  checksum,
+  etagFrom,
+  hashName,
+  hexHead,
+  isDataUrl,
+  isExtensionUrl,
+  looksGzip,
+  parseHeaders,
+  parseRange,
+  rawHeaders,
+  totalSizeFrom,
+  type HeaderMap,
+  type NativeResult,
+} from './cache-util';
+
 declare function importScripts(...urls: string[]): void;
-
-// OPFS synchronous access handles are only typed in lib.webworker; declare what we use. This
-// file has no imports, so it is a script and these declarations merge into the DOM interfaces.
-interface FileSystemSyncAccessHandle {
-  read(buffer: ArrayBufferView, options?: { at?: number }): number;
-  write(buffer: ArrayBufferView, options?: { at?: number }): number;
-  truncate(size: number): void;
-  getSize(): number;
-  flush(): void;
-  close(): void;
-}
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- declaration merging (see above)
-interface FileSystemFileHandle {
-  createSyncAccessHandle(): Promise<FileSystemSyncAccessHandle>;
-}
-
-type HeaderMap = Record<string, string>;
 
 interface FileMeta {
   key: string;
@@ -62,12 +62,6 @@ interface ChunkRef {
   len: number;
   /** FNV-1a 32-bit checksum of the bytes (0 = unknown, for entries written by older builds) */
   sum: number;
-}
-
-function checksum(buf: Uint8Array): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < buf.length; i++) h = Math.imul(h ^ buf[i], 0x01000193) >>> 0;
-  return h || 1;
 }
 
 /**
@@ -155,59 +149,11 @@ function log(entry: Omit<LogEntry, 't'>): LogEntry {
   return e;
 }
 
-function hexHead(body: ArrayBuffer | null | undefined, n = 8): string | undefined {
-  if (!body) return undefined;
-  const b = new Uint8Array(body, 0, Math.min(n, body.byteLength));
-  return Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
-}
-
 /** Describe a network answer in the log (header chunk, odd status or transfer encoding only: 206 chunk bodies are routine). */
 function logNet(url: string, range: string, res: NativeResult, offset: number) {
   const enc = res.headers['content-encoding'];
   if (res.status === 206 && !enc && offset !== 0) return;
   log({ method: 'GET', url, range, outcome: `net:${res.status}`, status: res.status, bytes: res.body?.byteLength, enc: enc || undefined, head: offset === 0 ? hexHead(res.body) : undefined });
-}
-
-// ---------- key / name helpers ----------
-
-function cacheKey(url: string): string {
-  const u = new URL(url);
-  for (const k of [...u.searchParams.keys()]) {
-    if (/^(x-amz-|awsaccesskeyid$|signature$|expires$|x-goog-|sig$|se$|sv$|sp$|sr$|st$|skoid$|sktid$|skt$|ske$|sks$|skv$)/i.test(k)) u.searchParams.delete(k);
-  }
-  u.hash = '';
-  return u.toString();
-}
-
-/** OPFS file name for a cached DuckDB extension (FNV-1a, two 32-bit lanes). */
-function hashName(s: string): string {
-  let h1 = 0x811c9dc5;
-  let h2 = 0x01000193;
-  for (let i = 0; i < s.length; i++) {
-    const c = s.charCodeAt(i);
-    h1 = Math.imul(h1 ^ c, 0x01000193) >>> 0;
-    h2 = Math.imul(h2 ^ c, 0x811c9dc5) >>> 0;
-  }
-  return h1.toString(16).padStart(8, '0') + h2.toString(16).padStart(8, '0');
-}
-
-function isDataUrl(url: string): boolean {
-  try {
-    const u = new URL(url);
-    if (!/^https?:$/.test(u.protocol)) return false;
-    if (u.origin === self.location.origin) return false;
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function isExtensionUrl(url: string): boolean {
-  try {
-    return /\.duckdb_extension\.wasm$/.test(new URL(url).pathname);
-  } catch {
-    return false;
-  }
 }
 
 // ---------- OPFS ----------
@@ -537,23 +483,6 @@ async function compact(): Promise<void> {
 
 // ---------- native request helpers (synchronous) ----------
 
-interface NativeResult {
-  status: number;
-  statusText: string;
-  headers: HeaderMap;
-  rawHeaders: string;
-  body: ArrayBuffer | null;
-}
-
-function parseHeaders(raw: string): HeaderMap {
-  const out: HeaderMap = {};
-  for (const line of raw.split(/\r?\n/)) {
-    const i = line.indexOf(':');
-    if (i > 0) out[line.slice(0, i).trim().toLowerCase()] = line.slice(i + 1).trim();
-  }
-  return out;
-}
-
 // Deadlines for the synchronous requests DuckDB's file system makes from this worker. Without
 // them a stalled connection blocks the worker (and every queued query) forever. Synchronous
 // XHR may set `timeout` inside a worker (only a Window forbids it); on expiry send() throws,
@@ -579,35 +508,6 @@ function nativeSync(method: string, url: string, headers: HeaderMap, wantBody: b
   return { status: x.status, statusText: x.statusText, headers: parseHeaders(raw), rawHeaders: raw, body: wantBody ? (x.response as ArrayBuffer) : null };
 }
 
-function totalSizeFrom(res: NativeResult): number {
-  const cr = res.headers['content-range'];
-  if (cr) {
-    const m = /\/(\d+)$/.exec(cr);
-    if (m) return Number(m[1]);
-  }
-  return Number(res.headers['content-length']);
-}
-
-function etagFrom(res: NativeResult): string {
-  return res.headers['etag'] || res.headers['last-modified'] || '';
-}
-
-function parseRange(h: string, size: number): { start: number; end: number } | null {
-  const m = /^bytes=(\d*)-(\d*)$/.exec(h.trim());
-  if (!m || (m[1] === '' && m[2] === '')) return null;
-  let start: number;
-  let end: number;
-  if (m[1] === '') {
-    start = Math.max(0, size - Number(m[2]));
-    end = size - 1;
-  } else {
-    start = Number(m[1]);
-    end = m[2] === '' ? size - 1 : Math.min(Number(m[2]), size - 1);
-  }
-  if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || start >= size) return null;
-  return { start, end };
-}
-
 // ---------- cached request handling ----------
 
 function synthesizedHead(entry: CacheEntry, rangeHeader: string | undefined): NativeResult {
@@ -631,10 +531,7 @@ function synthesizedHead(entry: CacheEntry, rangeHeader: string | undefined): Na
     status,
     statusText: status === 206 ? 'Partial Content' : 'OK',
     headers: h,
-    rawHeaders:
-      Object.entries(h)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join('\r\n') + '\r\n',
+    rawHeaders: rawHeaders(h),
     body: null,
   };
 }
@@ -649,14 +546,6 @@ function handleHead(url: string, headers: HeaderMap): NativeResult {
   stats.headsNetwork++;
   if (res.status === 200 || res.status === 206) recordMeta(cacheKey(url), totalSizeFrom(res), etagFrom(res));
   return res;
-}
-
-function looksGzip(url: string): boolean {
-  try {
-    return /\.gz$/i.test(new URL(url).pathname);
-  } catch {
-    return false;
-  }
 }
 
 function handleRangeGet(url: string, headers: HeaderMap, rangeHeader: string, retry = true, retryEtag = true): NativeResult {
@@ -768,10 +657,7 @@ function handleRangeGet(url: string, headers: HeaderMap, rangeHeader: string, re
     status: 206,
     statusText: 'Partial Content',
     headers: h,
-    rawHeaders:
-      Object.entries(h)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join('\r\n') + '\r\n',
+    rawHeaders: rawHeaders(h),
     body: out.buffer,
   };
 }
@@ -788,10 +674,7 @@ function handleExtensionGet(url: string, headers: HeaderMap): NativeResult {
         status: 200,
         statusText: 'OK',
         headers: h,
-        rawHeaders:
-          Object.entries(h)
-            .map(([k, v]) => `${k}: ${v}`)
-            .join('\r\n') + '\r\n',
+        rawHeaders: rawHeaders(h),
         body: buf.buffer,
       };
     }
@@ -867,7 +750,7 @@ class CachingXHR {
 
   private cacheable(): boolean {
     if (!config.enabled || this.isAsync || opfsError) return false;
-    if (!isDataUrl(this.url)) return false;
+    if (!isDataUrl(this.url, self.location.origin)) return false;
     if (this.method === 'HEAD') return true;
     if (this.method === 'GET' && (this.reqHeaders['range'] || isExtensionUrl(this.url))) return true;
     return false;
