@@ -66,13 +66,16 @@ export function Discover(props: {
     const t0 = performance.now();
     (async () => {
       try {
+        // With a time field the histogram already counts every matching row (the range condition
+        // excludes NULL times), so the separate count(*) scan is only needed without one.
+        const withHistogram = !!(timeExpr && interval);
         const [n, b, d] = await Promise.all([
-          fetchCount(compiled.where),
-          timeExpr && interval ? fetchHistogram(compiled.where, timeExpr, interval, tzOffset) : Promise.resolve([]),
+          withHistogram ? Promise.resolve(null) : fetchCount(compiled.where),
+          withHistogram ? fetchHistogram(compiled.where, timeExpr!, interval!, tzOffset) : Promise.resolve([]),
           fetchDocs(compiled.where, timeExpr, fields, discover.sort, discover.columns, PAGE, 0),
         ]);
         if (id !== runId.current) return;
-        setCount(n);
+        setCount(n ?? b.reduce((a, x) => a + x.c, 0));
         setBuckets(b);
         setDocs(d);
         setResultSeq((s) => s + 1);

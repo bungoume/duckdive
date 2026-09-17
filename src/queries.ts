@@ -82,10 +82,10 @@ export interface TopValue {
 
 export async function fetchTopValues(where: string, f: Field, size = 5): Promise<{ values: TopValue[]; total: number }> {
   const e = f.kind === 'string' || f.kind === 'number' || f.kind === 'boolean' ? f.expr : `(${f.expr})::VARCHAR`;
+  // one pass: the total is a window over the grouped counts, not a second scan of the view
   const r = await query(
-    `WITH b AS (SELECT ${e} AS v FROM ${VIEW} WHERE ${where}),
-     t AS (SELECT count(*)::DOUBLE AS n FROM b)
-     SELECT v::VARCHAR AS v, count(*)::DOUBLE AS c, (SELECT n FROM t) AS n FROM b GROUP BY v ORDER BY c DESC LIMIT ${size}`,
+    `SELECT v::VARCHAR AS v, count(*)::DOUBLE AS c, sum(count(*)) OVER ()::DOUBLE AS n
+     FROM (SELECT ${e} AS v FROM ${VIEW} WHERE ${where}) b GROUP BY v ORDER BY c DESC LIMIT ${size}`,
   );
   const total = Number(r.rows[0]?.n ?? 0);
   return { total, values: r.rows.map((x) => ({ value: x.v === null ? null : String(x.v), count: Number(x.c), pct: total ? Number(x.c) / total : 0 })) };
@@ -93,28 +93,29 @@ export async function fetchTopValues(where: string, f: Field, size = 5): Promise
 
 // ---------- Visualize aggregations ----------
 
-export function metricSql(m: MetricDef, fields: Field[]): string {
-  if (m.agg === 'count') return 'count(*)::DOUBLE';
+/** How a metric is computed: the column expression it reads (null for count) and the aggregate over that column. */
+export function metricPlan(m: MetricDef, fields: Field[]): { input: string | null; agg: (col: string) => string } {
+  if (m.agg === 'count') return { input: null, agg: () => 'count(*)::DOUBLE' };
   const f = m.field ? findField(fields, m.field) : undefined;
-  if (!f) return 'NULL::DOUBLE';
+  if (!f) return { input: null, agg: () => 'NULL::DOUBLE' };
   const num = f.kind === 'number' ? f.expr : `TRY_CAST(${f.expr} AS DOUBLE)`;
   switch (m.agg) {
     case 'sum':
-      return `sum(${num})::DOUBLE`;
+      return { input: num, agg: (c) => `sum(${c})::DOUBLE` };
     case 'avg':
-      return `avg(${num})::DOUBLE`;
+      return { input: num, agg: (c) => `avg(${c})::DOUBLE` };
     case 'min':
-      return f.kind === 'number' ? `min(${f.expr})::DOUBLE` : `min(${num})::DOUBLE`;
+      return { input: num, agg: (c) => `min(${c})::DOUBLE` };
     case 'max':
-      return f.kind === 'number' ? `max(${f.expr})::DOUBLE` : `max(${num})::DOUBLE`;
+      return { input: num, agg: (c) => `max(${c})::DOUBLE` };
     case 'median':
-      return `median(${num})::DOUBLE`;
+      return { input: num, agg: (c) => `median(${c})::DOUBLE` };
     case 'p95':
-      return `quantile_cont(${num}, 0.95)::DOUBLE`;
+      return { input: num, agg: (c) => `quantile_cont(${c}, 0.95)::DOUBLE` };
     case 'p99':
-      return `quantile_cont(${num}, 0.99)::DOUBLE`;
+      return { input: num, agg: (c) => `quantile_cont(${c}, 0.99)::DOUBLE` };
     case 'unique':
-      return `count(DISTINCT ${f.expr})::DOUBLE`;
+      return { input: f.expr, agg: (c) => `count(DISTINCT ${c})::DOUBLE` };
   }
 }
 
@@ -150,12 +151,18 @@ export function groupLabel(g: string): string {
   return g === OTHER ? t('vis.other') : g === NULL_GROUP ? t('common.null') : g;
 }
 
+/**
+ * One statement per chart. The rows of the time window are projected once (x, group and the
+ * metric inputs only) into a materialised CTE; the top-N of x, the top-N of the group and the
+ * final aggregation all read that instead of scanning the source view again, which for gzip
+ * sources means one decompression instead of three or four.
+ */
 export async function fetchVis(vis: VisState, where: string, timeExpr: string | null, fields: Field[], iv: Interval | null, tzOffset: number): Promise<VisResult> {
-  const ms = vis.metrics.map((m) => metricSql(m, fields));
+  const plans = vis.metrics.map((m) => metricPlan(m, fields));
+  const ms = plans.map((p, i) => p.agg(`v${i}`));
   const mSel = ms.map((s, i) => `${s} AS m${i}`).join(', ');
   const xf = vis.x.field ? findField(fields, vis.x.field) : undefined;
   let xExpr: string | null = null;
-  let xOrderSql = '';
   let xKind = vis.x.kind;
   if (xKind === 'date_histogram') {
     const te = xf ? `(${xf.expr})::TIMESTAMP` : timeExpr;
@@ -171,24 +178,23 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
   const gf = vis.breakdown.field ? findField(fields, vis.breakdown.field) : undefined;
   const gExpr = gf ? `(${gf.expr})::VARCHAR` : null;
 
-  const ctes: string[] = [`base AS (SELECT * FROM ${VIEW} WHERE ${where})`];
-  const xSel = xExpr ? `${xExpr} AS x` : `NULL AS x`;
-  let gSel = gExpr ? `${gExpr} AS g` : `NULL AS g`;
-  const joins: string[] = [];
-
-  if (xKind === 'terms' && xExpr) {
-    const ord = vis.x.orderBy === 'alpha' ? `x ${vis.x.orderDir.toUpperCase()}` : `m0 ${vis.x.orderDir.toUpperCase()} NULLS LAST`;
-    ctes.push(`topx AS (SELECT ${xExpr} AS x, ${ms[0]} AS m0 FROM base GROUP BY 1 ORDER BY ${ord} LIMIT ${Math.max(1, vis.x.size)})`);
-    joins.push(`${xExpr} IN (SELECT x FROM topx)`);
-    xOrderSql = 'topx';
+  const inputs = plans.map((p, i) => (p.input ? `, ${p.input} AS v${i}` : '')).join('');
+  const ctes: string[] = [`base AS MATERIALIZED (SELECT ${xExpr ?? 'NULL'} AS x, ${gExpr ?? 'NULL'} AS g${inputs} FROM ${VIEW} WHERE ${where})`];
+  let gSel = 'g';
+  const conds: string[] = [];
+  const dir = vis.x.orderDir.toUpperCase();
+  const topX = xKind === 'terms' && !!xExpr;
+  if (topX) {
+    const ord = vis.x.orderBy === 'alpha' ? `x ${dir}` : `${ms[0]} ${dir} NULLS LAST`;
+    ctes.push(`topx AS (SELECT x, row_number() OVER (ORDER BY ${ord}) AS rk FROM base GROUP BY x ORDER BY rk LIMIT ${Math.max(1, vis.x.size)})`);
   }
   if (gExpr) {
-    ctes.push(`topg AS (SELECT ${gExpr} AS g, ${ms[0]} AS m0 FROM base GROUP BY 1 ORDER BY m0 DESC NULLS LAST LIMIT ${Math.max(1, vis.breakdown.size)})`);
-    if (vis.breakdown.other) gSel = `CASE WHEN ${gExpr} IN (SELECT g FROM topg) THEN ${gExpr} ELSE ${lit(OTHER)} END AS g`;
-    else joins.push(`${gExpr} IN (SELECT g FROM topg)`);
+    ctes.push(`topg AS (SELECT g, ${ms[0]} AS m0 FROM base GROUP BY g ORDER BY m0 DESC NULLS LAST LIMIT ${Math.max(1, vis.breakdown.size)})`);
+    if (vis.breakdown.other) gSel = `CASE WHEN g IN (SELECT g FROM topg) THEN g ELSE ${lit(OTHER)} END`;
+    else conds.push(`g IN (SELECT g FROM topg)`);
   }
-  const whereExtra = joins.length ? ` WHERE ${joins.join(' AND ')}` : '';
-  const sql = `WITH ${ctes.join(',\n')}\nSELECT ${xSel}, ${gSel}, ${mSel} FROM base${whereExtra} GROUP BY 1, 2 ORDER BY 1, 2`;
+  const join = topX ? ' JOIN topx ON topx.x = base.x' : '';
+  const sql = `WITH ${ctes.join(',\n')}\nSELECT base.x AS x, ${gSel} AS g, ${mSel}${topX ? ', min(topx.rk) AS xr' : ''} FROM base${join}${conds.length ? ' WHERE ' + conds.join(' AND ') : ''} GROUP BY 1, 2 ORDER BY 1, 2`;
   const r = await query(sql);
   const rows: VisRow[] = r.rows.map((row: Row) => ({
     x: row.x === null || row.x === undefined ? null : xKind === 'terms' ? String(row.x) : Number(row.x),
@@ -197,9 +203,13 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
   }));
 
   let xOrder: (string | number)[];
-  if (xOrderSql) {
-    const o = await query(`WITH ${ctes.join(',\n')} SELECT x FROM topx`);
-    xOrder = o.rows.map((x) => String(x.x));
+  if (topX) {
+    // the rank of each x comes back with its rows (min over the groups of that x)
+    const rank = new Map<string, number>();
+    r.rows.forEach((row: Row) => {
+      if (row.x !== null && row.x !== undefined) rank.set(String(row.x), Number(row.xr));
+    });
+    xOrder = [...rank.entries()].sort((a, b) => a[1] - b[1]).map((e) => e[0]);
   } else {
     xOrder = Array.from(new Set(rows.map((x) => x.x).filter((x): x is number => x !== null))).sort((a, b) => a - b);
   }
