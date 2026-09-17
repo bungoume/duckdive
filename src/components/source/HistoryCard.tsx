@@ -37,9 +37,11 @@ export function HistoryCard(props: { history: SourceHistoryEntry[]; currentKey: 
                   )}
                 </td>
                 <td class="a" style="visibility:visible;white-space:nowrap">
-                  <button class="btn small primary" style={actionStyle} disabled={props.busy || current} onClick={() => props.onUse(h.config)}>
-                    {t('ds.history.use')}
-                  </button>{' '}
+                  {!current && (
+                    <button class="btn small primary" style={actionStyle} disabled={props.busy} onClick={() => props.onUse(h.config)}>
+                      {t('ds.history.use')}
+                    </button>
+                  )}{' '}
                   <button class="btn small" style={actionStyle} onClick={() => props.onForget(h.key)}>
                     {t('common.remove')}
                   </button>
