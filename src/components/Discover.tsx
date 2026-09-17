@@ -125,16 +125,23 @@ export function Discover(props: {
   }, [compiled.where, compiled.error, interval?.key, tzOffset, sortKey, colKey, breakdownField?.name, timeExpr, paused, onBusy, refreshTick]);
 
   const loadMore = async () => {
+    // The next page belongs to the search that is on screen. Changing the sort while it is being
+    // fetched starts a new search, and appending this page to it afterwards would mix two orders
+    // and report the new search as finished.
+    const id = runId.current;
     setBusy(true);
     onBusy(true);
     try {
       const more = await fetchDocs(compiled.where, timeExpr, fields, discover.sort, discover.columns, PAGE, docs.length);
-      setDocs([...docs, ...more.docs]);
+      if (id !== runId.current) return;
+      setDocs((d) => [...d, ...more.docs]);
     } catch (e) {
-      if (!(e instanceof CancelledError)) setError(withCacheHint(describeError(e)));
+      if (id === runId.current && !(e instanceof CancelledError)) setError(withCacheHint(describeError(e)));
     } finally {
-      setBusy(false);
-      onBusy(false);
+      if (id === runId.current) {
+        setBusy(false);
+        onBusy(false);
+      }
     }
   };
 

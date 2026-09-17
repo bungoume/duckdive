@@ -140,6 +140,10 @@ export function DocTable(props: {
     const s = props.sort.find((x) => x.field === name);
     return s ? (s.dir === 'asc' ? ' ▲' : ' ▼') : '';
   };
+  const ariaSort = (name: string | null): 'ascending' | 'descending' | 'none' => {
+    const s = name ? props.sort.find((x) => x.field === name) : undefined;
+    return s ? (s.dir === 'asc' ? 'ascending' : 'descending') : 'none';
+  };
   const cols = props.columns;
   const colSpan = 2 + (cols.length || 1);
   const known = new Set(props.fields.map((f) => f.name));
@@ -150,18 +154,23 @@ export function DocTable(props: {
         <tr>
           <th></th>
           {props.hasTime && (
-            <th onClick={() => props.timeFieldName && props.onSort(props.timeFieldName)}>
-              {t('doc.time')}
-              {props.timeFieldName ? sortIcon(props.timeFieldName) : ''}
+            <th aria-sort={ariaSort(props.timeFieldName)}>
+              {/* the label is a button so the column can be sorted without a mouse; the cell stays a column header */}
+              <button class="sortbtn" onClick={() => props.timeFieldName && props.onSort(props.timeFieldName)}>
+                {t('doc.time')}
+                {props.timeFieldName ? sortIcon(props.timeFieldName) : ''}
+              </button>
             </th>
           )}
           {cols.length === 0 ? (
             <th>{t('doc.document')}</th>
           ) : (
             cols.map((c) => (
-              <th onClick={() => props.onSort(c)}>
-                {c}
-                {sortIcon(c)}
+              <th aria-sort={ariaSort(c)}>
+                <button class="sortbtn" onClick={() => props.onSort(c)}>
+                  {c}
+                  {sortIcon(c)}
+                </button>
                 <button
                   class="rm"
                   title={t('doc.removeColumn')}

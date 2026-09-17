@@ -191,7 +191,8 @@ async function initOpfs() {
       try {
         slab = await openSync(await dir.getFileHandle('slab.bin', { create: true }), 'readwrite-unsafe');
         readOnly = true;
-        setInterval(() => void reloadIndex(), INDEX_RELOAD_MS);
+        reloadTimer = setInterval(() => void reloadIndex(), INDEX_RELOAD_MS);
+        awaitOwnership();
       } catch {
         opfsError = 'The range cache is in use by another Duckdive tab; this tab reads from the origin directly.';
         console.warn('[ddv-cache]', opfsError);
@@ -253,6 +254,29 @@ async function openShared(fh: FileSystemFileHandle): Promise<FileSystemSyncAcces
   }
 }
 
+let reloadTimer: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Keep asking for the lock the owner holds. The owner releases it when its tab closes, and this
+ * request is granted then: without it a tab that started second would go on downloading
+ * everything uncached for as long as it lives, even once it is the only tab left.
+ */
+function awaitOwnership(): void {
+  void navigator.locks
+    .request('ddv-cache-owner', async (lock) => {
+      if (!lock) return;
+      readOnly = false;
+      if (reloadTimer) clearInterval(reloadTimer);
+      reloadTimer = null;
+      // one last read of what the departed owner left behind; the slab is already open in the
+      // mode the owner uses, so from here this tab writes
+      await reloadIndexInto();
+      log({ method: 'OWN', url: '(cache)', range: null, outcome: 'took-over' });
+      return new Promise<void>(() => undefined); // held for this worker's lifetime
+    })
+    .catch(() => undefined);
+}
+
 /**
  * Read-only tabs: take the owner's index again so chunks it wrote (or moved by compaction) are
  * found. A half-written index does not parse and is tried again next time; entries this tab
@@ -260,14 +284,28 @@ async function openShared(fh: FileSystemFileHandle): Promise<FileSystemSyncAcces
  */
 async function reloadIndex(): Promise<void> {
   if (!dir || !readOnly) return;
+  await reloadIndexInto();
+}
+
+/** The index file's own stamp, so an unchanged file is not parsed again every few seconds. */
+let indexSeen = '';
+
+async function reloadIndexInto(): Promise<void> {
+  if (!dir) return;
   let index: Index;
   try {
-    index = JSON.parse(await (await (await dir.getFileHandle('index.json')).getFile()).text());
+    const file = await (await dir.getFileHandle('index.json')).getFile();
+    const stamp = `${file.lastModified}:${file.size}`;
+    if (stamp === indexSeen) return;
+    index = JSON.parse(await file.text());
+    indexSeen = stamp;
   } catch {
     return;
   }
   if (index.version !== INDEX_VERSION) return;
   slabSize = index.slabSize ?? slabSize;
+  // carried over so that a tab taking the cache over knows what is already unreferenced in it
+  wasted = index.wasted ?? wasted;
   const listed = new Set<string>();
   for (const meta of Object.values(index.files)) {
     listed.add(meta.key);
@@ -277,6 +315,8 @@ async function reloadIndex(): Promise<void> {
     entry.size = meta.size;
     entry.etag = meta.etag;
     entry.norm = meta.norm;
+    // the owner may use a different chunk size; keeping ours would read every chunk as wrong-length
+    entry.chunkSize = meta.chunkSize;
     files.set(meta.key, entry);
   }
   for (const [k, e] of files) if (!listed.has(k)) e.chunks.clear();

@@ -273,6 +273,12 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
           setUrl((u) => ({ ...u, page: 'source' }));
           return;
         }
+        if (cfg.kind === 'url' && cfg.authMode === 'static' && cfg.s3.accessKeyId && !cfg.s3.secretAccessKey) {
+          // the secret lives for the browser session only: after a restart it has to be entered
+          // again, and connecting without it would sign with an empty key and show a bare 403
+          setUrl((u) => ({ ...u, page: 'source' }));
+          return;
+        }
         const a = await connect(cfg, NO_LOCAL, false);
         if (!a) setUrl((u) => ({ ...u, page: 'source' }));
       } catch (e) {

@@ -102,7 +102,17 @@ export function FieldSidebar(props: {
           </button>
         )}
         {open === f.name && (
-          <div class="field-details" style={anchor ? { left: anchor.left, top: anchor.top } : undefined} onClick={(e) => e.stopPropagation()}>
+          <div
+            class="field-details"
+            style={anchor ? { left: anchor.left, top: anchor.top } : undefined}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              // the row above treats Enter and Space as "open / close me" and calls preventDefault
+              // on them, which kept every button in here from ever being pressed by keyboard
+              e.stopPropagation();
+              if (e.key === 'Escape') setOpen(null);
+            }}
+          >
             <div class="row" style="justify-content:space-between;margin-bottom:6px">
               <b class="mono" style="font-size:12px">
                 {f.name}

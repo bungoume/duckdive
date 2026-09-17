@@ -237,6 +237,8 @@ button:focus-visible, [role='button']:focus-visible, .input:focus-visible, selec
 table.docs { width: 100%; border-collapse: collapse; font-size: 13px; }
 table.docs th { text-align: left; font-weight: 600; font-size: 12px; padding: 6px 8px; border-bottom: 2px solid var(--k-border); white-space: nowrap; color: var(--k-text-subdued); cursor: pointer; user-select: none; }
 table.docs th:hover { color: var(--k-primary); }
+/* a sortable column header: a button so it works without a mouse, drawn as the header text */
+.sortbtn { border: 0; background: transparent; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; }
 table.docs th .rm { visibility: hidden; margin-left: 4px; color: var(--k-danger); border: 0; background: transparent; padding: 0; font: inherit; cursor: pointer; }
 table.docs th:hover .rm { visibility: visible; }
 table.docs td { padding: 5px 8px; border-bottom: 1px solid var(--k-border-light); vertical-align: top; }

@@ -58,9 +58,11 @@ export function DataTable(props: { result: VisResult; metrics: MetricDef[]; xLab
           <thead>
             <tr>
               {headers.map((h, i) => (
-                <th onClick={() => setSort(sort && sort.col === i ? { col: i, dir: sort.dir === 1 ? -1 : 1 } : { col: i, dir: 1 })}>
-                  {h}
-                  {sort?.col === i ? (sort.dir === 1 ? ' ▲' : ' ▼') : ''}
+                <th aria-sort={sort?.col === i ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'}>
+                  <button class="sortbtn" onClick={() => setSort(sort && sort.col === i ? { col: i, dir: sort.dir === 1 ? -1 : 1 } : { col: i, dir: 1 })}>
+                    {h}
+                    {sort?.col === i ? (sort.dir === 1 ? ' ▲' : ' ▼') : ''}
+                  </button>
                 </th>
               ))}
             </tr>
