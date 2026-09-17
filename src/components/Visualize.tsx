@@ -114,7 +114,10 @@ export function Visualize(props: {
   const [showSql, setShowSql] = useState(false);
   const [saved, setSaved] = useState<SavedVis[]>(() => loadSavedVis());
   const runId = useRef(0);
-  const visKey = JSON.stringify(effVis);
+  // Only the parts of the definition fetchVis reads. The title, the metric labels and the chart
+  // type live in the rendering, so typing a title must not re-run the aggregation once per
+  // keystroke and switching a line chart to an area chart must not re-run it at all.
+  const queryKey = JSON.stringify([effVis.x, effVis.metrics.map((m) => [m.agg, m.field, m.param]), effVis.breakdown]);
   const spanMs = compiled.from && compiled.to ? compiled.to.getTime() - compiled.from.getTime() : 0;
   const isTimeChart = vis.x.kind === 'date_histogram' && (vis.chart === 'area' || vis.chart === 'line' || vis.chart === 'bar');
   const compare = !!vis.compare && isTimeChart && spanMs > 0;
@@ -154,7 +157,7 @@ export function Visualize(props: {
     // the chart definition and the interval are compared by value, so a restored URL with the same content does not re-query;
     // refreshTick re-runs an unchanged search (absolute range) on auto refresh
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compiled.where, previousWhere, compiled.error, visKey, interval?.key, tzOffset, timeExpr, paused, onBusy, refreshTick]);
+  }, [compiled.where, previousWhere, compiled.error, queryKey, interval?.key, tzOffset, timeExpr, paused, onBusy, refreshTick]);
 
   const setVis = (patch: Partial<VisState>) => props.onVis({ ...vis, ...patch });
   const setX = (patch: Partial<VisState['x']>) => setVis({ x: { ...vis.x, ...patch } });

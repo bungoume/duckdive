@@ -38,6 +38,16 @@ await step('discover-initial', async () => {
   const bars = await page.locator('.chart-panel svg rect').count();
   console.log(`     hits=${hits} rows=${rows} bars=${bars}`);
   if (!rows) throw new Error('no rows');
+  if (!bars) throw new Error('no histogram bars');
+  // The download gate used to flip paused off, on and off again after a connect, so every page
+  // ran its opening query twice and the first result was thrown away.
+  const repeated = await page.evaluate(() => {
+    const counts = new Map();
+    for (const e of window.__ddv.getQueryLog()) counts.set(e.sql, (counts.get(e.sql) ?? 0) + 1);
+    return [...counts.entries()].filter(([, n]) => n > 1).map(([sql, n]) => `${n}× ${sql.slice(0, 60)}`);
+  });
+  console.log(`     queries repeated on connect: ${repeated.length}`);
+  if (repeated.length) throw new Error(`the opening queries ran more than once: ${repeated.join(' | ')}`);
   await page.screenshot({ path: `${out}/01-discover.png` });
 });
 await step('formats', async () => {
