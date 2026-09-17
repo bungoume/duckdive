@@ -4,7 +4,7 @@ import { findField, quoteIdent } from './fields';
 import { describeError } from './errors';
 import { templateExpr } from './patterns';
 import { searchToSql } from './search';
-import { VIEW, bucketExpr, buildWhere, fieldCompareExpr, lit, type Interval } from './sql';
+import { VIEW, bucketExpr, buildWhere, fieldCompareExpr, lit, niceStep, type Interval } from './sql';
 import type { MetricDef, SearchState, SortDir, VisState } from './state';
 import { t } from './i18n';
 
@@ -230,6 +230,8 @@ export interface VisResult {
   interval: Interval | null;
   /** offset (minutes east of UTC) the date-histogram buckets were aligned with */
   tzOffset: number;
+  /** bucket width of a numeric histogram (chosen from the data when the definition says auto) */
+  step: number | null;
   sql: string;
 }
 
@@ -257,6 +259,7 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
   const xf = vis.x.field ? findField(fields, vis.x.field) : undefined;
   let xExpr: string | null = null;
   let xKind = vis.x.kind;
+  let step: number | null = null;
   if (xKind === 'date_histogram') {
     const te = xf ? `(${xf.expr})::TIMESTAMP` : timeExpr;
     if (te && iv) xExpr = bucketExpr(te, iv, tzOffset);
@@ -264,8 +267,16 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
   } else if (xKind === 'terms' && xf) {
     xExpr = `(${xf.expr})::VARCHAR`;
   } else if (xKind === 'histogram' && xf) {
-    const step = Number(vis.x.interval) > 0 ? Number(vis.x.interval) : 10;
-    xExpr = `(floor(TRY_CAST(${xf.expr} AS DOUBLE) / ${step}) * ${step})::DOUBLE`;
+    const num = xf.kind === 'number' ? xf.expr : `TRY_CAST(${xf.expr} AS DOUBLE)`;
+    step = Number(vis.x.interval) > 0 ? Number(vis.x.interval) : null;
+    if (step === null) {
+      // auto: about 25 buckets between the smallest and the largest value of the search
+      const b = await query(`SELECT min(${num})::DOUBLE AS mn, max(${num})::DOUBLE AS mx FROM ${VIEW} WHERE ${where}`);
+      const mn = Number(b.rows[0]?.mn);
+      const mx = Number(b.rows[0]?.mx);
+      step = Number.isFinite(mn) && Number.isFinite(mx) && mx > mn ? niceStep((mx - mn) / 25) : 1;
+    }
+    xExpr = `(floor(${num} / ${step}) * ${step})::DOUBLE`;
   } else xKind = 'none';
 
   const gf = vis.breakdown.field ? findField(fields, vis.breakdown.field) : undefined;
@@ -315,5 +326,5 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
       .map((e) => e[0]);
     if (groups.includes(OTHER)) groups = [...groups.filter((g) => g !== OTHER), OTHER];
   }
-  return { rows, xKind, xOrder, groups, interval: xKind === 'date_histogram' ? iv : null, tzOffset, sql };
+  return { rows, xKind, xOrder, groups, interval: xKind === 'date_histogram' ? iv : null, tzOffset, step, sql };
 }

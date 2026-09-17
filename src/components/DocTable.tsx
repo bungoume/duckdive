@@ -6,7 +6,7 @@ import type { Field } from '../fields';
 import type { Doc } from '../queries';
 import type { SortDir } from '../state';
 import { ContextView } from './ContextView';
-import { fmtValue } from './ui';
+import { fmtField } from './ui';
 
 export function flatten(o: unknown, prefix = '', out: [string, unknown][] = []): [string, unknown][] {
   if (o && typeof o === 'object' && !Array.isArray(o)) {
@@ -79,7 +79,7 @@ function DocDetail(props: {
               if (val !== null && fld?.kind === 'date') {
                 const d = new Date(val.includes('T') || /[zZ]|[+-]\d\d:?\d\d$/.test(val) ? val : val.replace(' ', 'T') + 'Z');
                 if (!isNaN(d.getTime())) shown = formatLocal(d);
-              }
+              } else if (val !== null) shown = fmtField(k, v).text;
               return (
                 <tr>
                   <td class="a">
@@ -197,7 +197,9 @@ export function DocTable(props: {
                       .map(([k, v]) => (
                         <span class="sv" key={k}>
                           <span class="k">{k}: </span>
-                          <span class="v">{fmtValue(v)}</span>
+                          <span class="v" title={fmtField(k, v).raw}>
+                            {fmtField(k, v).text}
+                          </span>
                           {known.has(k) && (
                             <span class="pm">
                               <button title={t('doc.filterFor')} aria-label={t('doc.filterFor')} onClick={() => props.onFilter(k, asValue(v), false)}>
@@ -213,7 +215,11 @@ export function DocTable(props: {
                   </div>
                 </td>
               ) : (
-                cols.map((c) => <td class="cell">{fmtValue(d.cols[c])}</td>)
+                cols.map((c) => (
+                  <td class="cell" title={fmtField(c, d.cols[c]).raw}>
+                    {fmtField(c, d.cols[c]).text}
+                  </td>
+                ))
               )}
             </tr>
             {open.has(i) && (

@@ -80,7 +80,7 @@ function Tile(props: TileProps) {
         </button>
       </div>
       {err && <div class="alert error">{err}</div>}
-      {result && chart === 'table' && <DataTable result={result} metrics={vis.metrics} xLabel={xAxisLabel(vis, interval, props.timeField?.name ?? null)} gLabel={breakdownLabel(vis)} />}
+      {result && chart === 'table' && <DataTable result={result} metrics={vis.metrics} xLabel={xAxisLabel(vis, interval, props.timeField?.name ?? null, result.step)} gLabel={breakdownLabel(vis)} />}
       {result && chart === 'metric' && <MetricTiles result={result} metrics={vis.metrics} />}
       {result && (chart === 'area' || chart === 'line' || chart === 'bar') && result.xKind !== 'none' && (
         <Chart

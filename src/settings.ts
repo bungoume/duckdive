@@ -25,6 +25,8 @@ export interface AppSettings {
   autoRefreshMs: number;
   /** light or dark colours; 'system' follows the OS preference */
   theme: 'system' | 'light' | 'dark';
+  /** show …bytes / …size fields as KB / MB and …_ms fields as seconds in the document table */
+  formatByName: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -56,6 +58,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   ],
   autoRefreshMs: 0,
   theme: 'system',
+  formatByName: true,
 };
 
 const LS_SETTINGS = 'ddv.settings';
@@ -72,6 +75,7 @@ function sanitize(o: unknown): AppSettings {
   if (typeof r.dayOfWeek === 'number' && r.dayOfWeek >= 0 && r.dayOfWeek <= 6) s.dayOfWeek = Math.floor(r.dayOfWeek);
   if (typeof r.autoRefreshMs === 'number' && r.autoRefreshMs >= 0) s.autoRefreshMs = Math.floor(r.autoRefreshMs);
   if (r.theme === 'light' || r.theme === 'dark' || r.theme === 'system') s.theme = r.theme;
+  if (typeof r.formatByName === 'boolean') s.formatByName = r.formatByName;
   if (
     Array.isArray(r.quickRanges) &&
     r.quickRanges.length &&

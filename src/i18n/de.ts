@@ -50,6 +50,8 @@ export const de: Messages = {
   'settings.theme.system': 'Wie das System',
   'settings.theme.light': 'Hell',
   'settings.theme.dark': 'Dunkel',
+  'settings.formatByName': 'Größen und Dauern nach Feldname formatieren',
+  'settings.formatByName.hint': 'In der Dokumenttabelle zeigen Felder namens …bytes oder …size 1,2 MB und Felder auf _ms 1,23 s; der Rohwert steht im Tooltip.',
   'settings.section.time': 'Datum und Uhrzeit',
   'settings.dateFormat': 'Datumsformat',
   'settings.dateFormat.hint': 'Muster für jedes angezeigte Datum: YYYY MM DD HH mm ss SSS, ddd / dddd (Wochentag), MMM / MMMM (Monatsname), A (AM/PM), Z (Zeitversatz), [Text] für Literale.',

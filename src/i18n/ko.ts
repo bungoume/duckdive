@@ -50,6 +50,8 @@ export const ko: Messages = {
   'settings.theme.system': '시스템 설정 따르기',
   'settings.theme.light': '라이트',
   'settings.theme.dark': '다크',
+  'settings.formatByName': '필드 이름으로 크기와 시간을 표시',
+  'settings.formatByName.hint': '문서 표에서 …bytes / …size 필드는 1.2 MB, _ms로 끝나는 필드는 1.23 s처럼 표시합니다. 원래 값은 툴팁에 있습니다.',
   'settings.section.time': '날짜 및 시간',
   'settings.dateFormat': '날짜 형식',
   'settings.dateFormat.hint': '표시되는 모든 날짜의 패턴: YYYY MM DD HH mm ss SSS, ddd / dddd(요일), MMM / MMMM(월 이름), A(AM/PM), Z(오프셋), [text]는 그대로 출력.',

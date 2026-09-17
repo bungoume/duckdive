@@ -30,14 +30,14 @@ export function searchAfterPick(vis: VisState, groups: string[], pick: ChartPick
 }
 
 /** "@timestamp per minute", "Top 5 values of host" or "http.bytes in steps of 1000". */
-export function xAxisLabel(vis: VisState, interval: Interval | null, timeFieldName: string | null): string {
+export function xAxisLabel(vis: VisState, interval: Interval | null, timeFieldName: string | null, step: number | null = null): string {
   switch (vis.x.kind) {
     case 'date_histogram':
       return t('vis.xLabel.date', { field: vis.x.field ?? timeFieldName ?? t('vis.time'), interval: interval ? intervalLabel(interval).toLowerCase() : '' });
     case 'terms':
       return t('vis.xLabel.terms', { n: vis.x.size, field: vis.x.field ?? '?' });
     case 'histogram':
-      return t('vis.xLabel.hist', { field: vis.x.field ?? '?', size: vis.x.interval });
+      return t('vis.xLabel.hist', { field: vis.x.field ?? '?', size: step ?? (Number(vis.x.interval) > 0 ? vis.x.interval : t('common.auto')) });
     default:
       return '';
   }

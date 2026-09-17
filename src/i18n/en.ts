@@ -52,6 +52,8 @@ export const en = {
   'settings.theme.system': 'Follow the system',
   'settings.theme.light': 'Light',
   'settings.theme.dark': 'Dark',
+  'settings.formatByName': 'Format sizes and durations by field name',
+  'settings.formatByName.hint': 'In the document table, fields named …bytes or …size show 1.2 MB and fields ending in _ms show 1.23 s; the raw value is in the tooltip.',
   'settings.section.time': 'Dates and times',
   'settings.dateFormat': 'Date format',
   'settings.dateFormat.hint': 'Pattern for every displayed date: YYYY MM DD HH mm ss SSS, ddd / dddd (weekday), MMM / MMMM (month name), A (AM/PM), Z (offset), [text] for literals.',

@@ -50,6 +50,8 @@ export const zh_CN: Messages = {
   'settings.theme.system': '跟随系统',
   'settings.theme.light': '浅色',
   'settings.theme.dark': '深色',
+  'settings.formatByName': '按字段名格式化大小和时长',
+  'settings.formatByName.hint': '在文档表中，名为 …bytes 或 …size 的字段显示为 1.2 MB，以 _ms 结尾的字段显示为 1.23 s；原始值在提示中。',
   'settings.section.time': '日期与时间',
   'settings.dateFormat': '日期格式',
   'settings.dateFormat.hint': '所有显示日期的模式：YYYY MM DD HH mm ss SSS、ddd / dddd（星期）、MMM / MMMM（月份名）、A（AM/PM）、Z（时差）、[text] 表示原样输出。',

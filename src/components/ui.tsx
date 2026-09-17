@@ -1,6 +1,8 @@
 import { cloneElement, isValidElement, toChildArray, type ComponentChildren } from 'preact';
 import { useEffect, useId, useRef } from 'preact/hooks';
+import { fmtBytes } from '../cache';
 import type { FieldKind } from '../fields';
+import { getSettings } from '../settings';
 
 export function Popover(props: { open: boolean; onClose: () => void; button: ComponentChildren; children: ComponentChildren; align?: 'left' | 'right'; width?: number }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -72,4 +74,29 @@ export function fmtValue(v: unknown): string {
   if (v === null || v === undefined) return '–';
   if (typeof v === 'object') return JSON.stringify(v);
   return String(v);
+}
+
+/** "83.9 ms", "1.23 s", "2.5 min" for a number of milliseconds. */
+export function fmtDuration(ms: number): string {
+  if (ms < 1000) return `${fmtNum(ms, 1)} ms`;
+  if (ms < 60_000) return `${fmtNum(ms / 1000, 2)} s`;
+  if (ms < 3_600_000) return `${fmtNum(ms / 60_000, 1)} min`;
+  return `${fmtNum(ms / 3_600_000, 1)} h`;
+}
+
+const BYTES_NAME = /(^|[._])(bytes|size)$/i;
+const MS_NAME = /_ms$/i;
+
+/**
+ * A value of the document table: numbers of fields named …bytes / …size or …_ms are shown as
+ * sizes and durations when the setting says so (the raw value stays in the tooltip).
+ */
+export function fmtField(name: string, v: unknown): { text: string; raw?: string } {
+  const text = fmtValue(v);
+  if (!getSettings().formatByName) return { text };
+  const n = typeof v === 'number' ? v : typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v) ? Number(v) : null;
+  if (n === null || !Number.isFinite(n)) return { text };
+  if (BYTES_NAME.test(name)) return { text: fmtBytes(n), raw: text };
+  if (MS_NAME.test(name)) return { text: fmtDuration(n), raw: text };
+  return { text };
 }

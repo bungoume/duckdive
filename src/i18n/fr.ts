@@ -50,6 +50,8 @@ export const fr: Messages = {
   'settings.theme.system': 'Suivre le système',
   'settings.theme.light': 'Clair',
   'settings.theme.dark': 'Sombre',
+  'settings.formatByName': 'Formater tailles et durées d’après le nom du champ',
+  'settings.formatByName.hint': 'Dans le tableau des documents, les champs nommés …bytes ou …size affichent 1,2 MB et ceux finissant par _ms affichent 1,23 s ; la valeur brute est dans l’infobulle.',
   'settings.section.time': 'Dates et heures',
   'settings.dateFormat': 'Format de date',
   'settings.dateFormat.hint':

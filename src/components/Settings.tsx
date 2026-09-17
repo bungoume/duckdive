@@ -154,6 +154,10 @@ export function Settings() {
             <option value="dark">{t('settings.theme.dark')}</option>
           </select>
         </FormField>
+        <label class="row">
+          <input type="checkbox" checked={settings.formatByName} onChange={(e) => updateSettings({ formatByName: e.currentTarget.checked })} /> {t('settings.formatByName')}
+        </label>
+        <span class="hint">{t('settings.formatByName.hint')}</span>
       </div>
 
       <div class="card">

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Field } from '../src/fields';
 import { resetSettings, updateSettings } from '../src/settings';
-import { autoInterval, bucketExpr, bucketOffsetMinutes, bucketStarts, buildWhere, filterToSQL, intervalByKey, lit, nextBucketStart, tsLit } from '../src/sql';
+import { autoInterval, bucketExpr, bucketOffsetMinutes, bucketStarts, buildWhere, filterToSQL, intervalByKey, lit, nextBucketStart, niceStep, tsLit } from '../src/sql';
 
 const f = (name: string, kind: Field['kind']): Field => ({ name, expr: `"${name}"`, kind, duckType: kind.toUpperCase(), column: name, searchable: kind === 'string' });
 const fields = [f('status', 'number'), f('host', 'string'), f('ts', 'date')];
@@ -90,5 +90,17 @@ describe('buckets', () => {
     const months = bucketStarts(t0, Date.UTC(2026, 3, 1) - 540 * 60000, intervalByKey('1M')!, 540);
     expect(months.map((t) => new Date(t + 540 * 60000).toISOString().slice(0, 10))).toEqual(['2026-01-01', '2026-02-01', '2026-03-01', '2026-04-01']);
     expect(bucketStarts(0, 10 * 60000, intervalByKey('1m')!, 0, 3)).toHaveLength(3);
+  });
+});
+
+describe('niceStep', () => {
+  it('rounds a raw width to 1, 2 or 5 times a power of ten', () => {
+    expect(niceStep(0.37)).toBe(0.2);
+    expect(niceStep(3)).toBe(2);
+    expect(niceStep(7)).toBe(5);
+    expect(niceStep(12)).toBe(10);
+    expect(niceStep(2400)).toBe(2000);
+    expect(niceStep(0)).toBe(1);
+    expect(niceStep(NaN)).toBe(1);
   });
 });

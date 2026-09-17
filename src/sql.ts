@@ -111,6 +111,14 @@ export function bucketStarts(first: number, last: number, iv: Interval, offsetMi
   return out;
 }
 
+/** A round bucket width (1, 2 or 5 times a power of ten) close to `raw`. */
+export function niceStep(raw: number): number {
+  if (!(raw > 0) || !Number.isFinite(raw)) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const m = raw / p;
+  return (m >= 5 ? 5 : m >= 2 ? 2 : 1) * p;
+}
+
 export type FilterOp = 'is' | 'is_not' | 'is_one_of' | 'is_not_one_of' | 'exists' | 'does_not_exist' | 'between' | 'query';
 
 export interface Filter {

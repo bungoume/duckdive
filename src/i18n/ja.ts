@@ -50,6 +50,8 @@ export const ja: Messages = {
   'settings.theme.system': 'システムに従う',
   'settings.theme.light': 'ライト',
   'settings.theme.dark': 'ダーク',
+  'settings.formatByName': 'フィールド名からサイズと時間を整形する',
+  'settings.formatByName.hint': 'ドキュメント一覧で、…bytes / …size という名前のフィールドは 1.2 MB、_ms で終わるフィールドは 1.23 s のように表示します。元の値はツールチップに出ます。',
   'settings.section.time': '日付と時刻',
   'settings.dateFormat': '日付フォーマット',
   'settings.dateFormat.hint': '表示するすべての日付のパターン: YYYY MM DD HH mm ss SSS、ddd / dddd(曜日)、MMM / MMMM(月名)、A(AM/PM)、Z(オフセット)、[text] はそのまま出力。',

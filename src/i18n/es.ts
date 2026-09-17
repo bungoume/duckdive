@@ -50,6 +50,9 @@ export const es: Messages = {
   'settings.theme.system': 'Seguir al sistema',
   'settings.theme.light': 'Claro',
   'settings.theme.dark': 'Oscuro',
+  'settings.formatByName': 'Formatear tamaños y duraciones según el nombre del campo',
+  'settings.formatByName.hint':
+    'En la tabla de documentos, los campos llamados …bytes o …size muestran 1,2 MB y los que terminan en _ms muestran 1,23 s; el valor original está en la descripción emergente.',
   'settings.section.time': 'Fechas y horas',
   'settings.dateFormat': 'Formato de fecha',
   'settings.dateFormat.hint':

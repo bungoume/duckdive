@@ -40,6 +40,15 @@ await step('discover-initial', async () => {
   if (!rows) throw new Error('no rows');
   await page.screenshot({ path: `${out}/01-discover.png` });
 });
+await step('formats', async () => {
+  // sizes and milliseconds are formatted by field name in the table, with the raw value in the tooltip
+  const cell = page.locator('table.docs tbody tr').first().locator('.source-summary .sv', { hasText: 'http.bytes' }).locator('.v');
+  const text = (await cell.textContent()).trim();
+  const raw = await cell.getAttribute('title');
+  const ms = (await page.locator('table.docs tbody tr').first().locator('.source-summary .sv', { hasText: 'latency_ms' }).locator('.v').textContent()).trim();
+  console.log(`     http.bytes=${text} (raw ${raw}) latency=${ms}`);
+  if (!/ (B|KB|MB)$/.test(text) || !/^\d+$/.test(raw ?? '') || !/ (ms|s)$/.test(ms)) throw new Error('values not formatted');
+});
 await step('summary-filter', async () => {
   // hovering a value of a collapsed row reveals +/−: "+" filters by it
   const first = page.locator('table.docs tbody tr').first().locator('.source-summary .sv').first();
@@ -320,16 +329,18 @@ await step('visualize', async () => {
   await page.screenshot({ path: `${out}/06-visualize-breakdown.png` });
   // hover shows key / value; click filters by the breakdown value under the cursor
   const cbox = await page.locator('.vis-panel .chart-box').boundingBox();
-  // find a spot inside a band: scan a few heights in the middle of the plot
+  // find a spot inside a band: scan a few heights at a few x positions (the demo data is random)
   let tip = '';
-  for (const f of [0.85, 0.8, 0.75, 0.7, 0.6, 0.5]) {
-    await page.mouse.move(cbox.x + cbox.width * 0.5, cbox.y + cbox.height * f);
-    await settled(page);
-    tip = await page
-      .locator('.chart-tip')
-      .textContent()
-      .catch(() => '');
-    if (/click to filter/.test(tip)) break;
+  scan: for (const fx of [0.5, 0.4, 0.6, 0.3, 0.7]) {
+    for (const f of [0.85, 0.8, 0.75, 0.7, 0.6, 0.5]) {
+      await page.mouse.move(cbox.x + cbox.width * fx, cbox.y + cbox.height * f);
+      await settled(page);
+      tip = await page
+        .locator('.chart-tip')
+        .textContent()
+        .catch(() => '');
+      if (/click to filter/.test(tip)) break scan;
+    }
   }
   console.log(`     tooltip: ${tip.replace(/\s+/g, ' ').slice(0, 100)}`);
   if (!/click to filter/.test(tip)) throw new Error('no tooltip with filter hint: ' + tip);
@@ -381,6 +392,13 @@ await step('visualize', async () => {
   console.log(`     terms bars=${bars}`);
   await settled(page);
   await page.screenshot({ path: `${out}/08-terms-bar.png` });
+  // a numeric histogram picks its bucket width from the data
+  await page.selectOption('.cfg-section:has-text("Horizontal axis") .field-row:has-text("Function") select', 'histogram');
+  await page.selectOption('.cfg-section:has-text("Horizontal axis") .field-row:has-text("Field") select', 'http.latency_ms');
+  await settled(page);
+  const histLabel = (await page.locator('.cfg-section:has-text("Horizontal axis") .dim .lbl').textContent()).trim();
+  console.log(`     histogram: ${histLabel.slice(0, 50)}`);
+  if (!/bucket \d/.test(histLabel)) throw new Error('no automatic bucket width: ' + histLabel);
   await page.click('.chart-types button[title="Metric"]');
   await settled(page);
   await page.screenshot({ path: `${out}/09-metric.png` });

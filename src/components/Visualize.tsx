@@ -167,7 +167,7 @@ export function Visualize(props: {
     const f = findField(fields, name);
     if (!f) return;
     if (f.kind === 'date') setX({ kind: 'date_histogram', field: f.name });
-    else if (f.kind === 'number') setX({ kind: 'histogram', field: f.name, interval: vis.x.kind === 'histogram' ? vis.x.interval : '10' });
+    else if (f.kind === 'number') setX({ kind: 'histogram', field: f.name, interval: vis.x.kind === 'histogram' ? vis.x.interval : 'auto' });
     else setX({ kind: 'terms', field: f.name });
   };
   const dropY = (name: string, id?: string) => {
@@ -210,7 +210,7 @@ export function Visualize(props: {
     storeSavedVis(list);
   };
 
-  const xLabel = xAxisLabel(vis, interval, props.timeField?.name ?? null);
+  const xLabel = xAxisLabel(vis, interval, props.timeField?.name ?? null, result?.step ?? null);
   const gLabel = breakdownLabel(vis);
 
   /** The chart's own <svg> (Plot renders small legend swatches before it) as a file. */
@@ -384,7 +384,15 @@ export function Visualize(props: {
                       <FieldSelect fields={fields} value={vis.x.field} onChange={(v) => setX({ field: v })} allow={(f) => f.kind === 'number'} />
                     </FormField>
                     <FormField label={t('vis.bucketSize')}>
-                      <input class="input" type="number" min={0} step="any" value={vis.x.interval === 'auto' ? 10 : vis.x.interval} onInput={(e) => setX({ interval: e.currentTarget.value })} />
+                      <input
+                        class="input"
+                        type="number"
+                        min={0}
+                        step="any"
+                        placeholder={result?.step ? `${t('common.auto')}: ${result.step}` : t('common.auto')}
+                        value={Number(vis.x.interval) > 0 ? vis.x.interval : ''}
+                        onInput={(e) => setX({ interval: e.currentTarget.value || 'auto' })}
+                      />
                     </FormField>
                   </>
                 )}
