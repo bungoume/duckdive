@@ -126,6 +126,13 @@ export function Settings() {
           </select>
           <span class="hint">{t('settings.lang.hint')}</span>
         </FormField>
+        <FormField label={t('settings.theme')} style="max-width:320px">
+          <select class="input theme-select" value={settings.theme} onChange={(e) => updateSettings({ theme: e.currentTarget.value as AppSettings['theme'] })}>
+            <option value="system">{t('settings.theme.system')}</option>
+            <option value="light">{t('settings.theme.light')}</option>
+            <option value="dark">{t('settings.theme.dark')}</option>
+          </select>
+        </FormField>
       </div>
 
       <div class="card">

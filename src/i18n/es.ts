@@ -46,6 +46,10 @@ export const es: Messages = {
   'settings.title': 'Ajustes',
   'settings.lang': 'Idioma',
   'settings.lang.hint': 'Se aplica de inmediato a toda la interfaz. La elección se guarda en este navegador; una instalación nueva sigue el idioma de Chrome.',
+  'settings.theme': 'Apariencia',
+  'settings.theme.system': 'Seguir al sistema',
+  'settings.theme.light': 'Claro',
+  'settings.theme.dark': 'Oscuro',
   'settings.section.time': 'Fechas y horas',
   'settings.dateFormat': 'Formato de fecha',
   'settings.dateFormat.hint':

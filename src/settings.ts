@@ -23,6 +23,8 @@ export interface AppSettings {
   quickRanges: QuickRange[];
   /** re-run the search this often on Discover / Visualize (0 = off); chosen next to the Refresh button */
   autoRefreshMs: number;
+  /** light or dark colours; 'system' follows the OS preference */
+  theme: 'system' | 'light' | 'dark';
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -53,6 +55,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     { from: 'now-30d/d', to: 'now' },
   ],
   autoRefreshMs: 0,
+  theme: 'system',
 };
 
 const LS_SETTINGS = 'ddv.settings';
@@ -68,6 +71,7 @@ function sanitize(o: unknown): AppSettings {
     s.scaledDateFormat = r.scaledDateFormat as [string, string][];
   if (typeof r.dayOfWeek === 'number' && r.dayOfWeek >= 0 && r.dayOfWeek <= 6) s.dayOfWeek = Math.floor(r.dayOfWeek);
   if (typeof r.autoRefreshMs === 'number' && r.autoRefreshMs >= 0) s.autoRefreshMs = Math.floor(r.autoRefreshMs);
+  if (r.theme === 'light' || r.theme === 'dark' || r.theme === 'system') s.theme = r.theme;
   if (
     Array.isArray(r.quickRanges) &&
     r.quickRanges.length &&
@@ -113,3 +117,22 @@ export function resetSettings() {
 
 /** Re-renders the calling component whenever the settings change; returns the current values. */
 export const useSettings = () => useStore(store);
+
+/**
+ * Put the theme on <html>: data-theme for an explicit choice, and the system-dark class while
+ * the OS prefers dark (styles.css keys its dark values on either). Call once at start-up; the
+ * OS preference is followed from then on.
+ */
+export function applyTheme() {
+  const root = document.documentElement;
+  const dark = window.matchMedia?.('(prefers-color-scheme: dark)');
+  const sync = () => {
+    const theme = store.get().theme;
+    if (theme === 'system') root.removeAttribute('data-theme');
+    else root.setAttribute('data-theme', theme);
+    root.classList.toggle('system-dark', !!dark?.matches);
+  };
+  sync();
+  dark?.addEventListener?.('change', sync);
+  store.subscribe(sync);
+}

@@ -557,6 +557,20 @@ await step('share-link', async () => {
   if (await page.locator('.link-source').count()) throw new Error('banner still shown');
 });
 
+await step('theme', async () => {
+  await page.click('.header nav button:has-text("Settings")');
+  await page.waitForSelector('.theme-select');
+  const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  const light = await bg();
+  await page.selectOption('.theme-select', 'dark');
+  const dark = await bg();
+  const attr = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+  await page.screenshot({ path: `${out}/15-dark.png` });
+  await page.selectOption('.theme-select', 'system');
+  console.log(`     body background light=${light} dark=${dark} data-theme=${attr}`);
+  if (light === dark || attr !== 'dark') throw new Error('dark theme not applied');
+});
+
 console.log('\nconsole errors/warnings:');
 for (const e of errors.filter((x) => !x.includes('Improper nesting')).slice(0, 20)) console.log('  ' + e.slice(0, 400));
 await context.close();

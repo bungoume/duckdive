@@ -46,6 +46,10 @@ export const fr: Messages = {
   'settings.title': 'Paramètres',
   'settings.lang': 'Langue',
   'settings.lang.hint': "S'applique immédiatement à toute l'interface. Le choix est conservé dans ce navigateur ; une nouvelle installation suit la langue de Chrome.",
+  'settings.theme': 'Apparence',
+  'settings.theme.system': 'Suivre le système',
+  'settings.theme.light': 'Clair',
+  'settings.theme.dark': 'Sombre',
   'settings.section.time': 'Dates et heures',
   'settings.dateFormat': 'Format de date',
   'settings.dateFormat.hint':
