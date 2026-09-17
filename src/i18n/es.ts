@@ -22,6 +22,7 @@ export const es: Messages = {
   'app.progress.stopping': 'Deteniendo las consultas en curso…',
   'app.error.hostPermission': 'Permiso de host denegado para: {origins}',
   'app.error.cancelled': 'Conexión cancelada',
+  'app.creds.refreshFailed': 'No se pudieron renovar las credenciales temporales de AWS: {error}. Las consultas fallarán cuando caduquen; vuelva a iniciar sesión en la página Origen de datos.',
   'app.large.files': '{n} archivos',
   'app.large.text':
     '{files}{bytes} coinciden con este patrón y rango de tiempo (umbral {threshold}). Todavía no se ha leído nada. Al continuar se crea la vista sobre todos ellos; la primera consulta descargará entonces lo que necesite. Reduzca el rango de tiempo, añada un prefijo de nombre o un filtro sobre una columna capturada, o continúe.',

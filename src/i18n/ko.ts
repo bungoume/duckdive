@@ -22,6 +22,7 @@ export const ko: Messages = {
   'app.progress.stopping': '실행 중인 쿼리를 중지하는 중…',
   'app.error.hostPermission': '다음 호스트에 대한 권한이 거부되었습니다: {origins}',
   'app.error.cancelled': '연결이 취소되었습니다',
+  'app.creds.refreshFailed': '임시 AWS 자격 증명을 갱신하지 못했습니다: {error}. 만료되면 쿼리가 실패합니다. 데이터 소스 페이지에서 다시 로그인하세요.',
   'app.large.files': '{n}개 파일',
   'app.large.text':
     '{files}{bytes}이(가) 이 패턴과 시간 범위에 일치합니다 (임계값 {threshold}). 아직 아무것도 읽지 않았습니다. 계속하면 모든 파일에 대한 뷰가 생성되고, 첫 쿼리가 필요한 부분을 다운로드합니다. 시간 범위를 좁히거나, 이름 접두사 또는 캡처된 열에 대한 필터를 추가하거나, 계속 진행하세요.',

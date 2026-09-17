@@ -24,6 +24,7 @@ export const en = {
   'app.progress.stopping': 'Stopping running queries…',
   'app.error.hostPermission': 'Host permission denied for: {origins}',
   'app.error.cancelled': 'Connection cancelled',
+  'app.creds.refreshFailed': 'The temporary AWS credentials could not be refreshed: {error}. Queries will fail once they expire; sign in again on the Data source page.',
   'app.large.files': '{n} files',
   'app.large.text':
     '{files}{bytes} match this pattern and time range (threshold {threshold}). Nothing has been read yet. Continuing creates the view over all of them; the first query then downloads what it needs. Narrow the time range, add a name prefix or a filter on a captured column, or continue.',

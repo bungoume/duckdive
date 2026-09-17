@@ -22,6 +22,7 @@ export const ja: Messages = {
   'app.progress.stopping': '実行中のクエリを停止しています…',
   'app.error.hostPermission': '次のホストへのアクセス権限が拒否されました: {origins}',
   'app.error.cancelled': '接続をキャンセルしました',
+  'app.creds.refreshFailed': '一時的な AWS 認証情報を更新できませんでした: {error}。期限が切れるとクエリが失敗します。Data source ページでもう一度サインインしてください。',
   'app.large.files': '{n} ファイル',
   'app.large.text':
     '{files}{bytes} がこのパターンと時間範囲に一致します(しきい値 {threshold})。まだ何も読み込んでいません。続行するとすべてのファイルに対するビューが作成され、最初のクエリで必要な部分がダウンロードされます。時間範囲を狭める、名前のプレフィックスや取得列へのフィルタを追加する、またはそのまま続行してください。',

@@ -59,7 +59,7 @@ export function App() {
     onTimeField,
   } = useConnect(url, setUrl, busyRef);
   const { gate, runAnyway } = useDownloadGate(source, attached, ackedFiles);
-  useCredentialRefresh(source, attached, setCreds);
+  const { refreshError } = useCredentialRefresh(source, attached, setCreds);
   const paused = attaching || gate.status !== 'ok';
   expose({ gate, switchSeq, attaching });
 
@@ -147,6 +147,14 @@ export function App() {
       {initError && (
         <div class="alert error" style="margin:16px">
           {t('app.failedToStart', { error: initError })}
+        </div>
+      )}
+      {refreshError && page !== 'source' && (
+        <div class="alert warn creds-refresh" style="margin:16px 16px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <span style="flex:1 1 320px">{t('app.creds.refreshFailed', { error: refreshError })}</span>
+          <button class="btn small primary" onClick={() => setPage('source')}>
+            {t('app.nav.source')}
+          </button>
         </div>
       )}
       {largeConfirm && (

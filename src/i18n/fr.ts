@@ -22,6 +22,7 @@ export const fr: Messages = {
   'app.progress.stopping': 'Arrêt des requêtes en cours…',
   'app.error.hostPermission': 'Permission refusée pour les hôtes : {origins}',
   'app.error.cancelled': 'Connexion annulée',
+  'app.creds.refreshFailed': "Les identifiants AWS temporaires n'ont pas pu être renouvelés : {error}. Les requêtes échoueront à leur expiration ; reconnectez-vous depuis la page Source de données.",
   'app.large.files': '{n} fichiers',
   'app.large.text':
     "{files}{bytes} correspondent à ce motif et à cette plage de temps (seuil {threshold}). Rien n'a encore été lu. Continuer crée la vue sur l'ensemble de ces fichiers ; la première requête télécharge ensuite ce dont elle a besoin. Réduisez la plage de temps, ajoutez un préfixe de nom ou un filtre sur une colonne capturée, ou continuez.",

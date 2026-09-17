@@ -22,6 +22,7 @@ export const de: Messages = {
   'app.progress.stopping': 'Laufende Abfragen werden gestoppt…',
   'app.error.hostPermission': 'Host-Berechtigung verweigert für: {origins}',
   'app.error.cancelled': 'Verbindung abgebrochen',
+  'app.creds.refreshFailed': 'Die temporären AWS-Anmeldedaten konnten nicht erneuert werden: {error}. Nach ihrem Ablauf schlagen Abfragen fehl; melden Sie sich auf der Seite Datenquelle erneut an.',
   'app.large.files': '{n} Dateien',
   'app.large.text':
     '{files}{bytes} entsprechen diesem Muster und Zeitraum (Schwellenwert {threshold}). Es wurde noch nichts gelesen. Beim Fortfahren wird die Sicht über alle Dateien erstellt; die erste Abfrage lädt dann, was sie braucht. Grenzen Sie den Zeitraum ein, ergänzen Sie ein Namenspräfix oder einen Filter auf eine erfasste Spalte, oder fahren Sie fort.',

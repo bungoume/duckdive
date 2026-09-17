@@ -184,12 +184,12 @@ export function isUsable(c: AwsCredentials | null, minSeconds = 60): boolean {
 }
 
 /**
- * Return valid credentials, refreshing silently when they are about to expire.
+ * Return credentials that stay valid for at least `minSeconds`, refreshing silently otherwise.
  * Falls back to an interactive login only when `allowInteractive` is set.
  */
-export async function getCredentials(cfg: OidcConfig, allowInteractive: boolean): Promise<AwsCredentials> {
+export async function getCredentials(cfg: OidcConfig, allowInteractive: boolean, minSeconds = 300): Promise<AwsCredentials> {
   const cached = await loadCredentials();
-  if (isUsable(cached, 300)) return cached!;
+  if (isUsable(cached, minSeconds)) return cached!;
   try {
     return await signIn(cfg, false);
   } catch (e) {
