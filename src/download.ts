@@ -9,7 +9,7 @@
 import { cacheCached } from './cache';
 import { s3HttpsUrl, type AttachedSource } from './datasource';
 import { DEFAULT_MAX_FILES } from './s3list';
-import type { SourceConfig } from './state';
+import type { SourceConfig } from './sources';
 
 export interface DownloadEstimate {
   /** files the cache has nothing for */

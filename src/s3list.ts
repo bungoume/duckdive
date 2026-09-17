@@ -6,7 +6,7 @@
 import type { AwsCredentials } from './auth';
 import { t as tr } from './i18n';
 import { CancelledError, LIST_CONCURRENCY, fetchWithTimeout, mapLimit, throwIfAborted } from './net';
-import type { S3Config } from './state';
+import type { S3Config } from './sources';
 import { pad, toHex } from './util';
 
 /** Optional cancellation / progress hooks for a listing. */

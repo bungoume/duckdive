@@ -6,7 +6,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { getCredentials, loadCredentials, secondsUntilExpiry, type AwsCredentials } from '../auth';
 import { applyS3, type AttachedSource } from '../datasource';
 import { describeError } from '../errors';
-import type { SourceConfig } from '../state';
+import type { SourceConfig } from '../sources';
 
 const CHECK_EVERY_MS = 60_000;
 /** Refresh once less than this remains; the README promises ten minutes. */

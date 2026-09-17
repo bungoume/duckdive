@@ -27,7 +27,7 @@ export { detectFormat };
 import type { Field } from './fields';
 import { findField, introspectFields, isTimeCandidate, quoteIdent } from './fields';
 import { VIEW, lit } from './sql';
-import type { SourceConfig } from './state';
+import type { SourceConfig } from './sources';
 
 export interface AttachedSource {
   fields: Field[];

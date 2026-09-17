@@ -5,7 +5,7 @@ import { FORMAT_IDS, TEMPLATES, formatLabel, templateLabel, templateNote } from 
 import { t, tx } from '../i18n';
 import type { AttachProgress, Variables } from '../hooks/useConnect';
 import { hasHostPermissions, isExtension } from '../permissions';
-import { sourceKey, type SourceConfig, type SourceHistoryEntry } from '../state';
+import { sourceKey, type SourceConfig, type SourceHistoryEntry } from '../sources';
 import { CachePanel } from './CachePanel';
 import { ConnectedCard } from './source/ConnectedCard';
 import { HistoryCard } from './source/HistoryCard';

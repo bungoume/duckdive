@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { AttachedSource } from '../datasource';
 import { estimatePendingDownload, type DownloadEstimate } from '../download';
-import type { SourceConfig } from '../state';
+import type { SourceConfig } from '../sources';
 
 export interface Gate {
   status: 'checking' | 'blocked' | 'ok';

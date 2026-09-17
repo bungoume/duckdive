@@ -3,7 +3,7 @@ import { redirectUrl, secondsUntilExpiry, signIn, storeCredentials, type AwsCred
 import { describeError } from '../../errors';
 import { t, tx } from '../../i18n';
 import { isExtension } from '../../permissions';
-import type { AuthMode, SourceConfig } from '../../state';
+import type { AuthMode, SourceConfig } from '../../sources';
 
 /** S3 connection settings: region, endpoint, URL style and how credentials are obtained. */
 export function S3Section(props: {

@@ -1,6 +1,6 @@
 import { formatDate } from '../../datefmt';
 import { t } from '../../i18n';
-import { SOURCE_HISTORY_MAX, type SourceConfig, type SourceHistoryEntry } from '../../state';
+import { SOURCE_HISTORY_MAX, type SourceConfig, type SourceHistoryEntry } from '../../sources';
 
 const actionStyle = 'visibility:visible;width:auto;height:auto;padding:2px 8px';
 

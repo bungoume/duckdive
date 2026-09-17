@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { forgetSecrets, storeSecrets, withSecrets } from '../src/secrets';
-import { DEFAULT_SOURCE, sourceKey } from '../src/state';
+import { DEFAULT_SOURCE, sourceKey } from '../src/sources';
 
 const cfg = { ...DEFAULT_SOURCE, kind: 'url' as const, urls: 's3://b/x', authMode: 'static' as const, s3: { ...DEFAULT_SOURCE.s3, accessKeyId: 'AKIA', secretAccessKey: 'shh', sessionToken: 'tok' } };
 const bare = { ...cfg, s3: { ...cfg.s3, secretAccessKey: '', sessionToken: '' } };

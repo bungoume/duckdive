@@ -1,17 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import {
-  DEFAULT_DISCOVER,
-  DEFAULT_SEARCH,
-  DEFAULT_SOURCE,
-  DEFAULT_VIS,
-  readUrlState,
-  rememberSource,
-  sourceKey,
-  stripSecrets,
-  loadSourceHistory,
-  syncUrlStateFromLocation,
-  writeUrlState,
-} from '../src/state';
+import { DEFAULT_SOURCE, rememberSource, sourceKey, stripSecrets, loadSourceHistory } from '../src/sources';
+import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS, readUrlState, syncUrlStateFromLocation, writeUrlState } from '../src/state';
 import { trustSql } from '../src/trust';
 import { historyLog } from './setup';
 

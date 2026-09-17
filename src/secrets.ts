@@ -5,7 +5,7 @@
 // was in use and asks for its secret again.
 
 import { readSession, writeSession } from './sessionStore';
-import { sourceKey, type SourceConfig } from './state';
+import { sourceKey, type SourceConfig } from './sources';
 
 const SESSION_KEY = 'ddv.s3secrets';
 

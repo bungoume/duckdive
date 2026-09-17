@@ -11,7 +11,8 @@ import { timeExprFor, type Field } from './fields';
 import { useConnect } from './hooks/useConnect';
 import { useCredentialRefresh } from './hooks/useCredentialRefresh';
 import { useDownloadGate } from './hooks/useDownloadGate';
-import { DEFAULT_VIS, type VisState, readUrlState, sourceKey, syncUrlStateFromLocation, writeUrlState, type AppPage, type UrlState } from './state';
+import { sourceKey } from './sources';
+import { DEFAULT_VIS, type VisState, readUrlState, syncUrlStateFromLocation, writeUrlState, type AppPage, type UrlState } from './state';
 
 export function App() {
   // Re-render the whole tree when the UI language changes (every t() call reads the current one).

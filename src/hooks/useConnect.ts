@@ -17,7 +17,8 @@ import { CancelledError } from '../net';
 import { ensureHostPermissions } from '../permissions';
 import type { TokenValue } from '../s3list';
 import { forgetSecrets, storeSecrets, withSecrets } from '../secrets';
-import { forgetSource, loadSource, loadSourceHistory, rememberSource, saveSource, type SourceConfig, type SourceHistoryEntry, type UrlState } from '../state';
+import { forgetSource, loadSource, loadSourceHistory, rememberSource, saveSource, type SourceConfig, type SourceHistoryEntry } from '../sources';
+import { type UrlState } from '../state';
 
 /** What the running connect is doing; `phase` decides whether Cancel is offered. */
 export interface AttachProgress {
