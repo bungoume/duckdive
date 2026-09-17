@@ -14,6 +14,21 @@ export function lit(s: string): string {
 }
 
 /**
+ * SQL literal for a number written by the user, or null when the text is not one. Integers are
+ * passed through digit by digit: Number() would round a 64-bit id (9007199254740993 becomes
+ * ...92) and would read '' as 0 and '0x1F4' as 500. Everything else goes through Number() so
+ * that 1e3 and 1.5 still work.
+ */
+export function numberLiteral(v: string): string | null {
+  const s = v.trim();
+  // up to the 39 digits of a DuckDB HUGEINT; a longer one is compared as a double
+  if (/^[+-]?\d+$/.test(s) && s.replace(/\D/g, '').length <= 38) return s.replace(/^\+/, '');
+  if (!/^[+-]?(\d+\.\d*|\.\d+|\d+)([eE][+-]?\d+)?$/.test(s)) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? String(n) : null;
+}
+
+/**
  * Negation that keeps the rows the inner condition says nothing about. In SQL's three-valued
  * logic `NOT ("status" = 200)` is NULL — not TRUE — for a row without a status, so a plain NOT
  * would hide every row that lacks the field (common in JSON columns). coalesce makes NULL false
@@ -155,10 +170,7 @@ export function newId(): string {
 
 /** SQL literal for a filter value; null when the value cannot be compared with the field (a word against a number). */
 function valueLiteral(f: Field, v: string): string | null {
-  if (f.kind === 'number') {
-    const n = Number(v);
-    return Number.isFinite(n) ? String(n) : null;
-  }
+  if (f.kind === 'number') return numberLiteral(v);
   if (f.kind === 'boolean') return v.toLowerCase() === 'true' ? 'TRUE' : 'FALSE';
   if (f.kind === 'date') return `TRY_CAST(${lit(v)} AS TIMESTAMP)`;
   return lit(v);

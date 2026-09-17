@@ -20,7 +20,7 @@
 import { parseDateMath } from './datemath';
 import type { Field } from './fields';
 import { findField } from './fields';
-import { lit, notSql, tsLit } from './sql';
+import { lit, notSql, numberLiteral, tsLit } from './sql';
 
 export type Node =
   | { t: 'and'; a: Node[] }
@@ -419,9 +419,9 @@ function stringExpr(f: Field): string {
 /** A bound of a range. Dates accept date math (now-1h, now/d: `roundUp` picks the end of a rounded unit for an upper bound). */
 function scalarLiteral(f: Field, v: string, roundUp = false): string {
   if (f.kind === 'number') {
-    const n = Number(v);
-    if (!Number.isFinite(n)) throw new SearchQueryError(`"${v}" is not a number (field ${f.name})`);
-    return String(n);
+    const n = numberLiteral(v);
+    if (n === null) throw new SearchQueryError(`"${v}" is not a number (field ${f.name})`);
+    return n;
   }
   if (f.kind === 'date') {
     if (v.startsWith('now')) {
@@ -438,8 +438,8 @@ function scalarLiteral(f: Field, v: string, roundUp = false): string {
 function termSql(f: Field, value: string, phrase: boolean, prox: boolean): string {
   switch (f.kind) {
     case 'number': {
-      const n = Number(value);
-      if (Number.isFinite(n)) return `${f.expr} = ${n}`;
+      const n = numberLiteral(value);
+      if (n !== null) return `${f.expr} = ${n}`;
       return phraseMatch(`(${f.expr})::VARCHAR`, value);
     }
     case 'boolean': {

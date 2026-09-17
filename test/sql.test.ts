@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Field } from '../src/fields';
 import { resetSettings, updateSettings } from '../src/settings';
-import { autoInterval, bucketExpr, bucketOffsetMinutes, bucketStarts, buildWhere, filterToSQL, intervalByKey, lit, nextBucketStart, niceStep, tsLit } from '../src/sql';
+import { autoInterval, bucketExpr, bucketOffsetMinutes, bucketStarts, buildWhere, filterToSQL, intervalByKey, lit, nextBucketStart, niceStep, numberLiteral, tsLit } from '../src/sql';
 
 const f = (name: string, kind: Field['kind']): Field => ({ name, expr: `"${name}"`, kind, duckType: kind.toUpperCase(), column: name, searchable: kind === 'string' });
 const fields = [f('status', 'number'), f('host', 'string'), f('ts', 'date')];
@@ -10,6 +10,22 @@ describe('literals', () => {
   it('escapes strings and renders UTC timestamps', () => {
     expect(lit("it's")).toBe("'it''s'");
     expect(tsLit(new Date('2026-09-16T01:02:03.456Z'))).toBe("TIMESTAMP '2026-09-16 01:02:03.456'");
+  });
+});
+
+describe('numberLiteral', () => {
+  it('keeps every digit of an integer id', () => {
+    expect(numberLiteral('9007199254740993')).toBe('9007199254740993'); // Number() would round to ...92
+    expect(numberLiteral('12345678901234567890')).toBe('12345678901234567890');
+    expect(numberLiteral('-7')).toBe('-7');
+    expect(numberLiteral('+7')).toBe('7');
+  });
+
+  it('accepts the other numeric forms and rejects what is not a number', () => {
+    expect(numberLiteral('1.5')).toBe('1.5');
+    expect(numberLiteral('1e3')).toBe('1000');
+    expect(numberLiteral(' 42 ')).toBe('42');
+    for (const v of ['', '  ', 'abc', '0x1F4', '1,000', '1 2']) expect(numberLiteral(v), v).toBeNull();
   });
 });
 
@@ -38,6 +54,7 @@ describe('filterToSQL', () => {
 
   it('never compares a number field with a word', () => {
     expect(filterToSQL({ id: '1', field: 'status', op: 'is', value: 'abc' }, fields)).toBe('(FALSE)');
+    expect(filterToSQL({ id: '1', field: 'status', op: 'is', value: '' }, fields)).toBe('(FALSE)'); // not "status" = 0
     expect(filterToSQL({ id: '1', field: 'status', op: 'is_not', value: 'abc' }, fields)).toBe('(TRUE)');
     expect(filterToSQL({ id: '1', field: 'status', op: 'is_one_of', values: ['x', '5'] }, fields)).toBe(`("status" IN (5))`);
     expect(filterToSQL({ id: '1', field: 'status', op: 'is_one_of', values: ['x'] }, fields)).toBe('(FALSE)');

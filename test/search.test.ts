@@ -63,6 +63,12 @@ describe('searchToSql', () => {
     expect(searchToSql('ts:>="2026-01-01"', fields)).toBe(`("ts" >= TRY_CAST('2026-01-01' AS TIMESTAMP))`);
   });
 
+  it('compares a large integer id digit by digit', () => {
+    const idFields = [f('id', 'number', 'BIGINT')];
+    expect(searchToSql('id:9007199254740993', idFields)).toBe('("id" = 9007199254740993)');
+    expect(searchToSql('id:>=9007199254740993', idFields)).toBe('("id" >= 9007199254740993)');
+  });
+
   it('matches strings token-wise, phrases with ILIKE and wildcards with a regex', () => {
     expect(searchToSql('message:error', fields)).toBe(`(regexp_matches("message", '(^|[^A-Za-z0-9_])error([^A-Za-z0-9_]|$)', 'i'))`);
     expect(searchToSql('message:"read timeout"', fields)).toBe(`("message" ILIKE '%read timeout%' ESCAPE '\\')`);
