@@ -13,11 +13,13 @@ import { describeError } from '../errors';
 import { DataProtocol, cancelAllQueries, getDB, getQueryLog, initDuckDB, queriesRunning, query } from '../duck';
 import { findField } from '../fields';
 import { t } from '../i18n';
+import { NO_LOCAL, forgetHandles, openLocal, storeHandles, type LocalSelection } from '../localfiles';
 import { CancelledError } from '../net';
 import { ensureHostPermissions } from '../permissions';
 import type { TokenValue } from '../s3list';
 import { forgetSecrets, storeSecrets, withSecrets } from '../secrets';
 import { forgetSource, loadSource, loadSourceHistory, rememberSource, saveSource, type SourceConfig, type SourceHistoryEntry } from '../sources';
+import { newId } from '../sql';
 import { type UrlState } from '../state';
 
 /** What the running connect is doing; `phase` decides whether Cancel is offered. */
@@ -100,7 +102,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
     return r ? { from: r.from, to: r.to } : null;
   };
 
-  const connect = async (cfg: SourceConfig, files: File[], interactive = true, window: TimeWindow | null = currentWindow()): Promise<AttachedSource | null> => {
+  const connect = async (cfg: SourceConfig, local: LocalSelection = NO_LOCAL, interactive = true, window: TimeWindow | null = currentWindow()): Promise<AttachedSource | null> => {
     const attempt = ++attemptSeq.current;
     const ctl = new AbortController();
     attemptCtl.current = ctl;
@@ -127,6 +129,18 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
         });
       });
     try {
+      // A remembered local source: its files come from the stored handles (Chrome may ask for permission).
+      let sel = local;
+      if (cfg.kind === 'local' && !sel.files.length && cfg.localId) {
+        report(t('app.progress.openingLocal'), 'list');
+        const opened = await openLocal(cfg.localId, interactive);
+        if (stale()) return null;
+        if (!opened) {
+          setUrl((u) => ({ ...u, page: 'source' }));
+          return null;
+        }
+        sel = opened;
+      }
       if (cfg.kind === 'url') {
         const perm = await ensureHostPermissions(requiredOrigins(cfg));
         if (!perm.ok) throw new Error(t('app.error.hostPermission', { origins: perm.missing.join(', ') }));
@@ -148,14 +162,19 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
       report(t('app.progress.stopping'), 'list');
       await cancelAllQueries();
       if (stale()) return null;
-      const a = await attachSource(cfg, files, c, window, valueFiltersFor(cfg, url), { signal: ctl.signal, onProgress: report, confirmLarge });
+      const a = await attachSource(cfg, sel.files, c, window, valueFiltersFor(cfg, url), { signal: ctl.signal, onProgress: report, confirmLarge });
       if (stale()) return null;
       // The user already accepted this file set: do not ask again at query time.
       if (confirmedLarge) ackedFiles.current = a.files.join('\n');
       expose({ attached: a });
       setDiagnoseContext(cfg.kind === 'url' ? { files: a.files, fileSizes: a.fileSizes, format: cfg.format } : null);
       setAttached(a);
-      const saved = { ...cfg, timeField: a.timeField?.name ?? null };
+      const saved: SourceConfig = { ...cfg, timeField: a.timeField?.name ?? null };
+      if (cfg.kind === 'local' && sel.handles.length) {
+        // picked with handles: keep them so the source can be reopened from the history
+        saved.localId = cfg.localId ?? newId();
+        await storeHandles(saved.localId, sel.handles);
+      }
       setSource(saved);
       saveSource(saved);
       void storeSecrets(saved);
@@ -182,7 +201,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
     const cfg = await withSecrets(entry);
     setSource(cfg);
     setSwitchSeq((n) => n + 1);
-    const a = await connect(cfg, [], true);
+    const a = await connect(cfg, NO_LOCAL, true);
     if (!a) {
       setUrl((u) => ({ ...u, page: 'source' }));
       return;
@@ -202,6 +221,8 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
   };
 
   const forget = (key: string) => {
+    const localId = history.find((h) => h.key === key)?.config.localId;
+    if (localId) void forgetHandles(localId);
     setHistory(forgetSource(key));
     void forgetSecrets(key);
   };
@@ -236,7 +257,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
         await initDuckDB();
         expose({ query, cancelAllQueries, queriesRunning, getQueryLog, registerFileURL: (name: string, url: string) => getDB().registerFileURL(name, url, DataProtocol.HTTP, false) });
         setReady(true);
-        if (cfg.kind === 'local') {
+        if (cfg.kind === 'local' && !cfg.localId) {
           setUrl((u) => ({ ...u, page: 'source' }));
           return;
         }
@@ -245,7 +266,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
           setUrl((u) => ({ ...u, page: 'source' }));
           return;
         }
-        const a = await connect(cfg, [], false);
+        const a = await connect(cfg, NO_LOCAL, false);
         if (!a) setUrl((u) => ({ ...u, page: 'source' }));
       } catch (e) {
         setInitError(describeError(e));
@@ -271,7 +292,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
       return;
     }
     const timer = setTimeout(() => {
-      connect(source, [], false, currentWindow()).catch(() => undefined);
+      connect(source, NO_LOCAL, false, currentWindow()).catch(() => undefined);
     }, 250);
     return () => clearTimeout(timer);
     // the range and the filters are compared through rangeKey; `source` only matters when they changed

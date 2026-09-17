@@ -6,6 +6,7 @@ All notable changes to Duckdive. The format follows [Keep a Changelog](https://k
 
 ### Added
 
+- Local files: drop files or a folder on the Data source page, or pick them with the file and folder dialogs. The handles are kept in IndexedDB, so a local source appears under Recent sources and can be reopened after a restart (Chrome asks for read permission again).
 - Export on the Discover page: the matching rows as CSV, JSON Lines or Parquet, sorted like the table and cut at a chosen number of rows. With columns selected the file holds the time column and those columns; otherwise every column of the source.
 
 ### Changed

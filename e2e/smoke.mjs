@@ -13,6 +13,8 @@ page.on('console', (m) => {
 page.on('pageerror', (e) => errors.push(`[pageerror] ${e.message}`));
 
 let failed = 0;
+/** the Parquet file made by the export step; the local-source step reads it back */
+let exportedParquet = null;
 const step = async (name, fn) => {
   const t0 = Date.now();
   try {
@@ -154,6 +156,7 @@ await step('export', async () => {
   const pq = await download('parquet', 20);
   console.log(`     ${pq.name}: ${pq.bytes.length} bytes, magic=${pq.bytes.subarray(0, 4)}`);
   if (pq.bytes.subarray(0, 4).toString() !== 'PAR1') throw new Error('not a Parquet file');
+  exportedParquet = pq.bytes;
   const jl = await download('jsonl', 3);
   const docs = jl.bytes
     .toString('utf8')
@@ -264,6 +267,37 @@ await step('source-page', async () => {
   await page.click('.header nav button:has-text("Data source")');
   await page.waitForSelector('.source-page');
   await page.screenshot({ path: `${out}/10-source.png` });
+});
+await step('local-source', async () => {
+  // A Parquet file written into OPFS stands in for a picked file: its handle can be stored and
+  // reopened without a permission prompt, which the pickers themselves cannot be driven to do.
+  await page.click('.kinds button:has-text("Local files")');
+  await page.waitForSelector('.dropzone');
+  await page.evaluate(async (bytes) => {
+    const root = await navigator.storage.getDirectory();
+    const h = await root.getFileHandle('smoke-export.parquet', { create: true });
+    const w = await h.createWritable();
+    await w.write(new Uint8Array(bytes));
+    await w.close();
+    await window.__ddv.setLocalHandles([h]);
+  }, Array.from(exportedParquet));
+  await page.waitForSelector('.local-selected');
+  console.log(`     selected: ${(await page.textContent('.local-selected')).trim()}`);
+  await page.click('.source-page button.connect');
+  await settled(page);
+  const status = (await page.textContent('.header .status')).trim();
+  console.log(`     status: ${status}`);
+  if (!/smoke-export\.parquet · 20 rows/.test(status)) throw new Error('local source not connected: ' + status);
+  // it is remembered: switch to the demo data and back through the history
+  await page.selectOption('.src-select', 'demo');
+  await settled(page);
+  const row = page.locator('.source-history tr', { hasText: 'smoke-export.parquet' });
+  if (!(await row.count())) throw new Error('local source missing from the history');
+  await row.locator('button:has-text("Connect")').click();
+  await settled(page);
+  const again = (await page.textContent('.header .status')).trim();
+  console.log(`     reopened: ${again}`);
+  if (!/smoke-export\.parquet · 20 rows/.test(again)) throw new Error('local source not reopened: ' + again);
 });
 
 console.log('\nconsole errors/warnings:');

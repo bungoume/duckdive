@@ -4,12 +4,14 @@ import { capturedColumns, requiredOrigins, unselectedTokens, type AttachedSource
 import { FORMAT_IDS, TEMPLATES, formatLabel, templateLabel, templateNote } from '../formats';
 import { t, tx } from '../i18n';
 import type { AttachProgress, Variables } from '../hooks/useConnect';
+import { NO_LOCAL, selectionNames, selectionTitle, type LocalSelection } from '../localfiles';
 import { hasHostPermissions, isExtension } from '../permissions';
 import { sourceKey, type SourceConfig, type SourceHistoryEntry } from '../sources';
 import { CachePanel } from './CachePanel';
 import { ConnectedCard } from './source/ConnectedCard';
 import { HistoryCard } from './source/HistoryCard';
 import { HostsCard } from './source/HostsCard';
+import { LocalSection } from './source/LocalSection';
 import { S3Section } from './source/S3Section';
 import { TokenValues } from './source/TokenValues';
 import { FormField } from './ui';
@@ -26,7 +28,7 @@ export function DataSource(props: {
   creds: AwsCredentials | null;
   /** values listed for the {name} tokens of `pattern` (by pressing Connect) */
   variables: Variables | null;
-  onConnect: (cfg: SourceConfig, files: File[]) => void;
+  onConnect: (cfg: SourceConfig, local: LocalSelection) => void;
   onCancel: () => void;
   onTimeField: (name: string | null) => void;
   onCreds: (c: AwsCredentials | null) => void;
@@ -34,7 +36,13 @@ export function DataSource(props: {
   onForgetHistory: (key: string) => void;
 }) {
   const [cfg, setCfg] = useState<SourceConfig>(props.config);
-  const [files, setFiles] = useState<File[]>([]);
+  const [local, setLocal] = useState<LocalSelection>(NO_LOCAL);
+  /** A new pick is a new source: it gets its own id when connected, and is named after what was picked. */
+  const selectLocal = (sel: LocalSelection) => {
+    setLocal(sel);
+    const names = selectionNames(sel);
+    setCfg({ ...cfg, localId: undefined, urls: names.join('\n'), name: selectionTitle(names), timeField: null });
+  };
   const [templateId, setTemplateId] = useState<string>('');
   const [pendingTemplate, setPendingTemplate] = useState<(typeof TEMPLATES)[number] | null>(null);
   const applyTemplate = (tp: (typeof TEMPLATES)[number]) => {
@@ -173,20 +181,7 @@ export function DataSource(props: {
           </>
         )}
 
-        {cfg.kind === 'local' && (
-          <FormField label={t('ds.local.files')}>
-            <input type="file" multiple accept=".parquet,.csv,.tsv,.json,.jsonl,.ndjson,.gz" onChange={(e) => setFiles(Array.from(e.currentTarget.files ?? []))} />
-            <label class="row hint mt6">
-              {t('common.format')}
-              <select class="input" style="width:260px" value={cfg.format} onChange={(e) => set({ format: e.currentTarget.value as SourceConfig['format'] })}>
-                {FORMAT_IDS.map((id) => (
-                  <option value={id}>{formatLabel(id)}</option>
-                ))}
-              </select>
-            </label>
-            <span class="hint">{t('ds.local.hint')}</span>
-          </FormField>
-        )}
+        {cfg.kind === 'local' && <LocalSection cfg={cfg} selection={local} onSelect={selectLocal} onChange={set} />}
 
         {cfg.kind === 'demo' && <div class="alert info">{t('ds.demo.hint')}</div>}
 
@@ -202,7 +197,7 @@ export function DataSource(props: {
               {t('common.cancel')}
             </button>
           )}
-          <button class="btn primary connect" disabled={props.busy || (!!vars && missing.length > 0)} onClick={() => props.onConnect(cfg, files)}>
+          <button class="btn primary connect" disabled={props.busy || (!!vars && missing.length > 0)} onClick={() => props.onConnect(cfg, local)}>
             {connectLabel}
           </button>
         </div>

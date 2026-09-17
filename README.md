@@ -51,12 +51,12 @@ The Data source page accepts one of:
 
 - `s3://bucket/...` patterns, one per line
 - `https://...` URLs (presigned or served through CloudFront)
-- local Parquet, CSV or JSON files (read through the File API, never uploaded)
+- local Parquet, CSV or JSON files or folders, dropped on the page or chosen in the file dialog (read through the File API, never uploaded)
 - a built-in demo dataset
 
 ### Recent sources
 
-Every successful connect to an S3 / HTTPS or demo source is remembered (up to 20, newest first, in this browser's `localStorage` under `ddv.sources`, including the access key ID and chosen pattern values; secret keys are kept for the browser session only, see Authentication). The drop-down in the header switches between them from any page; the Data source page lists them with Connect and Remove buttons. Two configurations are the same entry when their destination matches (kind, URL lines, endpoint, region, URL style and authentication mode); name, format and time field are updated in place. Switching keeps the time range and the query, and drops filters, columns, sorts and chart fields that name a field the new source does not have. Local-file sources are not remembered because the browser cannot store the files.
+Every successful connect to an S3 / HTTPS or demo source is remembered (up to 20, newest first, in this browser's `localStorage` under `ddv.sources`, including the access key ID and chosen pattern values; secret keys are kept for the browser session only, see Authentication). The drop-down in the header switches between them from any page; the Data source page lists them with Connect and Remove buttons. Two configurations are the same entry when their destination matches (kind, URL lines, endpoint, region, URL style and authentication mode); name, format and time field are updated in place. Switching keeps the time range and the query, and drops filters, columns, sorts and chart fields that name a field the new source does not have. Local sources are remembered through their file handles (IndexedDB, `ddv-local`): after a restart Chrome asks for permission to read them again when you connect. Files of a folder are registered under their path below it, so equal names in different sub-folders stay apart.
 
 ### Patterns
 

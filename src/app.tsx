@@ -198,7 +198,7 @@ export function App() {
           progress={attaching ? attachProgress : null}
           creds={creds}
           variables={variables}
-          onConnect={(cfg, files) => connect(cfg, files, true)}
+          onConnect={(cfg, local) => connect(cfg, local, true)}
           onCancel={cancelConnect}
           onTimeField={onTimeField}
           onCreds={setCreds}

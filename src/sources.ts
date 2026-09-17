@@ -30,6 +30,8 @@ export interface SourceConfig {
   /** values chosen for {name} tokens of the pattern (required before connecting) */
   tokenValues: Record<string, string[]>;
   timeField: string | null;
+  /** local sources: key of the file handles kept in IndexedDB (see localfiles.ts); `urls` then lists what was picked */
+  localId?: string;
 }
 
 export const DEFAULT_SOURCE: SourceConfig = {
@@ -89,10 +91,11 @@ export interface SourceHistoryEntry {
 /**
  * Identity of a source for the history: same destination = same entry. Name, format, time
  * field and the chosen pattern-variable values are details of the entry, not part of the key.
- * Local sources have no identity (the files cannot be stored): null.
+ * A local source is identified by its stored handles; one picked without handles has no identity: null.
  */
 export function sourceKey(cfg: SourceConfig): string | null {
   if (cfg.kind === 'demo') return 'demo';
+  if (cfg.kind === 'local') return cfg.localId ? JSON.stringify(['local', cfg.localId]) : null;
   if (cfg.kind !== 'url') return null;
   const urls = cfg.urls
     .split(/\r?\n/)

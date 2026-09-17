@@ -21,6 +21,7 @@ Duckdive is a Chrome extension that searches and visualizes log files stored in 
 | OpenID Connect ID token obtained via sign-in                                                       | Memory, for the duration of one STS call                                                                                                                           | AWS STS (`AssumeRoleWithWebIdentity`) at the endpoint you configured                       |
 | Your queries and filters                                                                           | The page URL and `localStorage` on your device                                                                                                                     | Nowhere; they are executed on your device                                                  |
 | Custom SQL filters you wrote or reviewed                                                           | `localStorage` on your device (a list used to tell your own filters from ones carried by a link someone sent you)                                                  | Nowhere                                                                                    |
+| Handles of local files or folders you picked                                                       | IndexedDB on your device; Chrome asks for your permission before they are read again after a restart                                                               | Nowhere                                                                                    |
 
 ## Permissions
 
@@ -59,5 +60,6 @@ Open an issue at <https://github.com/bungoume/duckdive/issues>.
 - ログデータはメモリと端末内のブラウザ専用領域(キャッシュ)にのみ保存され、外部に送信されません。
 - 設定と静的アクセスキーのアクセスキー ID は拡張の `localStorage` に保存されます。静的キーのシークレットとセッショントークン、サインインで得た一時キーは `chrome.storage.session`(メモリのみ、ブラウザ終了で消える)に保存されます。
 - 自分で書いた、または内容を確認したカスタム SQL フィルタの一覧を `localStorage` に保持し、他人から送られたリンクに含まれる SQL と区別します。
+- ローカルファイルやフォルダを選択した場合、そのハンドルを端末内の IndexedDB に保持します。再起動後に再度読み込む際は Chrome が許可を求めます。
 - `amazonaws.com` 以外の URL を入力した場合は、そのオリジンへのアクセス権限をその場で求めます。権限は Data source ページや Chrome の拡張設定から取り消せます。
 - 「Clear cache」でキャッシュを削除でき、拡張を削除するとすべての保存データが消えます。
