@@ -172,6 +172,10 @@ e2e/                               Playwright tests and the local range server
 - Saved visualizations and settings are in the extension's localStorage. The URL carries the query and chart definition, so links work for anyone with the extension installed.
 - Chrome and Edge only.
 
+## Changelog
+
+See `CHANGELOG.md`.
+
 ## License
 
 MIT. Licenses of bundled packages are written to `THIRD_PARTY_LICENSES.txt` in `dist/` at build time. The privacy policy is in `docs/PRIVACY.md`.
