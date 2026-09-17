@@ -56,12 +56,14 @@ export function QueryBar(props: { query: string; range: TimeRange; error: string
   const { autoRefreshMs } = useSettings();
 
   const suggest = (value: string, caret: number) => {
-    setSel(0);
     if (!value.trim()) {
+      // recent queries are offered, none highlighted: Enter on an empty box runs the empty query
       const h = loadHistory();
+      setSel(-1);
       setSugg(h.length ? { items: h, kind: 'history', from: 0, to: value.length } : null);
       return;
     }
+    setSel(0);
     const before = value.slice(0, caret);
     const m = /([A-Za-z0-9_.@-]+)$/.exec(before);
     const token = m?.[1] ?? '';
@@ -125,15 +127,19 @@ export function QueryBar(props: { query: string; range: TimeRange; error: string
               suggest(e.currentTarget.value, e.currentTarget.selectionStart ?? e.currentTarget.value.length);
             }}
             onFocus={(e) => suggest(e.currentTarget.value, e.currentTarget.selectionStart ?? e.currentTarget.value.length)}
+            onClick={(e) => {
+              if (!sugg) suggest(e.currentTarget.value, e.currentTarget.selectionStart ?? e.currentTarget.value.length);
+            }}
             onBlur={() => setSugg(null)}
             onKeyDown={(e) => {
               if (sugg) {
                 if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
                   e.preventDefault();
-                  setSel((sel + (e.key === 'ArrowDown' ? 1 : sugg.items.length - 1)) % sugg.items.length);
+                  setSel((Math.max(sel, 0) + (e.key === 'ArrowDown' ? (sel < 0 ? 0 : 1) : sugg.items.length - 1)) % sugg.items.length);
                   return;
                 }
-                if (e.key === 'Tab' || (e.key === 'Enter' && sugg.kind === 'history')) {
+                // Tab takes the highlighted field name; Enter takes a recent query only once one was picked with the arrows
+                if ((e.key === 'Tab' && sel >= 0) || (e.key === 'Enter' && sugg.kind === 'history' && sel >= 0)) {
                   e.preventDefault();
                   apply(sugg.items[sel]);
                   return;

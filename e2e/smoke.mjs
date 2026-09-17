@@ -92,6 +92,18 @@ await step('completion', async () => {
   const hist = await page.locator('.qinput .suggest .item').allTextContents();
   console.log(`     history=${hist.map((h) => h.trim()).join('|')}`);
   if (!hist.some((h) => h.includes('http.latency_ms:>800'))) throw new Error('history misses the last query');
+  // Enter on the empty box runs the empty query (a recent one is taken only after ArrowDown)
+  await page.keyboard.press('Enter');
+  await settled(page);
+  const emptyRun = await page.inputValue('.qinput input');
+  await page.click('.qinput input');
+  await page.waitForSelector('.qinput .suggest .item');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await settled(page);
+  const picked = await page.inputValue('.qinput input');
+  console.log(`     Enter on empty -> "${emptyRun}", ArrowDown+Enter -> "${picked}"`);
+  if (emptyRun !== '' || !picked.includes('http.latency_ms:>800')) throw new Error('history selection');
   await page.keyboard.press('Escape');
   // date math in a range of the time field
   await page.fill('.qinput input', '@timestamp:>now-1h');
