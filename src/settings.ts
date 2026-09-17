@@ -1,7 +1,7 @@
 // User preferences that are not tied to a data source (Settings page). Kept in localStorage;
 // `useSettings()` re-renders a component when they change, `getSettings()` reads them anywhere.
 
-import { useEffect, useState } from 'preact/hooks';
+import { createStore, useStore } from './store';
 
 export interface QuickRange {
   from: string;
@@ -84,42 +84,28 @@ function load(): AppSettings {
   return { ...DEFAULT_SETTINGS };
 }
 
-let current: AppSettings = load();
-const listeners = new Set<() => void>();
+const store = createStore<AppSettings>(load());
 
-export function getSettings(): AppSettings {
-  return current;
-}
+export const getSettings = store.get;
 
 export function updateSettings(patch: Partial<AppSettings>) {
-  current = sanitize({ ...current, ...patch });
+  const next = sanitize({ ...store.get(), ...patch });
   try {
-    localStorage.setItem(LS_SETTINGS, JSON.stringify(current));
+    localStorage.setItem(LS_SETTINGS, JSON.stringify(next));
   } catch {
     /* ignore */
   }
-  for (const f of listeners) f();
+  store.set(next);
 }
 
 export function resetSettings() {
-  current = { ...DEFAULT_SETTINGS };
   try {
     localStorage.removeItem(LS_SETTINGS);
   } catch {
     /* ignore */
   }
-  for (const f of listeners) f();
+  store.set({ ...DEFAULT_SETTINGS });
 }
 
 /** Re-renders the calling component whenever the settings change; returns the current values. */
-export function useSettings(): AppSettings {
-  const [s, setS] = useState(current);
-  useEffect(() => {
-    const f = () => setS(current);
-    listeners.add(f);
-    return () => {
-      listeners.delete(f);
-    };
-  }, []);
-  return s;
-}
+export const useSettings = () => useStore(store);

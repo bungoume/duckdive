@@ -6,7 +6,7 @@
 // and can be switched from the header; the choice lives in localStorage like the other settings.
 
 import type { ComponentChildren } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
+import { createStore, useStore } from '../store';
 import { en } from './en';
 import { ja } from './ja';
 import { zh_CN } from './zh_CN';
@@ -63,9 +63,7 @@ function loadLang(): Lang {
   return detectLang();
 }
 
-let current: Lang = loadLang();
-let msgs: Messages = TABLE[current];
-const listeners = new Set<() => void>();
+const lang = createStore<Lang>(loadLang());
 
 function applyHtmlLang(l: Lang) {
   try {
@@ -74,43 +72,31 @@ function applyHtmlLang(l: Lang) {
     /* not in a document */
   }
 }
-applyHtmlLang(current);
+applyHtmlLang(lang.get());
 
-export function getLang(): Lang {
-  return current;
-}
+export const getLang = lang.get;
 
 export function setLang(l: Lang) {
-  if (l === current) return;
-  current = l;
-  msgs = TABLE[l];
+  if (l === lang.get()) return;
   try {
     localStorage.setItem(LS_LANG, l);
   } catch {
     /* ignore */
   }
   applyHtmlLang(l);
-  for (const f of listeners) f();
+  lang.set(l);
 }
 
 /** Re-renders the calling component when the language changes; returns the current language. */
-export function useLang(): Lang {
-  const [l, setL] = useState(current);
-  useEffect(() => {
-    const f = () => setL(current);
-    listeners.add(f);
-    return () => {
-      listeners.delete(f);
-    };
-  }, []);
-  return l;
-}
+export const useLang = () => useStore(lang);
+
+const msgs = (): Messages => TABLE[lang.get()];
 
 const PLACEHOLDER = /\{(\w+)\}/g;
 
 /** Message for `key` with `{name}` placeholders filled from `params`; falls back to English. */
 export function t(key: MsgKey, params?: Params): string {
-  const s = msgs[key] ?? en[key] ?? key;
+  const s = msgs()[key] ?? en[key] ?? key;
   if (!params) return s;
   return s.replace(PLACEHOLDER, (m, name: string) => {
     const v = params[name];
@@ -123,7 +109,7 @@ export function t(key: MsgKey, params?: Params): string {
  * and returned as a list of children. Strings and numbers are inserted as text.
  */
 export function tx(key: MsgKey, params: Record<string, ComponentChildren>): ComponentChildren[] {
-  const s = msgs[key] ?? en[key] ?? key;
+  const s = msgs()[key] ?? en[key] ?? key;
   const out: ComponentChildren[] = [];
   let last = 0;
   for (const m of s.matchAll(PLACEHOLDER)) {
