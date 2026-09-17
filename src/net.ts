@@ -11,12 +11,16 @@ export const REQUEST_TIMEOUT_MS = 10_000;
 export const LIST_CONCURRENCY = 6;
 
 export class TimeoutError extends Error {
-  constructor(what: string, ms: number) {
+  constructor(
+    readonly what: string,
+    readonly ms: number,
+  ) {
     super(`${what} did not answer within ${Math.round(ms / 1000)} s`);
     this.name = 'TimeoutError';
   }
 }
 
+/** Thrown when the user cancelled (a connect) or the work was abandoned (a query superseded by a reconnect); callers stay silent about it. */
 export class CancelledError extends Error {
   constructor() {
     super('Cancelled');

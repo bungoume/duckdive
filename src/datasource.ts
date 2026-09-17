@@ -3,6 +3,7 @@ import { t } from './i18n';
 import { cacheSeed, fmtBytes, type SeedFile } from './cache';
 import { normalizationAvailable, normalizeGzipFiles, type NormalizeFile } from './gznorm';
 import { DataProtocol, exec, getDB, query } from './duck';
+import { describeError } from './errors';
 import { CancelledError, throwIfAborted } from './net';
 import { originPattern } from './permissions';
 import { detectFormat, resolveFormat, type FormatDef } from './formats';
@@ -145,7 +146,7 @@ export async function applyS3(cfg: SourceConfig, creds: AwsCredentials | null = 
     try {
       await exec(`SET ${k}=${lit(v)}`);
     } catch (e) {
-      throw new Error(t('src.applyFailed', { key: k, error: String(e) }), { cause: e });
+      throw new Error(t('src.applyFailed', { key: k, error: describeError(e) }), { cause: e });
     }
   }
 }

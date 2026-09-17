@@ -22,6 +22,9 @@ export const fr: Messages = {
   'app.progress.stopping': 'Arrêt des requêtes en cours…',
   'app.error.hostPermission': 'Permission refusée pour les hôtes : {origins}',
   'app.error.cancelled': 'Connexion annulée',
+  'app.error.timeout': "{what} n'a pas répondu en {seconds} s",
+  'app.crashed': 'Une erreur est survenue : {error}',
+  'app.reload': 'Recharger',
   'app.creds.refreshFailed': "Les identifiants AWS temporaires n'ont pas pu être renouvelés : {error}. Les requêtes échoueront à leur expiration ; reconnectez-vous depuis la page Source de données.",
   'app.large.files': '{n} fichiers',
   'app.large.text':

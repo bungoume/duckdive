@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'preact/hooks';
+import { describeError } from '../errors';
 import { t } from '../i18n';
 import {
   cacheClear,
@@ -46,7 +47,7 @@ export function CachePanel() {
       setEst(e);
       setErr(null);
     } catch (e) {
-      setErr(String(e));
+      setErr(describeError(e));
     }
   }, [limit]);
 
@@ -61,7 +62,7 @@ export function CachePanel() {
     try {
       await op;
     } catch (e) {
-      setErr(String(e));
+      setErr(describeError(e));
       return;
     }
     await refresh();

@@ -1,4 +1,5 @@
-import { QueryCancelled } from '../duck';
+import { describeError } from '../errors';
+import { CancelledError } from '../net';
 import { formatDate } from '../datefmt';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { TimeRange } from '../datemath';
@@ -115,7 +116,7 @@ export function Visualize(props: {
         if (id === runId.current) setResult(r);
       })
       .catch((e) => {
-        if (id === runId.current && !(e instanceof QueryCancelled)) setError(withCacheHint(String(e)));
+        if (id === runId.current && !(e instanceof CancelledError)) setError(withCacheHint(describeError(e)));
       })
       .finally(() => {
         if (id === runId.current) {

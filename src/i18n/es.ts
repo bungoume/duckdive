@@ -22,6 +22,9 @@ export const es: Messages = {
   'app.progress.stopping': 'Deteniendo las consultas en curso…',
   'app.error.hostPermission': 'Permiso de host denegado para: {origins}',
   'app.error.cancelled': 'Conexión cancelada',
+  'app.error.timeout': '{what} no respondió en {seconds} s',
+  'app.crashed': 'Algo salió mal: {error}',
+  'app.reload': 'Recargar',
   'app.creds.refreshFailed': 'No se pudieron renovar las credenciales temporales de AWS: {error}. Las consultas fallarán cuando caduquen; vuelva a iniciar sesión en la página Origen de datos.',
   'app.large.files': '{n} archivos',
   'app.large.text':

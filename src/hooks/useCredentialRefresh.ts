@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { getCredentials, loadCredentials, secondsUntilExpiry, type AwsCredentials } from '../auth';
 import { applyS3, type AttachedSource } from '../datasource';
+import { describeError } from '../errors';
 import type { SourceConfig } from '../state';
 
 const CHECK_EVERY_MS = 60_000;
@@ -26,7 +27,7 @@ export function useCredentialRefresh(source: SourceConfig, attached: AttachedSou
         setRefreshError(null);
       } catch (e) {
         console.warn('credential refresh failed', e);
-        setRefreshError(String(e));
+        setRefreshError(describeError(e));
       }
     }, CHECK_EVERY_MS);
     return () => clearInterval(timer);

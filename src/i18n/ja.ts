@@ -22,6 +22,9 @@ export const ja: Messages = {
   'app.progress.stopping': '実行中のクエリを停止しています…',
   'app.error.hostPermission': '次のホストへのアクセス権限が拒否されました: {origins}',
   'app.error.cancelled': '接続をキャンセルしました',
+  'app.error.timeout': '{what} が {seconds} 秒以内に応答しませんでした',
+  'app.crashed': '問題が発生しました: {error}',
+  'app.reload': '再読み込み',
   'app.creds.refreshFailed': '一時的な AWS 認証情報を更新できませんでした: {error}。期限が切れるとクエリが失敗します。Data source ページでもう一度サインインしてください。',
   'app.large.files': '{n} ファイル',
   'app.large.text':

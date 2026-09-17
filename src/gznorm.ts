@@ -7,6 +7,7 @@
 // the page, cancellable), re-compressed as a single member when it is multi-member, and stored
 // complete in the range cache. DuckDB then reads the cached copy and never sees a member
 // boundary. Single-member objects are stored as they are, so later queries are local too.
+import { describeError } from './errors';
 import { cacheComplete, cacheStore, cacheStats } from './cache';
 import { expose } from './debug';
 import NormalizeWorker from './worker/gz-normalize-worker?worker';
@@ -53,7 +54,7 @@ export async function normalizationAvailable(): Promise<{ ok: boolean; reason: s
     if (s.opfsError) return { ok: false, reason: s.opfsError };
     return { ok: true, reason: null };
   } catch (e) {
-    return { ok: false, reason: String(e) };
+    return { ok: false, reason: describeError(e) };
   }
 }
 
@@ -101,7 +102,7 @@ export async function normalizeGzipFiles(
                     result.bytes += origSize;
                     if (r.repacked) result.repacked++;
                   } catch (e) {
-                    result.failed.push({ url: f.url, error: `cache store failed: ${String(e)}` });
+                    result.failed.push({ url: f.url, error: `cache store failed: ${describeError(e)}` });
                   }
                 }
                 finished++;

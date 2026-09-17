@@ -2,7 +2,8 @@ import { useEffect, useState } from 'preact/hooks';
 import { t } from '../i18n';
 import { fmtBytes } from '../cache';
 import { FILE_ERROR, canDiagnose, diagnoseFiles, type DiagnoseReport } from '../diagnose';
-import { QueryCancelled } from '../duck';
+import { describeError } from '../errors';
+import { CancelledError } from '../net';
 
 /** Shown under a query error that smells like damaged file bytes: finds and inspects the culprit file(s). */
 export function DiagnosePanel(props: { error: string | null }) {
@@ -24,7 +25,7 @@ export function DiagnosePanel(props: { error: string | null }) {
     try {
       setReport(await diagnoseFiles(setProgress));
     } catch (e) {
-      setFailed(e instanceof QueryCancelled ? t('diag.cancelled') : String(e));
+      setFailed(e instanceof CancelledError ? t('diag.cancelled') : describeError(e));
     } finally {
       setRunning(false);
     }

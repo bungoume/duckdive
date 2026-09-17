@@ -14,7 +14,8 @@ import { Histogram, fillBuckets } from './Histogram';
 import { DiagnosePanel } from './DiagnosePanel';
 import { QueryBar } from './QueryBar';
 import { withCacheHint } from '../diagnose';
-import { QueryCancelled } from '../duck';
+import { describeError } from '../errors';
+import { CancelledError } from '../net';
 
 const PAGE = 100;
 
@@ -82,7 +83,7 @@ export function Discover(props: {
         setResultSeq((s) => s + 1);
         setElapsed(performance.now() - t0);
       } catch (e) {
-        if (id === runId.current && !(e instanceof QueryCancelled)) setError(withCacheHint(String(e)));
+        if (id === runId.current && !(e instanceof CancelledError)) setError(withCacheHint(describeError(e)));
       } finally {
         if (id === runId.current) {
           setBusy(false);
@@ -101,7 +102,7 @@ export function Discover(props: {
       const more = await fetchDocs(compiled.where, timeExpr, fields, discover.sort, discover.columns, PAGE, docs.length);
       setDocs([...docs, ...more.docs]);
     } catch (e) {
-      if (!(e instanceof QueryCancelled)) setError(withCacheHint(String(e)));
+      if (!(e instanceof CancelledError)) setError(withCacheHint(describeError(e)));
     } finally {
       setBusy(false);
       onBusy(false);

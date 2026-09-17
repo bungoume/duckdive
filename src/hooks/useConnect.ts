@@ -9,6 +9,7 @@ import { attachSource, capturedColumns, discoverVariables, requiredOrigins, unse
 import { resolveRange } from '../datemath';
 import { expose } from '../debug';
 import { setDiagnoseContext } from '../diagnose';
+import { describeError } from '../errors';
 import { DataProtocol, cancelAllQueries, getDB, getQueryLog, initDuckDB, queriesRunning, query } from '../duck';
 import { findField } from '../fields';
 import { t } from '../i18n';
@@ -161,7 +162,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
       return a;
     } catch (e) {
       if (stale()) return null;
-      setAttachError(e instanceof CancelledError ? t('app.error.cancelled') : String(e));
+      setAttachError(e instanceof CancelledError ? t('app.error.cancelled') : describeError(e));
       return null;
     } finally {
       if (!stale()) {
@@ -246,7 +247,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
         const a = await connect(cfg, [], false);
         if (!a) setUrl((u) => ({ ...u, page: 'source' }));
       } catch (e) {
-        setInitError(String(e));
+        setInitError(describeError(e));
       }
     })();
     // runs once, with the source saved from the previous session

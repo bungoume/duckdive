@@ -1,7 +1,8 @@
 import { query, type Row } from './duck';
 import type { Field } from './fields';
 import { findField } from './fields';
-import { SearchQueryError, searchToSql } from './search';
+import { describeError } from './errors';
+import { searchToSql } from './search';
 import { VIEW, bucketExpr, buildWhere, fieldCompareExpr, lit, type Interval } from './sql';
 import type { MetricDef, SearchState, SortDir, VisState } from './state';
 import { t } from './i18n';
@@ -19,7 +20,7 @@ export function compileSearch(search: SearchState, fields: Field[], timeExpr: st
   try {
     querySql = searchToSql(search.query, fields);
   } catch (e) {
-    error = e instanceof SearchQueryError ? e.message : String(e);
+    error = describeError(e);
     querySql = 'FALSE';
   }
   const w = buildWhere({ timeExpr, range: search.range, querySql, filters: search.filters, fields });

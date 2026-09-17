@@ -1,4 +1,5 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
+import { CancelledError } from './net';
 import { cacheWorkerPort } from './cache';
 import CacheWorker from './worker/duckdb-cache-worker?worker';
 
@@ -103,14 +104,6 @@ export function getQueryLog() {
   return queryLog;
 }
 
-/** Thrown for queries abandoned by cancelAllQueries(); callers should ignore it silently. */
-export class QueryCancelled extends Error {
-  constructor() {
-    super('Query cancelled');
-    this.name = 'QueryCancelled';
-  }
-}
-
 // Statements run one at a time through a chain (DuckDB allows one pending query per
 // connection). Queries use send() so the worker executes them in small steps and stays
 // responsive (cache messages are answered, cancelSent() takes effect between steps).
@@ -130,7 +123,7 @@ function enqueue<T>(fn: () => Promise<T>): Promise<T> {
 export async function query(sql: string): Promise<QueryResult> {
   const gen = generation;
   return enqueue(async () => {
-    if (gen !== generation) throw new QueryCancelled();
+    if (gen !== generation) throw new CancelledError();
     const c = getConn();
     const t0 = performance.now();
     running++;
@@ -147,7 +140,7 @@ export async function query(sql: string): Promise<QueryResult> {
         if (sch) columns = sch.fields.map((f) => f.name);
       }
       // a cancelled stream ends early with a partial result: never hand that out as complete
-      if (gen !== generation) throw new QueryCancelled();
+      if (gen !== generation) throw new CancelledError();
       const ms = performance.now() - t0;
       queryLog.unshift({ sql, ms });
       if (queryLog.length > 50) queryLog.pop();
@@ -156,7 +149,7 @@ export async function query(sql: string): Promise<QueryResult> {
       const ms = performance.now() - t0;
       if (gen !== generation || /cancel|interrupt/i.test(String(e))) {
         queryLog.unshift({ sql, ms, error: 'cancelled' });
-        throw new QueryCancelled();
+        throw new CancelledError();
       }
       queryLog.unshift({ sql, ms, error: String(e) });
       if (queryLog.length > 50) queryLog.pop();

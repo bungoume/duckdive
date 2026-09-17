@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
 import { redirectUrl, secondsUntilExpiry, signIn, storeCredentials, type AwsCredentials, type OidcConfig } from '../../auth';
+import { describeError } from '../../errors';
 import { t, tx } from '../../i18n';
 import { isExtension } from '../../permissions';
 import type { AuthMode, SourceConfig } from '../../state';
@@ -22,7 +23,7 @@ export function S3Section(props: {
     try {
       props.onCreds(await signIn(cfg.oidc, true));
     } catch (e) {
-      setAuthError(String(e));
+      setAuthError(describeError(e));
     } finally {
       setAuthBusy(false);
     }

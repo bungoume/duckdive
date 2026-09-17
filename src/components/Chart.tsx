@@ -1,4 +1,5 @@
 import * as Plot from '@observablehq/plot';
+import { describeError } from '../errors';
 import { t, useLang } from '../i18n';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { formatBucket } from '../datefmt';
@@ -184,7 +185,7 @@ export function Chart(props: {
       console.error('chart render failed', e);
       const div = document.createElement('div');
       div.className = 'chart-error';
-      div.textContent = t('chart.renderFailed', { error: String(e) });
+      div.textContent = t('chart.renderFailed', { error: describeError(e) });
       el.replaceChildren(div);
       model.current.plot = null;
       return;

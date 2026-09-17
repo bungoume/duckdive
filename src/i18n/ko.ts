@@ -22,6 +22,9 @@ export const ko: Messages = {
   'app.progress.stopping': '실행 중인 쿼리를 중지하는 중…',
   'app.error.hostPermission': '다음 호스트에 대한 권한이 거부되었습니다: {origins}',
   'app.error.cancelled': '연결이 취소되었습니다',
+  'app.error.timeout': '{what}이(가) {seconds}초 내에 응답하지 않았습니다',
+  'app.crashed': '문제가 발생했습니다: {error}',
+  'app.reload': '다시 로드',
   'app.creds.refreshFailed': '임시 AWS 자격 증명을 갱신하지 못했습니다: {error}. 만료되면 쿼리가 실패합니다. 데이터 소스 페이지에서 다시 로그인하세요.',
   'app.large.files': '{n}개 파일',
   'app.large.text':

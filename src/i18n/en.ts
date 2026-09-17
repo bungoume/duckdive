@@ -24,6 +24,9 @@ export const en = {
   'app.progress.stopping': 'Stopping running queries…',
   'app.error.hostPermission': 'Host permission denied for: {origins}',
   'app.error.cancelled': 'Connection cancelled',
+  'app.error.timeout': '{what} did not answer within {seconds} s',
+  'app.crashed': 'Something went wrong: {error}',
+  'app.reload': 'Reload',
   'app.creds.refreshFailed': 'The temporary AWS credentials could not be refreshed: {error}. Queries will fail once they expire; sign in again on the Data source page.',
   'app.large.files': '{n} files',
   'app.large.text':

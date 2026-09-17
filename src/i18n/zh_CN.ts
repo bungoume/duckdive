@@ -22,6 +22,9 @@ export const zh_CN: Messages = {
   'app.progress.stopping': '正在停止运行中的查询…',
   'app.error.hostPermission': '以下主机的访问权限被拒绝：{origins}',
   'app.error.cancelled': '连接已取消',
+  'app.error.timeout': '{what} 在 {seconds} 秒内没有响应',
+  'app.crashed': '出现问题：{error}',
+  'app.reload': '重新加载',
   'app.creds.refreshFailed': '无法刷新临时 AWS 凭证:{error}。凭证过期后查询将失败;请在“数据源”页面重新登录。',
   'app.large.files': '{n} 个文件',
   'app.large.text':

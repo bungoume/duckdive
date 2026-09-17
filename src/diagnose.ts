@@ -5,7 +5,9 @@ import { cacheStats, type CacheLogEntry } from './cache';
 import { expose } from './debug';
 import { t } from './i18n';
 import { viewSelect } from './datasource';
-import { QueryCancelled, query } from './duck';
+import { query } from './duck';
+import { describeError } from './errors';
+import { CancelledError } from './net';
 import { resolveFormat, type FormatId } from './formats';
 import { inflateGzipMembers } from './gzmembers';
 import { lit } from './sql';
@@ -93,7 +95,7 @@ async function inflateGzip(buf: Uint8Array): Promise<{ inflated: number | null; 
     }
     return { inflated: n, error: null };
   } catch (e) {
-    return { inflated: null, error: String(e) };
+    return { inflated: null, error: describeError(e) };
   }
 }
 
@@ -111,7 +113,7 @@ export async function inspectGzip(buf: Uint8Array): Promise<NonNullable<FileRepo
     try {
       members = inflateGzipMembers(buf).members;
     } catch (e) {
-      membersError = String(e);
+      membersError = describeError(e);
     }
   }
   let verdict: string;
@@ -134,8 +136,8 @@ async function readError(format: FormatId, files: string[]): Promise<string | nu
     await query(`SELECT count(*) AS n FROM (${viewSelect(fmt, files, null, true)})`);
     return null;
   } catch (e) {
-    if (e instanceof QueryCancelled) throw e;
-    return String(e);
+    if (e instanceof CancelledError) throw e;
+    return describeError(e);
   }
 }
 
@@ -155,8 +157,8 @@ async function inspectFile(file: string, listedSize: number | null, error: strin
     rep.head = toHex(buf.subarray(0, 10));
     if (/\.gz$/i.test(file) || (buf[0] === 0x1f && buf[1] === 0x8b)) rep.gzip = await inspectGzip(buf);
   } catch (e) {
-    if (e instanceof QueryCancelled) throw e;
-    rep.error += `\n(inspection failed: ${String(e)})`;
+    if (e instanceof CancelledError) throw e;
+    rep.error += `\n(inspection failed: ${describeError(e)})`;
   }
   return rep;
 }

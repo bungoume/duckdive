@@ -22,6 +22,9 @@ export const de: Messages = {
   'app.progress.stopping': 'Laufende Abfragen werden gestoppt…',
   'app.error.hostPermission': 'Host-Berechtigung verweigert für: {origins}',
   'app.error.cancelled': 'Verbindung abgebrochen',
+  'app.error.timeout': '{what} hat innerhalb von {seconds} s nicht geantwortet',
+  'app.crashed': 'Etwas ist schiefgelaufen: {error}',
+  'app.reload': 'Neu laden',
   'app.creds.refreshFailed': 'Die temporären AWS-Anmeldedaten konnten nicht erneuert werden: {error}. Nach ihrem Ablauf schlagen Abfragen fehl; melden Sie sich auf der Seite Datenquelle erneut an.',
   'app.large.files': '{n} Dateien',
   'app.large.text':
