@@ -218,6 +218,18 @@ export const es: Messages = {
   'disc.cacheHint':
     '{error}\n\nUse "{button}" más abajo para localizar e inspeccionar el archivo que DuckDB rechaza. Si sospecha de la caché: Origen de datos → Caché local de rangos → "{clear}" o desmarque "{enable}".',
 
+  // ---- export (Discover) ----
+  'exp.button': 'Exportar',
+  'exp.title': 'Exportar resultados',
+  'exp.format.csv': 'CSV',
+  'exp.format.jsonl': 'JSON Lines',
+  'exp.format.parquet': 'Parquet',
+  'exp.rows': 'Filas (como máximo)',
+  'exp.hint.columns': 'La columna de tiempo y las columnas seleccionadas, ordenadas como la tabla.',
+  'exp.hint.all': 'Todas las columnas del origen, ordenadas como la tabla. Añada columnas para exportar solo esas.',
+  'exp.download': 'Descargar',
+  'exp.running': 'Exportando…',
+
   // ---- Visualize page ----
   'vis.chart.area': 'Área',
   'vis.chart.line': 'Línea',

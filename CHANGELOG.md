@@ -4,6 +4,10 @@ All notable changes to Duckdive. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+### Added
+
+- Export on the Discover page: the matching rows as CSV, JSON Lines or Parquet, sorted like the table and cut at a chosen number of rows. With columns selected the file holds the time column and those columns; otherwise every column of the source.
+
 ### Changed
 
 - Error banners show the message alone (no `Error:` prefix), and a request that timed out is described in the UI language.

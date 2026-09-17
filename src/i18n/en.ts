@@ -215,6 +215,18 @@ export const en = {
   'disc.loadMore': 'Load more ({shown} of {total})',
   'disc.cacheHint': '{error}\n\nUse "{button}" below to locate and inspect the file DuckDB rejects. If the cache is suspected: Data source → Local range cache → "{clear}" or untick "{enable}".',
 
+  // ---- export (Discover) ----
+  'exp.button': 'Export',
+  'exp.title': 'Export results',
+  'exp.format.csv': 'CSV',
+  'exp.format.jsonl': 'JSON Lines',
+  'exp.format.parquet': 'Parquet',
+  'exp.rows': 'Rows (at most)',
+  'exp.hint.columns': 'The time column and the selected columns, sorted like the table.',
+  'exp.hint.all': 'Every column of the source, sorted like the table. Add columns to export only those.',
+  'exp.download': 'Download',
+  'exp.running': 'Exporting…',
+
   // ---- Visualize page ----
   'vis.chart.area': 'Area',
   'vis.chart.line': 'Line',

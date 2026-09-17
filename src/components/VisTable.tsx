@@ -1,6 +1,7 @@
 // The table and the metric tiles of the Visualize page: the non-graphical renderings of a VisResult.
 import { useState } from 'preact/hooks';
 import { formatBucket, formatDate } from '../datefmt';
+import { downloadBlob } from '../export';
 import { t } from '../i18n';
 import { NULL_GROUP, groupLabel, metricLabel, type VisResult } from '../queries';
 import type { MetricDef } from '../state';
@@ -42,12 +43,7 @@ export function DataTable(props: { result: VisResult; metrics: MetricDef[]; xLab
     const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const lines = [headers.map(esc).join(',')];
     for (const row of rows) lines.push(row.map((c, i) => esc(isDateCell(i) && typeof c === 'number' ? new Date(c).toISOString() : c)).join(','));
-    const blob = new Blob([lines.join(NL)], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'duckdive-table.csv';
-    a.click();
-    URL.revokeObjectURL(a.href);
+    downloadBlob(new Blob([lines.join(NL)], { type: 'text/csv' }), 'duckdive-table.csv');
   };
   return (
     <div>

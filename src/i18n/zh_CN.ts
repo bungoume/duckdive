@@ -207,6 +207,18 @@ export const zh_CN: Messages = {
   'disc.loadMore': '加载更多（{shown} / {total}）',
   'disc.cacheHint': '{error}\n\n使用下方的“{button}”定位并检查 DuckDB 拒绝的文件。如果怀疑是缓存问题：数据源 → 本地范围缓存 → “{clear}”，或取消勾选“{enable}”。',
 
+  // ---- export (Discover) ----
+  'exp.button': '导出',
+  'exp.title': '导出结果',
+  'exp.format.csv': 'CSV',
+  'exp.format.jsonl': 'JSON Lines',
+  'exp.format.parquet': 'Parquet',
+  'exp.rows': '行数（上限）',
+  'exp.hint.columns': '导出时间列和已选列，顺序与表格相同。',
+  'exp.hint.all': '导出数据源的全部列，顺序与表格相同。添加列后只导出这些列。',
+  'exp.download': '下载',
+  'exp.running': '正在导出…',
+
   // ---- Visualize page ----
   'vis.chart.area': '面积图',
   'vis.chart.line': '折线图',

@@ -1,5 +1,6 @@
 // Smoke test of the extension UI (Discover / Visualize) on the demo dataset.
 //   pnpm run build && node e2e/smoke.mjs
+import { readFileSync } from 'node:fs';
 import { launchExtension, settled } from './ext-context.mjs';
 
 const out = process.env.OUT ?? '.';
@@ -136,6 +137,31 @@ await step('field-sidebar', async () => {
   await settled(page);
   const th = await page.locator('table.docs th').allTextContents();
   console.log(`     columns=${th.join('|')}`);
+});
+await step('export', async () => {
+  // the table has the http.method column from the previous step: CSV carries Time + that column
+  const download = async (format, rows) => {
+    await page.click('.hits button:has-text("Export")');
+    await page.selectOption('.export-menu select', format);
+    await page.fill('.export-menu input[type="number"]', String(rows));
+    const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 60000 }), page.click('.export-menu .btn.primary')]);
+    return { name: dl.suggestedFilename(), bytes: readFileSync(await dl.path()) };
+  };
+  const csv = await download('csv', 50);
+  const lines = csv.bytes.toString('utf8').trim().split('\n');
+  console.log(`     ${csv.name}: ${lines.length} lines, header=${lines[0]}`);
+  if (lines.length !== 51 || lines[0] !== '@timestamp,http.method') throw new Error('unexpected CSV: ' + lines[0]);
+  const pq = await download('parquet', 20);
+  console.log(`     ${pq.name}: ${pq.bytes.length} bytes, magic=${pq.bytes.subarray(0, 4)}`);
+  if (pq.bytes.subarray(0, 4).toString() !== 'PAR1') throw new Error('not a Parquet file');
+  const jl = await download('jsonl', 3);
+  const docs = jl.bytes
+    .toString('utf8')
+    .trim()
+    .split('\n')
+    .map((l) => JSON.parse(l));
+  console.log(`     ${jl.name}: ${docs.length} docs, keys=${Object.keys(docs[0]).join(',')}`);
+  if (docs.length !== 3 || !('http.method' in docs[0])) throw new Error('unexpected JSON Lines');
 });
 await step('brush', async () => {
   const dbg = await page.evaluate(() => {

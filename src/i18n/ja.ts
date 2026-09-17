@@ -214,6 +214,18 @@ export const ja: Messages = {
   'disc.cacheHint':
     '{error}\n\n下の「{button}」で DuckDB が拒否したファイルを特定・検査できます。キャッシュが疑わしい場合: Data source → Local range cache → 「{clear}」、または「{enable}」のチェックを外してください。',
 
+  // ---- export (Discover) ----
+  'exp.button': 'エクスポート',
+  'exp.title': '結果をエクスポート',
+  'exp.format.csv': 'CSV',
+  'exp.format.jsonl': 'JSON Lines',
+  'exp.format.parquet': 'Parquet',
+  'exp.rows': '行数(上限)',
+  'exp.hint.columns': '時間列と選択した列を、テーブルと同じ順序で書き出します。',
+  'exp.hint.all': 'ソースの全列を、テーブルと同じ順序で書き出します。列を追加するとその列だけになります。',
+  'exp.download': 'ダウンロード',
+  'exp.running': 'エクスポート中…',
+
   // ---- Visualize page ----
   'vis.chart.area': '面',
   'vis.chart.line': '折れ線',

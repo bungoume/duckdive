@@ -1,6 +1,6 @@
 import { query, type Row } from './duck';
 import type { Field } from './fields';
-import { findField } from './fields';
+import { findField, quoteIdent } from './fields';
 import { describeError } from './errors';
 import { searchToSql } from './search';
 import { VIEW, bucketExpr, buildWhere, fieldCompareExpr, lit, type Interval } from './sql';
@@ -62,13 +62,7 @@ export async function fetchDocs(
   sel.push(`to_json(t)::VARCHAR AS "__src"`);
   const colFields = columns.map((c) => findField(fields, c)).filter((f): f is Field => !!f);
   colFields.forEach((f, i) => sel.push(`(${f.expr})::VARCHAR AS "__c${i}"`));
-  const order: string[] = [];
-  for (const s of sort) {
-    const f = findField(fields, s.field);
-    if (f) order.push(`${fieldCompareExpr(f)} ${s.dir === 'asc' ? 'ASC' : 'DESC'} NULLS LAST`);
-  }
-  if (!order.length && timeExpr) order.push(`${timeExpr} DESC NULLS LAST`);
-  const sql = `SELECT ${sel.join(', ')} FROM ${VIEW} t WHERE ${where}${order.length ? ' ORDER BY ' + order.join(', ') : ''} LIMIT ${limit} OFFSET ${offset}`;
+  const sql = `SELECT ${sel.join(', ')} FROM ${VIEW} t WHERE ${where}${docsOrder(sort, fields, timeExpr)} LIMIT ${limit} OFFSET ${offset}`;
   const r = await query(sql);
   const docs = r.rows.map((row) => {
     let source: Record<string, unknown>;
@@ -82,6 +76,33 @@ export async function fetchDocs(
     return { ts: row.__ts === null ? null : Number(row.__ts), source, cols };
   });
   return { docs, sql };
+}
+
+/** ORDER BY of the document table: the chosen sorts, else newest first ('' without a time field). */
+export function docsOrder(sort: { field: string; dir: SortDir }[], fields: Field[], timeExpr: string | null): string {
+  const order: string[] = [];
+  for (const s of sort) {
+    const f = findField(fields, s.field);
+    if (f) order.push(`${fieldCompareExpr(f)} ${s.dir === 'asc' ? 'ASC' : 'DESC'} NULLS LAST`);
+  }
+  if (!order.length && timeExpr) order.push(`${timeExpr} DESC NULLS LAST`);
+  return order.length ? ' ORDER BY ' + order.join(', ') : '';
+}
+
+/**
+ * SELECT behind an export of the document table: the time column and the selected columns
+ * under their field names, or every column of the source when none is selected; sorted like
+ * the table and cut at `limit` rows.
+ */
+export function exportDocsSql(where: string, timeField: Field | null, timeExpr: string | null, fields: Field[], sort: { field: string; dir: SortDir }[], columns: string[], limit: number): string {
+  const colFields = columns.map((c) => findField(fields, c)).filter((f): f is Field => !!f);
+  const sel: string[] = [];
+  if (!colFields.length) sel.push('*');
+  else {
+    if (timeField && timeExpr && !colFields.includes(timeField)) sel.push(`${timeExpr} AS ${quoteIdent(timeField.name)}`);
+    for (const f of colFields) sel.push(`${f.expr} AS ${quoteIdent(f.name)}`);
+  }
+  return `SELECT ${sel.join(', ')} FROM ${VIEW} t WHERE ${where}${docsOrder(sort, fields, timeExpr)} LIMIT ${Math.max(1, Math.floor(limit))}`;
 }
 
 export interface TopValue {

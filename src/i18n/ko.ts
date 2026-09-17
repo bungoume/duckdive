@@ -211,6 +211,18 @@ export const ko: Messages = {
   'disc.loadMore': '더 불러오기 ({total}개 중 {shown}개)',
   'disc.cacheHint': '{error}\n\n아래의 "{button}"으로 DuckDB가 거부하는 파일을 찾아 검사하세요. 캐시가 의심되면: 데이터 소스 → 로컬 범위 캐시 → "{clear}" 또는 "{enable}" 체크 해제.',
 
+  // ---- export (Discover) ----
+  'exp.button': '내보내기',
+  'exp.title': '결과 내보내기',
+  'exp.format.csv': 'CSV',
+  'exp.format.jsonl': 'JSON Lines',
+  'exp.format.parquet': 'Parquet',
+  'exp.rows': '행 수(최대)',
+  'exp.hint.columns': '시간 열과 선택한 열을 테이블과 같은 순서로 내보냅니다.',
+  'exp.hint.all': '소스의 모든 열을 테이블과 같은 순서로 내보냅니다. 열을 추가하면 그 열만 내보냅니다.',
+  'exp.download': '다운로드',
+  'exp.running': '내보내는 중…',
+
   // ---- Visualize page ----
   'vis.chart.area': '영역',
   'vis.chart.line': '선',

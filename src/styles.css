@@ -194,6 +194,8 @@ table.kv td.a button:hover { color: var(--k-primary); }
 .empty { padding: 48px; text-align: center; color: var(--k-text-subdued); }
 .empty h3 { margin: 0 0 8px; color: var(--k-text); }
 .sql-toggle { font-size: 11px; color: var(--k-text-subdued); background: none; border: 0; }
+.export-menu { width: 300px; }
+.export-menu .hint { margin: 0 0 8px; }
 .sql-box { font-family: var(--k-mono); font-size: 11px; white-space: pre-wrap; background: #f4f6fa; border: 1px solid var(--k-border-light); padding: 8px; border-radius: 4px; max-height: 200px; overflow: auto; margin-top: 4px; }
 
 /* visualize */

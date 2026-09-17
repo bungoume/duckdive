@@ -12,6 +12,7 @@ import { FieldSidebar } from './FieldSidebar';
 import { FilterBar } from './FilterBar';
 import { Histogram, fillBuckets } from './Histogram';
 import { DiagnosePanel } from './DiagnosePanel';
+import { ExportMenu } from './ExportMenu';
 import { QueryBar } from './QueryBar';
 import { withCacheHint } from '../diagnose';
 import { describeError } from '../errors';
@@ -153,6 +154,7 @@ export function Discover(props: {
               {compiled.from && compiled.to ? ` · ${formatLocal(compiled.from)} → ${formatLocal(compiled.to)}` : ''}
             </span>
             <span class="grow" />
+            <ExportMenu where={compiled.where} timeField={props.timeField} timeExpr={timeExpr} fields={fields} sort={discover.sort} columns={discover.columns} disabled={!!compiled.error || paused} />
             <button class="sql-toggle" onClick={() => setShowSql(!showSql)}>
               {showSql ? t('disc.hideSql') : t('disc.showSql')}
             </button>

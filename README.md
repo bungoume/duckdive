@@ -4,7 +4,7 @@ A Chrome extension that searches and charts log files. It reads Parquet, CSV and
 
 Four pages:
 
-- Discover: query bar, time histogram, document table, field sidebar, filter pills.
+- Discover: query bar, time histogram, document table, field sidebar, filter pills, export of the matching rows.
 - Visualize: area, line, bar, table and metric charts with date histograms, break-downs and top values. Clicking a chart adds a filter or zooms the time range.
 - Data source: where the files are, how they are formatted, which field is the time, and how to authenticate.
 - Settings: UI language, date format, time zone, scaled date format for histogram buckets, first day of the week, and the time picker's quick ranges.
@@ -123,6 +123,10 @@ The query bar uses Lucene syntax.
 Special characters are escaped with `\`. `term~2` and `term^3` are accepted and ignored. Struct columns are addressed with dots (`geo.country`); JSON columns are sampled for keys and exposed the same way (`extra.user_id`). "show SQL" displays the generated statement.
 
 Filters of the type "custom SQL" run verbatim inside DuckDB. Because the URL carries the filters, a link from someone else could contain SQL that reads this extension's S3 credentials or reaches the network; such filters are restored disabled and marked with ⚠ until you open them, read the SQL and enable them (SQL written or reviewed in this browser is remembered in `localStorage`, key `ddv.trustedSql`).
+
+## Export
+
+"Export" on the Discover page downloads the rows that match the query, the filters and the time range as CSV, JSON Lines or Parquet, sorted like the table and cut at the chosen number of rows (10,000 by default, at most 1,000,000). With columns selected the file holds the time column and those columns under their field names; without a selection it holds every column of the source, so a gzip ALB prefix can be turned into a Parquet file from the browser. DuckDB writes the file in memory before the download starts, so keep the row limit within what the tab can hold. The Visualize page's table has its own "Download CSV".
 
 ## Range cache
 
