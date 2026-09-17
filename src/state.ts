@@ -313,15 +313,13 @@ export function loadSavedVis(): SavedVis[] {
     const list: unknown = JSON.parse(localStorage.getItem(LS_VIS) ?? '[]');
     if (!Array.isArray(list)) return [];
     // written by this browser: no quarantine of custom SQL, but the shapes are still checked
-    return list
-      .filter(isObj)
-      .map((e, i) => ({
-        id: isStr(e.id) ? e.id : `saved${i}`,
-        title: isStr(e.title) ? e.title : '',
-        savedAt: isStr(e.savedAt) ? e.savedAt : '',
-        vis: sanitizeVis(e.vis),
-        search: sanitizeSearch(e.search, false),
-      }));
+    return list.filter(isObj).map((e, i) => ({
+      id: isStr(e.id) ? e.id : `saved${i}`,
+      title: isStr(e.title) ? e.title : '',
+      savedAt: isStr(e.savedAt) ? e.savedAt : '',
+      vis: sanitizeVis(e.vis),
+      search: sanitizeSearch(e.search, false),
+    }));
   } catch {
     return [];
   }
