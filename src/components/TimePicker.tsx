@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { Popover } from './ui';
+import { FormField, Popover } from './ui';
 import { describeRange, fromDatetimeLocal, quickRangeLabel, quickRanges, resolveRange, toDatetimeLocal, type TimeRange } from '../datemath';
 import { formatDate } from '../datefmt';
 import { t } from '../i18n';
@@ -87,14 +87,12 @@ export function TimePicker(props: { range: TimeRange; onChange: (r: TimeRange) =
             </div>
             <div class="col">
               <h4>{t('tp.absolute')}</h4>
-              <div class="field-row">
-                <label>{t('tp.start')}</label>
+              <FormField label={t('tp.start')}>
                 <input class="input" type="datetime-local" step={1} value={absFrom} onInput={(e) => setAbsFrom(e.currentTarget.value)} />
-              </div>
-              <div class="field-row">
-                <label>{t('tp.end')}</label>
+              </FormField>
+              <FormField label={t('tp.end')}>
                 <input class="input" type="datetime-local" step={1} value={absTo} onInput={(e) => setAbsTo(e.currentTarget.value)} />
-              </div>
+              </FormField>
               <div class="row end">
                 <button
                   class="btn small"

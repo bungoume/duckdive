@@ -1,5 +1,5 @@
-import type { ComponentChildren } from 'preact';
-import { useEffect, useRef } from 'preact/hooks';
+import { cloneElement, isValidElement, toChildArray, type ComponentChildren } from 'preact';
+import { useEffect, useId, useRef } from 'preact/hooks';
 import type { FieldKind } from '../fields';
 
 export function Popover(props: { open: boolean; onClose: () => void; button: ComponentChildren; children: ComponentChildren; align?: 'left' | 'right'; width?: number }) {
@@ -28,6 +28,22 @@ export function Popover(props: { open: boolean; onClose: () => void; button: Com
           {props.children}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * A form row: the label is linked to the control through a generated id. The control is the
+ * first child; anything after it (hints, validation messages) is rendered below.
+ */
+export function FormField(props: { label: string; children: ComponentChildren; class?: string; style?: string }) {
+  const id = useId();
+  const [control, ...rest] = toChildArray(props.children);
+  return (
+    <div class={props.class ? `field-row ${props.class}` : 'field-row'} style={props.style}>
+      <label for={id}>{props.label}</label>
+      {isValidElement(control) ? cloneElement(control, { id }) : control}
+      {rest}
     </div>
   );
 }

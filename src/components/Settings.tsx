@@ -3,6 +3,7 @@ import { LANGS, setLang, t, useLang, type Lang } from '../i18n';
 import { parseDateMath } from '../datemath';
 import { browserZone, formatDate, isValidTimeZone, parseIsoDuration } from '../datefmt';
 import { DEFAULT_SETTINGS, getSettings, resetSettings, updateSettings, useSettings, type AppSettings, type QuickRange } from '../settings';
+import { FormField } from './ui';
 
 const zoneNames = (): string[] => {
   try {
@@ -117,29 +118,26 @@ export function Settings() {
     <div class="source-page settings-page">
       <div class="card">
         <h2>{t('settings.title')}</h2>
-        <div class="field-row" style="max-width:320px">
-          <label>{t('settings.lang')}</label>
+        <FormField label={t('settings.lang')} style="max-width:320px">
           <select class="input lang-select" value={lang} onChange={(e) => setLang(e.currentTarget.value as Lang)}>
             {LANGS.map((l) => (
               <option value={l.id}>{l.label}</option>
             ))}
           </select>
           <span class="hint">{t('settings.lang.hint')}</span>
-        </div>
+        </FormField>
       </div>
 
       <div class="card">
         <h2>{t('settings.section.time')}</h2>
         <div class="grid2">
-          <div class="field-row">
-            <label>{t('settings.dateFormat')}</label>
+          <FormField label={t('settings.dateFormat')}>
             <input class="input mono" value={draft.dateFormat} onInput={(e) => set({ dateFormat: e.currentTarget.value })} placeholder={DEFAULT_SETTINGS.dateFormat} />
             {errors.dateFormat && <span class="hint error-text">{errors.dateFormat}</span>}
             <span class="hint">{t('settings.dateFormat.hint')}</span>
             {preview && <span class="hint mono">{t('settings.preview', { value: preview })}</span>}
-          </div>
-          <div class="field-row">
-            <label>{t('settings.timeZone')}</label>
+          </FormField>
+          <FormField label={t('settings.timeZone')}>
             <input class="input mono" list="ddv-timezones" value={draft.timeZone} onInput={(e) => set({ timeZone: e.currentTarget.value })} placeholder={browserZone()} />
             <datalist id="ddv-timezones">
               {zoneNames().map((z) => (
@@ -148,29 +146,26 @@ export function Settings() {
             </datalist>
             {errors.timeZone && <span class="hint error-text">{errors.timeZone}</span>}
             <span class="hint">{t('settings.timeZone.hint', { browser: browserZone() })}</span>
-          </div>
-          <div class="field-row">
-            <label>{t('settings.dow')}</label>
+          </FormField>
+          <FormField label={t('settings.dow')}>
             <select class="input" value={settings.dayOfWeek} onChange={(e) => updateSettings({ dayOfWeek: Number(e.currentTarget.value) })}>
               {days.map((name, i) => (
                 <option value={i}>{name}</option>
               ))}
             </select>
             <span class="hint">{t('settings.dow.hint')}</span>
-          </div>
+          </FormField>
         </div>
-        <div class="field-row">
-          <label>{t('settings.scaled')}</label>
+        <FormField label={t('settings.scaled')}>
           <textarea class="input mono settings-json" value={draft.scaled} onInput={(e) => set({ scaled: e.currentTarget.value })} spellcheck={false} />
           {errors.scaled && <span class="hint error-text">{errors.scaled}</span>}
           <span class="hint">{t('settings.scaled.hint')}</span>
-        </div>
-        <div class="field-row">
-          <label>{t('settings.quickRanges')}</label>
+        </FormField>
+        <FormField label={t('settings.quickRanges')}>
           <textarea class="input mono settings-json" value={draft.quick} onInput={(e) => set({ quick: e.currentTarget.value })} spellcheck={false} />
           {errors.quick && <span class="hint error-text">{errors.quick}</span>}
           <span class="hint">{t('settings.quickRanges.hint')}</span>
-        </div>
+        </FormField>
         <div class="row end" style="gap:10px;align-items:center">
           {saved && !dirty && <span class="hint">{t('settings.saved')}</span>}
           <button class="btn" onClick={resetSettings}>

@@ -3,7 +3,7 @@ import { t } from '../i18n';
 import type { Field } from '../fields';
 import { describeFilter, newId, type Filter, type FilterOp } from '../sql';
 import { trustSql } from '../trust';
-import { Popover } from './ui';
+import { FormField, Popover } from './ui';
 
 function FilterEditor(props: { fields: Field[]; initial?: Filter; onSave: (f: Filter) => void; onCancel: () => void }) {
   const [field, setField] = useState(props.initial?.field ?? props.fields[0]?.name ?? '');
@@ -16,8 +16,7 @@ function FilterEditor(props: { fields: Field[]; initial?: Filter; onSave: (f: Fi
   return (
     <div style="width:360px">
       <h4>{props.initial ? t('flt.edit') : t('flt.add')}</h4>
-      <div class="field-row">
-        <label>{t('flt.operator')}</label>
+      <FormField label={t('flt.operator')}>
         <select class="input" value={op} onChange={(e) => setOp(e.currentTarget.value as FilterOp)}>
           <option value="is">{t('flt.op.is')}</option>
           <option value="is_not">{t('flt.op.is_not')}</option>
@@ -28,10 +27,9 @@ function FilterEditor(props: { fields: Field[]; initial?: Filter; onSave: (f: Fi
           <option value="between">{t('flt.op.between')}</option>
           <option value="query">{t('flt.op.query')}</option>
         </select>
-      </div>
+      </FormField>
       {!custom && (
-        <div class="field-row">
-          <label>{t('common.field')}</label>
+        <FormField label={t('common.field')}>
           <select class="input" value={field} onChange={(e) => setField(e.currentTarget.value)}>
             {props.fields
               .filter((f) => f.kind !== 'object')
@@ -39,31 +37,27 @@ function FilterEditor(props: { fields: Field[]; initial?: Filter; onSave: (f: Fi
                 <option value={f.name}>{f.name}</option>
               ))}
           </select>
-        </div>
+        </FormField>
       )}
       {(op === 'is' || op === 'is_not' || op === 'is_one_of' || op === 'is_not_one_of') && (
-        <div class="field-row">
-          <label>{op.endsWith('one_of') ? t('flt.values') : t('flt.value')}</label>
+        <FormField label={op.endsWith('one_of') ? t('flt.values') : t('flt.value')}>
           <input class="input" value={value} onInput={(e) => setValue(e.currentTarget.value)} />
-        </div>
+        </FormField>
       )}
       {op === 'between' && (
         <div class="row">
-          <div class="field-row" style="flex:1">
-            <label>{t('flt.from')}</label>
+          <FormField label={t('flt.from')} style="flex:1">
             <input class="input" value={from} onInput={(e) => setFrom(e.currentTarget.value)} />
-          </div>
-          <div class="field-row" style="flex:1">
-            <label>{t('flt.to')}</label>
+          </FormField>
+          <FormField label={t('flt.to')} style="flex:1">
             <input class="input" value={to} onInput={(e) => setTo(e.currentTarget.value)} />
-          </div>
+          </FormField>
         </div>
       )}
       {custom && (
-        <div class="field-row">
-          <label>{t('flt.sql')}</label>
+        <FormField label={t('flt.sql')}>
           <textarea class="input" value={sql} onInput={(e) => setSql(e.currentTarget.value)} placeholder={'e.g. "http"."latency_ms" > 500 AND "level" <> \'info\''} />
-        </div>
+        </FormField>
       )}
       <div class="row end">
         <button class="btn small" onClick={props.onCancel}>

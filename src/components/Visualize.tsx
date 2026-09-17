@@ -16,6 +16,7 @@ import { FilterBar } from './FilterBar';
 import { DiagnosePanel } from './DiagnosePanel';
 import { QueryBar } from './QueryBar';
 import { withCacheHint } from '../diagnose';
+import { FormField } from './ui';
 
 const CHARTS: { id: ChartType; icon: string }[] = [
   { id: 'area', icon: '⛰' },
@@ -61,9 +62,9 @@ function DropZone(props: { onDrop: (name: string) => void; children: preact.Comp
   );
 }
 
-function FieldSelect(props: { fields: Field[]; value: string | null; onChange: (v: string | null) => void; allow?: (f: Field) => boolean; placeholder?: string }) {
+function FieldSelect(props: { id?: string; fields: Field[]; value: string | null; onChange: (v: string | null) => void; allow?: (f: Field) => boolean; placeholder?: string }) {
   return (
-    <select class="input" value={props.value ?? ''} onChange={(e) => props.onChange(e.currentTarget.value || null)}>
+    <select id={props.id} class="input" value={props.value ?? ''} onChange={(e) => props.onChange(e.currentTarget.value || null)}>
       <option value="">{props.placeholder ?? t('vis.selectField')}</option>
       {props.fields
         .filter((f) => f.kind !== 'object' && (!props.allow || props.allow(f)))
@@ -283,19 +284,17 @@ export function Visualize(props: {
                     <span class="sub">{vis.x.kind === 'none' ? t('vis.orPickBelow') : t(`vis.sub.${vis.x.kind}`)}</span>
                   </span>
                 </DropZone>
-                <div class="field-row">
-                  <label>{t('vis.function')}</label>
+                <FormField label={t('vis.function')}>
                   <select class="input" value={vis.x.kind} onChange={(e) => setX({ kind: e.currentTarget.value as VisState['x']['kind'] })}>
                     <option value="none">–</option>
                     <option value="date_histogram">{t('vis.fn.dateHistogram')}</option>
                     <option value="terms">{t('vis.fn.terms')}</option>
                     <option value="histogram">{t('vis.fn.histogram')}</option>
                   </select>
-                </div>
+                </FormField>
                 {vis.x.kind === 'date_histogram' && (
                   <>
-                    <div class="field-row">
-                      <label>{t('common.field')}</label>
+                    <FormField label={t('common.field')}>
                       <FieldSelect
                         fields={fields}
                         value={vis.x.field}
@@ -303,9 +302,8 @@ export function Visualize(props: {
                         allow={(f) => f.kind === 'date'}
                         placeholder={t('vis.timeFieldPlaceholder', { name: props.timeField?.name ?? t('common.none') })}
                       />
-                    </div>
-                    <div class="field-row">
-                      <label>{t('vis.minInterval')}</label>
+                    </FormField>
+                    <FormField label={t('vis.minInterval')}>
                       <select class="input" value={vis.x.interval} onChange={(e) => setX({ interval: e.currentTarget.value })}>
                         <option value="auto">{t('common.auto')}</option>
                         {INTERVALS.map((iv) => (
@@ -314,47 +312,41 @@ export function Visualize(props: {
                           </option>
                         ))}
                       </select>
-                    </div>
+                    </FormField>
                   </>
                 )}
                 {vis.x.kind === 'terms' && (
                   <>
-                    <div class="field-row">
-                      <label>{t('common.field')}</label>
+                    <FormField label={t('common.field')}>
                       <FieldSelect fields={fields} value={vis.x.field} onChange={(v) => setX({ field: v })} />
-                    </div>
+                    </FormField>
                     <div class="row">
-                      <div class="field-row" style="flex:1">
-                        <label>{t('vis.numValues')}</label>
+                      <FormField label={t('vis.numValues')} style="flex:1">
                         <input class="input" type="number" min={1} max={500} value={vis.x.size} onInput={(e) => setX({ size: Number(e.currentTarget.value) || 10 })} />
-                      </div>
-                      <div class="field-row" style="flex:1">
-                        <label>{t('vis.rankBy')}</label>
+                      </FormField>
+                      <FormField label={t('vis.rankBy')} style="flex:1">
                         <select class="input" value={vis.x.orderBy} onChange={(e) => setX({ orderBy: e.currentTarget.value as 'metric' | 'alpha' })}>
                           <option value="metric">{metricLabel(vis.metrics[0])}</option>
                           <option value="alpha">{t('vis.alphabetical')}</option>
                         </select>
-                      </div>
-                      <div class="field-row" style="width:90px">
-                        <label>{t('vis.direction')}</label>
+                      </FormField>
+                      <FormField label={t('vis.direction')} style="width:90px">
                         <select class="input" value={vis.x.orderDir} onChange={(e) => setX({ orderDir: e.currentTarget.value as 'asc' | 'desc' })}>
                           <option value="desc">{t('vis.desc')}</option>
                           <option value="asc">{t('vis.asc')}</option>
                         </select>
-                      </div>
+                      </FormField>
                     </div>
                   </>
                 )}
                 {vis.x.kind === 'histogram' && (
                   <>
-                    <div class="field-row">
-                      <label>{t('common.field')}</label>
+                    <FormField label={t('common.field')}>
                       <FieldSelect fields={fields} value={vis.x.field} onChange={(v) => setX({ field: v })} allow={(f) => f.kind === 'number'} />
-                    </div>
-                    <div class="field-row">
-                      <label>{t('vis.bucketSize')}</label>
+                    </FormField>
+                    <FormField label={t('vis.bucketSize')}>
                       <input class="input" type="number" min={0} step="any" value={vis.x.interval === 'auto' ? 10 : vis.x.interval} onInput={(e) => setX({ interval: e.currentTarget.value })} />
-                    </div>
+                    </FormField>
                   </>
                 )}
               </div>
@@ -422,10 +414,9 @@ export function Visualize(props: {
               <FieldSelect fields={fields} value={vis.breakdown.field} onChange={(v) => setBreakdown({ field: v })} />
               {vis.breakdown.field && (
                 <div class="row">
-                  <div class="field-row" style="flex:1">
-                    <label>{t('vis.numValues')}</label>
+                  <FormField label={t('vis.numValues')} style="flex:1">
                     <input class="input" type="number" min={1} max={50} value={vis.breakdown.size} onInput={(e) => setBreakdown({ size: Number(e.currentTarget.value) || 5 })} />
-                  </div>
+                  </FormField>
                   <label class="row" style="margin-top:14px">
                     <input type="checkbox" checked={vis.breakdown.other} onChange={(e) => setBreakdown({ other: e.currentTarget.checked })} /> {t('vis.groupOther')}
                   </label>

@@ -4,6 +4,7 @@ import { describeError } from '../../errors';
 import { t, tx } from '../../i18n';
 import { isExtension } from '../../permissions';
 import type { AuthMode, SourceConfig } from '../../sources';
+import { FormField } from '../ui';
 
 /** S3 connection settings: region, endpoint, URL style and how credentials are obtained. */
 export function S3Section(props: {
@@ -35,29 +36,21 @@ export function S3Section(props: {
     <div style="margin-top:8px">
       <h4 style="margin:8px 0 6px;font-size:13px">{t('ds.s3.title')}</h4>
       <div class="grid2">
-        <div class="field-row">
-          <label>{t('ds.s3.region')}</label>
-          {input(cfg.s3.region, (v) => props.onS3({ region: v }))}
-        </div>
-        <div class="field-row">
-          <label>{t('ds.s3.endpoint')}</label>
-          {input(cfg.s3.endpoint, (v) => props.onS3({ endpoint: v }), { placeholder: 's3.ap-northeast-1.amazonaws.com' })}
-        </div>
-        <div class="field-row">
-          <label>{t('ds.s3.urlStyle')}</label>
+        <FormField label={t('ds.s3.region')}>{input(cfg.s3.region, (v) => props.onS3({ region: v }))}</FormField>
+        <FormField label={t('ds.s3.endpoint')}>{input(cfg.s3.endpoint, (v) => props.onS3({ endpoint: v }), { placeholder: 's3.ap-northeast-1.amazonaws.com' })}</FormField>
+        <FormField label={t('ds.s3.urlStyle')}>
           <select class="input" value={cfg.s3.urlStyle} onChange={(e) => props.onS3({ urlStyle: e.currentTarget.value as 'vhost' | 'path' })}>
             <option value="vhost">{t('ds.s3.vhost')}</option>
             <option value="path">{t('ds.s3.path')}</option>
           </select>
-        </div>
-        <div class="field-row">
-          <label>{t('ds.s3.auth')}</label>
+        </FormField>
+        <FormField label={t('ds.s3.auth')}>
           <select class="input" value={cfg.authMode} onChange={(e) => props.onChange({ authMode: e.currentTarget.value as AuthMode })}>
             <option value="oidc">{t('ds.auth.oidc')}</option>
             <option value="static">{t('ds.auth.static')}</option>
             <option value="none">{t('ds.auth.none')}</option>
           </select>
-        </div>
+        </FormField>
       </div>
 
       {cfg.authMode === 'static' && (
@@ -65,18 +58,9 @@ export function S3Section(props: {
           <h4 style="margin:12px 0 6px;font-size:13px">{t('ds.key.title')}</h4>
           <div class="alert info">{t('ds.key.warn')}</div>
           <div class="grid2">
-            <div class="field-row">
-              <label>{t('ds.key.id')}</label>
-              {input(cfg.s3.accessKeyId, (v) => props.onS3({ accessKeyId: v }), { autocomplete: 'off' })}
-            </div>
-            <div class="field-row">
-              <label>{t('ds.key.secret')}</label>
-              {input(cfg.s3.secretAccessKey, (v) => props.onS3({ secretAccessKey: v }), { type: 'password', autocomplete: 'off' })}
-            </div>
-            <div class="field-row">
-              <label>{t('ds.key.token')}</label>
-              {input(cfg.s3.sessionToken, (v) => props.onS3({ sessionToken: v }), { type: 'password', autocomplete: 'off' })}
-            </div>
+            <FormField label={t('ds.key.id')}>{input(cfg.s3.accessKeyId, (v) => props.onS3({ accessKeyId: v }), { autocomplete: 'off' })}</FormField>
+            <FormField label={t('ds.key.secret')}>{input(cfg.s3.secretAccessKey, (v) => props.onS3({ secretAccessKey: v }), { type: 'password', autocomplete: 'off' })}</FormField>
+            <FormField label={t('ds.key.token')}>{input(cfg.s3.sessionToken, (v) => props.onS3({ sessionToken: v }), { type: 'password', autocomplete: 'off' })}</FormField>
           </div>
         </>
       )}
@@ -88,34 +72,17 @@ export function S3Section(props: {
             {tx('ds.oidc.intro', { api: <code>AssumeRoleWithWebIdentity</code>, url: <code>{redirectUrl()}</code> })}
           </p>
           <div class="grid2">
-            <div class="field-row">
-              <label>{t('ds.oidc.authUrl')}</label>
-              {input(cfg.oidc.authUrl, (v) => props.onOidc({ authUrl: v }), { placeholder: 'https://accounts.google.com/o/oauth2/v2/auth' })}
-            </div>
-            <div class="field-row">
-              <label>{t('ds.oidc.clientId')}</label>
-              {input(cfg.oidc.clientId, (v) => props.onOidc({ clientId: v }), { autocomplete: 'off' })}
-            </div>
-            <div class="field-row">
-              <label>{t('ds.oidc.scope')}</label>
-              {input(cfg.oidc.scope, (v) => props.onOidc({ scope: v }))}
-            </div>
-            <div class="field-row">
-              <label>{t('ds.oidc.extra')}</label>
-              {input(cfg.oidc.extraParams, (v) => props.onOidc({ extraParams: v }))}
-            </div>
-            <div class="field-row">
-              <label>{t('ds.oidc.roleArn')}</label>
-              {input(cfg.oidc.roleArn, (v) => props.onOidc({ roleArn: v }), { placeholder: 'arn:aws:iam::123456789012:role/duckdive-readonly' })}
-            </div>
-            <div class="field-row">
-              <label>{t('ds.oidc.duration')}</label>
+            <FormField label={t('ds.oidc.authUrl')}>{input(cfg.oidc.authUrl, (v) => props.onOidc({ authUrl: v }), { placeholder: 'https://accounts.google.com/o/oauth2/v2/auth' })}</FormField>
+            <FormField label={t('ds.oidc.clientId')}>{input(cfg.oidc.clientId, (v) => props.onOidc({ clientId: v }), { autocomplete: 'off' })}</FormField>
+            <FormField label={t('ds.oidc.scope')}>{input(cfg.oidc.scope, (v) => props.onOidc({ scope: v }))}</FormField>
+            <FormField label={t('ds.oidc.extra')}>{input(cfg.oidc.extraParams, (v) => props.onOidc({ extraParams: v }))}</FormField>
+            <FormField label={t('ds.oidc.roleArn')}>{input(cfg.oidc.roleArn, (v) => props.onOidc({ roleArn: v }), { placeholder: 'arn:aws:iam::123456789012:role/duckdive-readonly' })}</FormField>
+            <FormField label={t('ds.oidc.duration')}>
               <input class="input" type="number" value={cfg.oidc.durationSeconds} onInput={(e) => props.onOidc({ durationSeconds: Number(e.currentTarget.value) || 3600 })} />
-            </div>
-            <div class="field-row">
-              <label>{t('ds.oidc.stsEndpoint')}</label>
+            </FormField>
+            <FormField label={t('ds.oidc.stsEndpoint')}>
               {input(cfg.oidc.stsEndpoint, (v) => props.onOidc({ stsEndpoint: v }), { placeholder: `https://sts.${cfg.s3.region || 'ap-northeast-1'}.amazonaws.com/` })}
-            </div>
+            </FormField>
           </div>
           <div class="row" style="margin-top:8px">
             <button class="btn" disabled={authBusy || !isExtension} onClick={doSignIn}>

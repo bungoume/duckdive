@@ -1,6 +1,7 @@
 import type { AttachedSource } from '../../datasource';
 import { isTimeCandidate } from '../../fields';
 import { t } from '../../i18n';
+import { FormField } from '../ui';
 
 const LARGE_MB = 512;
 
@@ -15,8 +16,7 @@ export function ConnectedCard(props: { attached: AttachedSource; onTimeField: (n
         {a.rowCount !== null ? t('ds.connected.rows', { n: a.rowCount.toLocaleString() }) : t('ds.connected.rowsPerRange')}
         {t('ds.connected.fields', { n: a.fields.length })}
       </div>
-      <div class="field-row" style="max-width:420px">
-        <label>{t('ds.timeField.label')}</label>
+      <FormField label={t('ds.timeField.label')} style="max-width:420px">
         <select class="input" value={a.timeField?.name ?? ''} onChange={(e) => props.onTimeField(e.currentTarget.value || null)}>
           <option value="">{t('ds.timeField.none')}</option>
           {a.fields
@@ -27,7 +27,7 @@ export function ConnectedCard(props: { attached: AttachedSource; onTimeField: (n
               </option>
             ))}
         </select>
-      </div>
+      </FormField>
       {(a.rangeDependent || a.captures.length > 0) && (
         <div class="alert info">
           {a.rangeDependent ? t('ds.connected.rangeDependent') : ''}

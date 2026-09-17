@@ -12,6 +12,7 @@ import { HistoryCard } from './source/HistoryCard';
 import { HostsCard } from './source/HostsCard';
 import { S3Section } from './source/S3Section';
 import { TokenValues } from './source/TokenValues';
+import { FormField } from './ui';
 
 /** The Data source page. The form starts from `config`; the parent remounts it (by key) when a remembered source is loaded. */
 export function DataSource(props: {
@@ -118,8 +119,7 @@ export function DataSource(props: {
                 </div>
               )}
             </div>
-            <div class="field-row">
-              <label>{t('ds.urls.label')}</label>
+            <FormField label={t('ds.urls.label')}>
               <textarea
                 class="input"
                 value={cfg.urls}
@@ -139,7 +139,7 @@ export function DataSource(props: {
                   alb: <code>alb</code>,
                 })}
               </span>
-            </div>
+            </FormField>
             {tokens.length > 0 && (
               <TokenValues
                 tokens={tokens}
@@ -151,22 +151,19 @@ export function DataSource(props: {
               />
             )}
             <div class="grid2">
-              <div class="field-row">
-                <label>{t('common.format')}</label>
+              <FormField label={t('common.format')}>
                 <select class="input" value={cfg.format} onChange={(e) => set({ format: e.currentTarget.value as SourceConfig['format'] })}>
                   {FORMAT_IDS.map((id) => (
                     <option value={id}>{formatLabel(id)}</option>
                   ))}
                 </select>
-              </div>
-              <div class="field-row">
-                <label>{t('ds.name')}</label>
+              </FormField>
+              <FormField label={t('ds.name')}>
                 <input class="input" value={cfg.name} onInput={(e) => set({ name: e.currentTarget.value })} />
-              </div>
-              <div class="field-row">
-                <label>{t('ds.maxFiles')}</label>
+              </FormField>
+              <FormField label={t('ds.maxFiles')}>
                 <input class="input" type="number" min={1} value={cfg.maxFiles || ''} placeholder="1000" onInput={(e) => set({ maxFiles: Number(e.currentTarget.value) || 0 })} />
-              </div>
+              </FormField>
             </div>
             <span class="hint">{t('ds.listingHint')}</span>
             {usesS3 && <S3Section cfg={cfg} creds={props.creds} onChange={set} onS3={setS3} onOidc={setOidc} onCreds={props.onCreds} />}
@@ -180,19 +177,18 @@ export function DataSource(props: {
         )}
 
         {cfg.kind === 'local' && (
-          <div class="field-row">
-            <label>{t('ds.local.files')}</label>
+          <FormField label={t('ds.local.files')}>
             <input type="file" multiple accept=".parquet,.csv,.tsv,.json,.jsonl,.ndjson,.gz" onChange={(e) => setFiles(Array.from(e.currentTarget.files ?? []))} />
-            <div class="row" style="margin-top:6px">
-              <label class="hint">{t('common.format')}</label>
+            <label class="row hint" style="margin-top:6px">
+              {t('common.format')}
               <select class="input" style="width:260px" value={cfg.format} onChange={(e) => set({ format: e.currentTarget.value as SourceConfig['format'] })}>
                 {FORMAT_IDS.map((id) => (
                   <option value={id}>{formatLabel(id)}</option>
                 ))}
               </select>
-            </div>
+            </label>
             <span class="hint">{t('ds.local.hint')}</span>
-          </div>
+          </FormField>
         )}
 
         {cfg.kind === 'demo' && <div class="alert info">{t('ds.demo.hint')}</div>}
