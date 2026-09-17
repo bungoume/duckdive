@@ -65,3 +65,55 @@ describe('sources', () => {
     expect(loadSourceHistory().filter((e) => e.config.urls === 's3://b/3')).toHaveLength(1);
   });
 });
+
+describe('malformed URL state', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    location.hash = '';
+  });
+
+  it('falls back field by field instead of throwing', () => {
+    setHash('visualize', {
+      search: { query: 42, range: { from: 'now-1h' } },
+      discover: { columns: 'nope', sort: [{ field: 'a', dir: 'sideways' }, { field: 'b', dir: 'asc' }, 'junk'], interval: 7 },
+      vis: { chart: 'pie', x: { kind: 'bogus', size: -3 }, metrics: 'none', breakdown: { size: 'x', other: 'maybe' }, title: ['t'] },
+    });
+    const u = readUrlState();
+    expect(u.search.query).toBe('');
+    expect(u.search.range).toEqual({ from: 'now-6h', to: 'now' });
+    expect(u.discover).toEqual({ columns: [], sort: [{ field: 'b', dir: 'asc' }], interval: 'auto' });
+    expect(u.vis.chart).toBe('bar');
+    expect(u.vis.x).toMatchObject({ kind: 'date_histogram', size: 10 });
+    expect(u.vis.metrics).toEqual([{ id: 'm0', agg: 'count', field: null }]);
+    expect(u.vis.breakdown).toEqual({ field: null, size: 5, other: true });
+    expect(u.vis.title).toBe('');
+  });
+
+  it('drops filters without a valid shape and normalises the rest', () => {
+    setHash('discover', {
+      search: {
+        filters: [
+          { id: 'a', field: 'host', op: 'teleport' },
+          { id: 'b', field: 7, op: 'is' },
+          { id: 'c', field: 'host', op: 'is_one_of', values: ['x', 3, 'y'], negate: 'yes' },
+        ],
+      },
+    });
+    expect(readUrlState().search.filters).toEqual([{ id: 'c', field: 'host', op: 'is_one_of', values: ['x', 'y'] }]);
+  });
+
+  it('accepts a complete state unchanged', () => {
+    const vis = {
+      chart: 'line',
+      x: { kind: 'terms', field: 'host', interval: 'auto', size: 7, orderBy: 'alpha', orderDir: 'asc' },
+      metrics: [{ id: 'm0', agg: 'avg', field: 'lat', label: 'L' }],
+      breakdown: { field: 'g', size: 3, other: false },
+      title: 'T',
+    };
+    setHash('visualize', { search: { query: 'q', range: { from: 'now-1d', to: 'now' }, filters: [] }, discover: { columns: ['a'], sort: [{ field: 'a', dir: 'desc' }], interval: '1h' }, vis });
+    const u = readUrlState();
+    expect(u.vis).toEqual(vis);
+    expect(u.discover).toEqual({ columns: ['a'], sort: [{ field: 'a', dir: 'desc' }], interval: '1h' });
+    expect(u.search.range).toEqual({ from: 'now-1d', to: 'now' });
+  });
+});
