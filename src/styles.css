@@ -47,6 +47,7 @@ code, .mono { font-family: var(--k-mono); font-size: 12px; }
 .page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .topbar { background: var(--k-panel); border-bottom: 1px solid var(--k-border); padding: 8px 16px; display: flex; flex-direction: column; gap: 8px; flex: none; }
 .querybar { display: flex; gap: 8px; align-items: stretch; }
+.querybar .auto-refresh { width: auto; font-size: 12px; }
 .querybar .qinput { flex: 1; display: flex; align-items: center; border: 1px solid var(--k-border); border-radius: var(--k-radius); background: #fbfcfd; padding: 0 8px; gap: 8px; position: relative; }
 .querybar .qinput:focus-within { border-color: var(--k-primary); box-shadow: 0 0 0 2px rgba(11, 100, 221, 0.15); background: #fff; }
 .querybar .qinput input { flex: 1; border: 0; background: transparent; outline: 0; padding: 8px 0; font-family: var(--k-mono); font-size: 13px; }

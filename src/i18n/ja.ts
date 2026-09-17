@@ -426,6 +426,13 @@ export const ja: Messages = {
   'q.helpNote': 'ネストした構造体 / JSON のフィールドはドット区切りのパスで指定します(geo.country、extra.user_id)。特殊文字は \\ でエスケープします(path:\\/api\\/v1)。{enter} で実行します。',
   'q.running': '実行中…',
   'q.refresh': '更新',
+  'q.autoRefresh': '自動更新',
+  'q.ar.off': '自動更新なし',
+  'q.ar.10s': '10 秒ごと',
+  'q.ar.30s': '30 秒ごと',
+  'q.ar.1m': '1 分ごと',
+  'q.ar.5m': '5 分ごと',
+  'q.ar.15m': '15 分ごと',
 
   // ---- time picker ----
   'tp.quick': 'クイック選択',

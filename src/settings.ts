@@ -21,6 +21,8 @@ export interface AppSettings {
   dayOfWeek: number;
   /** "Commonly used" ranges of the time picker */
   quickRanges: QuickRange[];
+  /** re-run the search this often on Discover / Visualize (0 = off); chosen next to the Refresh button */
+  autoRefreshMs: number;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -50,6 +52,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     { from: 'now-14d/d', to: 'now' },
     { from: 'now-30d/d', to: 'now' },
   ],
+  autoRefreshMs: 0,
 };
 
 const LS_SETTINGS = 'ddv.settings';
@@ -64,6 +67,7 @@ function sanitize(o: unknown): AppSettings {
   if (Array.isArray(r.scaledDateFormat) && r.scaledDateFormat.every((e) => Array.isArray(e) && e.length === 2 && typeof e[0] === 'string' && typeof e[1] === 'string'))
     s.scaledDateFormat = r.scaledDateFormat as [string, string][];
   if (typeof r.dayOfWeek === 'number' && r.dayOfWeek >= 0 && r.dayOfWeek <= 6) s.dayOfWeek = Math.floor(r.dayOfWeek);
+  if (typeof r.autoRefreshMs === 'number' && r.autoRefreshMs >= 0) s.autoRefreshMs = Math.floor(r.autoRefreshMs);
   if (
     Array.isArray(r.quickRanges) &&
     r.quickRanges.length &&

@@ -32,9 +32,13 @@ export function Discover(props: {
   onBusy: (b: boolean) => void;
   /** true while the file list is being re-resolved: skip queries against the stale view */
   paused?: boolean;
+  /** advances on auto refresh: the search is compiled (now resolved) and run again */
+  refreshTick?: number;
 }) {
-  const { fields, timeExpr, search, discover, onBusy, paused } = props;
-  const compiled = useMemo(() => compileSearch(search, fields, timeExpr), [search, fields, timeExpr]);
+  const { fields, timeExpr, search, discover, onBusy, paused, refreshTick } = props;
+  // refreshTick is not read: a new tick re-resolves `now` in the range
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const compiled = useMemo(() => compileSearch(search, fields, timeExpr), [search, fields, timeExpr, refreshTick]);
   const interval: Interval | null = useMemo(() => {
     if (!compiled.from || !compiled.to) return null;
     return discover.interval === 'auto' ? autoInterval(compiled.from, compiled.to) : (intervalByKey(discover.interval) ?? autoInterval(compiled.from, compiled.to));
@@ -92,9 +96,10 @@ export function Discover(props: {
         }
       }
     })();
-    // sort, columns and interval are compared by value, so a restored URL with the same content does not re-query
+    // sort, columns and interval are compared by value, so a restored URL with the same content does not re-query;
+    // refreshTick re-runs an unchanged search (absolute range) on auto refresh
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compiled.where, compiled.error, interval?.key, tzOffset, sortKey, colKey, timeExpr, paused, onBusy]);
+  }, [compiled.where, compiled.error, interval?.key, tzOffset, sortKey, colKey, timeExpr, paused, onBusy, refreshTick]);
 
   const loadMore = async () => {
     setBusy(true);

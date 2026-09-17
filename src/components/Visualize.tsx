@@ -86,9 +86,13 @@ export function Visualize(props: {
   onBusy: (b: boolean) => void;
   /** true while the file list is being re-resolved: skip queries against the stale view */
   paused?: boolean;
+  /** advances on auto refresh: the search is compiled (now resolved) and run again */
+  refreshTick?: number;
 }) {
-  const { fields, timeExpr, search, vis, onBusy, paused } = props;
-  const compiled = useMemo(() => compileSearch(search, fields, timeExpr), [search, fields, timeExpr]);
+  const { fields, timeExpr, search, vis, onBusy, paused, refreshTick } = props;
+  // refreshTick is not read: a new tick re-resolves `now` in the range
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const compiled = useMemo(() => compileSearch(search, fields, timeExpr), [search, fields, timeExpr, refreshTick]);
   const effVis: VisState = vis.chart === 'metric' ? { ...vis, x: { ...vis.x, kind: 'none' } } : vis;
   const interval: Interval | null = useMemo(() => {
     if (!compiled.from || !compiled.to) return null;
@@ -125,9 +129,10 @@ export function Visualize(props: {
           onBusy(false);
         }
       });
-    // the chart definition and the interval are compared by value, so a restored URL with the same content does not re-query
+    // the chart definition and the interval are compared by value, so a restored URL with the same content does not re-query;
+    // refreshTick re-runs an unchanged search (absolute range) on auto refresh
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compiled.where, compiled.error, visKey, interval?.key, tzOffset, timeExpr, paused, onBusy]);
+  }, [compiled.where, compiled.error, visKey, interval?.key, tzOffset, timeExpr, paused, onBusy, refreshTick]);
 
   const setVis = (patch: Partial<VisState>) => props.onVis({ ...vis, ...patch });
   const setX = (patch: Partial<VisState['x']>) => setVis({ x: { ...vis.x, ...patch } });

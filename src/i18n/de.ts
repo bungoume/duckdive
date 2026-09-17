@@ -430,6 +430,13 @@ export const de: Messages = {
   'q.helpNote': 'Verschachtelte Struct-/JSON-Felder verwenden Punktpfade (geo.country, extra.user_id). Sonderzeichen mit \\ maskieren (path:\\/api\\/v1). {enter} drücken, um auszuführen.',
   'q.running': 'Läuft…',
   'q.refresh': 'Aktualisieren',
+  'q.autoRefresh': 'Automatisch aktualisieren',
+  'q.ar.off': 'Nicht automatisch aktualisieren',
+  'q.ar.10s': 'Alle 10 s',
+  'q.ar.30s': 'Alle 30 s',
+  'q.ar.1m': 'Jede Minute',
+  'q.ar.5m': 'Alle 5 min',
+  'q.ar.15m': 'Alle 15 min',
 
   // ---- time picker ----
   'tp.quick': 'Schnellauswahl',

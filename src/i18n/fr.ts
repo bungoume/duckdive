@@ -433,6 +433,13 @@ export const fr: Messages = {
     'Les champs struct / JSON imbriqués utilisent des chemins pointés (geo.country, extra.user_id). Échappez les caractères spéciaux avec \\ (path:\\/api\\/v1). Appuyez sur {enter} pour exécuter.',
   'q.running': 'Exécution…',
   'q.refresh': 'Actualiser',
+  'q.autoRefresh': 'Actualisation automatique',
+  'q.ar.off': 'Pas d’actualisation automatique',
+  'q.ar.10s': 'Toutes les 10 s',
+  'q.ar.30s': 'Toutes les 30 s',
+  'q.ar.1m': 'Chaque minute',
+  'q.ar.5m': 'Toutes les 5 min',
+  'q.ar.15m': 'Toutes les 15 min',
 
   // ---- time picker ----
   'tp.quick': 'Sélection rapide',

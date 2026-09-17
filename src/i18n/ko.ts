@@ -423,6 +423,13 @@ export const ko: Messages = {
   'q.helpNote': '중첩 구조체 / JSON 필드는 점 경로를 사용합니다 (geo.country, extra.user_id). 특수 문자는 \\로 이스케이프하세요 (path:\\/api\\/v1). {enter}를 눌러 실행합니다.',
   'q.running': '실행 중…',
   'q.refresh': '새로 고침',
+  'q.autoRefresh': '자동 새로 고침',
+  'q.ar.off': '자동 새로 고침 없음',
+  'q.ar.10s': '10초마다',
+  'q.ar.30s': '30초마다',
+  'q.ar.1m': '1분마다',
+  'q.ar.5m': '5분마다',
+  'q.ar.15m': '15분마다',
 
   // ---- time picker ----
   'tp.quick': '빠른 선택',

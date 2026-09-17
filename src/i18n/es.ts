@@ -431,6 +431,13 @@ export const es: Messages = {
   'q.helpNote': 'Los campos struct / JSON anidados usan rutas con puntos (geo.country, extra.user_id). Escape los caracteres especiales con \\ (path:\\/api\\/v1). Pulse {enter} para ejecutar.',
   'q.running': 'Ejecutando…',
   'q.refresh': 'Actualizar',
+  'q.autoRefresh': 'Actualización automática',
+  'q.ar.off': 'Sin actualización automática',
+  'q.ar.10s': 'Cada 10 s',
+  'q.ar.30s': 'Cada 30 s',
+  'q.ar.1m': 'Cada minuto',
+  'q.ar.5m': 'Cada 5 min',
+  'q.ar.15m': 'Cada 15 min',
 
   // ---- time picker ----
   'tp.quick': 'Selección rápida',

@@ -417,6 +417,13 @@ export const zh_CN: Messages = {
   'q.helpNote': '嵌套的 struct / JSON 字段使用点路径（geo.country、extra.user_id）。特殊字符用 \\ 转义（path:\\/api\\/v1）。按 {enter} 运行。',
   'q.running': '运行中…',
   'q.refresh': '刷新',
+  'q.autoRefresh': '自动刷新',
+  'q.ar.off': '不自动刷新',
+  'q.ar.10s': '每 10 秒',
+  'q.ar.30s': '每 30 秒',
+  'q.ar.1m': '每分钟',
+  'q.ar.5m': '每 5 分钟',
+  'q.ar.15m': '每 15 分钟',
 
   // ---- time picker ----
   'tp.quick': '快速选择',

@@ -166,6 +166,15 @@ await step('export', async () => {
   console.log(`     ${jl.name}: ${docs.length} docs, keys=${Object.keys(docs[0]).join(',')}`);
   if (docs.length !== 3 || !('http.method' in docs[0])) throw new Error('unexpected JSON Lines');
 });
+await step('auto-refresh', async () => {
+  // every 10 s: the relative range is resolved again on its own (the hit bar shows the new bounds), then it is switched off
+  const before = await page.textContent('.hits .meta');
+  await page.selectOption('.querybar .auto-refresh', '10000');
+  await page.waitForFunction((prev) => document.querySelector('.hits .meta')?.textContent !== prev, before, { timeout: 20000 });
+  await settled(page);
+  await page.selectOption('.querybar .auto-refresh', '0');
+  console.log(`     refreshed: ${before.trim()} -> ${(await page.textContent('.hits .meta')).trim()}`);
+});
 await step('brush', async () => {
   const dbg = await page.evaluate(() => {
     const svg = document.querySelector('.chart-panel svg');

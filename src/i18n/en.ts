@@ -428,6 +428,13 @@ export const en = {
   'q.helpNote': 'Nested struct / JSON fields use dot paths (geo.country, extra.user_id). Escape special characters with \\ (path:\\/api\\/v1). Press {enter} to run.',
   'q.running': 'Running…',
   'q.refresh': 'Refresh',
+  'q.autoRefresh': 'Auto refresh',
+  'q.ar.off': 'No auto refresh',
+  'q.ar.10s': 'Every 10 s',
+  'q.ar.30s': 'Every 30 s',
+  'q.ar.1m': 'Every minute',
+  'q.ar.5m': 'Every 5 min',
+  'q.ar.15m': 'Every 15 min',
 
   // ---- time picker ----
   'tp.quick': 'Quick select',

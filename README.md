@@ -45,6 +45,7 @@ The Settings page keeps preferences in this browser (`localStorage`, key `ddv.se
 - Scaled date format: `[ISO 8601 duration, pattern]` pairs. Chart tooltips and table cells of date histograms use the pattern of the largest duration not above the bucket size (`""` covers sub-second buckets). Axis labels are not configurable: ticks sit on wall-clock boundaries of the display time zone, are spaced so that they never overlap, and show only what the visible range needs (no date within a single day, no year within a single year, no time for daily and longer steps).
 - Day of week: the first day of the week for `now/w` and weekly buckets (Monday by default).
 - Time filter quick ranges: `{"from", "to", "display"}` entries in date-math syntax for the time picker's "Commonly used" list. Without `display` the label is generated in the UI language.
+- Auto refresh: chosen next to the Refresh button on Discover and Visualize (off, or every 10 s to 15 min). Each tick resolves `now` again and re-runs the search; sources with date tokens or captured columns re-list their files first, so new objects appear. A tick is skipped while a query is still running or the tab is hidden.
 
 ## Data sources
 

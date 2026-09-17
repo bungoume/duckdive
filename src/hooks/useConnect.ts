@@ -41,9 +41,9 @@ export interface LargeConfirm {
   resolve: (ok: boolean) => void;
 }
 
-/** What a file resolution depends on: the time range and the captured-column filters of `cfg`. */
-function rangeKeyFor(cfg: SourceConfig, url: UrlState): string {
-  return `${url.search.range.from}|${url.search.range.to}|${JSON.stringify(valueFiltersFor(cfg, url))}`;
+/** What a file resolution depends on: the time range and the captured-column filters of `cfg`, and the auto-refresh tick (new files may have arrived). */
+function rangeKeyFor(cfg: SourceConfig, url: UrlState, tick: number): string {
+  return `${url.search.range.from}|${url.search.range.to}|${JSON.stringify(valueFiltersFor(cfg, url))}|${tick}`;
 }
 
 /** Active "is" / "is one of" filters on columns captured from file names → file pruning. */
@@ -65,8 +65,9 @@ export function valueFiltersFor(cfg: SourceConfig, url: UrlState): ValueFilters 
  * @param setUrl for page switches and for dropping state that a new source cannot satisfy
  * @param queryBusy whether a Discover / Visualize query is in flight (DuckDB steps queue behind it)
  * @param linkSource the source a shared link carries: connected at start-up instead of the saved one when it is already known here
+ * @param refreshTick advances on auto refresh: sources whose file list depends on the time range re-list it
  */
-export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState>>, queryBusy: { current: boolean }, linkSource: SourceConfig | null = null) {
+export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState>>, queryBusy: { current: boolean }, linkSource: SourceConfig | null = null, refreshTick = 0) {
   const [ready, setReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [source, setSource] = useState<SourceConfig>(() => loadSource());
@@ -107,7 +108,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
     const attempt = ++attemptSeq.current;
     const ctl = new AbortController();
     attemptCtl.current = ctl;
-    attemptedKey.current = rangeKeyFor(cfg, url);
+    attemptedKey.current = rangeKeyFor(cfg, url, refreshTick);
     const stale = () => attemptSeq.current !== attempt;
     const report = (message: string, phase: AttachProgress['phase']) => {
       if (stale()) return;
@@ -284,7 +285,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
   // running is picked up as soon as that connect ends, because the effect also runs when
   // `attaching` flips; comparing against the attempted key (not the last successful one) keeps a
   // failing source from reconnecting in a loop.
-  const rangeKey = rangeKeyFor(source, url);
+  const rangeKey = rangeKeyFor(source, url, refreshTick);
   if (!attemptedKey.current) attemptedKey.current = rangeKey;
   useEffect(() => {
     if (attaching || attemptedKey.current === rangeKey) return;

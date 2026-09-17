@@ -10,6 +10,7 @@ import { Settings } from './components/Settings';
 import { fmtBytes } from './cache';
 import { expose } from './debug';
 import { timeExprFor, type Field } from './fields';
+import { useAutoRefresh } from './hooks/useAutoRefresh';
 import { useConnect } from './hooks/useConnect';
 import { useCredentialRefresh } from './hooks/useCredentialRefresh';
 import { useDownloadGate } from './hooks/useDownloadGate';
@@ -19,7 +20,7 @@ import { DEFAULT_VIS, type VisState, readLinkSource, readUrlState, shareLink, sy
 export function App() {
   // Re-render the whole tree when the UI language changes (every t() call reads the current one).
   useLang();
-  useSettings();
+  const settings = useSettings();
   const [url, setUrl] = useState<UrlState>(() => readUrlState());
   // the data source a shared link carries: read before the first writeUrlState drops it from the hash
   const [linkSource] = useState(() => readLinkSource());
@@ -43,6 +44,7 @@ export function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
+  const refreshTick = useAutoRefresh(settings.autoRefreshMs, url.page === 'discover' || url.page === 'visualize', busyRef);
   const {
     ready,
     initError,
@@ -63,7 +65,7 @@ export function App() {
     forget,
     cancelConnect,
     onTimeField,
-  } = useConnect(url, setUrl, busyRef, linkSource);
+  } = useConnect(url, setUrl, busyRef, linkSource, refreshTick);
   const { gate, runAnyway } = useDownloadGate(source, attached, ackedFiles);
   const { refreshError } = useCredentialRefresh(source, attached, setCreds);
   const paused = attaching || gate.status !== 'ok';
@@ -240,6 +242,7 @@ export function App() {
           onVisualizeField={visualizeField}
           onBusy={setBusy}
           paused={paused}
+          refreshTick={refreshTick}
         />
       )}
       {page === 'visualize' && attached && (
@@ -253,6 +256,7 @@ export function App() {
           onVis={(vis) => setUrl({ ...url, vis })}
           onBusy={setBusy}
           paused={paused}
+          refreshTick={refreshTick}
         />
       )}
       {page === 'sql' && attached && <SqlPage fields={fields} timeExpr={timeExpr} search={url.search} onBusy={setBusy} paused={paused} />}

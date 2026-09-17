@@ -1,12 +1,24 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { t, tx } from '../i18n';
+import { updateSettings, useSettings } from '../settings';
 import { Popover } from './ui';
 import { TimePicker } from './TimePicker';
 import type { TimeRange } from '../datemath';
 
+/** Auto-refresh choices: off, then 10 s to 15 min. */
+const AUTO_REFRESH = [
+  { ms: 0, key: 'off' },
+  { ms: 10_000, key: '10s' },
+  { ms: 30_000, key: '30s' },
+  { ms: 60_000, key: '1m' },
+  { ms: 300_000, key: '5m' },
+  { ms: 900_000, key: '15m' },
+] as const;
+
 export function QueryBar(props: { query: string; range: TimeRange; error: string | null; busy: boolean; onSubmit: (query: string, range: TimeRange) => void }) {
   const [text, setText] = useState(props.query);
   const [help, setHelp] = useState(false);
+  const { autoRefreshMs } = useSettings();
   // Sync the input only when the submitted query actually changes (not on mount), so text
   // typed right after mounting is not thrown away.
   const lastQuery = useRef(props.query);
@@ -101,6 +113,19 @@ export function QueryBar(props: { query: string; range: TimeRange; error: string
         <button class="btn primary" onClick={() => props.onSubmit(text, props.range)} disabled={props.busy}>
           {props.busy ? t('q.running') : t('q.refresh')}
         </button>
+        <select
+          class="input auto-refresh"
+          title={t('q.autoRefresh')}
+          aria-label={t('q.autoRefresh')}
+          value={autoRefreshMs}
+          onChange={(e) => updateSettings({ autoRefreshMs: Number(e.currentTarget.value) })}
+        >
+          {AUTO_REFRESH.map((o) => (
+            <option key={o.ms} value={o.ms}>
+              {t(`q.ar.${o.key}`)}
+            </option>
+          ))}
+        </select>
       </div>
       {props.error && <div class="qerror">{props.error}</div>}
     </div>
