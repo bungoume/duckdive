@@ -20,7 +20,7 @@
 import { parseDateMath } from './datemath';
 import type { Field } from './fields';
 import { findField } from './fields';
-import { lit, tsLit } from './sql';
+import { lit, notSql, tsLit } from './sql';
 
 export type Node =
   | { t: 'and'; a: Node[] }
@@ -471,7 +471,7 @@ export function nodeToSql(n: Node, fields: Field[]): string {
     case 'or':
       return '(' + n.a.map((x) => nodeToSql(x, fields)).join(' OR ') + ')';
     case 'not':
-      return `NOT ${nodeToSql(n.a, fields)}`;
+      return notSql(nodeToSql(n.a, fields));
     case 'text': {
       const targets = searchTargets(fields);
       if (!targets.length) return 'FALSE';

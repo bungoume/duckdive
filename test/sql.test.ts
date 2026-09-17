@@ -20,8 +20,15 @@ describe('filterToSQL', () => {
     expect(filterToSQL({ id: '1', field: 'status', op: 'is_one_of', values: ['1', '2'] }, fields)).toBe(`("status" IN (1, 2))`);
     expect(filterToSQL({ id: '1', field: 'host', op: 'exists' }, fields)).toBe(`("host" IS NOT NULL)`);
     expect(filterToSQL({ id: '1', field: 'status', op: 'between', from: '1', to: '5' }, fields)).toBe(`("status" >= 1 AND "status" < 5)`);
-    expect(filterToSQL({ id: '1', field: 'host', op: 'is', value: 'a', negate: true }, fields)).toBe(`NOT ("host" = 'a')`);
+    expect(filterToSQL({ id: '1', field: 'host', op: 'is', value: 'a', negate: true }, fields)).toBe(`NOT coalesce(("host" = 'a'), FALSE)`);
     expect(filterToSQL({ id: '1', field: '', op: 'query', sql: '1 = 1' }, fields)).toBe(`(1 = 1)`);
+  });
+
+  it('keeps the rows without the field when a filter negates', () => {
+    // three-valued logic: a plain NOT / NOT IN would drop every row that has no host at all
+    expect(filterToSQL({ id: '1', field: 'host', op: 'is_not', value: 'a' }, fields)).toBe(`(NOT coalesce("host" = 'a', FALSE))`);
+    expect(filterToSQL({ id: '1', field: 'status', op: 'is_not_one_of', values: ['1', '2'] }, fields)).toBe(`(NOT coalesce("status" IN (1, 2), FALSE))`);
+    expect(filterToSQL({ id: '1', field: 'host', op: 'is_not' }, fields)).toBe(`("host" IS NOT NULL)`);
   });
 
   it('skips disabled filters and unknown fields', () => {

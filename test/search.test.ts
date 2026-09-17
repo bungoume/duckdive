@@ -72,11 +72,17 @@ describe('searchToSql', () => {
 
   it('spreads free text over the searchable fields and combines with AND / OR / NOT', () => {
     const sql = searchToSql('timeout AND NOT status:200', fields);
-    expect(sql).toMatch(/^\(\(regexp_matches\("message".* OR regexp_matches\("host".*\) AND NOT \("status" = 200\)\)$/);
+    expect(sql).toMatch(/^\(\(regexp_matches\("message".* OR regexp_matches\("host".*\) AND NOT coalesce\(\("status" = 200\), FALSE\)\)$/);
   });
 
   it('escapes quotes in literals', () => {
     expect(searchToSql(`message:"it's"`, fields)).toContain(`'%it''s%'`);
+  });
+
+  it('keeps the rows without the field when a clause is negated', () => {
+    // NOT ("status" = 200) is NULL for a row without a status; three-valued logic would drop it
+    expect(searchToSql('NOT status:200', fields)).toBe('NOT coalesce(("status" = 200), FALSE)');
+    expect(searchToSql('-message:x', fields)).toMatch(/^NOT coalesce\(\(regexp_matches/);
   });
 
   it('fails on unknown fields and on non-numeric comparisons with a number field', () => {

@@ -13,6 +13,16 @@ export function lit(s: string): string {
   return `'${s.replace(/'/g, "''")}'`;
 }
 
+/**
+ * Negation that keeps the rows the inner condition says nothing about. In SQL's three-valued
+ * logic `NOT ("status" = 200)` is NULL — not TRUE — for a row without a status, so a plain NOT
+ * would hide every row that lacks the field (common in JSON columns). coalesce makes NULL false
+ * before the negation, which is what "not 200" means to someone reading logs.
+ */
+export function notSql(inner: string): string {
+  return `NOT coalesce(${inner}, FALSE)`;
+}
+
 /** Naive UTC TIMESTAMP literal. */
 export function tsLit(d: Date): string {
   return `TIMESTAMP '${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}.${pad(d.getMilliseconds(), 3)}'`;
@@ -178,8 +188,8 @@ export function filterToSQL(fl: Filter, fields: Field[]): string | null {
         break;
       }
       case 'is_not': {
-        const v = one(fl.value ?? '');
-        sql = v === null ? 'TRUE' : `NOT (${e} = ${v})`;
+        const v = one(fl.value);
+        sql = fl.value === undefined ? `${e} IS NOT NULL` : v === null ? 'TRUE' : notSql(`${e} = ${v}`);
         break;
       }
       case 'is_one_of': {
@@ -189,7 +199,7 @@ export function filterToSQL(fl: Filter, fields: Field[]): string | null {
       }
       case 'is_not_one_of': {
         const vs = many(fl.values);
-        sql = vs.length ? `${e} NOT IN (${vs.join(', ')})` : 'TRUE';
+        sql = vs.length ? notSql(`${e} IN (${vs.join(', ')})`) : 'TRUE';
         break;
       }
       case 'exists':
@@ -211,7 +221,7 @@ export function filterToSQL(fl: Filter, fields: Field[]): string | null {
         sql = 'TRUE';
     }
   }
-  return fl.negate ? `NOT (${sql})` : `(${sql})`;
+  return fl.negate ? notSql(`(${sql})`) : `(${sql})`;
 }
 
 export function describeFilter(fl: Filter): string {
