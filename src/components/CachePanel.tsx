@@ -82,16 +82,16 @@ export function CachePanel() {
         <>
           <div class="grid2" style="margin-bottom:8px">
             <label class="row">
-              <input type="checkbox" checked={config.enabled} onChange={(e) => run(cacheSetConfig({ enabled: (e.target as HTMLInputElement).checked }))} />
+              <input type="checkbox" checked={config.enabled} onChange={(e) => run(cacheSetConfig({ enabled: e.currentTarget.checked }))} />
               {t('cache.enable')}
             </label>
             <label class="row" title={t('cache.repack.title')}>
-              <input type="checkbox" checked={config.normalizeGzip} onChange={(e) => run(cacheSetConfig({ normalizeGzip: (e.target as HTMLInputElement).checked }))} />
+              <input type="checkbox" checked={config.normalizeGzip} onChange={(e) => run(cacheSetConfig({ normalizeGzip: e.currentTarget.checked }))} />
               {t('cache.repack')}
             </label>
             <div class="row">
               <span class="hint">{t('cache.chunkSize')}</span>
-              <select class="input" style="width:120px" value={config.chunkSize} onChange={(e) => run(cacheSetConfig({ chunkSize: Number((e.target as HTMLSelectElement).value) }))}>
+              <select class="input" style="width:120px" value={config.chunkSize} onChange={(e) => run(cacheSetConfig({ chunkSize: Number(e.currentTarget.value) }))}>
                 {CHUNK_SIZES.map((c) => (
                   <option value={c.v}>{c.l}</option>
                 ))}
@@ -157,7 +157,7 @@ export function CachePanel() {
               </thead>
               <tbody>
                 {files.map((f) => (
-                  <tr>
+                  <tr key={f.url}>
                     <td class="mono" style="word-break:break-all">
                       {f.url}
                     </td>

@@ -18,7 +18,7 @@ function FilterEditor(props: { fields: Field[]; initial?: Filter; onSave: (f: Fi
       <h4>{props.initial ? t('flt.edit') : t('flt.add')}</h4>
       <div class="field-row">
         <label>{t('flt.operator')}</label>
-        <select class="input" value={op} onChange={(e) => setOp((e.target as HTMLSelectElement).value as FilterOp)}>
+        <select class="input" value={op} onChange={(e) => setOp(e.currentTarget.value as FilterOp)}>
           <option value="is">{t('flt.op.is')}</option>
           <option value="is_not">{t('flt.op.is_not')}</option>
           <option value="is_one_of">{t('flt.op.is_one_of')}</option>
@@ -32,7 +32,7 @@ function FilterEditor(props: { fields: Field[]; initial?: Filter; onSave: (f: Fi
       {!custom && (
         <div class="field-row">
           <label>{t('common.field')}</label>
-          <select class="input" value={field} onChange={(e) => setField((e.target as HTMLSelectElement).value)}>
+          <select class="input" value={field} onChange={(e) => setField(e.currentTarget.value)}>
             {props.fields
               .filter((f) => f.kind !== 'object')
               .map((f) => (
@@ -44,25 +44,25 @@ function FilterEditor(props: { fields: Field[]; initial?: Filter; onSave: (f: Fi
       {(op === 'is' || op === 'is_not' || op === 'is_one_of' || op === 'is_not_one_of') && (
         <div class="field-row">
           <label>{op.endsWith('one_of') ? t('flt.values') : t('flt.value')}</label>
-          <input class="input" value={value} onInput={(e) => setValue((e.target as HTMLInputElement).value)} />
+          <input class="input" value={value} onInput={(e) => setValue(e.currentTarget.value)} />
         </div>
       )}
       {op === 'between' && (
         <div class="row">
           <div class="field-row" style="flex:1">
             <label>{t('flt.from')}</label>
-            <input class="input" value={from} onInput={(e) => setFrom((e.target as HTMLInputElement).value)} />
+            <input class="input" value={from} onInput={(e) => setFrom(e.currentTarget.value)} />
           </div>
           <div class="field-row" style="flex:1">
             <label>{t('flt.to')}</label>
-            <input class="input" value={to} onInput={(e) => setTo((e.target as HTMLInputElement).value)} />
+            <input class="input" value={to} onInput={(e) => setTo(e.currentTarget.value)} />
           </div>
         </div>
       )}
       {custom && (
         <div class="field-row">
           <label>{t('flt.sql')}</label>
-          <textarea class="input" value={sql} onInput={(e) => setSql((e.target as HTMLTextAreaElement).value)} placeholder={'e.g. "http"."latency_ms" > 500 AND "level" <> \'info\''} />
+          <textarea class="input" value={sql} onInput={(e) => setSql(e.currentTarget.value)} placeholder={'e.g. "http"."latency_ms" > 500 AND "level" <> \'info\''} />
         </div>
       )}
       <div class="row end">
@@ -121,6 +121,7 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
       )}
       {props.filters.map((f) => (
         <Popover
+          key={f.id}
           open={menu === f.id || editing === f.id}
           onClose={() => {
             setMenu(null);

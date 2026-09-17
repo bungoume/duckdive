@@ -101,7 +101,7 @@ export function FieldSidebar(props: {
                 {loading && <div class="hint">{t('common.loading')}</div>}
                 {tops &&
                   tops.values.map((v) => (
-                    <div class="topval">
+                    <div key={v.value ?? ''} class="topval">
                       <div>
                         <div class="v mono" title={v.value ?? t('common.null')}>
                           {v.value === null ? <i>{t('common.null')}</i> : v.value === '' ? <i>{t('common.empty')}</i> : v.value}
@@ -146,7 +146,7 @@ export function FieldSidebar(props: {
   return (
     <div class="sidebar">
       <div class="search">
-        <input placeholder={t('fs.search')} value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />
+        <input placeholder={t('fs.search')} value={q} onInput={(e) => setQ(e.currentTarget.value)} />
       </div>
       <div class="list">
         {props.mode === 'discover' && selected.length > 0 && (

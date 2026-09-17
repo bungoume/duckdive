@@ -18,7 +18,7 @@ export function HostsCard(props: { refreshKey: unknown }) {
       <table class="kv">
         <tbody>
           {granted.map((g) => (
-            <tr>
+            <tr key={g}>
               <td class="v">{g}</td>
               <td class="a" style="visibility:visible">
                 {!/amazonaws\.com/.test(g) && (

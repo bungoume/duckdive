@@ -22,7 +22,7 @@ export function HistoryCard(props: { history: SourceHistoryEntry[]; currentKey: 
               .slice(0, 2)
               .join(' · ');
             return (
-              <tr class={current ? 'current' : ''} data-key={h.key}>
+              <tr key={h.key} class={current ? 'current' : ''} data-key={h.key}>
                 <td class="k" style="white-space:nowrap">
                   <b>{h.config.name || h.config.kind}</b>
                   {current ? <span class="hint"> · {t('ds.history.current')}</span> : ''}

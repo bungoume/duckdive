@@ -165,15 +165,12 @@ export function Discover(props: {
             <div class="chart-panel">
               <div class="chart-head">
                 <span>{t('disc.perInterval', { field: props.timeField?.name ?? '', interval: intervalLabel(interval).toLowerCase() })}</span>
-                <select
-                  class="input"
-                  style="width:auto;padding:2px 6px;font-size:12px"
-                  value={discover.interval}
-                  onChange={(e) => props.onDiscover({ ...discover, interval: (e.target as HTMLSelectElement).value })}
-                >
+                <select class="input" style="width:auto;padding:2px 6px;font-size:12px" value={discover.interval} onChange={(e) => props.onDiscover({ ...discover, interval: e.currentTarget.value })}>
                   <option value="auto">{t('common.auto')}</option>
                   {INTERVALS.map((iv) => (
-                    <option value={iv.key}>{intervalLabel(iv)}</option>
+                    <option key={iv.key} value={iv.key}>
+                      {intervalLabel(iv)}
+                    </option>
                   ))}
                 </select>
               </div>

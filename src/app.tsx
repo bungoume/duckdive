@@ -118,14 +118,14 @@ export function App() {
             value={attached ? (sourceKey(source) ?? '') : ''}
             disabled={attaching}
             onChange={(e) => {
-              const key = (e.target as HTMLSelectElement).value;
+              const key = e.currentTarget.value;
               const entry = history.find((h) => h.key === key);
               if (entry && key !== (attached ? sourceKey(source) : null)) void switchSource(entry.config);
             }}
           >
             {(!attached || !history.some((h) => h.key === sourceKey(source))) && <option value="">{attached ? source.name : t('app.status.noSource')}</option>}
             {history.map((h) => (
-              <option value={h.key} title={h.config.kind === 'demo' ? '' : h.config.urls}>
+              <option key={h.key} value={h.key} title={h.config.kind === 'demo' ? '' : h.config.urls}>
                 {h.config.name || h.config.kind}
               </option>
             ))}

@@ -119,7 +119,7 @@ export function Settings() {
         <h2>{t('settings.title')}</h2>
         <div class="field-row" style="max-width:320px">
           <label>{t('settings.lang')}</label>
-          <select class="input lang-select" value={lang} onChange={(e) => setLang((e.target as HTMLSelectElement).value as Lang)}>
+          <select class="input lang-select" value={lang} onChange={(e) => setLang(e.currentTarget.value as Lang)}>
             {LANGS.map((l) => (
               <option value={l.id}>{l.label}</option>
             ))}
@@ -133,14 +133,14 @@ export function Settings() {
         <div class="grid2">
           <div class="field-row">
             <label>{t('settings.dateFormat')}</label>
-            <input class="input mono" value={draft.dateFormat} onInput={(e) => set({ dateFormat: (e.target as HTMLInputElement).value })} placeholder={DEFAULT_SETTINGS.dateFormat} />
+            <input class="input mono" value={draft.dateFormat} onInput={(e) => set({ dateFormat: e.currentTarget.value })} placeholder={DEFAULT_SETTINGS.dateFormat} />
             {errors.dateFormat && <span class="hint error-text">{errors.dateFormat}</span>}
             <span class="hint">{t('settings.dateFormat.hint')}</span>
             {preview && <span class="hint mono">{t('settings.preview', { value: preview })}</span>}
           </div>
           <div class="field-row">
             <label>{t('settings.timeZone')}</label>
-            <input class="input mono" list="ddv-timezones" value={draft.timeZone} onInput={(e) => set({ timeZone: (e.target as HTMLInputElement).value })} placeholder={browserZone()} />
+            <input class="input mono" list="ddv-timezones" value={draft.timeZone} onInput={(e) => set({ timeZone: e.currentTarget.value })} placeholder={browserZone()} />
             <datalist id="ddv-timezones">
               {zoneNames().map((z) => (
                 <option value={z} />
@@ -151,7 +151,7 @@ export function Settings() {
           </div>
           <div class="field-row">
             <label>{t('settings.dow')}</label>
-            <select class="input" value={settings.dayOfWeek} onChange={(e) => updateSettings({ dayOfWeek: Number((e.target as HTMLSelectElement).value) })}>
+            <select class="input" value={settings.dayOfWeek} onChange={(e) => updateSettings({ dayOfWeek: Number(e.currentTarget.value) })}>
               {days.map((name, i) => (
                 <option value={i}>{name}</option>
               ))}
@@ -161,13 +161,13 @@ export function Settings() {
         </div>
         <div class="field-row">
           <label>{t('settings.scaled')}</label>
-          <textarea class="input mono settings-json" value={draft.scaled} onInput={(e) => set({ scaled: (e.target as HTMLTextAreaElement).value })} spellcheck={false} />
+          <textarea class="input mono settings-json" value={draft.scaled} onInput={(e) => set({ scaled: e.currentTarget.value })} spellcheck={false} />
           {errors.scaled && <span class="hint error-text">{errors.scaled}</span>}
           <span class="hint">{t('settings.scaled.hint')}</span>
         </div>
         <div class="field-row">
           <label>{t('settings.quickRanges')}</label>
-          <textarea class="input mono settings-json" value={draft.quick} onInput={(e) => set({ quick: (e.target as HTMLTextAreaElement).value })} spellcheck={false} />
+          <textarea class="input mono settings-json" value={draft.quick} onInput={(e) => set({ quick: e.currentTarget.value })} spellcheck={false} />
           {errors.quick && <span class="hint error-text">{errors.quick}</span>}
           <span class="hint">{t('settings.quickRanges.hint')}</span>
         </div>

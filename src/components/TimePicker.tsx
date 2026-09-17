@@ -49,8 +49,8 @@ export function TimePicker(props: { range: TimeRange; onChange: (r: TimeRange) =
           <h4>{t('tp.quick')}</h4>
           <div class="row" style="margin-bottom:10px">
             <span>{t('tp.last')}</span>
-            <input class="input" type="number" min={1} value={n} style="width:80px" onInput={(e) => setN(Number((e.target as HTMLInputElement).value))} />
-            <select class="input" style="width:120px" value={unit} onChange={(e) => setUnit((e.target as HTMLSelectElement).value)}>
+            <input class="input" type="number" min={1} value={n} style="width:80px" onInput={(e) => setN(Number(e.currentTarget.value))} />
+            <select class="input" style="width:120px" value={unit} onChange={(e) => setUnit(e.currentTarget.value)}>
               <option value="s">{t('tp.unit.s')}</option>
               <option value="m">{t('tp.unit.m')}</option>
               <option value="h">{t('tp.unit.h')}</option>
@@ -89,11 +89,11 @@ export function TimePicker(props: { range: TimeRange; onChange: (r: TimeRange) =
               <h4>{t('tp.absolute')}</h4>
               <div class="field-row">
                 <label>{t('tp.start')}</label>
-                <input class="input" type="datetime-local" step={1} value={absFrom} onInput={(e) => setAbsFrom((e.target as HTMLInputElement).value)} />
+                <input class="input" type="datetime-local" step={1} value={absFrom} onInput={(e) => setAbsFrom(e.currentTarget.value)} />
               </div>
               <div class="field-row">
                 <label>{t('tp.end')}</label>
-                <input class="input" type="datetime-local" step={1} value={absTo} onInput={(e) => setAbsTo((e.target as HTMLInputElement).value)} />
+                <input class="input" type="datetime-local" step={1} value={absTo} onInput={(e) => setAbsTo(e.currentTarget.value)} />
               </div>
               <div class="row end">
                 <button

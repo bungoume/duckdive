@@ -4,7 +4,7 @@ import { findField } from './fields';
 import { SearchQueryError, searchToSql } from './search';
 import { VIEW, bucketExpr, buildWhere, fieldCompareExpr, lit, type Interval } from './sql';
 import type { MetricDef, SearchState, SortDir, VisState } from './state';
-import { t, type MsgKey } from './i18n';
+import { t } from './i18n';
 
 export interface Compiled {
   where: string;
@@ -131,7 +131,7 @@ export function metricPlan(m: MetricDef, fields: Field[]): { input: string | nul
 export function metricLabel(m: MetricDef): string {
   if (m.label) return m.label;
   if (m.agg === 'count') return t('metric.count');
-  return t('metric.of', { agg: t(`vis.agg.${m.agg}` as MsgKey), field: m.field ?? '?' });
+  return t('metric.of', { agg: t(`vis.agg.${m.agg}`), field: m.field ?? '?' });
 }
 
 export interface VisRow {

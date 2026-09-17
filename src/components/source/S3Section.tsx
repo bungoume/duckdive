@@ -28,9 +28,7 @@ export function S3Section(props: {
     }
   };
   const expiresIn = props.creds ? Math.max(0, Math.round(secondsUntilExpiry(props.creds) / 60)) : 0;
-  const input = (value: string, onInput: (v: string) => void, extra: Record<string, unknown> = {}) => (
-    <input class="input" value={value} onInput={(e) => onInput((e.target as HTMLInputElement).value)} {...extra} />
-  );
+  const input = (value: string, onInput: (v: string) => void, extra: Record<string, unknown> = {}) => <input class="input" value={value} onInput={(e) => onInput(e.currentTarget.value)} {...extra} />;
 
   return (
     <div style="margin-top:8px">
@@ -46,14 +44,14 @@ export function S3Section(props: {
         </div>
         <div class="field-row">
           <label>{t('ds.s3.urlStyle')}</label>
-          <select class="input" value={cfg.s3.urlStyle} onChange={(e) => props.onS3({ urlStyle: (e.target as HTMLSelectElement).value as 'vhost' | 'path' })}>
+          <select class="input" value={cfg.s3.urlStyle} onChange={(e) => props.onS3({ urlStyle: e.currentTarget.value as 'vhost' | 'path' })}>
             <option value="vhost">{t('ds.s3.vhost')}</option>
             <option value="path">{t('ds.s3.path')}</option>
           </select>
         </div>
         <div class="field-row">
           <label>{t('ds.s3.auth')}</label>
-          <select class="input" value={cfg.authMode} onChange={(e) => props.onChange({ authMode: (e.target as HTMLSelectElement).value as AuthMode })}>
+          <select class="input" value={cfg.authMode} onChange={(e) => props.onChange({ authMode: e.currentTarget.value as AuthMode })}>
             <option value="oidc">{t('ds.auth.oidc')}</option>
             <option value="static">{t('ds.auth.static')}</option>
             <option value="none">{t('ds.auth.none')}</option>
@@ -111,7 +109,7 @@ export function S3Section(props: {
             </div>
             <div class="field-row">
               <label>{t('ds.oidc.duration')}</label>
-              <input class="input" type="number" value={cfg.oidc.durationSeconds} onInput={(e) => props.onOidc({ durationSeconds: Number((e.target as HTMLInputElement).value) || 3600 })} />
+              <input class="input" type="number" value={cfg.oidc.durationSeconds} onInput={(e) => props.onOidc({ durationSeconds: Number(e.currentTarget.value) || 3600 })} />
             </div>
             <div class="field-row">
               <label>{t('ds.oidc.stsEndpoint')}</label>

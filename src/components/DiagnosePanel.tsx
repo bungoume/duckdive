@@ -56,7 +56,7 @@ export function DiagnosePanel(props: { error: string | null }) {
             <div class="alert warn">{t('diag.failing', { n: report.failing.length, queries: report.queries, truncated: report.truncated ? t('diag.truncated') : '' })}</div>
           )}
           {report.failing.map((f) => (
-            <div class="diag-file">
+            <div key={f.file} class="diag-file">
               <div class="mono" style="word-break:break-all">
                 {f.file}
               </div>

@@ -6,7 +6,7 @@ import type { Field } from '../fields';
 import { findField } from '../fields';
 import { NULL_GROUP, OTHER, compileSearch, fetchVis, metricLabel, type VisResult } from '../queries';
 import { INTERVALS, autoInterval, bucketOffsetMinutes, intervalByKey, intervalLabel, newId, type Filter, type Interval } from '../sql';
-import { t, type MsgKey } from '../i18n';
+import { t } from '../i18n';
 import { loadSavedVis, storeSavedVis, type ChartType, type MetricAgg, type MetricDef, type SavedVis, type SearchState, type VisState } from '../state';
 import { Chart, type ChartPick } from './Chart';
 import { DataTable, MetricTiles } from './VisTable';
@@ -23,7 +23,7 @@ const CHARTS: { id: ChartType; icon: string }[] = [
   { id: 'table', icon: '▦' },
   { id: 'metric', icon: '🔢' },
 ];
-const chartLabel = (id: ChartType) => t(`vis.chart.${id}` as MsgKey);
+const chartLabel = (id: ChartType) => t(`vis.chart.${id}`);
 
 const AGGS: { id: MetricAgg; needsField: boolean }[] = [
   { id: 'count', needsField: false },
@@ -36,7 +36,7 @@ const AGGS: { id: MetricAgg; needsField: boolean }[] = [
   { id: 'p99', needsField: true },
   { id: 'unique', needsField: true },
 ];
-const aggLabel = (id: MetricAgg) => t(`vis.agg.${id}` as MsgKey);
+const aggLabel = (id: MetricAgg) => t(`vis.agg.${id}`);
 
 function DropZone(props: { onDrop: (name: string) => void; children: preact.ComponentChildren; filled: boolean }) {
   const [over, setOver] = useState(false);
@@ -62,7 +62,7 @@ function DropZone(props: { onDrop: (name: string) => void; children: preact.Comp
 
 function FieldSelect(props: { fields: Field[]; value: string | null; onChange: (v: string | null) => void; allow?: (f: Field) => boolean; placeholder?: string }) {
   return (
-    <select class="input" value={props.value ?? ''} onChange={(e) => props.onChange((e.target as HTMLSelectElement).value || null)}>
+    <select class="input" value={props.value ?? ''} onChange={(e) => props.onChange(e.currentTarget.value || null)}>
       <option value="">{props.placeholder ?? t('vis.selectField')}</option>
       {props.fields
         .filter((f) => f.kind !== 'object' && (!props.allow || props.allow(f)))
@@ -218,7 +218,7 @@ export function Visualize(props: {
           <div class="canvas">
             <div class="vis-panel">
               <div class="row" style="margin-bottom:8px">
-                <input class="input" style="font-weight:600;flex:1" placeholder={t('vis.untitled')} value={vis.title} onInput={(e) => setVis({ title: (e.target as HTMLInputElement).value })} />
+                <input class="input" style="font-weight:600;flex:1" placeholder={t('vis.untitled')} value={vis.title} onInput={(e) => setVis({ title: e.currentTarget.value })} />
                 <button class="btn small" onClick={() => setShowSql(!showSql)}>
                   {showSql ? t('vis.hideSql') : t('vis.showSql')}
                 </button>
@@ -256,7 +256,7 @@ export function Visualize(props: {
             <div class="body">
               <div class="chart-types">
                 {CHARTS.map((c) => (
-                  <button class={vis.chart === c.id ? 'active' : ''} aria-pressed={vis.chart === c.id} onClick={() => setVis({ chart: c.id })} title={chartLabel(c.id)}>
+                  <button key={c.id} class={vis.chart === c.id ? 'active' : ''} aria-pressed={vis.chart === c.id} onClick={() => setVis({ chart: c.id })} title={chartLabel(c.id)}>
                     <span class="ic">{c.icon}</span>
                     {chartLabel(c.id)}
                   </button>
@@ -279,12 +279,12 @@ export function Visualize(props: {
                 <DropZone filled={vis.x.kind !== 'none'} onDrop={dropX}>
                   <span class="lbl">
                     {vis.x.kind === 'none' ? t('vis.dropHere') : xLabel}
-                    <span class="sub">{vis.x.kind === 'none' ? t('vis.orPickBelow') : t(`vis.sub.${vis.x.kind}` as MsgKey)}</span>
+                    <span class="sub">{vis.x.kind === 'none' ? t('vis.orPickBelow') : t(`vis.sub.${vis.x.kind}`)}</span>
                   </span>
                 </DropZone>
                 <div class="field-row">
                   <label>{t('vis.function')}</label>
-                  <select class="input" value={vis.x.kind} onChange={(e) => setX({ kind: (e.target as HTMLSelectElement).value as VisState['x']['kind'] })}>
+                  <select class="input" value={vis.x.kind} onChange={(e) => setX({ kind: e.currentTarget.value as VisState['x']['kind'] })}>
                     <option value="none">–</option>
                     <option value="date_histogram">{t('vis.fn.dateHistogram')}</option>
                     <option value="terms">{t('vis.fn.terms')}</option>
@@ -305,10 +305,12 @@ export function Visualize(props: {
                     </div>
                     <div class="field-row">
                       <label>{t('vis.minInterval')}</label>
-                      <select class="input" value={vis.x.interval} onChange={(e) => setX({ interval: (e.target as HTMLSelectElement).value })}>
+                      <select class="input" value={vis.x.interval} onChange={(e) => setX({ interval: e.currentTarget.value })}>
                         <option value="auto">{t('common.auto')}</option>
                         {INTERVALS.map((iv) => (
-                          <option value={iv.key}>{intervalLabel(iv)}</option>
+                          <option key={iv.key} value={iv.key}>
+                            {intervalLabel(iv)}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -323,18 +325,18 @@ export function Visualize(props: {
                     <div class="row">
                       <div class="field-row" style="flex:1">
                         <label>{t('vis.numValues')}</label>
-                        <input class="input" type="number" min={1} max={500} value={vis.x.size} onInput={(e) => setX({ size: Number((e.target as HTMLInputElement).value) || 10 })} />
+                        <input class="input" type="number" min={1} max={500} value={vis.x.size} onInput={(e) => setX({ size: Number(e.currentTarget.value) || 10 })} />
                       </div>
                       <div class="field-row" style="flex:1">
                         <label>{t('vis.rankBy')}</label>
-                        <select class="input" value={vis.x.orderBy} onChange={(e) => setX({ orderBy: (e.target as HTMLSelectElement).value as 'metric' | 'alpha' })}>
+                        <select class="input" value={vis.x.orderBy} onChange={(e) => setX({ orderBy: e.currentTarget.value as 'metric' | 'alpha' })}>
                           <option value="metric">{metricLabel(vis.metrics[0])}</option>
                           <option value="alpha">{t('vis.alphabetical')}</option>
                         </select>
                       </div>
                       <div class="field-row" style="width:90px">
                         <label>{t('vis.direction')}</label>
-                        <select class="input" value={vis.x.orderDir} onChange={(e) => setX({ orderDir: (e.target as HTMLSelectElement).value as 'asc' | 'desc' })}>
+                        <select class="input" value={vis.x.orderDir} onChange={(e) => setX({ orderDir: e.currentTarget.value as 'asc' | 'desc' })}>
                           <option value="desc">{t('vis.desc')}</option>
                           <option value="asc">{t('vis.asc')}</option>
                         </select>
@@ -350,14 +352,7 @@ export function Visualize(props: {
                     </div>
                     <div class="field-row">
                       <label>{t('vis.bucketSize')}</label>
-                      <input
-                        class="input"
-                        type="number"
-                        min={0}
-                        step="any"
-                        value={vis.x.interval === 'auto' ? 10 : vis.x.interval}
-                        onInput={(e) => setX({ interval: (e.target as HTMLInputElement).value })}
-                      />
+                      <input class="input" type="number" min={0} step="any" value={vis.x.interval === 'auto' ? 10 : vis.x.interval} onInput={(e) => setX({ interval: e.currentTarget.value })} />
                     </div>
                   </>
                 )}
@@ -376,7 +371,7 @@ export function Visualize(props: {
               {vis.metrics.map((m) => {
                 const agg = AGGS.find((a) => a.id === m.agg)!;
                 return (
-                  <div class="cfg-section" style="border-style:dashed">
+                  <div key={m.id} class="cfg-section" style="border-style:dashed">
                     <div class="body">
                       <DropZone filled={true} onDrop={(name) => dropY(name, m.id)}>
                         <span class="lbl">
@@ -390,7 +385,7 @@ export function Visualize(props: {
                         )}
                       </DropZone>
                       <div class="row">
-                        <select class="input" value={m.agg} onChange={(e) => setMetric(m.id, { agg: (e.target as HTMLSelectElement).value as MetricAgg })}>
+                        <select class="input" value={m.agg} onChange={(e) => setMetric(m.id, { agg: e.currentTarget.value as MetricAgg })}>
                           {AGGS.map((a) => (
                             <option value={a.id}>{aggLabel(a.id)}</option>
                           ))}
@@ -399,7 +394,7 @@ export function Visualize(props: {
                           <FieldSelect fields={fields} value={m.field} onChange={(v) => setMetric(m.id, { field: v })} allow={(f) => (m.agg === 'unique' ? true : f.kind === 'number')} />
                         )}
                       </div>
-                      <input class="input" placeholder={t('vis.customLabel')} value={m.label ?? ''} onInput={(e) => setMetric(m.id, { label: (e.target as HTMLInputElement).value || undefined })} />
+                      <input class="input" placeholder={t('vis.customLabel')} value={m.label ?? ''} onInput={(e) => setMetric(m.id, { label: e.currentTarget.value || undefined })} />
                     </div>
                   </div>
                 );
@@ -428,10 +423,10 @@ export function Visualize(props: {
                 <div class="row">
                   <div class="field-row" style="flex:1">
                     <label>{t('vis.numValues')}</label>
-                    <input class="input" type="number" min={1} max={50} value={vis.breakdown.size} onInput={(e) => setBreakdown({ size: Number((e.target as HTMLInputElement).value) || 5 })} />
+                    <input class="input" type="number" min={1} max={50} value={vis.breakdown.size} onInput={(e) => setBreakdown({ size: Number(e.currentTarget.value) || 5 })} />
                   </div>
                   <label class="row" style="margin-top:14px">
-                    <input type="checkbox" checked={vis.breakdown.other} onChange={(e) => setBreakdown({ other: (e.target as HTMLInputElement).checked })} /> {t('vis.groupOther')}
+                    <input type="checkbox" checked={vis.breakdown.other} onChange={(e) => setBreakdown({ other: e.currentTarget.checked })} /> {t('vis.groupOther')}
                   </label>
                 </div>
               )}
@@ -444,7 +439,7 @@ export function Visualize(props: {
               {saved.length === 0 && <div class="hint">{t('vis.nothingSaved')}</div>}
               <div class="saved-list">
                 {saved.map((s) => (
-                  <div class="item">
+                  <div key={s.id} class="item">
                     <span class="t" role="button" tabIndex={0} onClick={() => load(s)} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && load(s)} title={formatDate(new Date(s.savedAt))}>
                       {s.title}
                     </span>

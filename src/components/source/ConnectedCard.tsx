@@ -17,12 +17,12 @@ export function ConnectedCard(props: { attached: AttachedSource; onTimeField: (n
       </div>
       <div class="field-row" style="max-width:420px">
         <label>{t('ds.timeField.label')}</label>
-        <select class="input" value={a.timeField?.name ?? ''} onChange={(e) => props.onTimeField((e.target as HTMLSelectElement).value || null)}>
+        <select class="input" value={a.timeField?.name ?? ''} onChange={(e) => props.onTimeField(e.currentTarget.value || null)}>
           <option value="">{t('ds.timeField.none')}</option>
           {a.fields
             .filter((f) => f.kind === 'date' || isTimeCandidate(f))
             .map((f) => (
-              <option value={f.name}>
+              <option key={f.name} value={f.name}>
                 {f.name} ({f.duckType})
               </option>
             ))}
@@ -62,7 +62,7 @@ export function ConnectedCard(props: { attached: AttachedSource; onTimeField: (n
         <table class="kv" style="margin-top:6px">
           <tbody>
             {a.fields.map((f) => (
-              <tr>
+              <tr key={f.name}>
                 <td class="k">{f.name}</td>
                 <td class="v">{f.duckType}</td>
               </tr>

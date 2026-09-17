@@ -27,7 +27,7 @@ export function QueryBar(props: { query: string; range: TimeRange; error: string
           <input
             value={text}
             placeholder={t('q.placeholder')}
-            onInput={(e) => setText((e.target as HTMLInputElement).value)}
+            onInput={(e) => setText(e.currentTarget.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') props.onSubmit(text, props.range);
             }}

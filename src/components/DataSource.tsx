@@ -91,7 +91,7 @@ export function DataSource(props: {
             <div class="template-box">
               <div class="row" style="gap:10px;align-items:center">
                 <span class="template-title">{t('ds.template')}</span>
-                <select class="input" style="max-width:320px" value={pendingTemplate?.id ?? templateId} onChange={(e) => chooseTemplate((e.target as HTMLSelectElement).value)}>
+                <select class="input" style="max-width:320px" value={pendingTemplate?.id ?? templateId} onChange={(e) => chooseTemplate(e.currentTarget.value)}>
                   <option value="">{t('ds.template.choose')}</option>
                   {TEMPLATES.map((tp) => (
                     <option value={tp.id}>{templateLabel(tp)}</option>
@@ -123,7 +123,7 @@ export function DataSource(props: {
               <textarea
                 class="input"
                 value={cfg.urls}
-                onInput={(e) => set({ urls: (e.target as HTMLTextAreaElement).value, timeField: null, tokenValues: {} })}
+                onInput={(e) => set({ urls: e.currentTarget.value, timeField: null, tokenValues: {} })}
                 placeholder={
                   's3://my-logs/AWSLogs/123456789012/elasticloadbalancing/ap-northeast-1/{yyyy}/{MM}/{dd}/*.log.gz\ns3://my-bucket/events/dt={yyyy}-{MM}-{dd}/*.parquet\nhttps://d1234.cloudfront.net/logs/2026-09-09.parquet'
                 }
@@ -153,7 +153,7 @@ export function DataSource(props: {
             <div class="grid2">
               <div class="field-row">
                 <label>{t('common.format')}</label>
-                <select class="input" value={cfg.format} onChange={(e) => set({ format: (e.target as HTMLSelectElement).value as SourceConfig['format'] })}>
+                <select class="input" value={cfg.format} onChange={(e) => set({ format: e.currentTarget.value as SourceConfig['format'] })}>
                   {FORMAT_IDS.map((id) => (
                     <option value={id}>{formatLabel(id)}</option>
                   ))}
@@ -161,11 +161,11 @@ export function DataSource(props: {
               </div>
               <div class="field-row">
                 <label>{t('ds.name')}</label>
-                <input class="input" value={cfg.name} onInput={(e) => set({ name: (e.target as HTMLInputElement).value })} />
+                <input class="input" value={cfg.name} onInput={(e) => set({ name: e.currentTarget.value })} />
               </div>
               <div class="field-row">
                 <label>{t('ds.maxFiles')}</label>
-                <input class="input" type="number" min={1} value={cfg.maxFiles || ''} placeholder="1000" onInput={(e) => set({ maxFiles: Number((e.target as HTMLInputElement).value) || 0 })} />
+                <input class="input" type="number" min={1} value={cfg.maxFiles || ''} placeholder="1000" onInput={(e) => set({ maxFiles: Number(e.currentTarget.value) || 0 })} />
               </div>
             </div>
             <span class="hint">{t('ds.listingHint')}</span>
@@ -182,10 +182,10 @@ export function DataSource(props: {
         {cfg.kind === 'local' && (
           <div class="field-row">
             <label>{t('ds.local.files')}</label>
-            <input type="file" multiple accept=".parquet,.csv,.tsv,.json,.jsonl,.ndjson,.gz" onChange={(e) => setFiles(Array.from((e.target as HTMLInputElement).files ?? []))} />
+            <input type="file" multiple accept=".parquet,.csv,.tsv,.json,.jsonl,.ndjson,.gz" onChange={(e) => setFiles(Array.from(e.currentTarget.files ?? []))} />
             <div class="row" style="margin-top:6px">
               <label class="hint">{t('common.format')}</label>
-              <select class="input" style="width:260px" value={cfg.format} onChange={(e) => set({ format: (e.target as HTMLSelectElement).value as SourceConfig['format'] })}>
+              <select class="input" style="width:260px" value={cfg.format} onChange={(e) => set({ format: e.currentTarget.value as SourceConfig['format'] })}>
                 {FORMAT_IDS.map((id) => (
                   <option value={id}>{formatLabel(id)}</option>
                 ))}

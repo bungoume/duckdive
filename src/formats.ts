@@ -11,7 +11,7 @@
 // file only; JSON keeps union_by_name because its keys legitimately differ between files.
 
 import { lit } from './sql';
-import { t, type MsgKey } from './i18n';
+import { t } from './i18n';
 
 export type FormatId = 'auto' | 'parquet' | 'csv' | 'json' | 'alb' | 'cloudfront' | 'cloudtrail' | 'flowlogs' | 's3access' | 'ltsv' | 'cwlexport' | 'lines';
 
@@ -208,7 +208,7 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
 
 /** Display name of a format in the UI language. */
 export function formatLabel(id: FormatId): string {
-  return t(`fmt.${id}` as MsgKey);
+  return t(`fmt.${id}`);
 }
 
 export const FORMAT_IDS: FormatId[] = ['auto', 'parquet', 'csv', 'json', 'alb', 'cloudfront', 'cloudtrail', 'flowlogs', 's3access', 'ltsv', 'cwlexport', 'lines'];
@@ -231,8 +231,11 @@ export function resolveFormat(format: FormatId, urls: string[]): FormatDef {
 
 // ---------- Data source templates ----------
 
+export type TemplateId =
+  'alb' | 'alb-parquet' | 'nlb' | 'cloudfront' | 'cloudtrail' | 'flowlogs' | 'flowlogs-parquet' | 'waf' | 'netfw' | 'r53resolver' | 's3access' | 'firehose' | 'cwlexport' | 'ssm';
+
 export interface Template {
-  id: string;
+  id: TemplateId;
   format: FormatId;
   /** pattern with <bucket> (and optional <prefix>) placeholders the user must replace */
   urls: string;
@@ -240,10 +243,10 @@ export interface Template {
 
 /** Display name / explanatory note of a template in the UI language (keys tpl.<id>.label / .note). */
 export function templateLabel(tp: Template): string {
-  return t(`tpl.${tp.id}.label` as MsgKey);
+  return t(`tpl.${tp.id}.label`);
 }
 export function templateNote(tp: Template): string {
-  return t(`tpl.${tp.id}.note` as MsgKey);
+  return t(`tpl.${tp.id}.note`);
 }
 
 export const TEMPLATES: Template[] = [

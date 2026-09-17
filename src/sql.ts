@@ -3,7 +3,7 @@ import { resolveRange } from './datemath';
 import { effectiveTimeZone, zonedParts } from './datefmt';
 import type { Field } from './fields';
 import { findField } from './fields';
-import { t, type MsgKey } from './i18n';
+import { t } from './i18n';
 import { getSettings } from './settings';
 import { pad } from './util';
 
@@ -18,12 +18,14 @@ export function tsLit(d: Date): string {
   return `TIMESTAMP '${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}.${pad(d.getMilliseconds(), 3)}'`;
 }
 
+export type IntervalKey = '1s' | '5s' | '10s' | '30s' | '1m' | '5m' | '10m' | '30m' | '1h' | '3h' | '12h' | '1d' | '1w' | '1M' | '1y';
+
 export interface Interval {
   /** nominal ms per bucket (axis spacing; calendar buckets vary in length) */
   ms: number;
   /** DuckDB INTERVAL text, e.g. "5 minute" */
   sql: string;
-  key: string;
+  key: IntervalKey;
   /** buckets that follow the calendar rather than a fixed length (see nextBucketStart) */
   calendar?: 'week' | 'month' | 'year';
 }
@@ -63,7 +65,7 @@ export function intervalByKey(key: string): Interval | undefined {
 
 /** Display name of a histogram interval in the UI language. */
 export function intervalLabel(iv: Interval): string {
-  return t(`iv.${iv.key}` as MsgKey);
+  return t(`iv.${iv.key}`);
 }
 
 /**

@@ -34,7 +34,7 @@ export function TokenValues(props: {
           const opts = vars.values[n] ?? [];
           const sel = props.selected[n] ?? [];
           return (
-            <div class="var-values" data-token={n} style="margin-top:8px">
+            <div key={n} class="var-values" data-token={n} style="margin-top:8px">
               <div class="row" style="gap:8px;align-items:center">
                 <b class="mono" style="font-size:12px">
                   {'{' + n + '}'}
@@ -57,12 +57,8 @@ export function TokenValues(props: {
               </div>
               <div class="var-list">
                 {opts.map((v) => (
-                  <label class="var-item">
-                    <input
-                      type="checkbox"
-                      checked={sel.includes(v.value)}
-                      onChange={(e) => props.onSelect(n, (e.target as HTMLInputElement).checked ? [...sel, v.value] : sel.filter((x) => x !== v.value))}
-                    />
+                  <label key={v.value} class="var-item">
+                    <input type="checkbox" checked={sel.includes(v.value)} onChange={(e) => props.onSelect(n, e.currentTarget.checked ? [...sel, v.value] : sel.filter((x) => x !== v.value))} />
                     <span class="mono">{v.value || t('common.empty')}</span>
                     <span class="hint">{t('common.files', { n: v.files.toLocaleString() })}</span>
                   </label>

@@ -124,11 +124,13 @@ export function quickRangeLabel(q: QuickRange): string {
   return autoLabel(q) ?? `${q.from} → ${q.to}`;
 }
 
+const UNIT_KEY: Record<string, MsgKey> = { s: 'tp.unit.s', m: 'tp.unit.m', h: 'tp.unit.h', d: 'tp.unit.d', w: 'tp.unit.w', M: 'tp.unit.M', y: 'tp.unit.y' };
+
 function autoLabel(r: TimeRange): string | null {
   if (r.from === 'now/d' && r.to === 'now/d') return t('range.today');
   if (r.from === 'now/w' && r.to === 'now/w') return t('range.thisWeek');
   const m = /^now-(\d+)([smhdwMy])(?:\/[smhdwMy])?$/.exec(r.from);
-  if (m && r.to === 'now') return t('range.lastN', { n: m[1], unit: t(`tp.unit.${m[2]}` as MsgKey) });
+  if (m && r.to === 'now') return t('range.lastN', { n: m[1], unit: t(UNIT_KEY[m[2]]) });
   return null;
 }
 
