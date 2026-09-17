@@ -27,6 +27,7 @@ import {
   totalSizeFrom,
   type HeaderMap,
   type NativeResult,
+  evictionPlan,
 } from './cache-util';
 
 declare function importScripts(...urls: string[]): void;
@@ -37,6 +38,8 @@ interface FileMeta {
   etag: string;
   chunkSize: number;
   seenAt: number;
+  /** last time chunks of the file were read or written (eviction order); absent in entries of older builds */
+  usedAt?: number;
   lastModified?: string;
   /**
    * Set when the cached bytes are a re-packed copy of the object rather than the object itself
@@ -82,7 +85,7 @@ interface Index {
   wasted: number;
   files: Record<string, FileMeta & { chunks: [number, number, number, number?][] }>;
   ext: Record<string, { name: string; size: number }>;
-  config: { enabled: boolean; chunkSize: number; normalizeGzip?: boolean };
+  config: { enabled: boolean; chunkSize: number; normalizeGzip?: boolean; maxBytes?: number };
 }
 
 const INDEX_VERSION = 2;
@@ -93,7 +96,8 @@ const COMPACT_MIN_WASTE = 64 * 1024 * 1024;
 const DIR = 'ddv-cache';
 const NativeXHR = self.XMLHttpRequest;
 
-const config = { enabled: true, chunkSize: 1024 * 1024, normalizeGzip: true };
+/** maxBytes: cached data allowed on disk (0 = no limit); beyond it whole files go, least recently used first */
+const config = { enabled: true, chunkSize: 1024 * 1024, normalizeGzip: true, maxBytes: 4 * 1024 * 1024 * 1024 };
 /** One line of the request log (last LOG_SIZE requests seen by the worker); shown on the Data source page. */
 interface LogEntry {
   t: number;
@@ -122,6 +126,7 @@ const stats = {
   headsSynthesized: 0,
   headsNetwork: 0,
   corruptions: 0,
+  evictions: 0,
   log: [] as LogEntry[],
 };
 const files = new Map<string, CacheEntry>();
@@ -194,6 +199,7 @@ async function initOpfs() {
       config.enabled = index.config?.enabled ?? true;
       config.chunkSize = index.config?.chunkSize ?? config.chunkSize;
       config.normalizeGzip = index.config?.normalizeGzip ?? true;
+      config.maxBytes = index.config?.maxBytes ?? config.maxBytes;
       slabSize = Math.min(index.slabSize ?? 0, actual);
       wasted = index.wasted ?? 0;
       for (const meta of Object.values(index.files)) {
@@ -211,7 +217,7 @@ async function initOpfs() {
       slabSize = 0;
       wasted = 0;
     }
-    if (wasted > COMPACT_MIN_WASTE && wasted > slabSize / 2) await compact();
+    if (needsCompaction()) await compact();
   } catch (e) {
     opfsError = `OPFS unavailable: ${String(e)}`;
     console.warn('[ddv-cache]', opfsError);
@@ -264,7 +270,7 @@ async function saveIndex() {
     if (!e.chunks.size) continue;
     const chunks: [number, number, number, number?][] = [];
     for (const [i, r] of e.chunks) chunks.push([i, r.off, r.len, r.sum ?? 0]);
-    index.files[k] = { key: e.key, size: e.size, etag: e.etag, chunkSize: e.chunkSize, seenAt: e.seenAt, lastModified: e.lastModified, norm: e.norm, chunks };
+    index.files[k] = { key: e.key, size: e.size, etag: e.etag, chunkSize: e.chunkSize, seenAt: e.seenAt, usedAt: e.usedAt, lastModified: e.lastModified, norm: e.norm, chunks };
   }
   for (const [url, e] of extFiles) index.ext[url] = { name: e.name, size: e.size };
   try {
@@ -283,6 +289,46 @@ function cachedBytesOf(entry: CacheEntry): number {
   return n;
 }
 
+/** Bytes of the slab that are still referenced. */
+const liveBytes = () => slabSize - wasted;
+
+/**
+ * Keep the cached data within config.maxBytes: drop whole files, least recently used first,
+ * down to 80 % of the limit. `keep` is the file being written (it is never dropped under itself).
+ * Dropped chunks become waste in the slab; a compaction is scheduled to give the disk back.
+ */
+function enforceLimit(keep: CacheEntry | null) {
+  if (!config.maxBytes || liveBytes() <= config.maxBytes) return;
+  const candidates = [...files.values()].filter((e) => e !== keep && e.chunks.size).map((e) => ({ entry: e, seenAt: e.seenAt, usedAt: e.usedAt, bytes: cachedBytesOf(e) }));
+  for (const c of evictionPlan(candidates, liveBytes(), config.maxBytes * 0.8)) {
+    dropChunks(c.entry);
+    c.entry.norm = undefined;
+    stats.evictions++;
+    log({ method: 'EVICT', url: c.entry.key, range: null, outcome: `evicted:${c.bytes}` });
+  }
+  scheduleSaveIndex();
+  if (needsCompaction()) scheduleCompact();
+}
+
+/** Waste worth a rewrite: more than half the slab, or a slab that outgrew the limit with a fifth of it unreferenced. */
+function needsCompaction(): boolean {
+  if (wasted <= 0) return false;
+  if (wasted > COMPACT_MIN_WASTE && wasted > slabSize / 2) return true;
+  return config.maxBytes > 0 && slabSize > config.maxBytes && wasted >= slabSize / 5;
+}
+
+let compactTimer: ReturnType<typeof setTimeout> | null = null;
+let compacting = false;
+
+/** Compact a little later, once the burst of writes that caused the evictions has passed. */
+function scheduleCompact() {
+  if (compactTimer) return;
+  compactTimer = setTimeout(() => {
+    compactTimer = null;
+    if (!compacting && needsCompaction()) void compact();
+  }, 10_000);
+}
+
 function writeChunk(entry: CacheEntry, idx: number, buf: Uint8Array) {
   if (!slab) return;
   try {
@@ -293,7 +339,9 @@ function writeChunk(entry: CacheEntry, idx: number, buf: Uint8Array) {
     const prev = entry.chunks.get(idx);
     if (prev) wasted += prev.len;
     entry.chunks.set(idx, { off, len: buf.byteLength, sum: checksum(buf) });
+    entry.usedAt = Date.now();
     scheduleSaveIndex();
+    enforceLimit(entry);
   } catch (e) {
     console.warn('[ddv-cache] chunk write failed', e);
   }
@@ -427,6 +475,16 @@ async function clearAll() {
 
 /** Rewrite the slab with only the referenced chunks. */
 async function compact(): Promise<void> {
+  if (!dir || !slab || compacting) return;
+  compacting = true;
+  try {
+    await compactSlab();
+  } finally {
+    compacting = false;
+  }
+}
+
+async function compactSlab(): Promise<void> {
   if (!dir || !slab) return;
   try {
     const tmpFh = await dir.getFileHandle('slab.tmp', { create: true });
@@ -624,6 +682,7 @@ function handleRangeGet(url: string, headers: HeaderMap, rangeHeader: string, re
       stats.chunkHits++;
       entry.stat.hits++;
     }
+    entry.usedAt = Date.now();
     const s = Math.max(start, chunkStart) - chunkStart;
     const e = Math.min(end, chunkStart + buf.byteLength - 1) - chunkStart;
     out.set(buf.subarray(s, e + 1), Math.max(start, chunkStart) - start);
@@ -897,6 +956,8 @@ async function handleControl(data: unknown, reply: (payload: Record<string, unkn
         if (typeof c.enabled === 'boolean') config.enabled = c.enabled;
         if (typeof c.chunkSize === 'number' && c.chunkSize >= 64 * 1024) config.chunkSize = c.chunkSize;
         if (typeof c.normalizeGzip === 'boolean') config.normalizeGzip = c.normalizeGzip;
+        if (typeof c.maxBytes === 'number' && c.maxBytes >= 0) config.maxBytes = Math.floor(c.maxBytes);
+        enforceLimit(null);
         await saveIndex();
         reply({ ok: true, config: { ...config, concurrency: 1 } });
         break;

@@ -127,3 +127,22 @@ export function hexHead(body: ArrayBuffer | null | undefined, n = 8): string | u
   const b = new Uint8Array(body, 0, Math.min(n, body.byteLength));
   return Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
 }
+
+/**
+ * Which files to drop so the cached data fits a limit: the least recently used first, until
+ * `liveBytes` minus their bytes is at or below `target` (kept a little under the limit, so a
+ * stream of writes does not evict on every chunk). `usedAt` falls back to `seenAt` for entries
+ * written by older builds.
+ */
+export function evictionPlan<T extends { seenAt: number; usedAt?: number; bytes: number }>(entries: T[], liveBytes: number, target: number): T[] {
+  const out: T[] = [];
+  let live = liveBytes;
+  if (live <= target) return out;
+  for (const e of [...entries].sort((a, b) => (a.usedAt ?? a.seenAt) - (b.usedAt ?? b.seenAt))) {
+    if (live <= target) break;
+    if (!e.bytes) continue;
+    out.push(e);
+    live -= e.bytes;
+  }
+  return out;
+}

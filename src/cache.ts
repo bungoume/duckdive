@@ -12,6 +12,8 @@ export interface CacheStats {
   headsSynthesized: number;
   headsNetwork: number;
   corruptions: number;
+  /** files dropped to stay within the size limit (this session) */
+  evictions: number;
   files: Record<string, { hits: number; misses: number; bytesFromCache: number; bytesFromNetwork: number; bytesDownloaded: number }>;
   log: CacheLogEntry[];
 }
@@ -34,6 +36,8 @@ export interface CacheConfig {
   chunkSize: number;
   /** re-pack concatenated gzip objects into single-member gzip at connect time (src/gznorm.ts) */
   normalizeGzip: boolean;
+  /** cached data allowed on disk; 0 = no limit. Beyond it whole files are dropped, least recently used first */
+  maxBytes: number;
 }
 
 export interface CachedFile {

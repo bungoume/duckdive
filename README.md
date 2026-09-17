@@ -140,7 +140,7 @@ The SQL page runs one statement against the view `src`, which holds the connecte
 
 ## Range cache
 
-`src/worker/duckdb-cache-worker.ts` wraps the duckdb-wasm worker and replaces its `XMLHttpRequest`; the page controls the cache over a `MessagePort` handed to the worker as its first message (`src/cache.ts`), so re-packed gzip copies are transferred rather than copied. Range requests are aligned to chunks (1 MB by default) and stored in one append-only file in OPFS with a JSON index. Chunks are dropped when the object's ETag changes. Presigned-URL parameters are excluded from the cache key. DuckDB extensions are cached too, so later starts work offline. Only one tab can hold the cache at a time; a second tab runs without it.
+`src/worker/duckdb-cache-worker.ts` wraps the duckdb-wasm worker and replaces its `XMLHttpRequest`; the page controls the cache over a `MessagePort` handed to the worker as its first message (`src/cache.ts`), so re-packed gzip copies are transferred rather than copied. Range requests are aligned to chunks (1 MB by default) and stored in one append-only file in OPFS with a JSON index. Chunks are dropped when the object's ETag changes. The cached data is kept within a size limit (4 GB by default, chosen under Local range cache): beyond it whole files are dropped, least recently used first, down to 80 % of the limit, and the slab file is compacted when the dropped chunks make up a fifth of it. Presigned-URL parameters are excluded from the cache key. DuckDB extensions are cached too, so later starts work offline. Only one tab can hold the cache at a time; a second tab runs without it.
 
 duckdb-wasm downloads whole HTTP files by default. `src/duck.ts` opens the database with `reliableHeadRequests: true` and `allowFullHTTPReads: false` to force range reads.
 
@@ -158,7 +158,7 @@ node e2e/cache.mjs     # permissions, OPFS persistence, SigV4 and STS against a 
 
 The unit tests in `test/` run in Node against the pure modules (with Web Storage and `location` stubbed in `test/setup.ts`); everything that needs DuckDB or Chrome is covered by the Playwright suites. `.github/workflows/ci.yml` runs the same steps on every push and pull request.
 
-`e2e/cache.mjs` needs the `duckdb` CLI to generate fixtures. Both use Playwright's headless Chromium with the built extension loaded and drive the app through `window.__ddv`, hooks that exist only in dev builds and in builds made with `VITE_DDV_DEBUG=1` (`src/debug.ts`); a store build publishes nothing on the page. The tests assert English text, so `e2e/ext-context.mjs` pins the UI language to English before the page loads; set `DDV_LANG=ja` (or another language id) to run `pnpm run screenshots` (after `pnpm run build:e2e`) in that language.
+`e2e/cache.mjs` needs the `duckdb` CLI to generate fixtures; `SECTIONS=cache-limit,templates node e2e/cache.mjs` runs only the named sections (they are independent). Both use Playwright's headless Chromium with the built extension loaded and drive the app through `window.__ddv`, hooks that exist only in dev builds and in builds made with `VITE_DDV_DEBUG=1` (`src/debug.ts`); a store build publishes nothing on the page. The tests assert English text, so `e2e/ext-context.mjs` pins the UI language to English before the page loads; set `DDV_LANG=ja` (or another language id) to run `pnpm run screenshots` (after `pnpm run build:e2e`) in that language.
 
 ## Layout
 

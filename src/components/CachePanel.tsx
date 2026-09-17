@@ -26,6 +26,9 @@ const CHUNK_SIZES = [
   { v: 8 * 1024 * 1024, l: '8 MB' },
 ];
 
+const GB = 1024 * 1024 * 1024;
+const MAX_BYTES = [512 * 1024 * 1024, GB, 2 * GB, 4 * GB, 8 * GB, 16 * GB, 0];
+
 export function CachePanel() {
   const [stats, setStats] = useState<CacheStats | null>(null);
   const [config, setConfig] = useState<CacheConfig | null>(null);
@@ -96,6 +99,16 @@ export function CachePanel() {
                 ))}
               </select>
             </div>
+            <div class="row">
+              <span class="hint">{t('cache.maxBytes')}</span>
+              <select class="input" style="width:120px" value={config.maxBytes} onChange={(e) => run(cacheSetConfig({ maxBytes: Number(e.currentTarget.value) }))}>
+                {(MAX_BYTES.includes(config.maxBytes) ? MAX_BYTES : [config.maxBytes, ...MAX_BYTES]).map((v) => (
+                  <option key={v} value={v}>
+                    {v ? fmtBytes(v) : t('cache.unlimited')}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <table class="kv mb8">
             <tbody>
@@ -134,6 +147,7 @@ export function CachePanel() {
                   <td class="v">
                     {t('cache.onDisk.text', { files: summary.cachedFiles.toLocaleString(), bytes: fmtBytes(summary.cachedBytes), known: summary.known.toLocaleString() })}
                     {summary.wasted > 0 ? t('cache.reclaimable', { bytes: fmtBytes(summary.wasted) }) : ''}
+                    {stats && stats.evictions > 0 ? t('cache.evicted', { n: stats.evictions.toLocaleString() }) : ''}
                     {summary.wasted > 16 * 1024 * 1024 && (
                       <button class="btn small ml8" onClick={() => run(cacheCompact())}>
                         {t('cache.compact')}

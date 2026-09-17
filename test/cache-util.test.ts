@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   cacheKey,
+  evictionPlan,
   checksum,
   etagFrom,
   hashName,
@@ -102,5 +103,28 @@ describe('hashes', () => {
     expect(hexHead(new Uint8Array([0x1f, 0x8b, 0x08, 0, 1, 2, 3, 4, 5, 6]).buffer)).toBe('1f8b080001020304');
     expect(hexHead(new Uint8Array([0x1f]).buffer, 4)).toBe('1f');
     expect(hexHead(null)).toBeUndefined();
+  });
+});
+
+describe('evictionPlan', () => {
+  const e = (name: string, usedAt: number, bytes: number) => ({ name, seenAt: 0, usedAt, bytes });
+  it('drops the least recently used files until the data fits the target', () => {
+    const entries = [e('c', 30, 100), e('a', 10, 100), e('b', 20, 100), e('empty', 5, 0)];
+    expect(evictionPlan(entries, 300, 150).map((x) => x.name)).toEqual(['a', 'b']);
+    expect(evictionPlan(entries, 300, 300)).toEqual([]);
+    expect(evictionPlan(entries, 300, 0).map((x) => x.name)).toEqual(['a', 'b', 'c']);
+  });
+  it('orders entries of older builds by the time they were seen', () => {
+    expect(
+      evictionPlan(
+        [
+          { seenAt: 50, bytes: 10 },
+          { seenAt: 40, bytes: 10 },
+          { seenAt: 60, usedAt: 1, bytes: 10 },
+        ],
+        30,
+        15,
+      ).map((x) => x.seenAt),
+    ).toEqual([60, 40]);
   });
 });

@@ -339,7 +339,10 @@ const runQuery = async (q) => {
 // Each section is one independent scenario: an exception ends that section (counted as a
 // failure, with a screenshot) and the next one still runs. Later sections do not rely on state
 // left by earlier ones beyond the fixtures on disk.
+// SECTIONS=name,name runs only those (they are independent), e.g. while working on one of them.
+const only = process.env.SECTIONS ? process.env.SECTIONS.split(',') : null;
 const section = async (name, fn) => {
+  if (only && !only.includes(name)) return;
   try {
     await fn();
   } catch (e) {
@@ -468,6 +471,42 @@ await section('cache-disabled', async () => {
   const srv4 = await serverStats();
   check('disabled cache reads from origin', srv4.bytesSent > srv3.bytesSent, `${srv3.bytesSent} -> ${srv4.bytesSent}`);
   await page.evaluate(() => window.__ddv.cacheSetConfig({ enabled: true }));
+});
+
+await section('cache-limit', async () => {
+  // Two copies of the parquet under different URLs. The limit is set between one and two
+  // per-query footprints, so the second file's chunks push the first one out (least recently
+  // used). A reload gives each measurement a fresh DuckDB (it keeps read blocks in memory).
+  await openSource();
+  await page.evaluate(() => window.__ddv.cacheClear());
+  await page.click('.kinds button:has-text("S3 / HTTPS URL")');
+  await page.fill('.source-page textarea', `http://localhost:${dataPort}/logs.parquet\nhttp://localhost:${dataPort}/bucket/logs.parquet`);
+  await page.click('.source-page button:has-text("Connect")');
+  await connectDone('logs.parquet');
+  const measure = async () => {
+    await page.reload();
+    await page.waitForSelector('.hits .n', { timeout: 120000 });
+    await settled(page);
+    return page.evaluate(() => window.__ddv.cacheFiles().then((r) => r.summary));
+  };
+  // the page switch must be in the URL before the reload (the hash is written after the render)
+  await page.click('.header nav button:has-text("Discover")');
+  await page.waitForSelector('.hits .n', { timeout: 120000 });
+  await settled(page);
+  const full = await measure();
+  const limit = Math.floor(full.cachedBytes * 0.75);
+  await page.evaluate((n) => window.__ddv.cacheSetConfig({ maxBytes: n }), limit);
+  await page.evaluate(() => window.__ddv.cacheClear());
+  const after = await measure();
+  const st = await swStats();
+  const cfg = await page.evaluate(() => window.__ddv.cacheStats().then((r) => r.config));
+  check(
+    'size limit drops the least recently used file',
+    st.evictions >= 1 && after.cachedBytes <= limit && after.cachedFiles === 1,
+    `two files: ${full.cachedBytes} B · limit ${limit} B · after: ${after.cachedBytes} B in ${after.cachedFiles} file(s), evictions=${st.evictions}`,
+  );
+  check('size limit survives a reload', cfg.maxBytes === limit, `config.maxBytes=${cfg.maxBytes}`);
+  await page.evaluate(() => window.__ddv.cacheSetConfig({ maxBytes: 0 }));
 });
 
 await section('s3-static-keys', async () => {

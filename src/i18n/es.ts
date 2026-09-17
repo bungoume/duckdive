@@ -197,6 +197,8 @@ export const es: Messages = {
     'La entrega de logs de AWS a veces escribe archivos gzip que no se pueden leer de forma fiable tal cual. Si se activa, cada archivo .gz se descarga una vez al conectar, se corrige si hace falta y se conserva en la caché.',
   'cache.chunkSize': 'Tamaño de fragmento (archivos nuevos)',
   'cache.session': 'Esta sesión',
+  'cache.maxBytes': 'Conservar como máximo',
+  'cache.unlimited': 'sin límite',
   'cache.session.text':
     'DuckDB leyó {total}: {fromCache} desde disco ({ratio}%) · {downloaded} descargados del origen en {misses} fragmentos · {hits} aciertos de fragmento · {passthrough} passthrough',
   'cache.storage': 'Almacenamiento',
@@ -208,6 +210,7 @@ export const es: Messages = {
   'cache.onDisk.text': '{files} archivo(s) con datos en caché, {bytes} · metadatos de {known} archivo(s)',
   'cache.reclaimable': ' · {bytes} recuperables',
   'cache.compact': 'Compactar',
+  'cache.evicted': ' · {n} archivo(s) descartado(s) por el límite en esta sesión',
   'cache.th.file': 'Archivo',
   'cache.th.size': 'Tamaño',
   'cache.th.cached': 'En caché',

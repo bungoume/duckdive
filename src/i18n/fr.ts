@@ -197,6 +197,8 @@ export const fr: Messages = {
     'La livraison de journaux AWS écrit parfois des fichiers gzip qui ne peuvent pas être lus de manière fiable tels quels. Quand cette option est activée, chaque fichier .gz est récupéré une fois à la connexion, corrigé si nécessaire, et conservé dans le cache.',
   'cache.chunkSize': 'Taille de bloc (nouveaux fichiers)',
   'cache.session': 'Cette session',
+  'cache.maxBytes': 'Conserver au plus',
+  'cache.unlimited': 'illimité',
   'cache.session.text':
     "DuckDB a lu {total} : {fromCache} depuis le disque ({ratio}%) · {downloaded} téléchargés depuis l'origine en {misses} blocs · {hits} blocs en cache · {passthrough} passthrough",
   'cache.storage': 'Stockage',
@@ -208,6 +210,7 @@ export const fr: Messages = {
   'cache.onDisk.text': '{files} fichier(s) avec données en cache, {bytes} · métadonnées pour {known} fichier(s)',
   'cache.reclaimable': ' · {bytes} récupérables',
   'cache.compact': 'Compacter',
+  'cache.evicted': ' · {n} fichier(s) évincé(s) pour la limite dans cette session',
   'cache.th.file': 'Fichier',
   'cache.th.size': 'Taille',
   'cache.th.cached': 'En cache',

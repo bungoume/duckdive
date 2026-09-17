@@ -196,6 +196,8 @@ export const de: Messages = {
     'Die AWS-Protokollzustellung schreibt manchmal gzip-Dateien, die sich so nicht zuverlässig lesen lassen. Wenn aktiviert, wird jede .gz-Datei beim Verbinden einmal geladen, bei Bedarf repariert und im Cache behalten.',
   'cache.chunkSize': 'Chunk-Größe (neue Dateien)',
   'cache.session': 'Diese Sitzung',
+  'cache.maxBytes': 'Höchstens behalten',
+  'cache.unlimited': 'unbegrenzt',
   'cache.session.text':
     'DuckDB hat {total} gelesen: {fromCache} von der Festplatte ({ratio}%) · {downloaded} vom Ursprung in {misses} Chunks heruntergeladen · {hits} Chunk-Treffer · {passthrough} Passthrough',
   'cache.storage': 'Speicher',
@@ -207,6 +209,7 @@ export const de: Messages = {
   'cache.onDisk.text': '{files} Datei(en) mit gecachten Daten, {bytes} · Metadaten für {known} Datei(en)',
   'cache.reclaimable': ' · {bytes} freigebbar',
   'cache.compact': 'Verdichten',
+  'cache.evicted': ' · {n} Datei(en) in dieser Sitzung wegen des Limits verworfen',
   'cache.th.file': 'Datei',
   'cache.th.size': 'Größe',
   'cache.th.cached': 'Gecacht',

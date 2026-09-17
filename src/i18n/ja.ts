@@ -192,6 +192,8 @@ export const ja: Messages = {
     'AWS のログ配信では、そのままでは確実に読めない gzip ファイルが書き出されることがあります。有効にすると、各 .gz ファイルを接続時に 1 回取得し、必要なら修復してキャッシュに保持します。',
   'cache.chunkSize': 'チャンクサイズ(新規ファイル)',
   'cache.session': 'このセッション',
+  'cache.maxBytes': '保持上限',
+  'cache.unlimited': '無制限',
   'cache.session.text':
     'DuckDB の読み込み {total}: ディスクから {fromCache}({ratio}%) · オリジンから {downloaded} を {misses} チャンクでダウンロード · チャンクヒット {hits} · パススルー {passthrough}',
   'cache.storage': 'ストレージ',
@@ -203,6 +205,7 @@ export const ja: Messages = {
   'cache.onDisk.text': 'キャッシュ済みデータを持つファイル {files} 件、{bytes} · メタデータ {known} 件',
   'cache.reclaimable': ' · 回収可能 {bytes}',
   'cache.compact': 'コンパクト化',
+  'cache.evicted': ' · 上限のためこのセッションで {n} ファイルを破棄',
   'cache.th.file': 'ファイル',
   'cache.th.size': 'サイズ',
   'cache.th.cached': 'キャッシュ済み',
