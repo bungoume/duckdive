@@ -121,6 +121,10 @@ await step('expand-doc', async () => {
   const pills = await page.locator('.pill').count();
   console.log(`     pills=${pills} hits=${await page.textContent('.hits .n')}`);
   if (!pills) throw new Error('no filter pill');
+  // the first document's level is whatever the random demo data produced ("error" leaves few
+  // rows for the chart steps below): drop the filter again once it has been seen to work
+  await page.click('.filterbar .pill button[title="Remove"]');
+  await settled(page);
 });
 await step('field-sidebar', async () => {
   await page.click('.field-item:has-text("http.method")');
