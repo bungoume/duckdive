@@ -76,8 +76,16 @@ export async function normalizeGzipFiles(
   let next = 0;
   let finished = 0;
   const report = () => opts.onProgress?.(result.skipped + finished, files.length, result.bytes);
+  /**
+   * A terminated worker never calls onmessage or onerror again, so a job that was in flight would
+   * leave its promise pending for good and the whole connect would never settle. Each worker's
+   * reject is kept here and called right after the terminate.
+   */
+  const pending = new Set<(e: Error) => void>();
   const abort = () => {
     for (const w of workers) w.terminate();
+    for (const reject of pending) reject(new DOMException('aborted', 'AbortError'));
+    pending.clear();
   };
   opts.signal?.addEventListener('abort', abort, { once: true });
   try {
@@ -85,9 +93,14 @@ export async function normalizeGzipFiles(
       workers.map(
         (w) =>
           new Promise<void>((resolve, reject) => {
+            pending.add(reject);
+            const settle = (f: () => void) => {
+              pending.delete(reject);
+              f();
+            };
             const pump = () => {
-              if (opts.signal?.aborted) return reject(new DOMException('aborted', 'AbortError'));
-              if (next >= todo.length) return resolve();
+              if (opts.signal?.aborted) return settle(() => reject(new DOMException('aborted', 'AbortError')));
+              if (next >= todo.length) return settle(resolve);
               const f = todo[next++];
               w.onmessage = async (ev: MessageEvent<WorkerReply>) => {
                 const r = ev.data;

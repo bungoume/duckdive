@@ -4,6 +4,8 @@ import { FORMATS, TEMPLATES, detectFormat, resolveFormat } from '../src/formats'
 describe('detectFormat', () => {
   it('recognises the AWS delivery layouts by path', () => {
     expect(detectFormat(['s3://b/AWSLogs/1/elasticloadbalancing/r/2026/09/16/1_elasticloadbalancing_r_app.x.y_20260916T0000Z_1.2.3.4_z.log.gz'])).toBe('alb');
+    // NLB shares the folder but not the columns: reading it with the ALB layout puts "2.0" in a timestamp
+    expect(detectFormat(['s3://b/AWSLogs/1/elasticloadbalancing/r/2026/09/16/1_elasticloadbalancing_r_net.x.y_20260916T0000Z_z.log.gz'])).toBe('csv');
     expect(detectFormat(['s3://b/AWSLogs/1/CloudTrail/r/2026/09/16/1_CloudTrail_r_20260916T0000Z_x.json.gz'])).toBe('cloudtrail');
     expect(detectFormat(['s3://b/AWSLogs/1/vpcflowlogs/r/2026/09/16/1_vpcflowlogs_r_fl-1_20260916T0000Z_h.log.gz'])).toBe('flowlogs');
     expect(detectFormat(['s3://b/cf/E2EXAMPLE12345.2026-09-16-01.abcdef12.gz'])).toBe('cloudfront');

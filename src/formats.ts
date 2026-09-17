@@ -157,7 +157,9 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
     id: 'alb',
     reader: (l, f) => csvFixed(l, f, ALB_COLUMNS, `delim = ' ', quote = '"', escape = '"', timestampformat = '%Y-%m-%dT%H:%M:%S.%fZ'`),
     timeField: 'time',
-    detect: /\/elasticloadbalancing\//,
+    // NLB writes into the same folder with _net. in the name and has other columns entirely,
+    // so the Application Load Balancer is recognised by _app. rather than by the folder
+    detect: /\/elasticloadbalancing\/.*_app\./,
   },
   cloudfront: {
     id: 'cloudfront',
