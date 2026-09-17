@@ -231,7 +231,8 @@ async function initOpfs() {
       slabSize = 0;
       wasted = 0;
     }
-    if (!readOnly && needsCompaction()) await compact();
+    // not awaited: a compaction reads and writes the whole slab, and DuckDB is waiting to start
+    if (!readOnly && needsCompaction()) scheduleCompact();
   } catch (e) {
     opfsError = `OPFS unavailable: ${String(e)}`;
     console.warn('[ddv-cache]', opfsError);
@@ -359,7 +360,7 @@ function enforceLimit(keep: CacheEntry | null) {
   const candidates = [...files.values()].filter((e) => e !== keep && e.chunks.size).map((e) => ({ entry: e, seenAt: e.seenAt, usedAt: e.usedAt, bytes: cachedBytesOf(e) }));
   for (const c of evictionPlan(candidates, liveBytes(), config.maxBytes * 0.8)) {
     dropChunks(c.entry);
-    c.entry.norm = undefined;
+    forgetRepack(c.entry);
     stats.evictions++;
     log({ method: 'EVICT', url: c.entry.key, range: null, outcome: `evicted:${c.bytes}` });
   }
@@ -445,7 +446,7 @@ function storeWhole(
   }
   if (!isComplete(entry)) {
     dropChunks(entry);
-    entry.norm = undefined;
+    forgetRepack(entry);
     return { ok: false, error: 'chunk write failed' };
   }
   stats.bytesDownloaded += norm ? norm.origSize : bytes.byteLength;
@@ -474,6 +475,17 @@ function readChunk(entry: CacheEntry, idx: number): Uint8Array | null {
 function dropChunks(entry: CacheEntry) {
   wasted += cachedBytesOf(entry);
   entry.chunks.clear();
+}
+
+/**
+ * Drop a re-packed copy and go back to describing the object as the origin has it. `size` is the
+ * re-packed size while `norm` is set, so clearing the one without restoring the other would leave
+ * the entry claiming a length the origin does not have: the synthesized HEAD and every range
+ * request after it would then read the first `size` bytes of a longer file and quietly lose rows.
+ */
+function forgetRepack(entry: CacheEntry) {
+  if (entry.norm) entry.size = entry.norm.origSize;
+  entry.norm = undefined;
 }
 
 function resetEntry(entry: CacheEntry, size: number, etag: string) {
@@ -512,6 +524,8 @@ async function purgeEntry(key: string): Promise<boolean> {
 }
 
 async function clearAll() {
+  // a compaction holds a snapshot of the chunk table and writes it back when it finishes
+  await settleCompaction();
   files.clear();
   wasted = 0;
   slabSize = 0;
@@ -532,15 +546,21 @@ async function clearAll() {
 }
 
 /** Rewrite the slab with only the referenced chunks. */
+let compactRun: Promise<void> | null = null;
+
 async function compact(): Promise<void> {
-  if (!dir || !slab || compacting) return;
+  if (!dir || !slab) return;
+  if (compactRun) return compactRun;
   compacting = true;
-  try {
-    await compactSlab();
-  } finally {
+  compactRun = compactSlab().finally(() => {
     compacting = false;
-  }
+    compactRun = null;
+  });
+  return compactRun;
 }
+
+/** Wait for a running compaction: it closes the slab for a moment and moves every chunk. */
+const settleCompaction = (): Promise<void> => compactRun ?? Promise.resolve();
 
 async function compactSlab(): Promise<void> {
   if (!dir || !slab) return;
@@ -586,9 +606,12 @@ async function compactSlab(): Promise<void> {
     }
     slab = await openShared(await dir.getFileHandle('slab.bin', { create: true }));
     if (slab.getSize() < pos) throw new Error('compacted slab is shorter than expected');
-    for (const [e, refs] of moved) e.chunks = refs;
+    // The slab was closed while the new one was moved into place, and the messages handled in
+    // that window can drop chunks (an eviction, a changed ETag, a purge). Such an entry has an
+    // empty chunk table now, and handing it the snapshot back would resurrect what was dropped.
+    for (const [e, refs] of moved) if (e.chunks.size === refs.size) e.chunks = refs;
     slabSize = pos;
-    wasted = 0;
+    wasted = pos - [...files.values()].reduce((a, e) => a + cachedBytesOf(e), 0);
     await saveIndex();
   } catch (e) {
     console.warn('[ddv-cache] compaction failed; keeping the old layout', e);
@@ -689,12 +712,19 @@ function handleRangeGet(url: string, headers: HeaderMap, rangeHeader: string, re
     let fromCache = true;
     if (!buf && entry.norm) {
       // a re-packed copy lost a chunk: the origin cannot fill the hole (different bytes / offsets)
-      log({ method: 'GET', url, range: rangeHeader, outcome: 'repacked-copy-incomplete' });
-      dropChunks(entry);
-      entry.norm = undefined;
-      scheduleSaveIndex();
+      log({ method: 'GET', url, range: rangeHeader, outcome: compacting ? 'repacked-copy-busy' : 'repacked-copy-incomplete' });
+      // … unless a compaction has the slab closed for a moment: then the copy is only unreachable
+      if (!compacting) {
+        dropChunks(entry);
+        forgetRepack(entry);
+        scheduleSaveIndex();
+      }
       const h: HeaderMap = { 'content-type': 'text/plain', 'x-ddv-cache': 'error' };
-      const msg = new TextEncoder().encode('Duckdive: the re-packed copy of this gzip file was lost from the local cache; reconnect the data source to rebuild it.');
+      const msg = new TextEncoder().encode(
+        compacting
+          ? 'Duckdive: the local cache is being compacted and this file is unreachable for a moment; run the query again.'
+          : 'Duckdive: the re-packed copy of this gzip file was lost from the local cache; reconnect the data source to rebuild it.',
+      );
       return { status: 503, statusText: 'Service Unavailable', headers: h, rawHeaders: 'content-type: text/plain\r\n', body: msg.buffer };
     }
     if (!buf) {

@@ -165,6 +165,24 @@ export async function exec(sql: string): Promise<void> {
 }
 
 /**
+ * Run the statements back to back with nothing else in between. Settings that belong together
+ * (the three parts of an S3 credential) have to arrive as one step: a query that slipped between
+ * two of them would sign with a key id that does not go with the secret and get a 403.
+ */
+export async function execAll(sqls: string[], onFail?: (index: number, e: unknown) => Error): Promise<void> {
+  await enqueue(async () => {
+    const c = getConn();
+    for (let i = 0; i < sqls.length; i++) {
+      try {
+        await c.query(sqls[i]);
+      } catch (e) {
+        throw onFail ? onFail(i, e) : e;
+      }
+    }
+  });
+}
+
+/**
  * Abandon every query that is running or queued (e.g. before the source view is replaced):
  * queued ones are rejected, the running one is interrupted between execution steps.
  */

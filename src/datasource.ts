@@ -2,7 +2,7 @@ import type { AwsCredentials } from './auth';
 import { t } from './i18n';
 import { cacheSeed, fmtBytes, type SeedFile } from './cache';
 import { normalizationAvailable, normalizeGzipFiles, type NormalizeFile } from './gznorm';
-import { DataProtocol, exec, getDB, query } from './duck';
+import { DataProtocol, exec, execAll, getDB, query } from './duck';
 import { describeError } from './errors';
 import { CancelledError, throwIfAborted } from './net';
 import { originPattern } from './permissions';
@@ -142,13 +142,11 @@ export async function applyS3(cfg: SourceConfig, creds: AwsCredentials | null = 
   stmts.push(['s3_secret_access_key', creds?.secretAccessKey ?? (useStatic ? (s.secretAccessKey ?? '') : '')]);
   stmts.push(['s3_session_token', creds?.sessionToken ?? (useStatic ? (s.sessionToken ?? '') : '')]);
   stmts.push(['s3_endpoint', s3EndpointFor(s)]);
-  for (const [k, v] of stmts) {
-    try {
-      await exec(`SET ${k}=${lit(v)}`);
-    } catch (e) {
-      throw new Error(t('src.applyFailed', { key: k, error: describeError(e) }), { cause: e });
-    }
-  }
+  // one step: a query between the key id and the secret would sign with a mismatched pair
+  await execAll(
+    stmts.map(([k, v]) => `SET ${k}=${lit(v)}`),
+    (i, e) => new Error(t('src.applyFailed', { key: stmts[i][0], error: describeError(e) }), { cause: e }),
+  );
 }
 
 export interface TimeWindow {
