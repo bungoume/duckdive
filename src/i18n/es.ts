@@ -206,6 +206,8 @@ export const es: Messages = {
   'cache.intro':
     'Los datos leídos una vez se conservan en este equipo, de modo que las consultas repetidas no vuelven a descargarlos. Solo se obtienen las partes que nunca se leyeron. La copia se descarta cuando el archivo cambia en el almacenamiento.',
   'cache.opfsDisabled': '{error} – la caché está desactivada, cada lectura va al origen.',
+  'cache.readOnly':
+    'Otra pestaña de Duckdive tiene la caché: esta pestaña lee lo que hay almacenado y descarga el resto sin conservarlo. Los ajustes y el vaciado de la caché se hacen en aquella pestaña.',
   'cache.enable': 'Activar la caché de rangos',
   'cache.repack': 'Reempaquetar los archivos gzip concatenados al conectar',
   'cache.repack.title':

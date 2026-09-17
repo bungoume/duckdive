@@ -204,6 +204,7 @@ export const de: Messages = {
   'cache.intro':
     'Einmal gelesene Daten bleiben auf diesem Rechner, sodass wiederholte Abfragen sie nicht erneut herunterladen. Nur nie gelesene Teile werden abgerufen. Die Kopie wird verworfen, wenn sich die Datei im Speicher ändert.',
   'cache.opfsDisabled': '{error} – Caching ist deaktiviert, jeder Lesezugriff geht an den Ursprung.',
+  'cache.readOnly': 'Ein anderer Duckdive-Tab hält den Cache: dieser Tab liest, was dort liegt, und lädt den Rest herunter, ohne ihn zu behalten. Cache-Einstellungen und Leeren gehören in jenen Tab.',
   'cache.enable': 'Range-Cache aktivieren',
   'cache.repack': 'Verkettete gzip-Dateien beim Verbinden neu packen',
   'cache.repack.title':

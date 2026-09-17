@@ -200,6 +200,7 @@ export const ja: Messages = {
   'cache.title': 'Local range cache',
   'cache.intro': '一度読み込んだデータはこのマシンに保持され、同じクエリを繰り返しても再ダウンロードしません。未読の部分だけを取得します。ストレージ上のファイルが変わるとコピーは破棄されます。',
   'cache.opfsDisabled': '{error} – キャッシュは無効です。すべての読み込みはオリジンに送られます。',
+  'cache.readOnly': '別の Duckdive タブがキャッシュを保持しています。このタブは保存済みのデータを読み、足りない分は保存せずにダウンロードします。キャッシュの設定やクリアはそのタブで行ってください。',
   'cache.enable': '範囲キャッシュを有効にする',
   'cache.repack': '接続時に連結 gzip ファイルを再パックする',
   'cache.repack.title':

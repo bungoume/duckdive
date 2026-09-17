@@ -140,6 +140,12 @@ const extFiles = new Map<string, ExtEntry>();
 let root: FileSystemDirectoryHandle | null = null;
 let dir: FileSystemDirectoryHandle | null = null;
 let opfsError: string | null = null;
+/**
+ * Another tab owns the cache: this worker opened the slab read-only, serves what the index
+ * lists (re-read every few seconds) and downloads the rest without keeping it. Nothing is written.
+ */
+let readOnly = false;
+const INDEX_RELOAD_MS = 5000;
 let indexSaveTimer: ReturnType<typeof setTimeout> | null = null;
 /** when the index first became dirty since the last save (0 = clean) */
 let indexDirtySince = 0;
@@ -177,15 +183,23 @@ async function initOpfs() {
         })
         .catch(() => resolve(false));
     });
-    if (!locked) {
-      opfsError = 'The range cache is in use by another Duckdive tab; this tab reads from the origin directly.';
-      console.warn('[ddv-cache]', opfsError);
-      return;
-    }
     root = await navigator.storage.getDirectory();
     dir = await root.getDirectoryHandle(DIR, { create: true });
+    if (!locked) {
+      // Share the owner's slab. Handles share a file only in the same mode, and the owner writes,
+      // so both sides open "readwrite-unsafe" (Chrome 121+); the Web Lock keeps this side from writing.
+      try {
+        slab = await openSync(await dir.getFileHandle('slab.bin', { create: true }), 'readwrite-unsafe');
+        readOnly = true;
+        setInterval(() => void reloadIndex(), INDEX_RELOAD_MS);
+      } catch {
+        opfsError = 'The range cache is in use by another Duckdive tab; this tab reads from the origin directly.';
+        console.warn('[ddv-cache]', opfsError);
+        return;
+      }
+    }
     // layout v1 kept one OPFS file per cached file; drop it
-    await dir.removeEntry('files', { recursive: true }).catch(() => undefined);
+    if (!readOnly) await dir.removeEntry('files', { recursive: true }).catch(() => undefined);
     let index: Index | null = null;
     try {
       const fh = await dir.getFileHandle('index.json');
@@ -193,7 +207,7 @@ async function initOpfs() {
     } catch {
       index = null;
     }
-    slab = await (await dir.getFileHandle('slab.bin', { create: true })).createSyncAccessHandle();
+    if (!slab) slab = await openShared(await dir.getFileHandle('slab.bin', { create: true }));
     const actual = slab.getSize();
     if (index && index.version === INDEX_VERSION) {
       config.enabled = index.config?.enabled ?? true;
@@ -212,16 +226,59 @@ async function initOpfs() {
         extFiles.set(url, rec);
         void openExt(rec);
       }
-    } else {
+    } else if (!readOnly) {
       slab.truncate(0);
       slabSize = 0;
       wasted = 0;
     }
-    if (needsCompaction()) await compact();
+    if (!readOnly && needsCompaction()) await compact();
   } catch (e) {
     opfsError = `OPFS unavailable: ${String(e)}`;
     console.warn('[ddv-cache]', opfsError);
   }
+}
+
+/** A sync access handle in the given mode (the mode option is a Chrome 121+ addition that lib.dom does not declare). */
+function openSync(fh: FileSystemFileHandle, mode: 'readwrite' | 'readwrite-unsafe'): Promise<FileSystemSyncAccessHandle> {
+  return (fh as unknown as { createSyncAccessHandle(o?: { mode: string }): Promise<FileSystemSyncAccessHandle> }).createSyncAccessHandle({ mode });
+}
+
+/** The owner's handle: shareable with other tabs' readers where the browser allows it, exclusive otherwise. */
+async function openShared(fh: FileSystemFileHandle): Promise<FileSystemSyncAccessHandle> {
+  try {
+    return await openSync(fh, 'readwrite-unsafe');
+  } catch {
+    return fh.createSyncAccessHandle();
+  }
+}
+
+/**
+ * Read-only tabs: take the owner's index again so chunks it wrote (or moved by compaction) are
+ * found. A half-written index does not parse and is tried again next time; entries this tab
+ * created from its own HEADs keep their metadata, only the chunk maps are replaced.
+ */
+async function reloadIndex(): Promise<void> {
+  if (!dir || !readOnly) return;
+  let index: Index;
+  try {
+    index = JSON.parse(await (await (await dir.getFileHandle('index.json')).getFile()).text());
+  } catch {
+    return;
+  }
+  if (index.version !== INDEX_VERSION) return;
+  slabSize = index.slabSize ?? slabSize;
+  const listed = new Set<string>();
+  for (const meta of Object.values(index.files)) {
+    listed.add(meta.key);
+    const entry = files.get(meta.key) ?? newEntry(meta);
+    entry.chunks = new Map();
+    for (const [i, off, len, sum] of meta.chunks ?? []) if (off + len <= slabSize) entry.chunks.set(i, { off, len, sum: sum ?? 0 });
+    entry.size = meta.size;
+    entry.etag = meta.etag;
+    entry.norm = meta.norm;
+    files.set(meta.key, entry);
+  }
+  for (const [k, e] of files) if (!listed.has(k)) e.chunks.clear();
 }
 
 function newEntry(meta: FileMeta): CacheEntry {
@@ -235,7 +292,7 @@ async function openExt(rec: ExtEntry): Promise<void> {
     try {
       const extDir = await dir!.getDirectoryHandle('ext', { create: true });
       const fh = await extDir.getFileHandle(rec.name, { create: true });
-      rec.handle = await fh.createSyncAccessHandle();
+      rec.handle = await openShared(fh);
     } catch (e) {
       console.warn('[ddv-cache] failed to open extension cache', e);
     } finally {
@@ -251,7 +308,7 @@ async function openExt(rec: ExtEntry): Promise<void> {
  * the last save unreferenced (wasted slab space), so the delay is capped as well.
  */
 function scheduleSaveIndex() {
-  if (!dir) return;
+  if (!dir || readOnly) return;
   const now = Date.now();
   if (!indexDirtySince) indexDirtySince = now;
   if (indexSaveTimer) clearTimeout(indexSaveTimer);
@@ -261,7 +318,7 @@ function scheduleSaveIndex() {
 
 /** Persist the chunk map (only files that actually hold data; seeded metadata is transient). */
 async function saveIndex() {
-  if (!dir) return;
+  if (!dir || readOnly) return;
   if (indexSaveTimer) clearTimeout(indexSaveTimer);
   indexSaveTimer = null;
   indexDirtySince = 0;
@@ -330,7 +387,7 @@ function scheduleCompact() {
 }
 
 function writeChunk(entry: CacheEntry, idx: number, buf: Uint8Array) {
-  if (!slab) return;
+  if (!slab || readOnly) return;
   try {
     const off = slabSize;
     slab.write(buf, { at: off });
@@ -370,6 +427,7 @@ function storeWhole(
   norm: { origSize: number } | undefined,
 ): { ok: true; chunks: number } | { ok: false; error: string } {
   if (!slab) return { ok: false, error: opfsError ?? 'cache storage unavailable' };
+  if (readOnly) return { ok: false, error: 'the cache is read-only in this tab' };
   if (!bytes.byteLength) return { ok: false, error: 'empty body' };
   const key = cacheKey(url);
   let entry = files.get(key);
@@ -488,7 +546,7 @@ async function compactSlab(): Promise<void> {
   if (!dir || !slab) return;
   try {
     const tmpFh = await dir.getFileHandle('slab.tmp', { create: true });
-    const tmp = await tmpFh.createSyncAccessHandle();
+    const tmp = await openShared(tmpFh);
     tmp.truncate(0);
     let pos = 0;
     // new offsets are kept aside until the new slab is in place
@@ -513,8 +571,8 @@ async function compactSlab(): Promise<void> {
       await mover.move('slab.bin');
     } else {
       // no rename support: copy back through the old file
-      const dst = await (await dir.getFileHandle('slab.bin', { create: true })).createSyncAccessHandle();
-      const src = await tmpFh.createSyncAccessHandle();
+      const dst = await openShared(await dir.getFileHandle('slab.bin', { create: true }));
+      const src = await openShared(tmpFh);
       dst.truncate(0);
       const buf = new Uint8Array(4 * 1024 * 1024);
       for (let at = 0; at < pos; at += buf.byteLength) {
@@ -526,7 +584,7 @@ async function compactSlab(): Promise<void> {
       src.close();
       await dir.removeEntry('slab.tmp').catch(() => undefined);
     }
-    slab = await (await dir.getFileHandle('slab.bin', { create: true })).createSyncAccessHandle();
+    slab = await openShared(await dir.getFileHandle('slab.bin', { create: true }));
     if (slab.getSize() < pos) throw new Error('compacted slab is shorter than expected');
     for (const [e, refs] of moved) e.chunks = refs;
     slabSize = pos;
@@ -534,7 +592,7 @@ async function compactSlab(): Promise<void> {
     await saveIndex();
   } catch (e) {
     console.warn('[ddv-cache] compaction failed; keeping the old layout', e);
-    if (!slab) slab = await (await dir.getFileHandle('slab.bin', { create: true })).createSyncAccessHandle().catch(() => null);
+    if (!slab) slab = await openShared(await dir.getFileHandle('slab.bin', { create: true })).catch(() => null);
     await dir.removeEntry('slab.tmp').catch(() => undefined);
   }
 }
@@ -739,7 +797,7 @@ function handleExtensionGet(url: string, headers: HeaderMap): NativeResult {
     }
   }
   const res = nativeSync('GET', url, headers, true, WHOLE_FILE_TIMEOUT_MS);
-  if (res.status === 200 && res.body && dir) {
+  if (res.status === 200 && res.body && dir && !readOnly) {
     const body = new Uint8Array(res.body.slice(0));
     let entry = rec;
     if (!entry) {
@@ -948,7 +1006,7 @@ async function handleControl(data: unknown, reply: (payload: Record<string, unkn
           filesStat[k] = e.stat;
           if (++n >= 200) break;
         }
-        reply({ ok: true, stats: { ...stats, files: filesStat }, config: { ...config, concurrency: 1 }, opfsError });
+        reply({ ok: true, stats: { ...stats, files: filesStat }, config: { ...config, concurrency: 1 }, opfsError, readOnly });
         break;
       }
       case 'config': {
@@ -978,18 +1036,21 @@ async function handleControl(data: unknown, reply: (payload: Record<string, unkn
         break;
       }
       case 'purge':
+        if (readOnly) throw new Error('the cache is read-only in this tab');
         reply({ ok: true, removed: (await purgeEntry(cacheKey(String(rest.url)))) ? 1 : 0 });
         break;
       case 'compact':
+        if (readOnly) throw new Error('the cache is read-only in this tab');
         await compact();
         reply({ ok: true, slabSize, wasted });
         break;
       case 'clear':
+        if (readOnly) throw new Error('the cache is read-only in this tab');
         await clearAll();
         reply({ ok: true });
         break;
       case 'ping':
-        reply({ ok: true, opfsError });
+        reply({ ok: true, opfsError, readOnly });
         break;
       case 'store': {
         // a complete copy of an object fetched by the page (possibly re-packed): see src/gznorm.ts

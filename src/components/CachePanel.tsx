@@ -38,6 +38,7 @@ export function CachePanel() {
   const [est, setEst] = useState<{ usage: number; quota: number; persisted: boolean } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [opfsError, setOpfsError] = useState<string | null>(null);
+  const [readOnly, setReadOnly] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -45,6 +46,7 @@ export function CachePanel() {
       setStats(s.stats);
       setConfig(s.config);
       setOpfsError(s.opfsError);
+      setReadOnly(s.readOnly);
       setFiles(f.files);
       setSummary(f.summary);
       setEst(e);
@@ -80,6 +82,7 @@ export function CachePanel() {
       <p class="hint">{t('cache.intro')}</p>
       {err && <div class="alert error">{err}</div>}
       {opfsError && <div class="alert error">{t('cache.opfsDisabled', { error: opfsError })}</div>}
+      {readOnly && <div class="alert info cache-readonly">{t('cache.readOnly')}</div>}
       {config && (
         <>
           <div class="grid2 mb8">

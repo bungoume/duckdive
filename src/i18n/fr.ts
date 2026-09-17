@@ -205,6 +205,8 @@ export const fr: Messages = {
   'cache.intro':
     'Les données lues une fois sont conservées sur cette machine, de sorte que les requêtes répétées ne les téléchargent plus. Seules les parties jamais lues sont récupérées. La copie est supprimée quand le fichier change dans le stockage.',
   'cache.opfsDisabled': "{error} – le cache est désactivé, chaque lecture va à l'origine.",
+  'cache.readOnly':
+    'Un autre onglet Duckdive détient le cache : cet onglet lit ce qui y est stocké et télécharge le reste sans le conserver. Les réglages et le vidage du cache se font dans cet autre onglet.',
   'cache.enable': 'Activer le cache de plages',
   'cache.repack': 'Ré-empaqueter les fichiers gzip concaténés à la connexion',
   'cache.repack.title':

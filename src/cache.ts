@@ -91,7 +91,7 @@ function send<T>(msg: Record<string, unknown>, timeoutMs = 5000, transfer: Trans
   });
 }
 
-export const cachePing = () => send<{ opfsError: string | null }>({ type: 'ping' }, 15000);
+export const cachePing = () => send<{ opfsError: string | null; readOnly: boolean }>({ type: 'ping' }, 15000);
 export interface SeedFile {
   url: string;
   size: number;
@@ -109,7 +109,8 @@ export const cacheStore = (f: { url: string; etag: string; lastModified?: string
 export const cacheCached = (urls: string[]) => send<{ cached: string[] }>({ type: 'cached', urls }, 30000);
 /** URLs among `files` that are already completely cached with the same ETag. */
 export const cacheComplete = (files: { url: string; etag: string }[]) => send<{ complete: string[] }>({ type: 'complete', files }, 30000);
-export const cacheStats = () => send<{ stats: CacheStats; config: CacheConfig; opfsError: string | null }>({ type: 'stats' });
+/** `readOnly`: another tab owns the cache; this one reads it and keeps nothing. */
+export const cacheStats = () => send<{ stats: CacheStats; config: CacheConfig; opfsError: string | null; readOnly: boolean }>({ type: 'stats' });
 export interface CacheSummary {
   /** files with known metadata (seeded from listings or HEADs) */
   known: number;

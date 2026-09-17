@@ -196,6 +196,7 @@ export const zh_CN: Messages = {
   'cache.title': '本地范围缓存',
   'cache.intro': '读取过一次的数据会保存在本机，重复查询不会再次下载。只会获取从未读取过的部分。当存储中的文件发生变化时，副本会被丢弃。',
   'cache.opfsDisabled': '{error} – 缓存已禁用，每次读取都会访问源站。',
+  'cache.readOnly': '另一个 Duckdive 标签页持有缓存：此标签页读取已存储的数据，缺少的部分直接下载而不保存。缓存设置和清除请在那个标签页进行。',
   'cache.enable': '启用范围缓存',
   'cache.repack': '连接时重新打包拼接的 gzip 文件',
   'cache.repack.title': 'AWS 日志投递有时会写出无法按原样可靠读取的 gzip 文件。启用后，每个 .gz 文件会在连接时获取一次，按需修复，并保存在缓存中。',

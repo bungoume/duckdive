@@ -204,6 +204,7 @@ export const en = {
   'cache.intro':
     'Data that has been read once is kept on this machine, so repeated queries do not download it again. Only parts that were never read are fetched. The copy is discarded when the file changes in storage.',
   'cache.opfsDisabled': '{error} – caching is disabled, every read goes to the origin.',
+  'cache.readOnly': 'Another Duckdive tab holds the cache: this tab reads what it has stored and downloads the rest without keeping it. Cache settings and clearing belong to that tab.',
   'cache.enable': 'Enable range cache',
   'cache.repack': 'Re-pack concatenated gzip files at connect',
   'cache.repack.title':

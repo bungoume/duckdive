@@ -52,6 +52,7 @@ export async function normalizationAvailable(): Promise<{ ok: boolean; reason: s
     if (!s.config.enabled) return { ok: false, reason: 'range cache disabled' };
     if (!s.config.normalizeGzip) return { ok: false, reason: 'gzip re-packing disabled' };
     if (s.opfsError) return { ok: false, reason: s.opfsError };
+    if (s.readOnly) return { ok: false, reason: 'the cache is read-only in this tab (another tab holds it)' };
     return { ok: true, reason: null };
   } catch (e) {
     return { ok: false, reason: describeError(e) };

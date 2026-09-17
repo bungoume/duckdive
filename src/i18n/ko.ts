@@ -200,6 +200,7 @@ export const ko: Messages = {
   'cache.title': '로컬 범위 캐시',
   'cache.intro': '한 번 읽은 데이터는 이 컴퓨터에 보관되어 반복 쿼리 시 다시 다운로드하지 않습니다. 읽은 적 없는 부분만 가져옵니다. 스토리지에서 파일이 바뀌면 사본은 폐기됩니다.',
   'cache.opfsDisabled': '{error} – 캐시가 비활성화되어 모든 읽기가 원본으로 갑니다.',
+  'cache.readOnly': '다른 Duckdive 탭이 캐시를 보유하고 있습니다. 이 탭은 저장된 데이터를 읽고 나머지는 저장하지 않고 다운로드합니다. 캐시 설정과 지우기는 그 탭에서 하세요.',
   'cache.enable': '범위 캐시 사용',
   'cache.repack': '연결 시 연결된(concatenated) gzip 파일 다시 압축',
   'cache.repack.title': 'AWS 로그 전송은 때때로 그대로는 안정적으로 읽을 수 없는 gzip 파일을 씁니다. 활성화하면 각 .gz 파일을 연결 시 한 번 가져와 필요하면 수정한 뒤 캐시에 보관합니다.',

@@ -328,6 +328,8 @@ const openSource = async () => {
   await page.goto(base + '#/source');
   await waitReady(page);
   await page.waitForSelector('.source-page');
+  // every section works with URL sources; the form may be on another kind when a section runs alone (SECTIONS=…)
+  await page.click('.kinds button:has-text("S3 / HTTPS URL")');
 };
 const runQuery = async (q) => {
   await page.fill('.qinput input', q);
@@ -458,6 +460,32 @@ await section('opfs-and-http-parquet', async () => {
   const row = await page.textContent('table.data tbody tr');
   check('cache panel lists file', row.includes('logs.parquet'), row.replace(/\s+/g, ' ').trim());
   await page.screenshot({ path: `${out}/21-cache-panel.png` });
+});
+
+await section('second-tab', async () => {
+  // A second tab cannot own the cache (the first holds the lock) but opens the slab read-only:
+  // it serves the chunks the first tab stored and keeps nothing of its own downloads.
+  const tab2 = await context.newPage();
+  await tab2.goto(base);
+  await waitReady(tab2);
+  await tab2.waitForSelector('.hits .n', { timeout: 120000 });
+  await settled(tab2);
+  const ping = await tab2.evaluate(() => window.__ddv.cachePing());
+  const s2 = await tab2.evaluate(() => window.__ddv.cacheStats().then((r) => r.stats));
+  check(
+    'second tab shares the cache read-only',
+    ping.readOnly === true && !ping.opfsError && s2.bytesFromCache > 0,
+    `readOnly=${ping.readOnly} error=${ping.opfsError} cache=${s2.bytesFromCache} network=${s2.bytesFromNetwork}`,
+  );
+  const stored = await tab2.evaluate(() => window.__ddv.cacheFiles({ all: true }).then((r) => r.summary));
+  const ownTotal = (await swStats()).bytesFromCache;
+  await tab2.goto(base + '#/source');
+  await tab2.waitForSelector('.cache-readonly', { timeout: 30000 });
+  check('second tab says so on the Data source page', true, `index lists ${stored.cachedFiles} file(s); first tab served ${ownTotal} B from cache`);
+  await tab2.close();
+  // the first tab still owns the cache
+  const ping1 = await page.evaluate(() => window.__ddv.cachePing());
+  check('first tab still owns the cache', ping1.readOnly === false && !ping1.opfsError, `readOnly=${ping1.readOnly}`);
 });
 
 await section('cache-disabled', async () => {
@@ -606,8 +634,8 @@ await section('named-wildcards', async () => {
   await page.click('.quick-grid button:has-text("Last 7 days")');
   await settled(page);
   await openSource();
-  await page.selectOption('.source-page .field-row:has-text("Authentication") select', 'static');
   await page.fill('.source-page textarea', 's3://bucket/AWSLogs/{account}/elasticloadbalancing/{region}/{yyyy}/{MM}/{dd}/{account}_elasticloadbalancing_{region}_app.{alb}.*.log.gz');
+  await page.selectOption('.source-page .field-row:has-text("Authentication") select', 'static');
   await page.click('.source-page button:has-text("connect")');
   await page.waitForSelector('.variables-box .var-values', { timeout: 60000 });
   const varsText = (await page.textContent('.variables-box')).replace(/\s+/g, ' ');
@@ -683,8 +711,8 @@ await section('date-tokens', async () => {
   await page.click('.quick-grid button:has-text("Last 7 days")');
   await settled(page);
   await openSource();
-  await page.selectOption('.source-page .field-row:has-text("Authentication") select', 'static');
   await page.fill('.source-page textarea', 's3://bucket/AWSLogs/123456789012/parquet/ap-northeast-1/{yyyy}/{MM}/{dd}/*.parquet');
+  await page.selectOption('.source-page .field-row:has-text("Authentication") select', 'static');
   await page.selectOption('.source-page .field-row:has-text("Format") select', 'auto');
   await page.click('.source-page button:has-text("Connect")');
   await page.waitForFunction(() => [...document.querySelectorAll('.alert.ok')].some((e) => /matched/.test(e.textContent ?? '')) || document.querySelector('.alert.error'), null, { timeout: 60000 });
