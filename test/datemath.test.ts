@@ -44,6 +44,23 @@ describe('parseDateMath', () => {
     expect(parseDateMath('now/d', true, now)?.toISOString()).toBe('2026-09-16T14:59:59.999Z');
   });
 
+  it('rounds the current hour around itself where the clocks go back', () => {
+    updateSettings({ timeZone: 'America/New_York' });
+    const repeated = new Date('2026-11-01T06:30:00.000Z'); // 01:30 EST, the second time round
+    expect(parseDateMath('now/h', false, repeated)?.toISOString()).toBe('2026-11-01T06:00:00.000Z');
+    expect(parseDateMath('now/h', true, repeated)?.toISOString()).toBe('2026-11-01T06:59:59.999Z');
+    expect(parseDateMath('now/m', false, repeated)?.toISOString()).toBe('2026-11-01T06:30:00.000Z');
+    // the first 01:30, an hour earlier, rounds to its own hour
+    expect(parseDateMath('now/h', false, new Date('2026-11-01T05:30:00.000Z'))?.toISOString()).toBe('2026-11-01T05:00:00.000Z');
+    // and a day is still 25 hours long there
+    expect(parseDateMath('now/d', false, repeated)?.toISOString()).toBe('2026-11-01T04:00:00.000Z');
+  });
+
+  it('rounds the hour on the zone offset, half-hour zones included', () => {
+    updateSettings({ timeZone: 'Asia/Kolkata' }); // +05:30
+    expect(parseDateMath('now/h', false, new Date('2026-09-16T10:31:00.000Z'))?.toISOString()).toBe('2026-09-16T10:30:00.000Z');
+  });
+
   it('accepts absolute timestamps and rejects garbage', () => {
     expect(parseDateMath('2026-09-01T00:00:00Z')?.toISOString()).toBe('2026-09-01T00:00:00.000Z');
     expect(parseDateMath('now-3x')).toBeNull();

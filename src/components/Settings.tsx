@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { makeBackup, parseBackup, restoreBackup } from '../backup';
 import { describeError } from '../errors';
 import { downloadBlob } from '../export';
@@ -87,11 +87,9 @@ export function Settings() {
   const [draft, setDraft] = useState<Draft>(() => draftOf(getSettings()));
   const [errors, setErrors] = useState<Errors>({});
   const [saved, setSaved] = useState(false);
-  // a reset (or a change from elsewhere) refreshes the form
-  useEffect(() => {
-    setDraft(draftOf(settings));
-    setErrors({});
-  }, [settings]);
+  // The text fields are not refreshed from the settings while they are being edited. Theme, the
+  // first day of the week and the size formatting apply as they are chosen, and each of those
+  // used to throw away whatever was half-typed in the date format or the quick-range JSON.
   const set = (p: Partial<Draft>) => {
     setDraft({ ...draft, ...p });
     setSaved(false);
@@ -113,9 +111,19 @@ export function Settings() {
     }
     setErrors({});
     updateSettings(r.value);
+    // show what was stored, formatted the way it is stored
+    setDraft(draftOf(getSettings()));
     setSaved(true);
   };
-  const days = weekdayNames(lang);
+  const reset = () => {
+    resetSettings();
+    setDraft(draftOf(DEFAULT_SETTINGS));
+    setErrors({});
+    setSaved(false);
+  };
+  // both are steady lists, and the clock below re-renders this page every second
+  const days = useMemo(() => weekdayNames(lang), [lang]);
+  const zones = useMemo(zoneNames, []);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [restoreMsg, setRestoreMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -172,7 +180,7 @@ export function Settings() {
           <FormField label={t('settings.timeZone')}>
             <input class="input mono" list="ddv-timezones" value={draft.timeZone} onInput={(e) => set({ timeZone: e.currentTarget.value })} placeholder={browserZone()} />
             <datalist id="ddv-timezones">
-              {zoneNames().map((z) => (
+              {zones.map((z) => (
                 <option value={z} />
               ))}
             </datalist>
@@ -200,7 +208,7 @@ export function Settings() {
         </FormField>
         <div class="row end" style="gap:10px;align-items:center">
           {saved && !dirty && <span class="hint">{t('settings.saved')}</span>}
-          <button class="btn" onClick={resetSettings}>
+          <button class="btn" onClick={reset}>
             {t('settings.reset')}
           </button>
           <button class="btn primary" disabled={!dirty} onClick={save}>

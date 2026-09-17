@@ -933,6 +933,11 @@ class CachingXHR {
       else this.result = handleExtensionGet(this.url, this.reqHeaders);
       this.describe(entry);
     } catch (e) {
+      // A request that failed on the network already waited out its deadline; asking for the same
+      // thing again would only double the wait, with the worker and every queued query blocked
+      // meanwhile. Let it through as the IO error a plain XHR would have raised. The fallback is
+      // for a bug in the handling above, which is what the cache has to stay out of the way of.
+      if (e instanceof DOMException) throw e;
       console.warn('[ddv-cache] falling back to network', e);
       entry.outcome = `handler-error:${String(e).slice(0, 80)}`;
       stats.passthrough++;

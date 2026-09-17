@@ -24,18 +24,18 @@ function bounds(d: Date, unit: string, tz: string): [Date, Date] | null {
   const p = zonedParts(d, tz);
   const w: WallTime = { year: p.year, month: p.month, day: p.day, hour: p.hour, minute: p.minute, second: p.second, ms: 0 };
   switch (unit) {
-    case 's': {
-      const start = zonedToUtc(w, tz);
-      return [start, new Date(start.getTime() + 1000)];
-    }
-    case 'm': {
-      const start = zonedToUtc({ ...w, second: 0 }, tz);
-      return [start, new Date(start.getTime() + 60_000)];
-    }
+    case 's':
+    case 'm':
     case 'h':
     case 'H': {
-      const start = zonedToUtc({ ...w, minute: 0, second: 0 }, tz);
-      return [start, new Date(start.getTime() + 3_600_000)];
+      // Rounded on the instant, with the offset in force at `d`. Through the wall clock it would
+      // be ambiguous where the clocks go back: 01:30 happens twice and zonedToUtc answers with
+      // the first one, so now/h landed an hour before now and the range now/h … now, which is
+      // meant to be the current hour, did not contain now.
+      const ms = UNIT_MS[unit];
+      const off = p.offset * 60_000;
+      const start = Math.floor((d.getTime() + off) / ms) * ms - off;
+      return [new Date(start), new Date(start + ms)];
     }
     case 'd': {
       const s = { ...w, hour: 0, minute: 0, second: 0 };
