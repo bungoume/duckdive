@@ -51,9 +51,11 @@ interface FileMeta {
  * HEAD requests are answered locally while the file's metadata is this fresh. Metadata comes
  * from the page's ListObjectsV2 results (seeded before the view is created) or from a real
  * HEAD; duckdb-wasm issues one HEAD per file every time the view is bound, so without this a
- * 10,000-file source costs 10,000 sequential requests per query.
+ * 10,000-file source costs 10,000 sequential requests per query. A long window is safe: every
+ * chunk GET checks the ETag, and an object replaced meanwhile resets its entry (new size and
+ * ETag) so the next HEAD is answered correctly after one failed query.
  */
-const HEAD_FRESH_MS = 15 * 60_000;
+const HEAD_FRESH_MS = 6 * 3600_000;
 
 interface ChunkRef {
   off: number;
@@ -1064,6 +1066,20 @@ async function handleControl(data: unknown, reply: (payload: Record<string, unkn
             head: hexHead(new Uint8Array(bytes.subarray(0, 8)).buffer as ArrayBuffer),
           });
         reply(r.ok ? { ok: true, chunks: r.chunks } : { ok: false, error: r.error });
+        break;
+      }
+      case 'cached': {
+        // which of these URLs hold at least one cached chunk (the query-time download guard)
+        const list = (rest.urls ?? []) as string[];
+        const cached = list.filter((u) => {
+          try {
+            const e = files.get(cacheKey(u));
+            return !!e && e.chunks.size > 0;
+          } catch {
+            return false;
+          }
+        });
+        reply({ ok: true, cached });
         break;
       }
       case 'complete': {

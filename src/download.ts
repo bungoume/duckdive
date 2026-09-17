@@ -6,7 +6,7 @@
 // warning threshold are still untouched, the pages hold their queries until the user confirms,
 // showing the count and (as an upper bound) the sizes the listing reported.
 
-import { cacheFiles } from './cache';
+import { cacheCached } from './cache';
 import { s3HttpsUrl, type AttachedSource } from './datasource';
 import { DEFAULT_MAX_FILES } from './s3list';
 import type { SourceConfig } from './state';
@@ -21,34 +21,24 @@ export interface DownloadEstimate {
   threshold: number;
 }
 
-function cacheKeyOf(url: string): string | null {
-  try {
-    const u = new URL(url);
-    u.hash = '';
-    return u.toString();
-  } catch {
-    return null;
-  }
-}
-
 /** Estimate for the files of `a`, or null when the count stays within the threshold. */
 export async function estimatePendingDownload(cfg: SourceConfig, a: AttachedSource): Promise<DownloadEstimate | null> {
   if (cfg.kind !== 'url') return null;
   const threshold = cfg.maxFiles || DEFAULT_MAX_FILES;
   if (a.files.length <= threshold) return null;
+  // the worker matches on its own cache key (signed-URL parameters stripped), so ask it
+  const https = a.files.map((u) => (u.startsWith('s3://') ? s3HttpsUrl(u, cfg.s3) : u));
   let cached = new Set<string>();
   try {
-    cached = new Set((await cacheFiles({ all: true })).files.filter((f) => f.cachedBytes > 0).map((f) => f.url));
+    cached = new Set((await cacheCached(https.filter((u): u is string => !!u))).cached);
   } catch {
     /* cache worker unavailable: every file counts as not downloaded */
   }
   let files = 0;
   let bytes = 0;
   let unknownSizes = 0;
-  a.files.forEach((u, i) => {
-    const https = u.startsWith('s3://') ? s3HttpsUrl(u, cfg.s3) : u;
-    const key = https ? cacheKeyOf(https) : null;
-    if (key && cached.has(key)) return;
+  https.forEach((u, i) => {
+    if (u && cached.has(u)) return;
     files++;
     const size = a.fileSizes[i];
     if (size === null || size === undefined) unknownSizes++;

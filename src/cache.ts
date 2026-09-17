@@ -101,6 +101,8 @@ export const cacheSeed = (files: SeedFile[]) => send<{ seeded: number }>({ type:
 /** Store a complete copy of an object (fetched by the page); `repacked` marks a re-compressed gzip. The buffer is transferred, not copied. */
 export const cacheStore = (f: { url: string; etag: string; lastModified?: string; bytes: ArrayBuffer; repacked: boolean; origSize: number; note?: string }) =>
   send<{ chunks: number }>({ type: 'store', ...f }, 60000, [f.bytes]);
+/** URLs among `urls` that hold at least one cached chunk (they were downloaded before). */
+export const cacheCached = (urls: string[]) => send<{ cached: string[] }>({ type: 'cached', urls }, 30000);
 /** URLs among `files` that are already completely cached with the same ETag. */
 export const cacheComplete = (files: { url: string; etag: string }[]) => send<{ complete: string[] }>({ type: 'complete', files }, 30000);
 export const cacheStats = () => send<{ stats: CacheStats; config: CacheConfig; opfsError: string | null }>({ type: 'stats' });
