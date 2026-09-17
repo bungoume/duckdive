@@ -5,7 +5,7 @@ import { useSettings } from '../settings';
 import { timeAxis } from '../ticks';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Bucket } from '../queries';
-import { bucketStarts, type Interval } from '../sql';
+import { bucketStarts, nextBucketStart, type Interval } from '../sql';
 import { fmtAxisNumber } from './ui';
 
 /** Fill empty buckets (from the first one up to `to`) so the bar chart has a continuous x axis. */
@@ -15,7 +15,7 @@ export function fillBuckets(b: Bucket[], to: Date, iv: Interval, tzOffset: numbe
   return bucketStarts(b[0].t, to.getTime(), iv, tzOffset).map((t) => ({ t, c: map.get(t) ?? 0 }));
 }
 
-export function Histogram(props: { buckets: Bucket[]; interval: Interval; from: Date; to: Date; height?: number; onBrush: (from: Date, to: Date) => void }) {
+export function Histogram(props: { buckets: Bucket[]; interval: Interval; tzOffset: number; from: Date; to: Date; height?: number; onBrush: (from: Date, to: Date) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const [brush, setBrush] = useState<{ x0: number; x1: number } | null>(null);
   /** Plot's figure element exposes its scales; only the x scale's inverse is used (brush → dates). */
@@ -36,7 +36,8 @@ export function Histogram(props: { buckets: Bucket[]; interval: Interval; from: 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const data = props.buckets.map((b) => ({ t: new Date(b.t), t2: new Date(b.t + props.interval.ms), c: b.c }));
+    // a bar spans its bucket, whose end is the next bucket start (calendar months differ in length)
+    const data = props.buckets.map((b) => ({ t: new Date(b.t), t2: new Date(nextBucketStart(b.t, props.interval, props.tzOffset)), c: b.c }));
     const marginLeft = 50;
     const marginRight = 20;
     const axis = timeAxis(props.from, props.to, width - marginLeft - marginRight, props.interval.ms);
@@ -65,7 +66,7 @@ export function Histogram(props: { buckets: Bucket[]; interval: Interval; from: 
     // Plot renders in UTC for type 'utc'; shift to local time display by using local scale instead
     el.replaceChildren(plot);
     return () => plot.remove();
-  }, [props.buckets, props.interval, props.from, props.to, width, lang, settings]);
+  }, [props.buckets, props.interval, props.tzOffset, props.from, props.to, width, lang, settings]);
 
   const onDown = (e: PointerEvent) => {
     const el = ref.current;

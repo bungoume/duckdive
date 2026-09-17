@@ -170,7 +170,7 @@ export function Discover(props: {
                   ))}
                 </select>
               </div>
-              <Histogram buckets={filled} interval={interval} from={compiled.from} to={compiled.to} onBrush={onBrush} />
+              <Histogram buckets={filled} interval={interval} tzOffset={tzOffset} from={compiled.from} to={compiled.to} onBrush={onBrush} />
             </div>
           )}
           <div class="doc-wrap">
