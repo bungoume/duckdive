@@ -71,7 +71,7 @@ export function Histogram(props: { buckets: Bucket[]; interval: Interval; tzOffs
 
   const onDown = (e: PointerEvent) => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || e.button !== 0) return; // a right-click opens the menu and never reports an up
     const svg = el.querySelector('svg');
     if (!svg) return;
     const rect = el.getBoundingClientRect();
@@ -105,7 +105,17 @@ export function Histogram(props: { buckets: Bucket[]; interval: Interval; tzOffs
   };
 
   return (
-    <div class="chart-box" onPointerDownCapture={onDown} onPointerMove={onMove} onPointerUp={onUp} style="cursor:crosshair">
+    <div
+      class="chart-box"
+      onPointerDownCapture={onDown}
+      onPointerMove={onMove}
+      onPointerUp={onUp}
+      onPointerCancel={() => {
+        drag.current = null;
+        setBrush(null);
+      }}
+      style="cursor:crosshair"
+    >
       <div ref={ref} />
       {brush && <div class="brush" style={{ left: Math.min(brush.x0, brush.x1), width: Math.abs(brush.x1 - brush.x0) }} />}
     </div>

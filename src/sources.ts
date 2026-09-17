@@ -93,16 +93,19 @@ export interface SourceHistoryEntry {
  * field and the chosen pattern-variable values are details of the entry, not part of the key.
  * A local source is identified by its stored handles; one picked without handles has no identity: null.
  */
+/** The URLs of a source: one per line, trimmed, comment lines and blank ones dropped. */
+export function sourceUrls(cfg: SourceConfig): string[] {
+  return cfg.urls
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter((s) => s && !s.startsWith('#'));
+}
+
 export function sourceKey(cfg: SourceConfig): string | null {
   if (cfg.kind === 'demo') return 'demo';
   if (cfg.kind === 'local') return cfg.localId ? JSON.stringify(['local', cfg.localId]) : null;
   if (cfg.kind !== 'url') return null;
-  const urls = cfg.urls
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter((l) => l && !l.startsWith('#'))
-    .join('\n');
-  return JSON.stringify(['url', urls, cfg.s3.endpoint, cfg.s3.region, cfg.s3.urlStyle, cfg.authMode]);
+  return JSON.stringify(['url', sourceUrls(cfg).join('\n'), cfg.s3.endpoint, cfg.s3.region, cfg.s3.urlStyle, cfg.authMode]);
 }
 
 function normalizeEntry(o: unknown): SourceHistoryEntry | null {
@@ -236,10 +239,7 @@ export function sourceFromLink(raw: unknown): SourceConfig | null {
  */
 export function describeSource(cfg: SourceConfig): string {
   if (cfg.kind !== 'url') return cfg.kind;
-  const lines = cfg.urls
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter((l) => l && !l.startsWith('#'));
+  const lines = sourceUrls(cfg);
   const parts = [lines.slice(0, 2).join(', ') + (lines.length > 2 ? ' …' : '')];
   if (cfg.s3.endpoint) parts.push(cfg.s3.endpoint);
   parts.push(cfg.authMode);

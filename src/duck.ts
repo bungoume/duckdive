@@ -25,6 +25,15 @@ export async function initDuckDB(): Promise<void> {
       filesystem: { reliableHeadRequests: true, allowFullHTTPReads: false, forceFullHTTPReads: false },
     });
     conn = await db.connect();
+    // Everything this app reads is served by extensions that come with the duckdb-wasm bundle, and
+    // they are loaded on demand (json for the demo table's JSON column, for instance), so autoload
+    // stays on. Autoinstall is what would go to an extension repository for one that is missing:
+    // a third-party host, executable code, and a request the host permissions would refuse anyway.
+    try {
+      await conn.query(`SET autoinstall_known_extensions=false`);
+    } catch {
+      /* older DuckDB without the setting */
+    }
     // All naive timestamps are interpreted as UTC. Display conversion happens in the browser.
     // (Setting TimeZone needs the icu extension; without it DuckDB-Wasm already behaves as UTC.)
     try {

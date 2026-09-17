@@ -154,7 +154,16 @@ const INDEX_SAVE_DEBOUNCE_MS = 300;
 const INDEX_SAVE_MAX_DELAY_MS = 5000;
 
 function log(entry: Omit<LogEntry, 't'>): LogEntry {
-  const e: LogEntry = { t: Date.now(), ...entry };
+  // The cache panel offers this log as JSON to paste into a bug report, and a presigned URL
+  // carries a working signature in its query string. cacheKey strips exactly those parameters,
+  // which is also how the entries are keyed, so the log reads like the rest of the panel.
+  let url = entry.url;
+  try {
+    url = cacheKey(url);
+  } catch {
+    /* not a URL (an internal marker such as "(cache)") */
+  }
+  const e: LogEntry = { t: Date.now(), ...entry, url };
   stats.log.push(e);
   if (stats.log.length > LOG_SIZE) stats.log.shift();
   return e;

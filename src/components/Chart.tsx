@@ -332,9 +332,13 @@ export function Chart(props: {
 
   const isTime = props.result.xKind === 'date_histogram';
   const onDown = (e: PointerEvent) => {
-    if (!ref.current) return;
+    if (!ref.current || e.button !== 0) return;
     const rect = ref.current.getBoundingClientRect();
     drag.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    // Captured like the histogram's: a pointer released outside the chart still reports its up
+    // here, so the drag ends. Without it the brush kept following the cursor after the button
+    // was let go somewhere else, and the next click selected a range nobody had drawn.
+    (e.target as Element).setPointerCapture?.(e.pointerId);
     // the brush bar only appears once the pointer has actually moved (a click is not a brush)
   };
   const onMove = (e: PointerEvent) => {
@@ -350,6 +354,10 @@ export function Chart(props: {
   const onLeave = () => {
     setHover(null);
     highlight(null);
+  };
+  const onCancel = () => {
+    drag.current = null;
+    setBrush(null);
   };
   const onUp = (e: PointerEvent) => {
     if (!drag.current || !ref.current) return;
@@ -391,6 +399,7 @@ export function Chart(props: {
       onPointerMove={onMove}
       onPointerUp={onUp}
       onPointerLeave={onLeave}
+      onPointerCancel={onCancel}
       style={{ cursor: brush ? 'crosshair' : hover && props.onPick ? 'pointer' : isTime && props.onBrush ? 'crosshair' : 'default' }}
     >
       <div ref={ref} />

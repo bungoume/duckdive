@@ -28,7 +28,7 @@ export { detectFormat };
 import type { Field } from './fields';
 import { findField, introspectFields, isTimeCandidate, quoteIdent } from './fields';
 import { VIEW, lit } from './sql';
-import type { SourceConfig } from './sources';
+import { sourceUrls, type SourceConfig } from './sources';
 
 export interface AttachedSource {
   fields: Field[];
@@ -91,14 +91,6 @@ export function capturedColumns(cfg: SourceConfig): string[] {
  */
 export function s3EndpointFor(s3: SourceConfig['s3']): string {
   return endpointStyle(s3).endpoint;
-}
-
-/** URLs (one per line, comments stripped) from the config. */
-export function sourceUrls(cfg: SourceConfig): string[] {
-  return cfg.urls
-    .split(/\r?\n/)
-    .map((s) => s.trim())
-    .filter((s) => s && !s.startsWith('#'));
 }
 
 /** Resolve an s3:// URL to the https URL duckdb-wasm will request (for host permissions). */
