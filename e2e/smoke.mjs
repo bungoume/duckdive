@@ -99,6 +99,11 @@ await step('completion', async () => {
   await page.fill('.qinput input', '');
   await page.click('.qinput input');
   await page.waitForSelector('.qinput .suggest .item');
+  // The query joins the recent list once its run is recorded, which is not part of the query
+  // itself: wait for the entry rather than for whatever settled() happened to leave time for.
+  await page
+    .waitForFunction(() => [...document.querySelectorAll('.qinput .suggest .item')].some((e) => (e.textContent ?? '').includes('http.latency_ms:>800')), null, { timeout: 5000 })
+    .catch(() => undefined);
   const hist = await page.locator('.qinput .suggest .item').allTextContents();
   console.log(`     history=${hist.map((h) => h.trim()).join('|')}`);
   if (!hist.some((h) => h.includes('http.latency_ms:>800'))) throw new Error('history misses the last query');

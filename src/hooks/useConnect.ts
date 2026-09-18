@@ -304,10 +304,18 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
       attemptedKey.current = rangeKey;
       return;
     }
+    // The e2e suites wait for this instead of guessing how long the debounce takes; it stays set
+    // until the re-resolve is over, so a subset of it is never mistaken for an idle app.
+    expose({ resolvePending: true });
     const timer = setTimeout(() => {
-      connect(source, NO_LOCAL, false, currentWindow()).catch(() => undefined);
+      connect(source, NO_LOCAL, false, currentWindow())
+        .catch(() => undefined)
+        .finally(() => expose({ resolvePending: false }));
     }, 250);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      expose({ resolvePending: false });
+    };
     // the range and the filters are compared through rangeKey; `source` only matters when they changed
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rangeKey, attaching]);
