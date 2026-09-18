@@ -2,7 +2,7 @@
 
 All notable changes to Duckdive. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.2.0] - 2026-09-18
 
 ### Added
 
@@ -25,33 +25,6 @@ All notable changes to Duckdive. The format follows [Keep a Changelog](https://k
 - "Share" in the header copies a link that carries the view and the data source without its secrets. A source the recipient connected before is used right away; an unknown one is offered in a banner with its destination and authentication mode.
 - Export on the Discover page: the matching rows as CSV, JSON Lines or Parquet, sorted like the table and cut at a chosen number of rows. With columns selected the file holds the time column and those columns; otherwise every column of the source.
 
-### Fixed
-
-- Dark theme: the histogram's hover box and the filter pills kept a white background.
-- The field details popover closes on a click anywhere else.
-
-### Changed
-
-- Error banners show the message alone (no `Error:` prefix), and a request that timed out is described in the UI language.
-- A render error shows a message with a Reload button instead of a blank page.
-- The Data source page warns when a destination is plain `http://` (localhost excepted).
-- Form labels are linked to their controls, so screen readers announce them and clicking a label focuses the field.
-
-### Internal
-
-- ESLint checks hook dependencies (`react-hooks`) and unhandled promises (type-aware rules); `tsc` covers `test/` and the config files.
-- Translation keys built from interval, format and template ids are checked at compile time; event handlers read `e.currentTarget`; repeated lists carry keys.
-- `sources.ts` (source settings and history) split out of `state.ts`; `store.ts` behind `useSettings` / `useLang`; `errors.ts` with `describeError()`.
-- Recurring inline styles replaced with classes; hidden source maps next to the bundles (left out of the store zip); `pnpm run test:coverage`; `engines.node >= 22`.
-- A tag `vX.Y.Z` builds the store zip and publishes it as a GitHub Release with the changelog section as its notes; CI builds that zip on every push, so the checks `scripts/pack.mjs` makes no longer run for the first time at the tag.
-- Secrets (gitleaks), the lock file (OSV), what a pull request adds (dependency review), Semgrep's rules and the workflows themselves (actionlint, zizmor) are scanned on every push; CodeQL runs the extended query suite.
-- Renovate groups its pull requests, merges the green ones, refreshes the lock file, and follows the version and sha256 of every CLI tool the workflows pin.
-- `.claude/skills/` carries the notes for running the e2e suites and cutting a release.
-- The `duckdb-versions` e2e section names the DuckDB release that writes the fixtures and the one that reads them.
-- The toolchain moves to Node 26: `engines.node >= 26`, `node@26` in CI and in the release workflow, `@types/node` on the same major.
-
-## [0.2.0] - 2026-09-17
-
 ### Changed (behaviour)
 
 - Static access keys: the secret access key and the session token are kept in `chrome.storage.session` only (memory, cleared when the browser closes). After a restart the Data source page shows the key ID and asks for the secret again. The access key ID stays with the source settings.
@@ -59,6 +32,10 @@ All notable changes to Duckdive. The format follows [Keep a Changelog](https://k
 - Histogram buckets follow the time zone chosen in Settings (daily buckets start at that zone's midnight, monthly ones on the 1st, weekly ones on the configured first day of the week) instead of the browser's zone. Month and year buckets render with their real length.
 - Temporary STS credentials are refreshed ten minutes before they expire, as documented; a refresh that fails shows a banner pointing to the Data source page.
 - The test hooks on `window.__ddv` exist only in dev builds and in builds made with `VITE_DDV_DEBUG=1` (`pnpm run build:e2e`); store builds publish nothing on the page.
+- Error banners show the message alone (no `Error:` prefix), and a request that timed out is described in the UI language.
+- A render error shows a message with a Reload button instead of a blank page.
+- The Data source page warns when a destination is plain `http://` (localhost excepted).
+- Form labels are linked to their controls, so screen readers announce them and clicking a label focuses the field.
 
 ### Fixed
 
@@ -69,6 +46,7 @@ All notable changes to Duckdive. The format follows [Keep a Changelog](https://k
 - The document table's expanded rows are reset by a new search; "show SQL" shows the document query rather than whatever ran last.
 - A malformed link (a range without an end, columns that are not a list, an unknown chart type) no longer blanks the page: every field falls back to its default.
 - The smoke test exits non-zero when a step fails.
+- The field details popover closes on a click anywhere else.
 
 ### Performance
 
@@ -80,6 +58,17 @@ All notable changes to Duckdive. The format follows [Keep a Changelog](https://k
 - App split into `useConnect`, `useDownloadGate` and `useCredentialRefresh`; `attachSource` and the Data source page split into steps and section components; the cache worker's pure helpers moved to `cache-util.ts`.
 - Vitest unit tests for the pure modules, ESLint + Prettier, a CI workflow with pinned actions, Renovate, CodeQL and a security policy; pnpm with exact, hash-pinned dependencies.
 - The UI is localised in seven languages including the previously hard-coded labels; icon controls carry accessible names and are keyboard operable.
+- ESLint checks hook dependencies (`react-hooks`) and unhandled promises (type-aware rules); `tsc` covers `test/` and the config files.
+- Translation keys built from interval, format and template ids are checked at compile time; event handlers read `e.currentTarget`; repeated lists carry keys.
+- `sources.ts` (source settings and history) split out of `state.ts`; `store.ts` behind `useSettings` / `useLang`; `errors.ts` with `describeError()`.
+- Recurring inline styles replaced with classes; hidden source maps next to the bundles (left out of the store zip); `pnpm run test:coverage`.
+- A tag `vX.Y.Z` builds the store zip and publishes it as a GitHub Release with the changelog section as its notes; CI builds that zip on every push, so the checks `scripts/pack.mjs` makes no longer run for the first time at the tag.
+- Secrets (gitleaks), the lock file (OSV), what a pull request adds (dependency review), Semgrep's rules and the workflows themselves (actionlint, zizmor) are scanned on every push; CodeQL runs the extended query suite.
+- Renovate groups its pull requests, merges the green ones, refreshes the lock file, and follows the version and sha256 of every CLI tool the workflows pin.
+- `.claude/skills/` carries the notes for running the e2e suites and cutting a release.
+- The `duckdb-versions` e2e section names the DuckDB release that writes the fixtures and the one that reads them.
+- The toolchain moves to Node 26: `engines.node >= 26`, `node@26` in CI and in the release workflow, `@types/node` on the same major.
+- Fewer files in the repository root: `renovate.json`, `SECURITY.md` and the gitleaks config live under `.github/`, the Prettier settings in `package.json`, and the e2e suites write their screenshots to `release/e2e/` instead of the working directory.
 
 ## [0.1.1] - 2026-09-16
 
