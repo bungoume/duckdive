@@ -425,6 +425,19 @@ const connectPattern = async (urls, marker) => {
   return { err, tf };
 };
 
+// The duckdb CLI writes the fixtures and duckdb-wasm reads them back, and they are separate
+// releases: the CLI is pinned in .github/workflows/ci.yml, the engine comes with
+// @duckdb/duckdb-wasm (1.32.0 runs DuckDB 1.4.3). A minor gap is fine, a major one means the
+// fixture may use a format the engine cannot open — which would otherwise surface halfway
+// through a section as an unreadable file rather than as a version problem.
+await section('duckdb-versions', async () => {
+  await openSource();
+  const engine = String((await q('SELECT version() AS v'))[0]?.v ?? '');
+  const cli = execSync('duckdb --version', { encoding: 'utf8' }).trim().split(/\s+/)[0];
+  const major = (v) => v.replace(/^v/, '').split('.')[0];
+  check('the duckdb CLI and duckdb-wasm share a major version', !!engine && major(cli) === major(engine), `CLI ${cli} writes, engine ${engine} reads`);
+});
+
 await section('opfs-and-http-parquet', async () => {
   await openSource();
   const ping = await page.evaluate(() => window.__ddv.cachePing());
