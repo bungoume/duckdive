@@ -31,6 +31,16 @@ Open `chrome://extensions`, enable Developer mode, choose "Load unpacked" and se
 
 The extension ID is `kohchgcbcmdcoondpjoiaccfkhadkpki`. The manifest carries the Web Store's public key so an unpacked build gets the same ID; `pnpm run pack` removes the key from the zip because the store rejects it. It builds first and then refuses to zip anything that is not a store build: an extra host permission or a `__ddv` hook left in a bundle stops it, so the e2e build that `pnpm test` leaves behind can never be uploaded.
 
+## Releases
+
+A release is cut from `main` by hand:
+
+1. Move the `[Unreleased]` entries of `CHANGELOG.md` under a `## [X.Y.Z] - YYYY-MM-DD` heading.
+2. Set the same version in `package.json` (it becomes the manifest's `version`) and commit.
+3. `git tag vX.Y.Z && git push origin vX.Y.Z`.
+
+The tag runs `.github/workflows/release.yml`: it refuses a tag that does not match `package.json`, runs the checks, builds the store zip and creates a GitHub Release with the changelog section as its notes and `duckdive-X.Y.Z.zip` attached. That zip is what goes to the Web Store. Tags and published releases are never moved or rewritten; a mistake is fixed by the next version.
+
 ## Languages
 
 The UI is available in English, Japanese, Simplified Chinese, Korean, German, French and Spanish. The language follows Chrome's UI language on first start and can be changed on the Settings page; the choice is kept in this browser (`localStorage`, key `ddv.lang`). English is the fallback for unknown locales.

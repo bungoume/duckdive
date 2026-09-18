@@ -1,0 +1,70 @@
+name: Release
+
+# A tag `vX.Y.Z` publishes that version: the workflow checks the tag against
+# package.json, builds the store zip and attaches it to a GitHub Release whose
+# notes are the matching section of CHANGELOG.md. Tags are never moved or
+# rewritten; a broken release is fixed by the next version.
+
+on:
+  push:
+    tags: ['v*']
+
+# Nothing is granted by default; the job below asks for what it needs.
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: build the store zip and publish the release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write # create the release and upload the zip
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # No dependency cache here: this job produces the file that goes to the Web Store, and a
+      # poisoned cache entry would end up inside it.
+      - uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+        with:
+          runtime: node@22
+          cache: false
+          require-lockfile: true
+
+      # The tag is what people see; package.json#version is what ends up in the manifest. They
+      # are written by hand, so they are compared before anything is built.
+      - name: Check the tag against package.json
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::tag $TAG does not match package.json version v$version"
+            exit 1
+          fi
+
+      - run: pnpm run typecheck
+      - run: pnpm run lint
+      - run: pnpm run test:unit
+      # Builds a store build and refuses to zip anything else (scripts/pack.mjs).
+      - run: pnpm run pack
+
+      - name: Read the changelog section
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          awk -v v="${TAG#v}" 'index($0, "## [" v "]") == 1 { on = 1; next } on && /^## / { exit } on { print }' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then
+            echo "::error::CHANGELOG.md has no section for ${TAG#v}"
+            exit 1
+          fi
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" release/*.zip --title "$TAG" --notes-file notes.md
