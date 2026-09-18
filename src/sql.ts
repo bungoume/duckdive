@@ -164,8 +164,9 @@ export interface Filter {
   untrusted?: boolean;
 }
 
+/** Identifier for a filter, a saved search or a local source: crypto, because some of them end up in stored keys. */
 export function newId(): string {
-  return Math.random().toString(36).slice(2, 10);
+  return Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 /** SQL literal for a filter value; null when the value cannot be compared with the field (a word against a number). */
