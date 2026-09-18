@@ -35,8 +35,9 @@ prints nothing until it exits, which reads as a hang. `pgrep -f e2e/cache.mjs` a
 waiting shell's own command line and never returns — record the pid or watch the log for the
 `exit=` line.
 
-A failed step writes `fail-<step>.png` (smoke) or `fail-cache-<section>.png` (cache) to the working
-directory; CI uploads them as artifacts. An exception ends only its own section.
+A failed step writes `fail-<step>.png` (smoke) or `fail-cache-<section>.png` (cache) to
+`release/e2e/` (`OUT` overrides it); CI uploads them as artifacts. An exception ends only its own
+section.
 
 ## Traps that look like app bugs
 

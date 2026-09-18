@@ -1,7 +1,7 @@
 // End-to-end test of the extension against an S3 stand-in WITHOUT any CORS headers:
 // host permissions, OPFS range cache (persistence across reload), SigV4 signing and STS credentials.
 // Prereqs: `DDV_EXTRA_HOSTS="http://localhost/*" pnpm run build`, `duckdb` CLI on PATH.
-//   node e2e/cache.mjs
+//   node e2e/cache.mjs                        screenshots → release/e2e/*.png
 import { spawn, execSync } from 'node:child_process';
 import { launchExtension, settled, waitReady } from './ext-context.mjs';
 import { existsSync, mkdirSync, statSync } from 'node:fs';
@@ -10,7 +10,8 @@ import { tmpdir } from 'node:os';
 
 const dataPort = Number(process.env.DATA_PORT ?? 5299);
 const dataDir = process.env.DATA_DIR ?? join(tmpdir(), 'ddv-fixtures');
-const out = process.env.OUT ?? '.';
+const out = process.env.OUT ?? new URL('../release/e2e', import.meta.url).pathname;
+mkdirSync(out, { recursive: true });
 mkdirSync(dataDir, { recursive: true });
 const parquet = join(dataDir, 'logs.parquet');
 import { rmSync } from 'node:fs';

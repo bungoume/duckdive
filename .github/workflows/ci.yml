@@ -67,7 +67,7 @@ jobs:
         if: failure()
         with:
           name: smoke-screenshots
-          path: '*.png'
+          path: release/e2e/*.png
 
   cache-e2e:
     name: cache e2e (needs the duckdb CLI)
@@ -109,7 +109,7 @@ jobs:
         if: failure()
         with:
           name: cache-screenshots
-          path: '*.png'
+          path: release/e2e/*.png
 
   pack:
     name: store build and zip

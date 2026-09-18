@@ -1,9 +1,10 @@
 // Smoke test of the extension UI (Discover / Visualize) on the demo dataset.
-//   pnpm run build && node e2e/smoke.mjs
-import { readFileSync } from 'node:fs';
+//   pnpm run build && node e2e/smoke.mjs        screenshots → release/e2e/*.png
+import { mkdirSync, readFileSync } from 'node:fs';
 import { launchExtension, settled } from './ext-context.mjs';
 
-const out = process.env.OUT ?? '.';
+const out = process.env.OUT ?? new URL('../release/e2e', import.meta.url).pathname;
+mkdirSync(out, { recursive: true });
 const { context, page, appUrl } = await launchExtension();
 const base = appUrl;
 const errors = [];
