@@ -1,8 +1,4 @@
-.claude/worktrees
-dist
-release
-public/duckdb
-public/THIRD_PARTY_LICENSES.txt
+# Prettier reads .gitignore as well, so dist/, release/, public/duckdb and the other
+# generated paths are already covered. Only what is committed and left unformatted goes here.
 pnpm-lock.yaml
 src/styles.css
-*.png
