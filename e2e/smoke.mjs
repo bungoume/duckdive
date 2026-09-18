@@ -92,6 +92,10 @@ await step('completion', async () => {
   const text = await page.inputValue('.qinput input');
   console.log(`     suggested=${items.join('|')} after Tab="${text}"`);
   if (text !== 'http.latency_ms:') throw new Error('completion did not insert the field');
+  // QueryBar puts the caret back in a requestAnimationFrame after Tab, and Tab already leaves it
+  // at the end, so there is no position to wait for — only the frame. Type before it runs and the
+  // callback lands mid-word, scrambling what was typed ("http.latency_ms:0>80").
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
   await page.type('.qinput input', '>800');
   await page.keyboard.press('Enter');
   await settled(page);
@@ -99,11 +103,6 @@ await step('completion', async () => {
   await page.fill('.qinput input', '');
   await page.click('.qinput input');
   await page.waitForSelector('.qinput .suggest .item');
-  // The query joins the recent list once its run is recorded, which is not part of the query
-  // itself: wait for the entry rather than for whatever settled() happened to leave time for.
-  await page
-    .waitForFunction(() => [...document.querySelectorAll('.qinput .suggest .item')].some((e) => (e.textContent ?? '').includes('http.latency_ms:>800')), null, { timeout: 5000 })
-    .catch(() => undefined);
   const hist = await page.locator('.qinput .suggest .item').allTextContents();
   console.log(`     history=${hist.map((h) => h.trim()).join('|')}`);
   if (!hist.some((h) => h.includes('http.latency_ms:>800'))) throw new Error('history misses the last query');
