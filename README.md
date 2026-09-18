@@ -203,6 +203,7 @@ test/                              vitest unit tests for the pure modules
 scripts/                           duckdb-wasm bundling, icons, packaging, ALB to Parquet
 docs/                              IAM examples, privacy policy
 e2e/                               Playwright tests and the local range server
+.claude/skills/                    notes for coding agents: running the suites, cutting a release
 ```
 
 ## Limits
