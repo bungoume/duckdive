@@ -21,7 +21,8 @@ concurrency:
 jobs:
   lint:
     name: actionlint, zizmor
-    runs-on: ubuntu-latest
+    # Two downloaded binaries and nothing else, so the slim image is enough.
+    runs-on: ubuntu-slim
     timeout-minutes: 10
     permissions:
       contents: read
