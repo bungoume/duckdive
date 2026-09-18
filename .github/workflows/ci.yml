@@ -58,7 +58,10 @@ jobs:
           cache: true
           require-lockfile: true
       - run: pnpm run build:e2e
-      - run: pnpm exec playwright install --with-deps chromium
+      # --with-deps only adds font packages on the runner image, no libraries, and the suites
+      # pin the UI to English and keep screenshots for failures only. Add it back before
+      # asserting on CJK text in the browser.
+      - run: pnpm exec playwright install chromium
       - run: node e2e/smoke.mjs
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
@@ -82,7 +85,7 @@ jobs:
           cache: true
           require-lockfile: true
       - run: pnpm run build:e2e
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright install chromium
       # A pinned release asset verified against its sha256, instead of `curl | sh` of the
       # unversioned installer. Renovate refreshes the tag and the digest together
       # (customManagers in renovate.json). This CLI writes the fixtures that duckdb-wasm reads
