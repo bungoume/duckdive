@@ -1,6 +1,6 @@
 node_modules/
 dist/
-# agent worktrees (the skills under .claude are committed)
+# agent worktrees
 .claude/worktrees/
 coverage/
 release/

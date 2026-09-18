@@ -47,7 +47,7 @@ The extension ID is `kohchgcbcmdcoondpjoiaccfkhadkpki`. The manifest carries the
 
 ## Releases
 
-Commits on `main` follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/); `feat` and `fix` are what move the version and what the changelog is written from.
+Commits on `main` follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/). `feat` becomes an Added entry and moves the minor version; `fix`, `perf` and `refactor`/`build`/`ci` become Fixed, Performance and Internal and move the patch; `chore`, `docs`, `test`, `style` and `revert` are left out of the changelog and release nothing, which is where Renovate's dependency updates go. A fix for something introduced since the last release never reached anyone, so it is a `chore`. An entry is one line saying what changed; what a feature is for belongs in this file.
 
 release-please keeps one pull request open and rewrites it on every push to `main` with the next version, the new `CHANGELOG.md` section and the release notes. Nothing is published until that pull request is merged; merging it is the release.
 
@@ -183,7 +183,7 @@ duckdb-wasm downloads whole HTTP files by default. `src/duck.ts` opens the datab
 
 ```
 pnpm test              # typecheck, lint and the unit tests: the loop to run while working, about ten seconds
-pnpm run test:all      # the same, then the e2e build and both Playwright suites, about twelve minutes
+pnpm run test:all      # the same, then the e2e build and both Playwright suites, about two minutes
 pnpm run test:unit     # vitest: query parser, date math, ticks, patterns, gzip members, SQL, URL state, formats, cache helpers, secrets
 pnpm run test:coverage # the same with a coverage report (coverage/index.html)
 pnpm run lint          # eslint + prettier --check   (pnpm run format rewrites)
@@ -195,6 +195,8 @@ node e2e/cache.mjs     # permissions, OPFS persistence, SigV4 and STS against a 
 The unit tests in `test/` run in Node against the pure modules (with Web Storage and `location` stubbed in `test/setup.ts`); everything that needs DuckDB or Chrome is covered by the Playwright suites. `.github/workflows/ci.yml` runs the same steps on every push and pull request.
 
 `e2e/cache.mjs` needs the `duckdb` CLI to generate fixtures; `SECTIONS=cache-limit,templates node e2e/cache.mjs` runs only the named sections while working on one of them; the S3 sections expect the keys that `s3-static-keys` enters, so the full run is the reference. Both use Playwright's headless Chromium with the built extension loaded and drive the app through `window.__ddv`, hooks that exist only in dev builds and in builds made with `VITE_DDV_DEBUG=1` (`src/debug.ts`); a store build publishes nothing on the page. The tests assert English text, so `e2e/ext-context.mjs` pins the UI language to English before the page loads; set `DDV_LANG=ja` (or another language id) to run `pnpm run screenshots` (after `pnpm run build:e2e`) in that language.
+
+Run the suites one at a time: both start the local range server on port 5299, and a second run quietly shares the first server instead of binding its own. Do not rebuild `dist/` while one is running, or a reload mid-run loads half of two builds. A failed step writes a screenshot to `release/e2e/` (`OUT` overrides it), which CI uploads as an artifact.
 
 ## Layout
 
@@ -216,7 +218,6 @@ test/                              vitest unit tests for the pure modules
 scripts/                           duckdb-wasm bundling, icons, packaging, ALB to Parquet
 docs/                              IAM examples, privacy policy, README images
 e2e/                               Playwright tests and the local range server
-.claude/skills/                    notes for coding agents: running the suites, cutting a release
 ```
 
 ## Limits
