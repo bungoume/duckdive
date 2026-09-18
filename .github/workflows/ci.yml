@@ -16,11 +16,15 @@ concurrency:
 # Every action is pinned to a commit SHA; the comment carries the release it points at and
 # Renovate (helpers:pinGitHubActionDigests) bumps both together.
 
+# Every job stands alone and they all run at once, so a push is answered in about two minutes
+# rather than the sum of the suites. The e2e jobs pay for their own checkout and browser (about
+# half a minute each) to keep it that way.
+
 jobs:
   check:
-    name: typecheck, lint, unit tests, smoke e2e
+    name: typecheck, lint, unit tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -37,6 +41,22 @@ jobs:
       - run: pnpm run typecheck
       - run: pnpm run lint
       - run: pnpm run test:unit
+
+  smoke-e2e:
+    name: smoke e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+        with:
+          runtime: node@22
+          cache: true
+          require-lockfile: true
       - run: pnpm run build:e2e
       - run: pnpm exec playwright install --with-deps chromium
       - run: node e2e/smoke.mjs
@@ -49,8 +69,7 @@ jobs:
   cache-e2e:
     name: cache e2e (needs the duckdb CLI)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: check
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
