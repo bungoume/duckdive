@@ -330,14 +330,15 @@ const connectDone = (marker) =>
     { timeout: 60000 },
   );
 /**
- * The error alert's text, or null when the connect succeeded. Every caller has already waited for
- * the connect to settle, so the alert is in the DOM by now: count() reads what is there, while
- * locator.textContent() would auto-wait the full 30 s default on each successful connect.
+ * The element's text, or null when it is not on the page. Every caller has already waited for the
+ * state it is about to read, so count() reports what is there; locator.textContent() would instead
+ * auto-wait Playwright's full 30 s default for an element that is never going to appear.
  */
-const errorAlert = async () => {
-  const a = page.locator('.alert.error');
-  return (await a.count()) ? a.textContent() : null;
+const textIfPresent = async (sel) => {
+  const l = page.locator(sel);
+  return (await l.count()) ? l.first().textContent() : null;
 };
+const errorAlert = () => textIfPresent('.alert.error');
 /** Press Connect; if the pattern has {name} variables, select every listed value and press again. */
 const pressConnect = async () => {
   await page.click('.source-page button:has-text("connect")');
@@ -697,21 +698,11 @@ await section('named-wildcards', async () => {
   await page.waitForSelector('.hits .n');
   await runQuery(''); // the previous query referenced a field of the other source
   console.log(
-    `     after clearing query: value=${JSON.stringify(await page.inputValue('.qinput input'))} errors=${await page.locator('.qerror').count()} ${await page
-      .locator('.qerror')
-      .textContent()
-      .catch(() => '')} hits=${await page.textContent('.hits .n')} status=${await page.textContent('.header .status')}`,
+    `     after clearing query: value=${JSON.stringify(await page.inputValue('.qinput input'))} errors=${await page.locator('.qerror').count()} ${(await textIfPresent('.qerror')) ?? ''} hits=${await page.textContent('.hits .n')} status=${await page.textContent('.header .status')}`,
   );
   await page.click('.field-item:has-text("alb")');
   await settled(page);
-  console.log(
-    `     details open: ${await page.locator('.field-details').count()} text=${(
-      await page
-        .locator('.field-details')
-        .textContent()
-        .catch(() => '')
-    ).slice(0, 120)}`,
-  );
+  console.log(`     details open: ${await page.locator('.field-details').count()} text=${((await textIfPresent('.field-details')) ?? '').slice(0, 120)}`);
   await page.waitForSelector('.topval', { timeout: 15000 });
   await page.locator('.topval', { hasText: 'alb-other' }).locator('.pm button').first().click();
   await settled(page);
