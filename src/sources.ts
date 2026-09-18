@@ -198,6 +198,12 @@ function linkStsEndpoint(v: unknown): string {
   return host && (host === 'amazonaws.com' || host.endsWith('.amazonaws.com')) ? s : '';
 }
 
+/**
+ * A name a pattern can carry as `{name}` (see captureRegex in s3list.ts). `__proto__` is not one:
+ * assigning it below would replace the prototype of the object instead of adding a key to it.
+ */
+const isTokenName = (k: string) => k !== '__proto__' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(k);
+
 /** A source from a link someone sent: every field checked, secrets and key IDs never taken; null when unusable. */
 export function sourceFromLink(raw: unknown): SourceConfig | null {
   if (!isObj(raw)) return null;
@@ -206,7 +212,8 @@ export function sourceFromLink(raw: unknown): SourceConfig | null {
   const s3 = isObj(raw.s3) ? raw.s3 : {};
   const o = isObj(raw.oidc) ? raw.oidc : {};
   const tokenValues: Record<string, string[]> = {};
-  if (isObj(raw.tokenValues)) for (const [k, v] of Object.entries(raw.tokenValues)) if (Array.isArray(v)) tokenValues[k] = v.filter((x): x is string => typeof x === 'string');
+  if (isObj(raw.tokenValues))
+    for (const [k, v] of Object.entries(raw.tokenValues)) if (isTokenName(k) && Array.isArray(v)) tokenValues[k] = v.filter((x): x is string => typeof x === 'string');
   return {
     kind: 'url',
     name: str(raw.name),

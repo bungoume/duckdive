@@ -19,10 +19,12 @@ what the diff already shows.
 | `fix`                                      | Fixed             | patch   |
 | `perf`                                     | Performance       | patch   |
 | `refactor`, `build`, `ci`                  | Internal          | patch   |
-| `chore`, `docs`, `test`, `style`, `revert` | not shown         | patch   |
+| `chore`, `docs`, `test`, `style`, `revert` | not shown         | none    |
 
-Only `feat` moves the minor; every other type bumps the patch, so a release pull request stands
-open as soon as anything has landed since the last release. A `!` after the type (`feat!`) marks a
+Only `feat` moves the minor; every type that has a section bumps the patch, so a release pull
+request stands open as soon as one of them has landed. The hidden types add nothing to the
+changelog and open no release pull request on their own, which is where Renovate's `chore(deps)`
+updates land. A `!` after the type (`feat!`) marks a
 breaking change; below 1.0.0 it bumps the minor rather than the major (`bump-minor-pre-major` in
 `.github/release-please-config.json`).
 
