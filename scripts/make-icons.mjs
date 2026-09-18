@@ -1,6 +1,7 @@
-// Render assets/logo.svg into the extension icons (public/icons, committed) and the
-// Chrome Web Store images (release/store). Uses the Chromium that Playwright installs
-// for the e2e tests, so this is a dev-time step: `pnpm run icons`.
+// Render assets/logo.svg into the extension icons (public/icons, committed), the README banner
+// (docs/images, committed, and the store's marquee tile) and the store's promo tile
+// (release/store). Uses the Chromium that Playwright installs for the e2e tests, so this is a
+// dev-time step: `pnpm run icons`.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 
@@ -9,6 +10,7 @@ const svg = readFileSync(`${root}assets/logo.svg`, 'utf8');
 const dataUrl = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
 mkdirSync(`${root}public/icons`, { recursive: true });
 mkdirSync(`${root}release/store`, { recursive: true });
+mkdirSync(`${root}docs/images`, { recursive: true });
 
 const browser = await chromium.launch({ channel: 'chromium' });
 const page = await browser.newPage({ viewport: { width: 512, height: 512 }, deviceScaleFactor: 1 });
@@ -30,7 +32,8 @@ try {
     p{margin:6px 0 0;font-size:15px;opacity:.85}
   </style><img src="${dataUrl}"><div><h1>Duckdive</h1><p>Search &amp; visualize S3 logs<br>in your browser</p></div>`);
   writeFileSync(`${root}release/store/promo-tile-440x280.png`, await page.screenshot());
-  // Marquee promo tile (1400×560): optional, only shown when the store features the extension.
+  // The banner (1400×560): the README's, and the store's marquee tile when it features the
+  // extension. One file, used by both.
   await page.setViewportSize({ width: 1400, height: 560 });
   await page.setContent(`<style>
     html,body{margin:0}
@@ -40,8 +43,8 @@ try {
     p{margin:14px 0 0;font-size:34px;opacity:.88;line-height:1.3}
     small{display:block;margin-top:22px;font-size:22px;opacity:.7}
   </style><img src="${dataUrl}"><div><h1>Duckdive</h1><p>Search &amp; visualize S3 logs<br>in your browser</p><small>Lucene search · charts · DuckDB-Wasm · no server</small></div>`);
-  writeFileSync(`${root}release/store/promo-marquee-1400x560.png`, await page.screenshot());
+  writeFileSync(`${root}docs/images/banner.png`, await page.screenshot());
 } finally {
   await browser.close();
 }
-console.log('icons written to public/icons, store images to release/store');
+console.log('icons written to public/icons, banner to docs/images, promo tile to release/store');

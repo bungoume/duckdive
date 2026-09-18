@@ -1,6 +1,12 @@
 # Duckdive
 
+![Duckdive - search and visualize S3 logs in your browser](docs/images/banner.png)
+
 A Chrome extension that searches and charts log files. It reads Parquet, CSV and JSON from S3 or S3-compatible storage, from HTTPS URLs, or from local files, and queries them in the browser. Nothing is sent anywhere else.
+
+There is no server to run and no index to build: install the extension, point it at a bucket and search. DuckDB compiled to WebAssembly answers the queries in the tab, and bytes that have been read once stay on the machine.
+
+![The Discover page: a query over 120,000 rows, a time histogram, the field sidebar and the matching documents](docs/images/discover.png)
 
 Six pages:
 
@@ -10,6 +16,14 @@ Six pages:
 - SQL: one DuckDB statement over the connected source, its rows as a table, downloads as CSV, JSON Lines or Parquet.
 - Data source: where the files are, how they are formatted, which field is the time, and how to authenticate.
 - Settings: UI language, date format, time zone, scaled date format for histogram buckets, first day of the week, and the time picker's quick ranges.
+
+![The Visualize page: a date histogram broken down by the top values of a field](docs/images/visualize.png)
+
+_Visualize: a chart built from the same query, broken down by a field's top values. A click on a bar filters or zooms every page._
+
+![The Discover page in the dark theme, with a field's top values open and a filter pill above the table](docs/images/dark.png)
+
+_A field's top values, one click from a filter; light, dark or the system theme._
 
 ## Why an extension
 
@@ -202,7 +216,7 @@ src/store.ts, errors.ts            store helper behind useSettings / useLang; er
 src/trust.ts, debug.ts             custom-SQL trust list; test hooks (e2e builds only)
 test/                              vitest unit tests for the pure modules
 scripts/                           duckdb-wasm bundling, icons, packaging, ALB to Parquet
-docs/                              IAM examples, privacy policy
+docs/                              IAM examples, privacy policy, README images
 e2e/                               Playwright tests and the local range server
 .claude/skills/                    notes for coding agents: running the suites, cutting a release
 ```
