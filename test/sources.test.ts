@@ -51,6 +51,14 @@ describe('sourceFromLink', () => {
     expect(sourceFromLink('s3://b/*')).toBeNull();
     expect(sourceFromLink(null)).toBeNull();
   });
+
+  it('takes only names a pattern can carry, so a link cannot replace the prototype of the values object', () => {
+    // a link is JSON: "__proto__" arrives as a key of its own, not as the prototype of the object
+    const raw = JSON.parse('{"kind":"url","urls":"s3://b/*","tokenValues":{"__proto__":["x"],"a b":["y"],"ok":["z"]}}');
+    const s = sourceFromLink(raw)!;
+    expect(s.tokenValues).toEqual({ ok: ['z'] });
+    expect(Object.getPrototypeOf(s.tokenValues)).toBe(Object.prototype);
+  });
 });
 
 describe('sourceFromLink, sign-in settings', () => {

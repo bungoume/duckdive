@@ -212,8 +212,7 @@ export function sourceFromLink(raw: unknown): SourceConfig | null {
   const s3 = isObj(raw.s3) ? raw.s3 : {};
   const o = isObj(raw.oidc) ? raw.oidc : {};
   const tokenValues: Record<string, string[]> = {};
-  if (isObj(raw.tokenValues))
-    for (const [k, v] of Object.entries(raw.tokenValues)) if (isTokenName(k) && Array.isArray(v)) tokenValues[k] = v.filter((x): x is string => typeof x === 'string');
+  if (isObj(raw.tokenValues)) for (const [k, v] of Object.entries(raw.tokenValues)) if (isTokenName(k) && Array.isArray(v)) tokenValues[k] = v.filter((x): x is string => typeof x === 'string');
   return {
     kind: 'url',
     name: str(raw.name),
