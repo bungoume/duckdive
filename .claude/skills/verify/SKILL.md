@@ -12,16 +12,16 @@ unpacked extension.
 ## Running
 
 `pnpm test` is the fast loop — typecheck, lint and the unit tests, about ten seconds, no browser.
-`pnpm run test:all` adds everything below and takes about three minutes.
+`pnpm run test:all` adds everything below and takes about two minutes.
 
 1. `pnpm run build:e2e` — the build with the `__ddv` hooks (`src/debug.ts`) and
    `http://localhost/*` allowed. A store build publishes nothing on the page, so the suites wait
    for `window.__ddv` until they time out.
-2. `node e2e/smoke.mjs` — Discover and Visualize on the demo dataset. About two minutes, and the
-   longest of the three.
+2. `node e2e/smoke.mjs` — Discover and Visualize on the demo dataset. About seventy seconds, and
+   the longest of the three.
 3. `node e2e/cache.mjs` — host permissions, the OPFS range cache, SigV4, STS, pattern expansion,
-   ALB logs and gzip handling against the local range server. About a minute, and it needs the
-   `duckdb` CLI on PATH to write the fixture.
+   ALB logs and gzip handling against the local range server. About forty seconds, and it needs
+   the `duckdb` CLI on PATH to write the fixture.
 
 `SECTIONS=cache-limit,second-tab node e2e/cache.mjs` runs only the named sections (the `section(…)`
 calls in the file) while working on a single scenario. The S3 sections expect the keys that
