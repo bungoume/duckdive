@@ -43,6 +43,11 @@ All notable changes to Duckdive. The format follows [Keep a Changelog](https://k
 - Translation keys built from interval, format and template ids are checked at compile time; event handlers read `e.currentTarget`; repeated lists carry keys.
 - `sources.ts` (source settings and history) split out of `state.ts`; `store.ts` behind `useSettings` / `useLang`; `errors.ts` with `describeError()`.
 - Recurring inline styles replaced with classes; hidden source maps next to the bundles (left out of the store zip); `pnpm run test:coverage`; `engines.node >= 22`.
+- A tag `vX.Y.Z` builds the store zip and publishes it as a GitHub Release with the changelog section as its notes; CI builds that zip on every push, so the checks `scripts/pack.mjs` makes no longer run for the first time at the tag.
+- Secrets (gitleaks), the lock file (OSV), what a pull request adds (dependency review), Semgrep's rules and the workflows themselves (actionlint, zizmor) are scanned on every push; CodeQL runs the extended query suite.
+- Renovate groups its pull requests, merges the green ones, refreshes the lock file, and follows the version and sha256 of every CLI tool the workflows pin.
+- `.claude/skills/` carries the notes for running the e2e suites and cutting a release.
+- The `duckdb-versions` e2e section names the DuckDB release that writes the fixtures and the one that reads them.
 
 ## [0.2.0] - 2026-09-17
 
