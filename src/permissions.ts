@@ -13,6 +13,16 @@ export function originPattern(url: string): string | null {
   }
 }
 
+/**
+ * Whether an origin pattern is one of the AWS hosts the manifest requires: Chrome refuses to remove
+ * those, so they get no Revoke button. The host decides, not the text of the pattern
+ * ("https://amazonaws.com.example/*" is somebody else's host and can be revoked).
+ */
+export function isAwsOrigin(pattern: string): boolean {
+  const host = /^https?:\/\/([^/]+)\/\*$/.exec(pattern)?.[1] ?? '';
+  return host === 'amazonaws.com' || host.endsWith('.amazonaws.com');
+}
+
 /** Whether every pattern is granted; a pattern Chrome rejects counts as not granted. */
 export async function hasHostPermissions(patterns: string[]): Promise<boolean> {
   if (!isExtension || !chrome.permissions) return true;

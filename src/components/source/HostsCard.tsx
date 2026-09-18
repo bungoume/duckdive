@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { t } from '../../i18n';
-import { isExtension, listGrantedOrigins, removeOrigin } from '../../permissions';
+import { isAwsOrigin, isExtension, listGrantedOrigins, removeOrigin } from '../../permissions';
 
 /** Host permissions granted at runtime, with a Revoke button for everything but AWS. `refreshKey` reloads the list. */
 export function HostsCard(props: { refreshKey: unknown }) {
@@ -19,7 +19,7 @@ export function HostsCard(props: { refreshKey: unknown }) {
             <tr key={g}>
               <td class="v">{g}</td>
               <td class="a" style="visibility:visible">
-                {!/amazonaws\.com/.test(g) && (
+                {!isAwsOrigin(g) && (
                   <button
                     class="btn small"
                     style="visibility:visible;width:auto;height:auto;padding:2px 8px"
