@@ -5,9 +5,12 @@
   "timezone": "Asia/Tokyo",
   "internalChecksFilter": "strict",
   "osvVulnerabilityAlerts": true,
+  "lockFileMaintenance": {
+    "enabled": true
+  },
   "packageRules": [
     {
-      "description": "Wait 7 days after a release before proposing it (npm packages, the pnpm version in packageManager, GitHub Actions and the duckdb CLI alike). Placed after config:best-practices so it overrides the preset's 3-day npm rule; the update types without a release timestamp keep the preset's opt-out. Security updates bypass the wait.",
+      "description": "Wait 7 days after a release before proposing it (npm packages, the pnpm version in packageManager, GitHub Actions and the pinned CLI tools alike). Placed after config:best-practices so it overrides the preset's 3-day npm rule; the update types without a release timestamp keep the preset's opt-out. Security updates bypass the wait.",
       "matchUpdateTypes": ["major", "minor", "patch", "digest", "pinDigest"],
       "minimumReleaseAge": "7 days"
     },
@@ -17,17 +20,52 @@
       "matchUpdateTypes": ["major"],
       "minimumReleaseAge": "7 days",
       "groupName": "TypeScript major"
+    },
+    {
+      "description": "Everything the workflows run: the actions themselves and the CLI tools pinned by version and sha256 in them. None of it ships in the extension, so one PR that merges itself once CI is green is enough.",
+      "matchManagers": ["github-actions", "custom.regex"],
+      "minimumReleaseAge": "7 days",
+      "groupName": "CI tools",
+      "automerge": true
+    },
+    {
+      "description": "A docker tag carries no release timestamp, so the cooldown would leave it pending forever. The image is pinned by digest, and the tag only moves when this rule proposes it.",
+      "matchDatasources": ["docker"],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "Library updates that keep the major version: one PR, merged once CI is green. Majors stay on their own so the change can be read.",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "minimumReleaseAge": "7 days",
+      "groupName": "npm dependencies",
+      "automerge": true
+    },
+    {
+      "description": "Re-resolve the whole lock file, indirect dependencies included. A lock file refresh has no release timestamp, so the cooldown would leave it pending forever; the packages it moves to are subject to the cooldown through pnpm-workspace.yaml at install time.",
+      "matchUpdateTypes": ["lockFileMaintenance"],
+      "minimumReleaseAge": null,
+      "groupName": "lock file maintenance",
+      "automerge": true
     }
   ],
+  "automergeType": "pr",
+  "automergeStrategy": "squash",
+  "platformAutomerge": false,
   "customManagers": [
     {
       "customType": "regex",
-      "description": "The duckdb CLI pinned in ci.yml: the release tag and the sha256 of duckdb_cli-linux-amd64.zip, both refreshed from the GitHub release.",
-      "managerFilePatterns": ["/^\\.github/workflows/ci\\.ya?ml$/"],
-      "matchStrings": ["DUCKDB_VERSION: (?<currentValue>v\\d+\\.\\d+\\.\\d+)\\n\\s+DUCKDB_CLI_SHA256: (?<currentDigest>[0-9a-f]{64})"],
-      "datasourceTemplate": "github-release-attachments",
-      "depNameTemplate": "duckdb/duckdb",
+      "description": "CLI tools pinned in a workflow as an adjacent `<TOOL>_VERSION` / `<TOOL>_SHA256` pair below a `# renovate:` comment (duckdb, gitleaks, actionlint, zizmor): the release tag and the sha256 of the asset are refreshed together.",
+      "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
+      "matchStrings": ["# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\s+[A-Z_]+_VERSION: '(?<currentValue>[^']+)'\\s+[A-Z_]+_SHA256: '(?<currentDigest>[0-9a-f]{64})'"],
       "versioningTemplate": "semver-coerced"
+    },
+    {
+      "customType": "regex",
+      "description": "The semgrep image, pinned by tag and digest. `docker run` in a step is out of reach of the docker manager.",
+      "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
+      "matchStrings": ["# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+SEMGREP_IMAGE: '[^:]+:(?<currentValue>[\\d.]+)@(?<currentDigest>sha256:[0-9a-f]+)'"],
+      "versioningTemplate": "docker"
     }
   ]
 }
