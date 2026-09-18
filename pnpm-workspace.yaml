@@ -1,5 +1,5 @@
 # pnpm project settings. pnpm 11+ reads them from this file; .npmrc only carries auth and
-# registry settings. renovate.json mirrors the cooldown below, so change both together.
+# registry settings. .github/renovate.json mirrors the cooldown below, so change both together.
 
 # Cooldown: never resolve a version published less than 7 days ago (the value is in minutes).
 # It applies to transitive dependencies as well, and because the setting is explicit pnpm

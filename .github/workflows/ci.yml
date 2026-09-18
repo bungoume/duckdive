@@ -88,7 +88,7 @@ jobs:
       - run: pnpm exec playwright install chromium
       # A pinned release asset verified against its sha256, instead of `curl | sh` of the
       # unversioned installer. Renovate refreshes the tag and the digest together
-      # (customManagers in renovate.json). This CLI writes the fixtures that duckdb-wasm reads
+      # (customManagers in .github/renovate.json). This CLI writes the fixtures that duckdb-wasm reads
       # back; the `duckdb-versions` section of e2e/cache.mjs compares the two.
       - name: Install the duckdb CLI
         env:

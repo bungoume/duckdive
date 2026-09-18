@@ -30,7 +30,7 @@ jobs:
         with:
           persist-credentials: false
       # A pinned release asset verified against its sha256; Renovate refreshes the tag and the
-      # digest together (customManagers in renovate.json).
+      # digest together (customManagers in .github/renovate.json).
       - name: Install gitleaks
         env:
           # renovate: datasource=github-release-attachments depName=gitleaks/gitleaks
@@ -41,11 +41,12 @@ jobs:
             "https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz"
           echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
           tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
-      # .gitleaks.toml leaves out dist/ and release/: the build output carries the Web Store
-      # public key, which reads like a secret.
+      # .github/gitleaks.toml leaves out dist/ and release/: the build output carries the Web
+      # Store public key, which reads like a secret. The config is only auto-discovered at the
+      # scan root, so it is passed explicitly.
       - name: Check for secrets
         run: |
-          "$RUNNER_TEMP/gitleaks" dir -v --no-banner .
+          "$RUNNER_TEMP/gitleaks" dir -v --no-banner --config .github/gitleaks.toml .
 
   dependency-review:
     name: dependency review
