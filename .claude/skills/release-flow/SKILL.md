@@ -18,11 +18,13 @@ what the diff already shows.
 | `feat`                                     | Added             | minor   |
 | `fix`                                      | Fixed             | patch   |
 | `perf`                                     | Performance       | patch   |
-| `refactor`, `build`, `ci`                  | Internal          | none    |
-| `chore`, `docs`, `test`, `style`, `revert` | not shown         | none    |
+| `refactor`, `build`, `ci`                  | Internal          | patch   |
+| `chore`, `docs`, `test`, `style`, `revert` | not shown         | patch   |
 
-A `!` after the type (`feat!`) marks a breaking change; below 1.0.0 it bumps the minor rather than
-the major (`bump-minor-pre-major` in `.github/release-please-config.json`).
+Only `feat` moves the minor; every other type bumps the patch, so a release pull request stands
+open as soon as anything has landed since the last release. A `!` after the type (`feat!`) marks a
+breaking change; below 1.0.0 it bumps the minor rather than the major (`bump-minor-pre-major` in
+`.github/release-please-config.json`).
 
 The changelog records what shipped, not what happened on main. A fix for something introduced since
 the last release never reached anyone, so it is a `chore`: the reader of the release does not know
