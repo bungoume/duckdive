@@ -1,7 +1,7 @@
 {
   "name": "duckdive",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Search and visualize log files from S3, HTTPS URLs or local disk, in the browser",
   "license": "MIT",
   "homepage": "https://github.com/bungoume/duckdive",

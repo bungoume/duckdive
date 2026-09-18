@@ -2,6 +2,20 @@
 
 All notable changes to Duckdive. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.2.1](https://github.com/bungoume/duckdive/compare/v0.2.0...v0.2.1) (2026-09-18)
+
+
+### Fixed
+
+* a shared link cannot reach the prototype through the token values ([4ef7dfa](https://github.com/bungoume/duckdive/commit/4ef7dfa56d60d8b2f0609d029092fc66c0197d78))
+* only the AWS hosts of the manifest lose their Revoke button ([5d90336](https://github.com/bungoume/duckdive/commit/5d90336dcc8ccb326b00b71b58bf9fed9f2a3b7b))
+
+
+### Internal
+
+* identifiers come from the crypto random generator ([fcdec30](https://github.com/bungoume/duckdive/commit/fcdec3059a7733124269bd30668a6c403e2e8be1))
+* release-please maintains the release pull request ([722cdd9](https://github.com/bungoume/duckdive/commit/722cdd91a0bbeced71cde67ab499e4db59cfb1d2))
+
 ## [0.2.0] - 2026-09-18
 
 ### Added
