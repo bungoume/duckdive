@@ -67,4 +67,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
-        run: gh release create "$TAG" release/*.zip --title "$TAG" --notes-file notes.md
+        # Idempotent, so re-running the job after a failed upload finishes the release instead of
+        # stopping at "release already exists".
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" release/*.zip --clobber
+          else
+            gh release create "$TAG" release/*.zip --title "$TAG" --notes-file notes.md
+          fi
