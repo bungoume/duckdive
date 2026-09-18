@@ -33,7 +33,8 @@
     "test:e2e": "node e2e/smoke.mjs",
     "test:cache": "node e2e/cache.mjs",
     "screenshots": "node e2e/screenshots.mjs",
-    "test": "pnpm run typecheck && pnpm run lint && pnpm run test:unit && pnpm run build:e2e && node e2e/smoke.mjs && node e2e/cache.mjs"
+    "test": "pnpm run typecheck && pnpm run lint && pnpm run test:unit",
+    "test:all": "pnpm run test && pnpm run build:e2e && pnpm run test:e2e && pnpm run test:cache"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "1.32.0",

@@ -29,7 +29,7 @@ pnpm run build:e2e  # build with the test hooks and localhost allowed (for the e
 
 Open `chrome://extensions`, enable Developer mode, choose "Load unpacked" and select `dist/`. The toolbar button opens the app. `pnpm run dev` rebuilds `dist/` on every change; reload the extension afterwards.
 
-The extension ID is `kohchgcbcmdcoondpjoiaccfkhadkpki`. The manifest carries the Web Store's public key so an unpacked build gets the same ID; `pnpm run pack` removes the key from the zip because the store rejects it. It builds first and then refuses to zip anything that is not a store build: an extra host permission or a `__ddv` hook left in a bundle stops it, so the e2e build that `pnpm test` leaves behind can never be uploaded.
+The extension ID is `kohchgcbcmdcoondpjoiaccfkhadkpki`. The manifest carries the Web Store's public key so an unpacked build gets the same ID; `pnpm run pack` removes the key from the zip because the store rejects it. It builds first and then refuses to zip anything that is not a store build: an extra host permission or a `__ddv` hook left in a bundle stops it, so the e2e build that `pnpm run test:all` leaves behind can never be uploaded.
 
 ## Releases
 
@@ -170,7 +170,8 @@ duckdb-wasm downloads whole HTTP files by default. `src/duck.ts` opens the datab
 ## Tests
 
 ```
-pnpm test              # typecheck, lint, unit tests, then the e2e build and both Playwright suites
+pnpm test              # typecheck, lint and the unit tests: the loop to run while working, about ten seconds
+pnpm run test:all      # the same, then the e2e build and both Playwright suites, about twelve minutes
 pnpm run test:unit     # vitest: query parser, date math, ticks, patterns, gzip members, SQL, URL state, formats, cache helpers, secrets
 pnpm run test:coverage # the same with a coverage report (coverage/index.html)
 pnpm run lint          # eslint + prettier --check   (pnpm run format rewrites)

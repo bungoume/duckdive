@@ -11,6 +11,9 @@ unpacked extension.
 
 ## Running
 
+`pnpm test` is the fast loop — typecheck, lint and the unit tests, about ten seconds, no browser.
+`pnpm run test:all` adds everything below and takes about twelve minutes.
+
 1. `pnpm run build:e2e` — the build with the `__ddv` hooks (`src/debug.ts`) and
    `http://localhost/*` allowed. A store build publishes nothing on the page, so the suites wait
    for `window.__ddv` until they time out.

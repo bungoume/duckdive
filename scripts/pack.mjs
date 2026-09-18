@@ -20,9 +20,9 @@ rmSync(zip, { force: true });
 const STORE_HOSTS = ['https://*.amazonaws.com/*'];
 
 /**
- * `pnpm test` ends with build:e2e, which grants http://localhost/* and publishes the test hooks on
- * window.__ddv. Zipping that dist/ would upload a build that reaches a local server and exposes
- * its internals to any page, so the staged copy is checked before it is zipped.
+ * `pnpm run test:all` builds for the e2e suites, which grants http://localhost/* and publishes the
+ * test hooks on window.__ddv. Zipping that dist/ would upload a build that reaches a local server
+ * and exposes its internals to any page, so the staged copy is checked before it is zipped.
  */
 function refuseTestBuild(stage, manifest) {
   const hosts = manifest.host_permissions ?? [];
