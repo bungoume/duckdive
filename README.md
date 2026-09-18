@@ -47,13 +47,11 @@ The extension ID is `kohchgcbcmdcoondpjoiaccfkhadkpki`. The manifest carries the
 
 ## Releases
 
-A release is cut from `main` by hand:
+Commits on `main` follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/); `feat` and `fix` are what move the version and what the changelog is written from.
 
-1. Move the `[Unreleased]` entries of `CHANGELOG.md` under a `## [X.Y.Z] - YYYY-MM-DD` heading.
-2. Set the same version in `package.json` (it becomes the manifest's `version`) and commit.
-3. `git tag vX.Y.Z && git push origin vX.Y.Z`.
+release-please keeps one pull request open and rewrites it on every push to `main` with the next version, the new `CHANGELOG.md` section and the release notes. Nothing is published until that pull request is merged; merging it is the release.
 
-The tag runs `.github/workflows/release.yml`: it refuses a tag that does not match `package.json`, runs the checks, builds the store zip and creates a GitHub Release with the changelog section as its notes and `duckdive-X.Y.Z.zip` attached. That zip is what goes to the Web Store. Tags and published releases are never moved or rewritten; a mistake is fixed by the next version.
+`.github/workflows/release.yml` then tags the version, creates a GitHub Release with the changelog section as its notes, and attaches `duckdive-X.Y.Z.zip` built by `pnpm run pack`. That zip is what goes to the Web Store, by hand. The version is written by release-please into `package.json` (it becomes the manifest's `version`) and `.github/release-please-manifest.json`; no version is edited and no tag is pushed by hand. Tags and published releases are never moved or rewritten; a mistake is fixed by the next version.
 
 ## Languages
 

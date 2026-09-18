@@ -47,8 +47,14 @@
       "minimumReleaseAge": null,
       "groupName": "lock file maintenance",
       "automerge": true
+    },
+    {
+      "description": "release-please reads the Conventional Commit subjects on main to decide the next version and to write the changelog. config:best-practices would label dependency updates `fix(deps)`, which would make every one of them a patch release listed under Fixed; `chore` keeps them out of both. Placed last so it wins over the preset.",
+      "matchPackageNames": ["*"],
+      "semanticCommitType": "chore"
     }
   ],
+  "semanticCommits": "enabled",
   "automergeType": "pr",
   "automergeStrategy": "squash",
   "platformAutomerge": false,

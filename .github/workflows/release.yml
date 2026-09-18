@@ -1,15 +1,16 @@
 name: Release
 
-# A tag `vX.Y.Z` publishes that version: the workflow checks the tag against
-# package.json, builds the store zip and attaches it to a GitHub Release whose
-# notes are the matching section of CHANGELOG.md. Tags are never moved or
-# rewritten; a broken release is fixed by the next version.
+# Every push to main updates the release pull request: release-please keeps the version in
+# package.json, the new CHANGELOG.md section and the release notes inside it, built from the
+# Conventional Commit subjects since the last tag. Merging that pull request tags the version
+# and creates the GitHub Release; the second job attaches the store zip to it. Tags are never
+# moved or rewritten; a broken release is fixed by the next version.
 
 on:
   push:
-    tags: ['v*']
+    branches: [main]
 
-# Nothing is granted by default; the job below asks for what it needs.
+# Nothing is granted by default; the jobs below ask for what they need.
 permissions: {}
 
 concurrency:
@@ -17,15 +18,36 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: build the store zip and publish the release
+  release-please:
+    name: maintain the release pull request
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # create the tag and the release
+      pull-requests: write # open and update the release pull request
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          config-file: .github/release-please-config.json
+          manifest-file: .github/release-please-manifest.json
+
+  publish:
+    name: build the store zip and attach it to the release
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      contents: write # create the release and upload the zip
+      contents: write # upload the zip to the release
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
           persist-credentials: false
       # No dependency cache here: this job produces the file that goes to the Web Store, and a
       # poisoned cache entry would end up inside it.
@@ -35,43 +57,15 @@ jobs:
           cache: false
           require-lockfile: true
 
-      # The tag is what people see; package.json#version is what ends up in the manifest. They
-      # are written by hand, so they are compared before anything is built.
-      - name: Check the tag against package.json
-        env:
-          TAG: ${{ github.ref_name }}
-        run: |
-          version=$(node -p "require('./package.json').version")
-          if [ "$TAG" != "v$version" ]; then
-            echo "::error::tag $TAG does not match package.json version v$version"
-            exit 1
-          fi
-
       - run: pnpm run typecheck
       - run: pnpm run lint
       - run: pnpm run test:unit
       # Builds a store build and refuses to zip anything else (scripts/pack.mjs).
       - run: pnpm run pack
 
-      - name: Read the changelog section
-        env:
-          TAG: ${{ github.ref_name }}
-        run: |
-          awk -v v="${TAG#v}" 'index($0, "## [" v "]") == 1 { on = 1; next } on && /^## / { exit } on { print }' CHANGELOG.md > notes.md
-          if [ ! -s notes.md ]; then
-            echo "::error::CHANGELOG.md has no section for ${TAG#v}"
-            exit 1
-          fi
-
-      - name: Publish the release
+      - name: Attach the store zip
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-        # Idempotent, so re-running the job after a failed upload finishes the release instead of
-        # stopping at "release already exists".
-        run: |
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" release/*.zip --clobber
-          else
-            gh release create "$TAG" release/*.zip --title "$TAG" --notes-file notes.md
-          fi
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        # release-please has already created the release with its notes; this only adds the file.
+        run: gh release upload "$TAG" release/*.zip --clobber
