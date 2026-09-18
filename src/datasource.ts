@@ -456,7 +456,7 @@ export async function createDemoTable() {
 CREATE TABLE demo_logs AS
 WITH r AS (
   SELECT i,
-    random() AS r1, random() AS r2, random() AS r3, random() AS r4, random() AS r5, random() AS r6
+    random() AS r1, random() AS r2, random() AS r3, random() AS r4, random() AS r5, random() AS r6, random() AS r7
   FROM range(120000) t(i)
 ),
 base AS (
@@ -493,7 +493,9 @@ SELECT
               bytes := (200 + floor(r1 * 50000))::BIGINT, latency_ms := round(latency_ms, 1)::DOUBLE) AS http,
   struct_pack(country := country,
               city := CASE country WHEN 'JP' THEN ['Tokyo','Osaka','Nagoya'][1 + floor(r3 * 3)::INT] WHEN 'US' THEN ['New York','San Jose'][1 + floor(r3 * 2)::INT] WHEN 'SG' THEN 'Singapore' WHEN 'DE' THEN 'Frankfurt' WHEN 'GB' THEN 'London' ELSE 'Seoul' END) AS geo,
-  '203.0.' || floor(r2 * 255)::INT::VARCHAR || '.' || floor(r5 * 255)::INT::VARCHAR AS client_ip,
+  -- Only the RFC 5737 documentation ranges, so a screenshot never shows a routable address. r7 is
+  -- the client's own random: picking the range with r2 would have tied every 192.0.2 address to GET.
+  ['192.0.2.','198.51.100.','203.0.113.'][1 + floor(r7 * 3)::INT] || floor(r5 * 255)::INT::VARCHAR AS client_ip,
   ['Mozilla/5.0 (Macintosh) Chrome/126','Mozilla/5.0 (Windows NT 10.0) Edge/125','Mozilla/5.0 (iPhone) Safari/17','curl/8.4.0','Googlebot/2.1'][1 + floor(r4 * 5)::INT] AS user_agent,
   CASE WHEN status >= 500 THEN 'error' WHEN status >= 400 THEN 'warn' ELSE 'info' END AS level,
   CASE
