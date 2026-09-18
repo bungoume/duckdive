@@ -10,6 +10,12 @@
   },
   "packageRules": [
     {
+      "description": "release-please reads the Conventional Commit subjects on main to decide the next version and to write the changelog. config:best-practices would label dependency updates `fix(deps)`, which would make every one of them a patch release listed under Fixed; `chore` keeps them out of both. The preset's rules are resolved before this list, so one rule here beats them; it comes first among the local rules so that the cooldown exceptions below still override the 7 days it states for everything.",
+      "matchPackageNames": ["*"],
+      "semanticCommitType": "chore",
+      "minimumReleaseAge": "7 days"
+    },
+    {
       "description": "Wait 7 days after a release before proposing it (npm packages, the pnpm version in packageManager, GitHub Actions and the pinned CLI tools alike). Placed after config:best-practices so it overrides the preset's 3-day npm rule; the update types without a release timestamp keep the preset's opt-out. Security updates bypass the wait.",
       "matchUpdateTypes": ["major", "minor", "patch", "digest", "pinDigest"],
       "minimumReleaseAge": "7 days"
@@ -47,11 +53,6 @@
       "minimumReleaseAge": null,
       "groupName": "lock file maintenance",
       "automerge": true
-    },
-    {
-      "description": "release-please reads the Conventional Commit subjects on main to decide the next version and to write the changelog. config:best-practices would label dependency updates `fix(deps)`, which would make every one of them a patch release listed under Fixed; `chore` keeps them out of both. Placed last so it wins over the preset.",
-      "matchPackageNames": ["*"],
-      "semanticCommitType": "chore"
     }
   ],
   "semanticCommits": "enabled",
