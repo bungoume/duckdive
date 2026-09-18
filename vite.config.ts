@@ -23,7 +23,7 @@ const manifest = {
   // Public key of the Chrome Web Store item, so unpacked (dev) builds get the same extension ID
   // (kohchgcbcmdcoondpjoiaccfkhadkpki) and the OIDC redirect URL https://kohchgcbcmdcoondpjoiaccfkhadkpki.chromiumapp.org/
   // as the store build. scripts/pack.mjs strips it from the uploaded zip (the store rejects "key").
-  key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArgh8WQbJmwPI8reODpywYBayQ/Z1Bxs3eJsiBOqQR8Kx2s9VdD29Az/3J4d4xaEy+J/Yh3+lYMguCaQmuMJpcqnOYeAtUBV2MX+kUnFb41kCDcma2JVggcFOEpS+0PIN7fmvXDfohHZa4APBAmDAtMKRgA+hOpkpNl6fTMTLl4jEU6hnV/+csswNSJ5g32XP3JSJHuGnVaMbTtIVYjrgWeE6A4aJ7pXKdDNvbyIvnIun6zMrjqJDOjhgJYOGUKXqutm0ZDt0DG+zuQAQz2Ewp1QM7noRQ/jkZwEL2G6/l91Hs6hANFyM1rBnCd6SP8QZEDbdwz31NAM14LQ5oUhxxQIDAQAB',
+  key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArgh8WQbJmwPI8reODpywYBayQ/Z1Bxs3eJsiBOqQR8Kx2s9VdD29Az/3J4d4xaEy+J/Yh3+lYMguCaQmuMJpcqnOYeAtUBV2MX+kUnFb41kCDcma2JVggcFOEpS+0PIN7fmvXDfohHZa4APBAmDAtMKRgA+hOpkpNl6fTMTLl4jEU6hnV/+csswNSJ5g32XP3JSJHuGnVaMbTtIVYjrgWeE6A4aJ7pXKdDNvbyIvnIun6zMrjqJDOjhgJYOGUKXqutm0ZDt0DG+zuQAQz2Ewp1QM7noRQ/jkZwEL2G6/l91Hs6hANFyM1rBnCd6SP8QZEDbdwz31NAM14LQ5oUhxxQIDAQAB', // gitleaks:allow - a public key, not a secret
   icons: { 16: 'icons/icon-16.png', 32: 'icons/icon-32.png', 48: 'icons/icon-48.png', 128: 'icons/icon-128.png' },
   action: { default_title: '__MSG_actionTitle__', default_icon: { 16: 'icons/icon-16.png', 32: 'icons/icon-32.png' } },
   background: { service_worker: 'background.js', type: 'module' },

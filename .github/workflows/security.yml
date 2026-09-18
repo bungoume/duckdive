@@ -1,0 +1,104 @@
+name: Security
+
+# Four scans that CodeQL does not cover: committed secrets, vulnerable dependencies (both the
+# ones a pull request adds and the whole lock file), and Semgrep's pattern rules.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '41 3 * * 1' # weekly, so a lock file that has not changed is still checked
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # A pinned release asset verified against its sha256; Renovate refreshes the tag and the
+      # digest together (customManagers in renovate.json).
+      - name: Install gitleaks
+        env:
+          # renovate: datasource=github-release-attachments depName=gitleaks/gitleaks
+          GITLEAKS_VERSION: 'v8.30.1'
+          GITLEAKS_SHA256: '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb'
+        run: |
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/gitleaks.tar.gz" \
+            "https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
+      # .gitleaks.toml keeps the generated build output out; the Web Store public key in it reads
+      # like a secret.
+      - name: Check for secrets
+        run: |
+          "$RUNNER_TEMP/gitleaks" dir -v --no-banner .
+
+  dependency-review:
+    name: dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Fails the pull request when it introduces a dependency with a known vulnerability or a
+      # licence the project cannot ship.
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+
+  semgrep:
+    name: semgrep
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Two audit rules are excluded: the pattern expander compiles a glob the user typed into a
+      # RegExp, and one console.warn interpolates a URL. Both run in the user's own browser on
+      # the user's own input, so neither is a finding here.
+      - name: Semgrep scan
+        env:
+          # renovate: datasource=docker depName=semgrep/semgrep
+          SEMGREP_IMAGE: 'semgrep/semgrep:1.177.0@sha256:acaac22ffc7b7cc5926de0751b223bce0b2491c33d18422fa72f632c78d81198'
+        run: |
+          docker run --rm -e SEMGREP_SEND_METRICS=off -v "$PWD:/src" -w /src "$SEMGREP_IMAGE" \
+            semgrep scan --config p/default --error --oss-only \
+              --exclude-rule javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp \
+              --exclude-rule javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring
+
+  osv-pr:
+    name: osv (added dependencies)
+    if: github.event_name == 'pull_request'
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@6e4298ebc4db23e847df9b2e2de2939d6f066c67 # v2.5.1
+    with:
+      fail-on-vuln: true
+
+  osv-lockfile:
+    name: osv (whole lock file)
+    if: github.event_name != 'pull_request'
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@6e4298ebc4db23e847df9b2e2de2939d6f066c67 # v2.5.1

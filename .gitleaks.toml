@@ -1,0 +1,8 @@
+# Secret scanning: the default rule set, with the build output left out. dist/ and release/ are
+# generated and hold the Web Store public key copied from vite.config.ts, which reads like a
+# high-entropy secret but is published with every build.
+[extend]
+useDefault = true
+
+[allowlist]
+paths = ['''^dist/''', '''^release/''']

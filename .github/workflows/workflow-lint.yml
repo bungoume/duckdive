@@ -1,0 +1,63 @@
+name: Workflow lint
+
+# The workflows themselves: actionlint checks their syntax, expressions and shell snippets,
+# zizmor audits them for the mistakes that turn a workflow into a way in (unpinned actions,
+# credentials left in the checkout, permissions wider than the job needs). Prettier already
+# formats the YAML, so no second formatter runs here.
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/**']
+  pull_request:
+    paths: ['.github/**']
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: actionlint, zizmor
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install actionlint
+        env:
+          # renovate: datasource=github-release-attachments depName=rhysd/actionlint
+          ACTIONLINT_VERSION: 'v1.7.12'
+          ACTIONLINT_SHA256: '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8'
+        run: |
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/actionlint.tar.gz" \
+            "https://github.com/rhysd/actionlint/releases/download/${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION#v}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  $RUNNER_TEMP/actionlint.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP" actionlint
+
+      - name: Install zizmor
+        env:
+          # renovate: datasource=github-release-attachments depName=zizmorcore/zizmor
+          ZIZMOR_VERSION: 'v1.30.1'
+          ZIZMOR_SHA256: 'e65324f4430c2717591937edcec90ccbefaf14c174f8ec9415e03ca875b46e1a'
+        run: |
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/zizmor.tar.gz" \
+            "https://github.com/zizmorcore/zizmor/releases/download/${ZIZMOR_VERSION}/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ZIZMOR_SHA256}  $RUNNER_TEMP/zizmor.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/zizmor.tar.gz" -C "$RUNNER_TEMP" zizmor
+
+      # The matcher turns actionlint's output into annotations on the pull request's diff.
+      - name: Run actionlint
+        run: |
+          echo "::add-matcher::.github/problem-matchers/actionlint.json"
+          "$RUNNER_TEMP/actionlint" -color
+
+      - name: Run zizmor
+        run: |
+          "$RUNNER_TEMP/zizmor" --format=github --no-online-audits .github

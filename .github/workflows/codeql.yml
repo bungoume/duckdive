@@ -7,8 +7,8 @@ on:
   schedule:
     - cron: '17 3 * * 1' # weekly, so new queries run against unchanged code too
 
-permissions:
-  contents: read
+# Nothing is granted by default; the job below asks for what it needs.
+permissions: {}
 
 # One run per branch; a newer push cancels the run it supersedes.
 concurrency:
@@ -35,6 +35,13 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: none
+          # The extended suite adds the queries that trade some precision for coverage.
+          queries: security-extended
+          # Test and fixture code is not shipped; findings in it are noise.
+          config: |
+            paths-ignore:
+              - test/**
+              - e2e/**
       - uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
         with:
           category: /language:${{ matrix.language }}

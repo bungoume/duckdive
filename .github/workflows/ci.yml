@@ -5,9 +5,8 @@ on:
     branches: [main]
   pull_request:
 
-# The GITHUB_TOKEN only needs to read the repository; every job inherits this.
-permissions:
-  contents: read
+# Nothing is granted by default; each job asks for what it needs.
+permissions: {}
 
 # One run per branch; a newer push cancels the run it supersedes.
 concurrency:
@@ -22,6 +21,8 @@ jobs:
     name: typecheck, lint, unit tests, smoke e2e
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -50,6 +51,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: check
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -88,6 +91,8 @@ jobs:
     name: store build and zip
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

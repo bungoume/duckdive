@@ -15,6 +15,7 @@
       "description": "typescript-eslint declares the TypeScript majors it supports as a peer range; land TypeScript majors together with it.",
       "matchPackageNames": ["typescript", "typescript-eslint"],
       "matchUpdateTypes": ["major"],
+      "minimumReleaseAge": "7 days",
       "groupName": "TypeScript major"
     }
   ],
