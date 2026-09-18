@@ -48,6 +48,7 @@ All notable changes to Duckdive. The format follows [Keep a Changelog](https://k
 - Renovate groups its pull requests, merges the green ones, refreshes the lock file, and follows the version and sha256 of every CLI tool the workflows pin.
 - `.claude/skills/` carries the notes for running the e2e suites and cutting a release.
 - The `duckdb-versions` e2e section names the DuckDB release that writes the fixtures and the one that reads them.
+- The toolchain moves to Node 26: `engines.node >= 26`, `node@26` in CI and in the release workflow, `@types/node` on the same major.
 
 ## [0.2.0] - 2026-09-17
 
