@@ -329,6 +329,15 @@ const connectDone = (marker) =>
     marker,
     { timeout: 60000 },
   );
+/**
+ * The error alert's text, or null when the connect succeeded. Every caller has already waited for
+ * the connect to settle, so the alert is in the DOM by now: count() reads what is there, while
+ * locator.textContent() would auto-wait the full 30 s default on each successful connect.
+ */
+const errorAlert = async () => {
+  const a = page.locator('.alert.error');
+  return (await a.count()) ? a.textContent() : null;
+};
 /** Press Connect; if the pattern has {name} variables, select every listed value and press again. */
 const pressConnect = async () => {
   await page.click('.source-page button:has-text("connect")');
@@ -397,10 +406,7 @@ const connectTemplate = async (label, urlsFix, marker) => {
     marker,
     { timeout: 60000 },
   );
-  const err = await page
-    .locator('.alert.error')
-    .textContent()
-    .catch(() => null);
+  const err = await errorAlert();
   const tf = err ? null : await page.inputValue('.source-page .field-row:has-text("Time field") select');
   return { err, tf };
 };
@@ -417,10 +423,7 @@ const connectPattern = async (urls, marker) => {
     marker,
     { timeout: 60000 },
   );
-  const err = await page
-    .locator('.alert.error')
-    .textContent()
-    .catch(() => null);
+  const err = await errorAlert();
   const tf = err ? null : await page.inputValue('.source-page .field-row:has-text("Time field") select');
   return { err, tf };
 };
@@ -579,10 +582,7 @@ await section('s3-static-keys', async () => {
   const srvBefore = await serverStats();
   await page.click('.source-page button:has-text("Connect")');
   await connectDone('s3://bucket/logs.parquet');
-  const s3err = await page
-    .locator('.alert.error')
-    .textContent()
-    .catch(() => null);
+  const s3err = await errorAlert();
   const s3rows = s3err ? null : await srcRows();
   check('s3 path-style connect', !s3err && s3rows === 600000, s3err ?? `${(await page.locator('.alert.ok', { hasText: 's3://bucket/logs.parquet' }).textContent()).trim()} rows=${s3rows}`);
   await page.click('.header nav button:has-text("Discover")');
@@ -637,10 +637,7 @@ await section('sts-credentials', async () => {
   const srvT0 = await serverStats();
   await page.click('.source-page button:has-text("Connect")');
   await connectDone(stsFile);
-  const oidcErr = await page
-    .locator('.alert.error')
-    .textContent()
-    .catch(() => null);
+  const oidcErr = await errorAlert();
   const oidcRows = oidcErr ? null : await srcRows();
   check('connect with STS credentials', !oidcErr && oidcRows === 600000, oidcErr ?? `rows=${oidcRows}`);
   await page.click('.header nav button:has-text("Discover")');
@@ -682,10 +679,7 @@ await section('named-wildcards', async () => {
   await page.click('.variables-box button:has-text("Select all values")');
   await page.click('.source-page button:has-text("Connect")');
   await page.waitForFunction(() => [...document.querySelectorAll('.alert.ok')].some((e) => /matched/.test(e.textContent ?? '')) || document.querySelector('.alert.error'), null, { timeout: 60000 });
-  const nErr = await page
-    .locator('.alert.error')
-    .textContent()
-    .catch(() => null);
+  const nErr = await errorAlert();
   const nOk = nErr ? '' : await page.locator('.alert.ok', { hasText: 'matched' }).textContent();
   const albs = nErr ? [] : await page.evaluate(() => window.__ddv.query('SELECT alb, account, region, count(*) n, count(DISTINCT _file) files FROM src GROUP BY 1,2,3 ORDER BY 1').then((r) => r.rows));
   check(
@@ -744,11 +738,9 @@ await section('date-tokens', async () => {
   await page.selectOption('.source-page .field-row:has-text("Authentication") select', 'static');
   await page.selectOption('.source-page .field-row:has-text("Format") select', 'auto');
   await page.click('.source-page button:has-text("Connect")');
-  await page.waitForFunction(() => [...document.querySelectorAll('.alert.ok')].some((e) => /matched/.test(e.textContent ?? '')) || document.querySelector('.alert.error'), null, { timeout: 60000 });
-  const globErr = await page
-    .locator('.alert.error')
-    .textContent()
-    .catch(() => null);
+  // The previous section's alert also says "matched", so wait for one naming a file of THIS source.
+  await connectDone('parquet');
+  const globErr = await errorAlert();
   const globOk = globErr ? '' : await page.locator('.alert.ok', { hasText: 'matched' }).textContent();
   const globRows = globErr ? null : await srcRows();
   check(
@@ -787,10 +779,7 @@ await section('alb-logs', async () => {
   const srvC0 = await serverStats();
   await page.click('.source-page button:has-text("Connect")');
   await page.waitForFunction(() => [...document.querySelectorAll('.alert.ok')].some((e) => /log\.gz/.test(e.textContent ?? '')) || document.querySelector('.alert.error'), null, { timeout: 60000 });
-  const albErr = await page
-    .locator('.alert.error')
-    .textContent()
-    .catch(() => null);
+  const albErr = await errorAlert();
   const srvC1 = await serverStats();
   check(
     'connect reads no log data (listing only)',
@@ -1020,10 +1009,7 @@ await section('concatenated-gzip', async () => {
   const srvM0 = await serverStats();
   await pressConnect();
   await page.waitForFunction(() => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect', null, { timeout: 120000 });
-  const multiErr = await page
-    .locator('.alert.error')
-    .textContent()
-    .catch(() => null);
+  const multiErr = await errorAlert();
   const multiOk = multiErr ? '' : await page.locator('.alert.ok', { hasText: 'multigz' }).first().textContent();
   const multiRows = await q('SELECT count(*) n FROM src');
   const srvM1 = await serverStats();
@@ -1056,10 +1042,7 @@ await section('damaged-gzip', async () => {
   await page.selectOption('.source-page .field-row:has-text("Format") select', 'lines');
   await pressConnect();
   await page.waitForFunction(() => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect', null, { timeout: 60000 });
-  const badErr = await page
-    .locator('.alert.error')
-    .textContent()
-    .catch(() => null);
+  const badErr = await errorAlert();
   const badCount = await q('SELECT count(*) n FROM src');
   check('damaged gz: connect succeeds, count(*) reports the GZIP error', !badErr && /GZIP/i.test(badCount?.[0]?.error ?? ''), badErr ?? JSON.stringify(badCount).slice(0, 160));
   await page.click('.header nav button:has-text("Discover")');
