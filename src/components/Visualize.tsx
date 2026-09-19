@@ -8,7 +8,7 @@ import { findField } from '../fields';
 import { compileSearch, fetchVis, metricLabel, type VisResult } from '../queries';
 import { INTERVALS, autoInterval, bucketOffsetMinutes, intervalByKey, intervalLabel, newId, type Filter, type Interval } from '../sql';
 import { t } from '../i18n';
-import { loadSavedVis, storeSavedVis, type ChartType, type MetricAgg, type MetricDef, type SavedVis, type SearchState, type VisState } from '../state';
+import { MAX_BREAKDOWN_VALUES, MAX_TERM_VALUES, loadSavedVis, storeSavedVis, type ChartType, type MetricAgg, type MetricDef, type SavedVis, type SearchState, type VisState } from '../state';
 import { Chart, type ChartPick } from './Chart';
 import { DataTable, MetricTiles } from './VisTable';
 import { FieldSidebar } from './FieldSidebar';
@@ -364,7 +364,14 @@ export function Visualize(props: {
                     </FormField>
                     <div class="row">
                       <FormField label={t('vis.numValues')} class="grow">
-                        <input class="input" type="number" min={1} max={500} value={vis.x.size} onInput={(e) => setX({ size: Number(e.currentTarget.value) || 10 })} />
+                        <input
+                          class="input"
+                          type="number"
+                          min={1}
+                          max={MAX_TERM_VALUES}
+                          value={vis.x.size}
+                          onInput={(e) => setX({ size: Math.min(MAX_TERM_VALUES, Math.max(1, Number(e.currentTarget.value) || 10)) })}
+                        />
                       </FormField>
                       <FormField label={t('vis.rankBy')} class="grow">
                         <select class="input" value={vis.x.orderBy} onChange={(e) => setX({ orderBy: e.currentTarget.value as 'metric' | 'alpha' })}>
@@ -478,7 +485,14 @@ export function Visualize(props: {
               {vis.breakdown.field && (
                 <div class="row">
                   <FormField label={t('vis.numValues')} class="grow">
-                    <input class="input" type="number" min={1} max={50} value={vis.breakdown.size} onInput={(e) => setBreakdown({ size: Number(e.currentTarget.value) || 5 })} />
+                    <input
+                      class="input"
+                      type="number"
+                      min={1}
+                      max={MAX_BREAKDOWN_VALUES}
+                      value={vis.breakdown.size}
+                      onInput={(e) => setBreakdown({ size: Math.min(MAX_BREAKDOWN_VALUES, Math.max(1, Number(e.currentTarget.value) || 5)) })}
+                    />
                   </FormField>
                   <label class="row" style="margin-top:14px">
                     <input type="checkbox" checked={vis.breakdown.other} onChange={(e) => setBreakdown({ other: e.currentTarget.checked })} /> {t('vis.groupOther')}

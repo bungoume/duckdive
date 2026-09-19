@@ -119,6 +119,13 @@ describe('malformed URL state', () => {
     expect(u.vis.title).toBe('');
   });
 
+  it('bounds top-value counts restored from a link', () => {
+    setHash('visualize', { vis: { x: { kind: 'terms', size: 1e100 }, breakdown: { size: 1e100 } } });
+    const vis = readUrlState().vis;
+    expect(vis.x.size).toBe(500);
+    expect(vis.breakdown.size).toBe(50);
+  });
+
   it('drops filters without a valid shape and normalises the rest', () => {
     setHash('discover', {
       search: {

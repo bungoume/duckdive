@@ -62,4 +62,21 @@ describe('visualization SQL', () => {
     expect(run.mock.calls[0][0]).toContain('(count(*)::DOUBLE / 1) AS m0');
     expect(result.rows.map((row) => row.m[0])).toEqual([1, 1]);
   });
+
+  it('bounds top-N limits again when called with unsanitized state', async () => {
+    const host: Field = { name: 'host', expr: '"host"', kind: 'string', duckType: 'VARCHAR', column: 'host', searchable: true };
+    const vis = { ...DEFAULT_VIS, x: { ...DEFAULT_VIS.x, kind: 'terms' as const, field: 'host', size: 1e100 }, breakdown: { field: 'host', size: 1e100, other: true } };
+    await fetchVis(vis, 'TRUE', null, [host], null, 0, 60);
+    expect(run.mock.calls[0][0]).toContain('LIMIT 500');
+    expect(run.mock.calls[0][0]).toContain('LIMIT 50');
+  });
+
+  it('treats a non-finite numeric histogram interval as automatic', async () => {
+    run.mockResolvedValueOnce({ rows: [{ mn: 0, mx: 100 }], columns: [], ms: 0 }).mockResolvedValueOnce({ rows: [], columns: [], ms: 0 });
+    const bytes: Field = { name: 'bytes', expr: '"bytes"', kind: 'number', duckType: 'DOUBLE', column: 'bytes', searchable: false };
+    const vis = { ...DEFAULT_VIS, x: { ...DEFAULT_VIS.x, kind: 'histogram' as const, field: 'bytes', interval: '1e309' } };
+    const result = await fetchVis(vis, 'TRUE', null, [bytes], null, 0, 60);
+    expect(result.step).toBe(2);
+    expect(run.mock.calls[1][0]).not.toContain('Infinity');
+  });
 });

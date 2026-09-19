@@ -5,7 +5,7 @@ import { describeError } from './errors';
 import { templateExpr } from './patterns';
 import { searchToSql } from './search';
 import { VIEW, bucketExpr, buildWhere, fieldCompareExpr, nextBucketStart, niceStep, type Interval } from './sql';
-import type { MetricDef, SearchState, SortDir, VisState } from './state';
+import { MAX_BREAKDOWN_VALUES, MAX_TERM_VALUES, type MetricDef, type SearchState, type SortDir, type VisState } from './state';
 import { t } from './i18n';
 
 export interface Compiled {
@@ -282,7 +282,8 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
     xExpr = `(${xf.expr})::VARCHAR`;
   } else if (xKind === 'histogram' && xf) {
     const num = xf.kind === 'number' ? xf.expr : `TRY_CAST(${xf.expr} AS DOUBLE)`;
-    step = Number(vis.x.interval) > 0 ? Number(vis.x.interval) : null;
+    const requestedStep = Number(vis.x.interval);
+    step = Number.isFinite(requestedStep) && requestedStep > 0 ? requestedStep : null;
     if (step === null) {
       // auto: about 25 buckets between the smallest and the largest value of the search
       const b = await query(`SELECT min(${num})::DOUBLE AS mn, max(${num})::DOUBLE AS mx FROM ${VIEW} WHERE ${where}`);
@@ -306,10 +307,12 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
   const topX = xKind === 'terms' && !!xExpr;
   if (topX) {
     const ord = vis.x.orderBy === 'alpha' ? `x ${dir}` : `${ms[0]} ${dir} NULLS LAST`;
-    ctes.push(`topx AS (SELECT x, row_number() OVER (ORDER BY ${ord}) AS rk FROM base GROUP BY x ORDER BY rk LIMIT ${Math.max(1, vis.x.size)})`);
+    const limit = Math.min(MAX_TERM_VALUES, Math.max(1, Number.isFinite(vis.x.size) ? Math.floor(vis.x.size) : 1));
+    ctes.push(`topx AS (SELECT x, row_number() OVER (ORDER BY ${ord}) AS rk FROM base GROUP BY x ORDER BY rk LIMIT ${limit})`);
   }
   if (gExpr) {
-    ctes.push(`topg AS (SELECT g, ${ms[0]} AS m0 FROM base GROUP BY g ORDER BY m0 DESC NULLS LAST LIMIT ${Math.max(1, vis.breakdown.size)})`);
+    const limit = Math.min(MAX_BREAKDOWN_VALUES, Math.max(1, Number.isFinite(vis.breakdown.size) ? Math.floor(vis.breakdown.size) : 1));
+    ctes.push(`topg AS (SELECT g, ${ms[0]} AS m0 FROM base GROUP BY g ORDER BY m0 DESC NULLS LAST LIMIT ${limit})`);
     const inTopG = `EXISTS (SELECT 1 FROM topg WHERE topg.g IS NOT DISTINCT FROM base.g)`;
     if (vis.breakdown.other) {
       gSel = `CASE WHEN ${inTopG} THEN g ELSE NULL END`;

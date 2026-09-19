@@ -106,6 +106,10 @@ const FILTER_OPS: readonly FilterOp[] = ['is', 'is_not', 'is_one_of', 'is_not_on
 const CHARTS: readonly ChartType[] = ['area', 'line', 'bar', 'table', 'metric'];
 const AGGS: readonly MetricAgg[] = ['count', 'sum', 'avg', 'min', 'max', 'median', 'unique', 'p95', 'p99', 'percentile', 'rate'];
 const X_KINDS: readonly XAxisDef['kind'][] = ['date_histogram', 'terms', 'histogram', 'none'];
+export const MAX_TERM_VALUES = 500;
+export const MAX_BREAKDOWN_VALUES = 50;
+
+const boundedSize = (value: unknown, fallback: number, max: number): number => (typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.min(max, Math.floor(value)) : fallback);
 
 /**
  * Filters carried by a URL. Anything malformed is dropped. Custom SQL filters run verbatim inside
@@ -174,14 +178,14 @@ export function sanitizeVis(raw: unknown): VisState {
       kind: oneOf(x.kind, X_KINDS, dx.kind),
       field: strOrNull(x.field),
       interval: isStr(x.interval) ? x.interval : dx.interval,
-      size: typeof x.size === 'number' && x.size > 0 ? Math.floor(x.size) : dx.size,
+      size: boundedSize(x.size, dx.size, MAX_TERM_VALUES),
       orderBy: oneOf(x.orderBy, ['metric', 'alpha'] as const, dx.orderBy),
       orderDir: oneOf(x.orderDir, ['asc', 'desc'] as const, dx.orderDir),
     },
     metrics: metrics.length ? metrics : DEFAULT_VIS.metrics,
     breakdown: {
       field: strOrNull(b.field),
-      size: typeof b.size === 'number' && b.size > 0 ? Math.floor(b.size) : DEFAULT_VIS.breakdown.size,
+      size: boundedSize(b.size, DEFAULT_VIS.breakdown.size, MAX_BREAKDOWN_VALUES),
       other: typeof b.other === 'boolean' ? b.other : DEFAULT_VIS.breakdown.other,
     },
     title: isStr(r.title) ? r.title : '',
