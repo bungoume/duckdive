@@ -54,5 +54,6 @@ describe('field helpers', () => {
     expect(timeExprFor(fields[3])).toBe('("ts")::TIMESTAMP');
     expect(timeExprFor(fields[1])).toContain('epoch_ms');
     expect(timeExprFor(fields[2])).toContain('try_strptime');
+    expect(timeExprFor(fields[2])).toContain('AS TIMESTAMPTZ');
   });
 });

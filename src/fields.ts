@@ -189,7 +189,7 @@ export function timeExprFor(f: Field): string {
   }
   // strings: ISO 8601, "10/Sep/2026:12:00:00 +0900" (nginx / apache, with or without brackets), epoch digits
   const e = f.expr;
-  return `coalesce(TRY_CAST(${e} AS TIMESTAMP), try_strptime(${e}, '[%d/%b/%Y:%H:%M:%S %z]')::TIMESTAMP, try_strptime(${e}, '%d/%b/%Y:%H:%M:%S %z')::TIMESTAMP, try_strptime(${e}, '%d/%b/%Y:%H:%M:%S')::TIMESTAMP, CASE WHEN regexp_matches(${e}, '^\\d{9,10}(\\.\\d+)?$') THEN to_timestamp(TRY_CAST(${e} AS DOUBLE))::TIMESTAMP WHEN regexp_matches(${e}, '^\\d{13}$') THEN epoch_ms(TRY_CAST(${e} AS BIGINT)) END)`;
+  return `coalesce(TRY_CAST(${e} AS TIMESTAMPTZ)::TIMESTAMP, try_strptime(${e}, '[%d/%b/%Y:%H:%M:%S %z]')::TIMESTAMP, try_strptime(${e}, '%d/%b/%Y:%H:%M:%S %z')::TIMESTAMP, try_strptime(${e}, '%d/%b/%Y:%H:%M:%S')::TIMESTAMP, CASE WHEN regexp_matches(${e}, '^\\d{9,10}(\\.\\d+)?$') THEN to_timestamp(TRY_CAST(${e} AS DOUBLE))::TIMESTAMP WHEN regexp_matches(${e}, '^\\d{13}$') THEN epoch_ms(TRY_CAST(${e} AS BIGINT)) END)`;
 }
 
 export function isTimeCandidate(f: Field): boolean {
