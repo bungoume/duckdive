@@ -127,7 +127,7 @@ export const en = {
   'ds.vars.missing': 'Select at least one value for: {names}',
   'ds.naming': 'Field names',
   'ds.naming.hint':
-    'OpenTelemetry names apply to the fixed layouts of ALB, CloudFront and S3 server access logs; every other format keeps the names it delivers. Saved searches and visualizations name fields, so they do not carry over between the two.',
+    'OpenTelemetry names apply to the layouts duckdive recognises as a log family (ALB, CloudFront, S3 access, CloudTrail, WAF, Route 53 Resolver, VPC Flow Logs, Cloud Logging, Logpush); Parquet, CSV and plain JSON keep the names they deliver. Saved searches and visualizations name fields, so they do not carry over between the two.',
   'ds.name': 'Name',
   'ds.maxFiles': 'Warn when more files than this match before connecting (default 1000)',
   'ds.listingHint':

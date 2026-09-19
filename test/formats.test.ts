@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FORMATS, FORMAT_IDS, TEMPLATES, detectFormat, hasOtel, otelSelect, resolveFormat, timeFieldFor } from '../src/formats';
+import { FORMATS, FORMAT_IDS, TEMPLATES, detectFormat, hasOtel, otelRename, otelSelect, resolveFormat, timeFieldFor } from '../src/formats';
 import { viewSelect } from '../src/datasource';
 
 describe('detectFormat', () => {
@@ -138,5 +138,37 @@ describe('OpenTelemetry names', () => {
     expect(viewSelect(FORMATS.alb, ['s3://b/a.log.gz'], null, true, 'native')).toContain('* EXCLUDE (filename) REPLACE (TRY_CAST(');
     // a format without a projection is read under its own names whatever the naming says
     expect(viewSelect(FORMATS.parquet, ['s3://b/a.parquet'], null, true, 'otel')).toBe(viewSelect(FORMATS.parquet, ['s3://b/a.parquet'], null, true, 'native'));
+  });
+});
+
+describe('OpenTelemetry names for a layout whose columns come from the file', () => {
+  const flow = (cols: string[], keep: string[] = []) => otelRename(FORMATS.flowlogs.otelByName!, cols, new Set(keep));
+
+  it('reads the two spellings of a flow log field as one field', () => {
+    // text delivery writes the header with hyphens, Parquet delivery with underscores
+    expect(flow(['account-id'])).toBe(flow(['account_id']).replace('account_id', 'account-id'));
+    expect(flow(['flow-direction'])).toContain('AS "network.io.direction"');
+    expect(flow(['flow_direction'])).toContain('AS "network.io.direction"');
+  });
+
+  it('keeps the value the conventions have no room for beside the one they name', () => {
+    const sql = flow(['protocol', 'type']);
+    expect(sql).toContain('AS "network.transport"');
+    expect(sql).toContain('AS "aws.vpc.flow.protocol"');
+    expect(sql).toContain('AS "network.type"');
+    expect(sql).toContain('AS "aws.vpc.flow.type"');
+  });
+
+  it('gives a field it does not name its own namespace, so a custom format still reads', () => {
+    expect(flow(['pkt-src-aws-service'])).toBe('"pkt-src-aws-service" AS "aws.vpc.flow.pkt_src_aws_service"');
+    expect(flow(['some-field-aws-adds-later'])).toContain('AS "aws.vpc.flow.some_field_aws_adds_later"');
+  });
+
+  it("leaves the columns that are duckdive's own alone", () => {
+    expect(flow(['_file', 'account', 'srcaddr'], ['_file', 'account'])).toBe('"_file", "account", "srcaddr" AS "source.address"');
+  });
+
+  it('reads "-" as no value, which is what a flow log means by it', () => {
+    expect(FORMATS.flowlogs.reader(`['x']`, false)).toContain("nullstr = '-'");
   });
 });

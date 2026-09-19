@@ -125,7 +125,7 @@ export const ko: Messages = {
   'ds.vars.missing': '다음 변수에 대해 값을 하나 이상 선택하세요: {names}',
   'ds.naming': '필드 이름',
   'ds.naming.hint':
-    'OpenTelemetry 이름은 ALB, CloudFront, S3 서버 액세스 로그의 고정 레이아웃에 적용됩니다. 다른 형식은 로그가 전달하는 이름을 그대로 씁니다. 저장된 검색과 시각화는 필드 이름을 참조하므로 둘 사이에서 이어지지 않습니다.',
+    'OpenTelemetry 이름은 duckdive가 로그 종류로 인식하는 레이아웃(ALB, CloudFront, S3 액세스 로그, CloudTrail, WAF, Route 53 Resolver, VPC 플로우 로그, Cloud Logging, Logpush)에 적용됩니다. Parquet, CSV, 일반 JSON은 로그가 전달하는 이름을 그대로 씁니다. 저장된 검색과 시각화는 필드 이름을 참조하므로 둘 사이에서 이어지지 않습니다.',
   'ds.name': '이름',
   'ds.maxFiles': '연결 전에 이 수보다 많은 파일이 일치하면 경고 (기본값 1000)',
   'ds.listingHint':

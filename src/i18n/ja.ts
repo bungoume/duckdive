@@ -125,7 +125,7 @@ export const ja: Messages = {
   'ds.vars.missing': '次の変数に 1 つ以上の値を選択してください: {names}',
   'ds.naming': 'フィールド名',
   'ds.naming.hint':
-    'OpenTelemetry 名は ALB / CloudFront / S3 サーバアクセスログの固定レイアウトに適用されます。ほかの形式はログのままの名前です。保存した検索や可視化はフィールド名を参照するため、両者の間では引き継がれません。',
+    'OpenTelemetry 名は、duckdive がログの種類として認識できるレイアウト (ALB、CloudFront、S3 アクセスログ、CloudTrail、WAF、Route 53 Resolver、VPC フローログ、Cloud Logging、Logpush) に適用されます。Parquet・CSV・素の JSON はログのままの名前です。保存した検索や可視化はフィールド名を参照するため、両者の間では引き継がれません。',
   'ds.name': '名前',
   'ds.maxFiles': '接続前に警告を出すファイル数のしきい値(既定 1000)',
   'ds.listingHint':

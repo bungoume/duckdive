@@ -126,7 +126,7 @@ export const de: Messages = {
   'ds.vars.missing': 'Wählen Sie mindestens einen Wert für: {names}',
   'ds.naming': 'Feldnamen',
   'ds.naming.hint':
-    'OpenTelemetry-Namen gelten für die festen Layouts von ALB, CloudFront und S3-Server-Zugriffslogs; jedes andere Format behält die Namen, die es liefert. Gespeicherte Suchen und Visualisierungen nennen Felder beim Namen und gelten deshalb nicht für beide.',
+    'OpenTelemetry-Namen gelten für die Layouts, die duckdive als Log-Familie kennt (ALB, CloudFront, S3-Zugriffslogs, CloudTrail, WAF, Route 53 Resolver, VPC Flow Logs, Cloud Logging, Logpush); Parquet, CSV und einfaches JSON behalten die Namen, die sie liefern. Gespeicherte Suchen und Visualisierungen nennen Felder beim Namen und gelten deshalb nicht für beide.',
   'ds.name': 'Name',
   'ds.maxFiles': 'Vor dem Verbinden warnen, wenn mehr Dateien als diese Zahl passen (Standard 1000)',
   'ds.listingHint':

@@ -5,7 +5,7 @@ import { DataProtocol, exec, execAll, getDB, query } from './duck';
 import { describeError } from './errors';
 import { CancelledError, throwIfAborted } from './net';
 import { originPattern } from './permissions';
-import { detectFormat, otelSelect, readerFor, resolveFormat, timeFieldFor, type FormatDef, type Naming } from './formats';
+import { detectFormat, otelRename, otelSelect, readerFor, resolveFormat, timeFieldFor, type FormatDef, type Naming } from './formats';
 import {
   DEFAULT_MAX_FILES,
   HAS_DATE_TOKEN,
@@ -255,6 +255,26 @@ export function viewSelect(fmt: FormatDef, files: string[], captures: string | n
   return sql;
 }
 
+/**
+ * Create the source view. A format whose columns are only known once a file has been read gets a
+ * second statement: the first one binds the reader, the column names are then read from the
+ * catalog (which costs nothing), and the mapping is applied to the ones that are actually there.
+ */
+async function createView(cfg: SourceConfig, fmt: FormatDef, files: string[], captures: string | null, withFilename = true): Promise<void> {
+  const inner = viewSelect(fmt, files, captures, withFilename, cfg.naming);
+  await exec(`CREATE OR REPLACE VIEW ${VIEW} AS ${inner}`);
+  const byName = cfg.naming === 'otel' ? fmt.otelByName : undefined;
+  if (!byName) return;
+  const keep = new Set<string>([...capturedColumns(cfg), '_file']);
+  await exec(`CREATE OR REPLACE VIEW ${VIEW} AS SELECT ${otelRename(byName, await viewColumns(VIEW), keep)} FROM (${inner})`);
+}
+
+/** Column names of a view, in order, from the catalog: no bind, no reads (see introspectFields). */
+async function viewColumns(view: string): Promise<string[]> {
+  const r = await query(`SELECT column_name FROM duckdb_columns() WHERE table_name = ${lit(view)} AND schema_name = current_schema() ORDER BY column_index`);
+  return r.rows.map((row) => String(row.column_name));
+}
+
 /** SELECT list that turns {name} tokens of the patterns into columns extracted from the file name. */
 function captureSelect(cfg: SourceConfig): string {
   const cols: string[] = [];
@@ -304,7 +324,7 @@ async function attachLocal(cfg: SourceConfig, localFiles: File[], progress: Prog
     await db.registerFileHandle(f.name, f, DataProtocol.BROWSER_FILEREADER, true);
     names.push(f.name);
   }
-  await exec(`CREATE OR REPLACE VIEW ${VIEW} AS ${viewSelect(resolveFormat(cfg.format, names), names, null, true, cfg.naming)}`);
+  await createView(cfg, resolveFormat(cfg.format, names), names, null);
   const description = t('src.local.description', { n: names.length, names: names.slice(0, 3).join(', '), more: names.length > 3 ? '…' : '' });
   return { description, files: names, fileSizes: [], totalBytes: null, warning: null, rangeDependent: false };
 }
@@ -350,7 +370,7 @@ async function attachRemote(cfg: SourceConfig, creds: AwsCredentials | null, ran
   const notes: string[] = [];
   progress(t('src.creatingView', { n: files.length }), 'db');
   if (lines.some((u) => u.startsWith('s3://'))) await applyS3(cfg, creds);
-  await exec(`CREATE OR REPLACE VIEW ${VIEW} AS ${viewSelect(resolveFormat(cfg.format, files), files, captures.length ? captureSelect(cfg) : null, true, cfg.naming)}`);
+  await createView(cfg, resolveFormat(cfg.format, files), files, captures.length ? captureSelect(cfg) : null);
   const expanded = resolved.patterns > 1 || files.length !== lines.length || resolved.skippedByTime > 0 || resolved.skippedByFilter > 0;
   if (resolved.skippedByTime) notes.push(t('src.skippedByTime', { n: resolved.skippedByTime }));
   if (resolved.skippedByFilter) notes.push(t('src.skippedByFilter', { n: resolved.skippedByFilter, names: captures.join(', ') }));

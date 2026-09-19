@@ -40,6 +40,8 @@ export interface FormatDef {
   timeField?: string;
   /** projection under the OpenTelemetry names; the time field is then "timestamp" */
   otel?: OtelProjection;
+  /** the same, for a format whose columns are only known once a file has been read */
+  otelByName?: OtelByName;
   /** detect from the first URL */
   detect?: RegExp;
 }
@@ -547,6 +549,75 @@ const CFLOGPUSH_OTEL: [string, string][] = [
   ['body', REC],
 ];
 
+// ---- VPC Flow Logs ----
+//
+// The fields of a flow log and their order are chosen when the flow log is created, and the file
+// names them in its header line, so there is no column list to project and no reader that can
+// name them in advance. This mapping is applied to the columns that a source turns out to have
+// (see otelRename): a field that is not there simply produces no column, and one this mapping
+// does not name keeps its own under aws.vpc.flow.*, which covers a custom field as well as one
+// AWS adds later. Parquet delivery spells the fields with underscores and text with hyphens; the
+// two are the same key here.
+
+/** Mapping for a format whose columns are only known once a file has been read. */
+export interface OtelByName {
+  /** field → the columns it becomes, as [name, expression]; `{}` in the expression is the column as the file spells it */
+  map: Record<string, [string, string?][]>;
+  /** namespace for a field the map does not name */
+  prefix: string;
+}
+
+const FLOWLOGS_OTEL: OtelByName = {
+  prefix: 'aws.vpc.flow.',
+  map: {
+    start: [['timestamp', `to_timestamp(TRY_CAST({} AS BIGINT))::TIMESTAMP`]],
+    end: [['aws.vpc.flow.end', `to_timestamp(TRY_CAST({} AS BIGINT))::TIMESTAMP`]],
+    srcaddr: [['source.address']],
+    dstaddr: [['destination.address']],
+    srcport: [['source.port', `TRY_CAST({} AS INTEGER)`]],
+    dstport: [['destination.port', `TRY_CAST({} AS INTEGER)`]],
+    // the IANA number stays: it names protocols that network.transport has no value for
+    protocol: [
+      ['network.transport', `CASE TRY_CAST({} AS INTEGER) WHEN 1 THEN 'icmp' WHEN 6 THEN 'tcp' WHEN 17 THEN 'udp' WHEN 47 THEN 'gre' WHEN 58 THEN 'ipv6-icmp' WHEN 132 THEN 'sctp' END`],
+      ['aws.vpc.flow.protocol'],
+    ],
+    // likewise EFA, which is neither of the two values network.type has
+    type: [['network.type', `CASE lower({}) WHEN 'ipv4' THEN 'ipv4' WHEN 'ipv6' THEN 'ipv6' END`], ['aws.vpc.flow.type']],
+    flow_direction: [['network.io.direction', `CASE lower({}) WHEN 'ingress' THEN 'receive' WHEN 'egress' THEN 'transmit' END`], ['aws.vpc.flow.flow_direction']],
+    // an account id is an identifier, not a number, whatever the reader made of the digits
+    account_id: [['cloud.account.id', `TRY_CAST({} AS VARCHAR)`]],
+    region: [['cloud.region']],
+    az_id: [['cloud.availability_zone']],
+    instance_id: [['host.id']],
+    ecs_cluster_arn: [['aws.ecs.cluster.arn']],
+    ecs_task_arn: [['aws.ecs.task.arn']],
+    ecs_task_id: [['aws.ecs.task.id']],
+    ecs_container_instance_arn: [['aws.ecs.container.arn']],
+  },
+};
+
+/** Flow log fields are hyphenated in text delivery and underscored in Parquet: one key for both. */
+const fieldKey = (name: string) => name.replace(/-/g, '_').toLowerCase();
+
+/**
+ * SELECT list that maps the columns a source turns out to have. `keep` names the columns that are
+ * duckdive's own rather than the log's ({name} tokens of the pattern, _file) and are left alone.
+ */
+export function otelRename(byName: OtelByName, columns: string[], keep: Set<string>): string {
+  const out: string[] = [];
+  for (const col of columns) {
+    const quoted = `"${col.replace(/"/g, '""')}"`;
+    if (keep.has(col)) {
+      out.push(quoted);
+      continue;
+    }
+    const entry = byName.map[fieldKey(col)];
+    if (entry) for (const [name, expr] of entry) out.push(`${expr ? expr.replace('{}', quoted) : quoted} AS "${name}"`);
+    else out.push(`${quoted} AS "${byName.prefix}${fieldKey(col)}"`);
+  }
+  return out.join(', ');
+}
+
 const LTSV_EXPR = `to_json(map_from_entries(list_transform(string_split(line, chr(9)), x -> struct_pack(key := split_part(x, ':', 1), value := x[length(split_part(x, ':', 1)) + 2:]))))`;
 
 export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
@@ -602,8 +673,10 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
   },
   flowlogs: {
     id: 'flowlogs',
-    reader: (l, f) => `read_csv_auto(${l}, delim = ' ', header = true${fn(f)})`,
+    // every field of a flow log is "-" when it does not apply, so that is this format's null
+    reader: (l, f) => `read_csv_auto(${l}, delim = ' ', header = true, nullstr = '-'${fn(f)})`,
     timeField: 'start',
+    otelByName: FLOWLOGS_OTEL,
     detect: /\/vpcflowlogs\//,
   },
   s3access: {
@@ -693,12 +766,12 @@ export function resolveFormat(format: FormatId, urls: string[]): FormatDef {
 
 /** Whether a format can be read under the OpenTelemetry names. */
 export function hasOtel(fmt: FormatDef): boolean {
-  return !!fmt.otel;
+  return !!(fmt.otel || fmt.otelByName);
 }
 
 /** The preferred time field of a format, which the OTel projection renames to "timestamp". */
 export function timeFieldFor(fmt: FormatDef, naming: Naming): string | undefined {
-  return naming === 'otel' && fmt.otel ? 'timestamp' : fmt.timeField;
+  return naming === 'otel' && hasOtel(fmt) ? 'timestamp' : fmt.timeField;
 }
 
 /** SELECT list of the OTel projection, or null for a format that has none (it is then read under its own names). */

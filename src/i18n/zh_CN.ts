@@ -122,7 +122,8 @@ export const zh_CN: Messages = {
   'ds.vars.noValue': '在最新分区中未找到取值。',
   'ds.vars.missing': '请为以下变量至少选择一个取值：{names}',
   'ds.naming': '字段名称',
-  'ds.naming.hint': 'OpenTelemetry 名称适用于 ALB、CloudFront 和 S3 服务器访问日志的固定布局；其他格式保留日志原有名称。已保存的搜索和可视化引用字段名，因此不会在两者之间沿用。',
+  'ds.naming.hint':
+    'OpenTelemetry 名称适用于 duckdive 能识别为日志类型的布局 (ALB、CloudFront、S3 访问日志、CloudTrail、WAF、Route 53 Resolver、VPC 流日志、Cloud Logging、Logpush)；Parquet、CSV 和普通 JSON 保留日志原有名称。已保存的搜索和可视化引用字段名，因此不会在两者之间沿用。',
   'ds.name': '名称',
   'ds.maxFiles': '连接前匹配文件数超过此值时发出警告（默认 1000）',
   'ds.listingHint':

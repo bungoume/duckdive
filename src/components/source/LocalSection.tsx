@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { expose } from '../../debug';
 import { describeError } from '../../errors';
-import { FORMAT_IDS, formatLabel } from '../../formats';
+import { FORMATS, FORMAT_IDS, NAMING_IDS, formatLabel, hasOtel, namingLabel } from '../../formats';
 import { t } from '../../i18n';
 import { NO_LOCAL, dropped, fsAccessAvailable, pickFiles, pickFolder, selectionNames, selectionOf, type LocalSelection } from '../../localfiles';
 import type { SourceConfig } from '../../sources';
@@ -84,7 +84,26 @@ export function LocalSection(props: { cfg: SourceConfig; selection: LocalSelecti
           ))}
         </select>
       </label>
-      <span class="hint">{t('ds.local.hint')}</span>
+      <label class="row hint mt6">
+        {t('ds.naming')}
+        <select
+          class="input"
+          style="width:260px"
+          value={props.cfg.naming}
+          disabled={props.cfg.format !== 'auto' && !hasOtel(FORMATS[props.cfg.format])}
+          onChange={(e) => props.onChange({ naming: e.currentTarget.value as SourceConfig['naming'], timeField: null })}
+        >
+          {NAMING_IDS.map((id) => (
+            <option key={id} value={id}>
+              {namingLabel(id)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <span class="hint">
+        {props.cfg.naming === 'otel' ? t('ds.naming.hint') + ' ' : ''}
+        {t('ds.local.hint')}
+      </span>
     </div>
   );
 }
