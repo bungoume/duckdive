@@ -250,7 +250,7 @@ export function groupLabel(g: string): string {
  * final aggregation all read that instead of scanning the source view again, which for gzip
  * sources means one decompression instead of three or four.
  */
-export async function fetchVis(vis: VisState, where: string, timeExpr: string | null, fields: Field[], iv: Interval | null, tzOffset: number, spanSec = 0): Promise<VisResult> {
+export async function fetchVis(vis: VisState, where: string, timeExpr: string | null, fields: Field[], iv: Interval | null, tzOffset: number, spanSec: number): Promise<VisResult> {
   // a rate is per bucket second on a date histogram, per second of the whole range otherwise
   const secs = vis.x.kind === 'date_histogram' && iv ? iv.ms / 1000 : spanSec;
   const plans = vis.metrics.map((m) => metricPlan(m, fields, secs));
@@ -294,8 +294,9 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
   }
   if (gExpr) {
     ctes.push(`topg AS (SELECT g, ${ms[0]} AS m0 FROM base GROUP BY g ORDER BY m0 DESC NULLS LAST LIMIT ${Math.max(1, vis.breakdown.size)})`);
-    if (vis.breakdown.other) gSel = `CASE WHEN g IN (SELECT g FROM topg) THEN g ELSE ${lit(OTHER)} END`;
-    else conds.push(`g IN (SELECT g FROM topg)`);
+    const inTopG = `EXISTS (SELECT 1 FROM topg WHERE topg.g IS NOT DISTINCT FROM base.g)`;
+    if (vis.breakdown.other) gSel = `CASE WHEN ${inTopG} THEN g ELSE ${lit(OTHER)} END`;
+    else conds.push(inTopG);
   }
   const join = topX ? ' JOIN topx ON topx.x = base.x' : '';
   const sql = `WITH ${ctes.join(',\n')}\nSELECT base.x AS x, ${gSel} AS g, ${mSel}${topX ? ', min(topx.rk) AS xr' : ''} FROM base${join}${conds.length ? ' WHERE ' + conds.join(' AND ') : ''} GROUP BY 1, 2 ORDER BY 1, 2`;

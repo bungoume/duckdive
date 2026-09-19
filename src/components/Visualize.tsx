@@ -157,7 +157,7 @@ export function Visualize(props: {
     // the chart definition and the interval are compared by value, so a restored URL with the same content does not re-query;
     // refreshTick re-runs an unchanged search (absolute range) on auto refresh
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compiled.where, previousWhere, compiled.error, queryKey, interval?.key, tzOffset, timeExpr, paused, onBusy, refreshTick]);
+  }, [compiled.where, previousWhere, compiled.error, queryKey, interval?.key, tzOffset, timeExpr, spanMs, paused, onBusy, refreshTick]);
 
   const setVis = (patch: Partial<VisState>) => props.onVis({ ...vis, ...patch });
   const setX = (patch: Partial<VisState['x']>) => setVis({ x: { ...vis.x, ...patch } });

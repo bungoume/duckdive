@@ -41,6 +41,7 @@ function Tile(props: TileProps) {
     if (!compiled.from || !compiled.to) return null;
     return vis.x.interval === 'auto' ? autoInterval(compiled.from, compiled.to, 40) : (intervalByKey(vis.x.interval) ?? autoInterval(compiled.from, compiled.to, 40));
   }, [compiled.from, compiled.to, vis.x.interval]);
+  const spanSec = compiled.from && compiled.to ? Math.max(0, (compiled.to.getTime() - compiled.from.getTime()) / 1000) : 0;
   const [result, setResult] = useState<VisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const runId = useRef(0);
@@ -51,7 +52,7 @@ function Tile(props: TileProps) {
     const id = ++runId.current;
     props.onBusy(true);
     setError(null);
-    fetchVis(vis, where, timeExpr, fields, interval, tzOffset)
+    fetchVis(vis, where, timeExpr, fields, interval, tzOffset, spanSec)
       .then((r) => {
         if (id === runId.current) setResult(r);
       })
@@ -61,7 +62,7 @@ function Tile(props: TileProps) {
       .finally(() => props.onBusy(false));
     // the chart definition is compared by value; refreshTick re-runs an unchanged search on auto refresh
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [where, compiled.error, own.error, visKey, interval?.key, tzOffset, timeExpr, paused, refreshTick]);
+  }, [where, compiled.error, own.error, visKey, interval?.key, tzOffset, timeExpr, spanSec, paused, refreshTick]);
 
   const chart = vis.chart;
   const err = compiled.error ?? own.error ?? error;

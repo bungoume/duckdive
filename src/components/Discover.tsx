@@ -50,6 +50,7 @@ export function Discover(props: {
 
   // buckets are aligned with the display time zone (a settings change re-renders the app, so this follows it)
   const tzOffset = bucketOffsetMinutes(compiled.to ?? undefined);
+  const spanSec = compiled.from && compiled.to ? Math.max(0, (compiled.to.getTime() - compiled.from.getTime()) / 1000) : 0;
   // a break-down turns the histogram into a stacked bar chart of the field's top values (the Visualize query)
   const breakdownField = discover.breakdown ? findField(fields, discover.breakdown) : undefined;
   const histVis: VisState = useMemo(
@@ -99,7 +100,7 @@ export function Discover(props: {
         const [n, b, v, d] = await Promise.all([
           withHistogram ? Promise.resolve(null) : fetchCount(compiled.where),
           withHistogram && !withSplit ? fetchHistogram(compiled.where, timeExpr!, interval!, tzOffset) : Promise.resolve([]),
-          withSplit ? fetchVis(histVis, compiled.where, timeExpr, fields, interval, tzOffset) : Promise.resolve(null),
+          withSplit ? fetchVis(histVis, compiled.where, timeExpr, fields, interval, tzOffset, spanSec) : Promise.resolve(null),
           fetchDocs(compiled.where, timeExpr, fields, discover.sort, discover.columns, PAGE, 0),
         ]);
         if (id !== runId.current) return;
