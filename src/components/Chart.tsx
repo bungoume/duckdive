@@ -33,7 +33,7 @@ export function toSeries(r: VisResult, metrics: MetricDef[], percent = false): {
     const nums = xs as number[];
     xs = bucketStarts(nums[0], nums[nums.length - 1], r.interval, r.tzOffset);
   }
-  const key = (x: number | string | null, s: string) => `${x} ${s}`;
+  const key = (x: number | string | null, s: string) => JSON.stringify([x, s]);
   const map = new Map<string, number>();
   for (const row of r.rows) {
     if (row.x === null) continue;
