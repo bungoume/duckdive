@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DEFAULT_OIDC, getCredentials, loadCredentials, storeCredentials, type AwsCredentials } from '../src/auth';
+import { DEFAULT_OIDC, getCredentials, isUsable, loadCredentials, secondsUntilExpiry, storeCredentials, type AwsCredentials } from '../src/auth';
 
 const credentials: AwsCredentials = {
   accessKeyId: 'ROLE_A',
@@ -24,5 +24,16 @@ describe('credential cache', () => {
     await storeCredentials(credentials);
     await expect(loadCredentials(DEFAULT_OIDC)).resolves.toBeNull();
     await expect(loadCredentials()).resolves.toEqual(credentials);
+  });
+
+  it('rejects malformed entries and treats missing expirations as unusable', async () => {
+    sessionStorage.setItem('ddv.awsCredentials', JSON.stringify('broken'));
+    await expect(loadCredentials()).resolves.toBeNull();
+
+    const noExpiry = { ...credentials, expiration: '' };
+    await storeCredentials(noExpiry, DEFAULT_OIDC);
+    await expect(loadCredentials(DEFAULT_OIDC)).resolves.toEqual(noExpiry);
+    expect(secondsUntilExpiry(noExpiry)).toBe(-Infinity);
+    expect(isUsable(noExpiry)).toBe(false);
   });
 });

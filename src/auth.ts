@@ -150,7 +150,7 @@ export async function assumeRoleWithWebIdentity(cfg: OidcConfig, idToken: string
     expiration: get('Expiration'),
     subject: get('SubjectFromWebIdentityToken') || undefined,
   };
-  if (!creds.accessKeyId || !creds.secretAccessKey || !creds.sessionToken) throw new Error('STS response did not contain credentials');
+  if (!creds.accessKeyId || !creds.secretAccessKey || !creds.sessionToken || !Number.isFinite(Date.parse(creds.expiration))) throw new Error('STS response did not contain valid credentials');
   return creds;
 }
 
@@ -169,18 +169,36 @@ function oidcKey(cfg: OidcConfig): string {
 export const storeCredentials = (c: AwsCredentials | null, cfg?: OidcConfig): Promise<void> =>
   writeSession(SESSION_KEY, c && cfg ? ({ credentials: c, oidcKey: oidcKey(cfg) } satisfies StoredCredentials) : c);
 
+function isCredentials(value: unknown): value is AwsCredentials {
+  if (!value || typeof value !== 'object') return false;
+  const c = value as Partial<AwsCredentials>;
+  return (
+    typeof c.accessKeyId === 'string' &&
+    !!c.accessKeyId &&
+    typeof c.secretAccessKey === 'string' &&
+    !!c.secretAccessKey &&
+    typeof c.sessionToken === 'string' &&
+    !!c.sessionToken &&
+    typeof c.expiration === 'string'
+  );
+}
+
 export async function loadCredentials(cfg?: OidcConfig): Promise<AwsCredentials | null> {
-  const stored = await readSession<AwsCredentials | StoredCredentials>(SESSION_KEY);
-  if (!stored) return null;
-  if ('credentials' in stored && 'oidcKey' in stored) return !cfg || stored.oidcKey === oidcKey(cfg) ? stored.credentials : null;
+  const stored: unknown = await readSession(SESSION_KEY);
+  if (!stored || typeof stored !== 'object') return null;
+  if ('credentials' in stored && 'oidcKey' in stored) {
+    const scoped = stored as Partial<StoredCredentials>;
+    return typeof scoped.oidcKey === 'string' && isCredentials(scoped.credentials) && (!cfg || scoped.oidcKey === oidcKey(cfg)) ? scoped.credentials : null;
+  }
   // Credentials written by an older build have no provenance. They may still be displayed or
   // explicitly cleared, but must not be used for a configured role.
-  return cfg ? null : stored;
+  return !cfg && isCredentials(stored) ? stored : null;
 }
 
 export function secondsUntilExpiry(c: AwsCredentials | null): number {
-  if (!c?.expiration) return Infinity;
-  return (new Date(c.expiration).getTime() - Date.now()) / 1000;
+  if (!c?.expiration) return -Infinity;
+  const expires = Date.parse(c.expiration);
+  return Number.isFinite(expires) ? (expires - Date.now()) / 1000 : -Infinity;
 }
 
 export function isUsable(c: AwsCredentials | null, minSeconds = 60): boolean {

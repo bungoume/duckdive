@@ -20,6 +20,8 @@ export function useCredentialRefresh(source: SourceConfig, attached: AttachedSou
     const timer = setInterval(async () => {
       try {
         const cur = await loadCredentials(source.oidc);
+        // Empty means the user signed out. A bad/expired entry is non-null and should refresh.
+        if (!cur) return;
         if (secondsUntilExpiry(cur) > REFRESH_BEFORE_S) return;
         const c = await getCredentials(source.oidc, false, REFRESH_BEFORE_S);
         onCreds(c);
