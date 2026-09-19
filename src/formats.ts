@@ -612,9 +612,10 @@ export function otelRename(byName: OtelByName, columns: string[], keep: Set<stri
       out.push(quoted);
       continue;
     }
-    const entry = byName.map[fieldKey(col)];
+    const key = fieldKey(col);
+    const entry = Object.hasOwn(byName.map, key) ? byName.map[key] : undefined;
     if (entry) for (const [name, expr] of entry) out.push(`${expr ? expr.replace('{}', quoted) : quoted} AS ${quoteName(name)}`);
-    else out.push(`${quoted} AS ${quoteName(byName.prefix + fieldKey(col))}`);
+    else out.push(`${quoted} AS ${quoteName(byName.prefix + key)}`);
   }
   return out.join(', ');
 }

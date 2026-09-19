@@ -170,6 +170,10 @@ describe('OpenTelemetry names for a layout whose columns come from the file', ()
     );
   });
 
+  it('treats inherited object names as ordinary fields', () => {
+    expect(flow(['constructor', '__proto__'])).toBe('"constructor" AS "aws.vpc.flow.constructor", "__proto__" AS "aws.vpc.flow.__proto__"');
+  });
+
   it("leaves the columns that are duckdive's own alone", () => {
     expect(flow(['_file', 'account', 'srcaddr'], ['_file', 'account'])).toBe('"_file", "account", "srcaddr" AS "source.address"');
   });
