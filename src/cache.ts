@@ -34,8 +34,6 @@ export interface CacheLogEntry {
 export interface CacheConfig {
   enabled: boolean;
   chunkSize: number;
-  /** re-pack concatenated gzip objects into single-member gzip at connect time (src/gznorm.ts) */
-  normalizeGzip: boolean;
   /** cached data allowed on disk; 0 = no limit. Beyond it whole files are dropped, least recently used first */
   maxBytes: number;
 }
@@ -47,15 +45,12 @@ export interface CachedFile {
   cachedChunks: number;
   cachedBytes: number;
   chunkSize: number;
-  /** original object size when the cached bytes are a re-packed copy */
-  repacked?: number;
 }
 
 /**
  * The control channel is a MessageChannel: this page keeps one port, the other one is handed
  * to the DuckDB worker (duck.ts, `cacheWorkerPort()`) as its first message. Messages posted
- * before the worker listens are queued by the port, and large payloads (a whole object for
- * `store`) are transferred instead of copied.
+ * before the worker listens are queued by the port.
  */
 const { port1: port, port2: workerPort } = new MessageChannel();
 let portHandedOver = false;
@@ -79,7 +74,7 @@ port.onmessage = (ev) => {
   else w.resolve(d);
 };
 
-function send<T>(msg: Record<string, unknown>, timeoutMs = 5000, transfer: Transferable[] = []): Promise<T> {
+function send<T>(msg: Record<string, unknown>, timeoutMs = 5000): Promise<T> {
   const id = Math.random().toString(36).slice(2);
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -87,7 +82,7 @@ function send<T>(msg: Record<string, unknown>, timeoutMs = 5000, transfer: Trans
       reject(new Error('cache worker did not answer'));
     }, timeoutMs);
     waiting.set(id, { resolve: resolve as (v: unknown) => void, reject, timer });
-    port.postMessage({ id, ...msg }, transfer);
+    port.postMessage({ id, ...msg });
   });
 }
 
@@ -102,13 +97,8 @@ export interface SeedFile {
 }
 /** Hand listing metadata to the cache worker so DuckDB's per-file HEADs are answered locally. */
 export const cacheSeed = (files: SeedFile[]) => send<{ seeded: number }>({ type: 'seed', files }, 60000);
-/** Store a complete copy of an object (fetched by the page); `repacked` marks a re-compressed gzip. The buffer is transferred, not copied. */
-export const cacheStore = (f: { url: string; etag: string; lastModified?: string; bytes: ArrayBuffer; repacked: boolean; origSize: number; note?: string }) =>
-  send<{ chunks: number }>({ type: 'store', ...f }, 60000, [f.bytes]);
 /** URLs among `urls` that hold at least one cached chunk (they were downloaded before). */
 export const cacheCached = (urls: string[]) => send<{ cached: string[] }>({ type: 'cached', urls }, 30000);
-/** URLs among `files` that are already completely cached with the same ETag. */
-export const cacheComplete = (files: { url: string; etag: string }[]) => send<{ complete: string[] }>({ type: 'complete', files }, 30000);
 /** `readOnly`: another tab owns the cache; this one reads it and keeps nothing. */
 export const cacheStats = () => send<{ stats: CacheStats; config: CacheConfig; opfsError: string | null; readOnly: boolean }>({ type: 'stats' });
 export interface CacheSummary {

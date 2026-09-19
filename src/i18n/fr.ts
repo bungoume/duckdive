@@ -208,9 +208,6 @@ export const fr: Messages = {
   'cache.readOnly':
     'Un autre onglet Duckdive détient le cache : cet onglet lit ce qui y est stocké et télécharge le reste sans le conserver. Les réglages et le vidage du cache se font dans cet autre onglet.',
   'cache.enable': 'Activer le cache de plages',
-  'cache.repack': 'Ré-empaqueter les fichiers gzip concaténés à la connexion',
-  'cache.repack.title':
-    'La livraison de journaux AWS écrit parfois des fichiers gzip qui ne peuvent pas être lus de manière fiable tels quels. Quand cette option est activée, chaque fichier .gz est récupéré une fois à la connexion, corrigé si nécessaire, et conservé dans le cache.',
   'cache.chunkSize': 'Taille de bloc (nouveaux fichiers)',
   'cache.maxBytes': 'Conserver au plus',
   'cache.unlimited': 'illimité',
@@ -627,11 +624,6 @@ export const fr: Messages = {
   'src.noMatch.range': ' dans {from} → {to}',
   'src.waiting': 'En attente de confirmation ({n} fichiers)…',
   'src.seeding': 'Enregistrement de {n} fichier(s) dans le cache…',
-  'src.gzDirect': 'les fichiers gzip sont lus directement par DuckDB ({reason}) ; les objets gzip concaténés peuvent échouer ou perdre des lignes',
-  'src.fetchingGz': 'Récupération de {n} fichier(s) gzip…',
-  'src.fetchingGzProgress': 'Récupération des fichiers gzip… {done} / {total} ({bytes} téléchargés)',
-  'src.repacked': '{n} fichier(s) gzip concaténé(s) ré-empaqueté(s) pour DuckDB',
-  'src.gzFailed': "{n} fichier(s) gzip n'ont pas pu être récupérés (lus directement par DuckDB) : {error}",
   'src.creatingView': 'Création de la vue sur {n} fichier(s)…',
   'src.skippedByTime': "{n} ignoré(s) d'après l'horodatage de leur nom",
   'src.skippedByFilter': '{n} ignoré(s) par les filtres sur {names}',

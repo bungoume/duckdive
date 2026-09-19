@@ -1,7 +1,6 @@
 import type { AwsCredentials } from './auth';
 import { t } from './i18n';
-import { cacheSeed, fmtBytes, type SeedFile } from './cache';
-import { normalizationAvailable, normalizeGzipFiles, type NormalizeFile } from './gznorm';
+import { cacheSeed, type SeedFile } from './cache';
 import { DataProtocol, exec, execAll, getDB, query } from './duck';
 import { describeError } from './errors';
 import { CancelledError, throwIfAborted } from './net';
@@ -20,7 +19,6 @@ import {
   resolveS3Patterns,
   endpointStyle,
   s3Target,
-  signObjectGet,
   type TokenValue,
 } from './s3list';
 
@@ -306,45 +304,6 @@ async function attachLocal(cfg: SourceConfig, localFiles: File[], progress: Prog
   return { description, files: names, fileSizes: [], totalBytes: null, warning: null, rangeDependent: false };
 }
 
-/**
- * Concatenated gzip objects (multi-member, as AWS log delivery writes them) break DuckDB-Wasm's
- * gzip reader over HTTP: fetch every listed .gz here, re-pack when needed, keep it in the cache.
- * Returns notes for the description.
- */
-async function prepareGzip(cfg: SourceConfig, creds: AwsCredentials | null, seeds: SeedFile[], opts: AttachOptions, progress: Progress): Promise<string[]> {
-  const gzSeeds = seeds.filter((s) => s.s3 && /\.gz$/i.test(s.url));
-  if (!gzSeeds.length) return [];
-  const avail = await normalizationAvailable();
-  if (!avail.ok) return [t('src.gzDirect', { reason: avail.reason })];
-  const effCreds = cfg.authMode === 'none' ? null : (creds ?? staticCreds(cfg));
-  const region = cfg.s3.region || '';
-  const targets = new Map<string, ReturnType<typeof s3Target>>();
-  const list: NormalizeFile[] = [];
-  for (const s of gzSeeds) {
-    const { bucket, key } = s.s3!;
-    let target = targets.get(bucket);
-    if (!target) targets.set(bucket, (target = s3Target(bucket, cfg.s3)));
-    const signed = await signObjectGet(target, key, region, effCreds);
-    list.push({ url: s.url, fetchUrl: signed.url, headers: signed.headers, etag: s.etag, size: s.size, lastModified: s.lastModified });
-  }
-  progress(t('src.fetchingGz', { n: list.length }), 'list');
-  const notes: string[] = [];
-  try {
-    const r = await normalizeGzipFiles(list, {
-      signal: opts.signal,
-      onProgress: (done, total, bytes) => opts.onProgress?.(t('src.fetchingGzProgress', { done, total, bytes: fmtBytes(bytes) }), 'list'),
-    });
-    throwIfAborted(opts.signal);
-    if (r.repacked) notes.push(t('src.repacked', { n: r.repacked }));
-    if (r.failed.length) notes.push(t('src.gzFailed', { n: r.failed.length, error: r.failed[0].error }));
-  } catch (e) {
-    throwIfAborted(opts.signal);
-    if (e instanceof DOMException && e.name === 'AbortError') throw new CancelledError();
-    throw e;
-  }
-  return notes;
-}
-
 /** Resolve the URL lines to files (cancellable), confirm large sets, prime the cache, create the view. */
 async function attachRemote(cfg: SourceConfig, creds: AwsCredentials | null, range: TimeWindow | null, valueFilters: ValueFilters, opts: AttachOptions, progress: Progress): Promise<ViewInfo> {
   const lines = sourceUrls(cfg);
@@ -383,7 +342,7 @@ async function attachRemote(cfg: SourceConfig, creds: AwsCredentials | null, ran
       console.warn('cache seed failed', e);
     }
   }
-  const notes = await prepareGzip(cfg, creds, resolved.seeds, opts, progress);
+  const notes: string[] = [];
   progress(t('src.creatingView', { n: files.length }), 'db');
   if (lines.some((u) => u.startsWith('s3://'))) await applyS3(cfg, creds);
   await exec(`CREATE OR REPLACE VIEW ${VIEW} AS ${viewSelect(resolveFormat(cfg.format, files), files, captures.length ? captureSelect(cfg) : null)}`);

@@ -41,13 +41,6 @@ interface FileMeta {
   /** last time chunks of the file were read or written (eviction order); absent in entries of older builds */
   usedAt?: number;
   lastModified?: string;
-  /**
-   * Set when the cached bytes are a re-packed copy of the object rather than the object itself
-   * (a concatenated gzip re-compressed as a single member, see src/gznorm.ts): `size` is the
-   * re-packed size, `etag` the origin's. Such an entry must be complete; it can never be
-   * partially refetched from the origin because the offsets do not correspond.
-   */
-  norm?: { origSize: number };
 }
 
 /**
@@ -85,7 +78,7 @@ interface Index {
   wasted: number;
   files: Record<string, FileMeta & { chunks: [number, number, number, number?][] }>;
   ext: Record<string, { name: string; size: number }>;
-  config: { enabled: boolean; chunkSize: number; normalizeGzip?: boolean; maxBytes?: number };
+  config: { enabled: boolean; chunkSize: number; maxBytes?: number };
 }
 
 const INDEX_VERSION = 2;
@@ -97,7 +90,7 @@ const DIR = 'ddv-cache';
 const NativeXHR = self.XMLHttpRequest;
 
 /** maxBytes: cached data allowed on disk (0 = no limit); beyond it whole files go, least recently used first */
-const config = { enabled: true, chunkSize: 1024 * 1024, normalizeGzip: true, maxBytes: 4 * 1024 * 1024 * 1024 };
+const config = { enabled: true, chunkSize: 1024 * 1024, maxBytes: 4 * 1024 * 1024 * 1024 };
 /** One line of the request log (last LOG_SIZE requests seen by the worker); shown on the Data source page. */
 interface LogEntry {
   t: number;
@@ -222,11 +215,12 @@ async function initOpfs() {
     if (index && index.version === INDEX_VERSION) {
       config.enabled = index.config?.enabled ?? true;
       config.chunkSize = index.config?.chunkSize ?? config.chunkSize;
-      config.normalizeGzip = index.config?.normalizeGzip ?? true;
       config.maxBytes = index.config?.maxBytes ?? config.maxBytes;
       slabSize = Math.min(index.slabSize ?? 0, actual);
       wasted = index.wasted ?? 0;
       for (const meta of Object.values(index.files)) {
+        // entries left by the gzip re-packing of older builds hold bytes the origin never served
+        if ((meta as { norm?: unknown }).norm) continue;
         const entry = newEntry(meta);
         for (const [i, off, len, sum] of meta.chunks ?? []) if (off + len <= slabSize) entry.chunks.set(i, { off, len, sum: sum ?? 0 });
         if (entry.chunks.size) files.set(meta.key, entry);
@@ -317,13 +311,13 @@ async function reloadIndexInto(): Promise<void> {
   wasted = index.wasted ?? wasted;
   const listed = new Set<string>();
   for (const meta of Object.values(index.files)) {
+    if ((meta as { norm?: unknown }).norm) continue;
     listed.add(meta.key);
     const entry = files.get(meta.key) ?? newEntry(meta);
     entry.chunks = new Map();
     for (const [i, off, len, sum] of meta.chunks ?? []) if (off + len <= slabSize) entry.chunks.set(i, { off, len, sum: sum ?? 0 });
     entry.size = meta.size;
     entry.etag = meta.etag;
-    entry.norm = meta.norm;
     // the owner may use a different chunk size; keeping ours would read every chunk as wrong-length
     entry.chunkSize = meta.chunkSize;
     files.set(meta.key, entry);
@@ -377,7 +371,7 @@ async function saveIndex() {
     if (!e.chunks.size) continue;
     const chunks: [number, number, number, number?][] = [];
     for (const [i, r] of e.chunks) chunks.push([i, r.off, r.len, r.sum ?? 0]);
-    index.files[k] = { key: e.key, size: e.size, etag: e.etag, chunkSize: e.chunkSize, seenAt: e.seenAt, usedAt: e.usedAt, lastModified: e.lastModified, norm: e.norm, chunks };
+    index.files[k] = { key: e.key, size: e.size, etag: e.etag, chunkSize: e.chunkSize, seenAt: e.seenAt, usedAt: e.usedAt, lastModified: e.lastModified, chunks };
   }
   for (const [url, e] of extFiles) index.ext[url] = { name: e.name, size: e.size };
   try {
@@ -409,7 +403,6 @@ function enforceLimit(keep: CacheEntry | null) {
   const candidates = [...files.values()].filter((e) => e !== keep && e.chunks.size).map((e) => ({ entry: e, seenAt: e.seenAt, usedAt: e.usedAt, bytes: cachedBytesOf(e) }));
   for (const c of evictionPlan(candidates, liveBytes(), config.maxBytes * 0.8)) {
     dropChunks(c.entry);
-    forgetRepack(c.entry);
     stats.evictions++;
     log({ method: 'EVICT', url: c.entry.key, range: null, outcome: `evicted:${c.bytes}` });
   }
@@ -458,51 +451,6 @@ function expectedChunkLen(entry: CacheEntry, idx: number): number {
   return Math.min(entry.chunkSize, entry.size - idx * entry.chunkSize);
 }
 
-function chunkCount(entry: CacheEntry): number {
-  return Math.ceil(entry.size / entry.chunkSize);
-}
-
-function isComplete(entry: CacheEntry): boolean {
-  const n = chunkCount(entry);
-  for (let i = 0; i < n; i++) if (!entry.chunks.has(i)) return false;
-  return true;
-}
-
-/** Store a complete copy of an object (possibly re-packed, see FileMeta.norm) as cache chunks. */
-function storeWhole(
-  url: string,
-  etag: string,
-  lastModified: string | undefined,
-  bytes: Uint8Array,
-  norm: { origSize: number } | undefined,
-): { ok: true; chunks: number } | { ok: false; error: string } {
-  if (!slab) return { ok: false, error: opfsError ?? 'cache storage unavailable' };
-  if (readOnly) return { ok: false, error: 'the cache is read-only in this tab' };
-  if (!bytes.byteLength) return { ok: false, error: 'empty body' };
-  const key = cacheKey(url);
-  let entry = files.get(key);
-  if (entry) resetEntry(entry, bytes.byteLength, etag);
-  else {
-    entry = newEntry({ key, size: bytes.byteLength, etag, chunkSize: config.chunkSize, seenAt: Date.now(), lastModified });
-    files.set(key, entry);
-  }
-  entry.seenAt = Date.now();
-  entry.norm = norm;
-  let n = 0;
-  for (let off = 0; off < bytes.byteLength; off += entry.chunkSize) {
-    writeChunk(entry, n, bytes.subarray(off, Math.min(bytes.byteLength, off + entry.chunkSize)));
-    n++;
-  }
-  if (!isComplete(entry)) {
-    dropChunks(entry);
-    forgetRepack(entry);
-    return { ok: false, error: 'chunk write failed' };
-  }
-  stats.bytesDownloaded += norm ? norm.origSize : bytes.byteLength;
-  scheduleSaveIndex();
-  return { ok: true, chunks: n };
-}
-
 function readChunk(entry: CacheEntry, idx: number): Uint8Array | null {
   const ref = entry.chunks.get(idx);
   if (!ref || !slab) return null;
@@ -526,22 +474,10 @@ function dropChunks(entry: CacheEntry) {
   entry.chunks.clear();
 }
 
-/**
- * Drop a re-packed copy and go back to describing the object as the origin has it. `size` is the
- * re-packed size while `norm` is set, so clearing the one without restoring the other would leave
- * the entry claiming a length the origin does not have: the synthesized HEAD and every range
- * request after it would then read the first `size` bytes of a longer file and quietly lose rows.
- */
-function forgetRepack(entry: CacheEntry) {
-  if (entry.norm) entry.size = entry.norm.origSize;
-  entry.norm = undefined;
-}
-
 function resetEntry(entry: CacheEntry, size: number, etag: string) {
   dropChunks(entry);
   entry.size = size;
   entry.etag = etag;
-  entry.norm = undefined;
   entry.stat = { hits: 0, misses: 0, bytesFromCache: 0, bytesFromNetwork: 0, bytesDownloaded: 0 };
   scheduleSaveIndex();
 }
@@ -551,9 +487,7 @@ function recordMeta(key: string, size: number, etag: string, lastModified?: stri
   if (!Number.isFinite(size) || size <= 0) return null;
   let entry = files.get(key);
   if (entry) {
-    // a re-packed copy stays valid while the origin's ETag is unchanged (its size differs by design)
-    const same = entry.norm ? entry.etag === etag && (size === entry.size || size === entry.norm.origSize) : entry.etag === etag && entry.size === size;
-    if (!same) resetEntry(entry, size, etag);
+    if (entry.etag !== etag || entry.size !== size) resetEntry(entry, size, etag);
     entry.seenAt = Date.now();
     if (lastModified) entry.lastModified = lastModified;
     return entry;
@@ -775,23 +709,6 @@ function handleRangeGet(url: string, headers: HeaderMap, rangeHeader: string, re
     const chunkStart = idx * cs;
     let buf = readChunk(entry, idx);
     let fromCache = true;
-    if (!buf && entry.norm) {
-      // a re-packed copy lost a chunk: the origin cannot fill the hole (different bytes / offsets)
-      log({ method: 'GET', url, range: rangeHeader, outcome: compacting ? 'repacked-copy-busy' : 'repacked-copy-incomplete' });
-      // … unless a compaction has the slab closed for a moment: then the copy is only unreachable
-      if (!compacting) {
-        dropChunks(entry);
-        forgetRepack(entry);
-        scheduleSaveIndex();
-      }
-      const h: HeaderMap = { 'content-type': 'text/plain', 'x-ddv-cache': 'error' };
-      const msg = new TextEncoder().encode(
-        compacting
-          ? 'Duckdive: the local cache is being compacted and this file is unreachable for a moment; run the query again.'
-          : 'Duckdive: the re-packed copy of this gzip file was lost from the local cache; reconnect the data source to rebuild it.',
-      );
-      return { status: 503, statusText: 'Service Unavailable', headers: h, rawHeaders: 'content-type: text/plain\r\n', body: msg.buffer };
-    }
     if (!buf) {
       fromCache = false;
       const chunkEnd = Math.min(entry.size, chunkStart + cs) - 1;
@@ -1113,7 +1030,6 @@ async function handleControl(data: unknown, reply: (payload: Record<string, unkn
         const c = rest.config as Partial<typeof config>;
         if (typeof c.enabled === 'boolean') config.enabled = c.enabled;
         if (typeof c.chunkSize === 'number' && c.chunkSize >= 64 * 1024) config.chunkSize = c.chunkSize;
-        if (typeof c.normalizeGzip === 'boolean') config.normalizeGzip = c.normalizeGzip;
         if (typeof c.maxBytes === 'number' && c.maxBytes >= 0) config.maxBytes = Math.floor(c.maxBytes);
         enforceLimit(null);
         await saveIndex();
@@ -1123,13 +1039,13 @@ async function handleControl(data: unknown, reply: (payload: Record<string, unkn
       case 'files': {
         // only files holding data, largest first; `limit` (default 100) or `all: true`
         const limit = typeof rest.limit === 'number' ? rest.limit : 100;
-        const list: { url: string; size: number; etag: string; cachedChunks: number; cachedBytes: number; chunkSize: number; repacked?: number }[] = [];
+        const list: { url: string; size: number; etag: string; cachedChunks: number; cachedBytes: number; chunkSize: number }[] = [];
         let cachedBytes = 0;
         for (const e of files.values()) {
           if (!e.chunks.size) continue;
           const bytes = cachedBytesOf(e);
           cachedBytes += bytes;
-          list.push({ url: e.key, size: e.size, etag: e.etag, cachedChunks: e.chunks.size, cachedBytes: bytes, chunkSize: e.chunkSize, repacked: e.norm?.origSize });
+          list.push({ url: e.key, size: e.size, etag: e.etag, cachedChunks: e.chunks.size, cachedBytes: bytes, chunkSize: e.chunkSize });
         }
         list.sort((a, b) => b.cachedBytes - a.cachedBytes);
         reply({ ok: true, files: rest.all === true ? list : list.slice(0, limit), summary: { known: files.size, cachedFiles: list.length, cachedBytes, slabSize, wasted } });
@@ -1152,27 +1068,6 @@ async function handleControl(data: unknown, reply: (payload: Record<string, unkn
       case 'ping':
         reply({ ok: true, opfsError, readOnly });
         break;
-      case 'store': {
-        // a complete copy of an object fetched by the page (possibly re-packed): see src/gznorm.ts
-        const bytes = rest.bytes instanceof ArrayBuffer ? new Uint8Array(rest.bytes) : rest.bytes instanceof Uint8Array ? rest.bytes : null;
-        if (!bytes) {
-          reply({ ok: false, error: 'no bytes' });
-          break;
-        }
-        const norm = rest.repacked ? { origSize: Number(rest.origSize) || bytes.byteLength } : undefined;
-        const r = storeWhole(String(rest.url), String(rest.etag ?? ''), rest.lastModified ? new Date(String(rest.lastModified)).toUTCString() : undefined, bytes, norm);
-        if (r.ok)
-          log({
-            method: 'STORE',
-            url: String(rest.url),
-            range: null,
-            outcome: (norm ? `repacked:${norm.origSize}->${bytes.byteLength}` : 'stored') + (rest.note ? ` ${String(rest.note)}` : ''),
-            bytes: bytes.byteLength,
-            head: hexHead(new Uint8Array(bytes.subarray(0, 8)).buffer as ArrayBuffer),
-          });
-        reply(r.ok ? { ok: true, chunks: r.chunks } : { ok: false, error: r.error });
-        break;
-      }
       case 'cached': {
         // which of these URLs hold at least one cached chunk (the query-time download guard)
         const list = (rest.urls ?? []) as string[];
@@ -1185,17 +1080,6 @@ async function handleControl(data: unknown, reply: (payload: Record<string, unkn
           }
         });
         reply({ ok: true, cached });
-        break;
-      }
-      case 'complete': {
-        // which of these objects are fully cached (same ETag), so the page can skip fetching them
-        const list = (rest.files ?? []) as { url: string; etag: string }[];
-        const done: string[] = [];
-        for (const f of list) {
-          const e = files.get(cacheKey(f.url));
-          if (e && e.etag === (f.etag || '') && e.chunks.size && isComplete(e)) done.push(f.url);
-        }
-        reply({ ok: true, complete: done });
         break;
       }
       case 'seed': {

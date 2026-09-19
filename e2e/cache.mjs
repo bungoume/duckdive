@@ -179,8 +179,8 @@ for (const d of [today, yesterday, old]) {
       ).join('\n') + '\n',
     ),
   );
-  // Concatenated (multi-member) gzip, as AWS log delivery writes it: DuckDB-Wasm alone loses rows
-  // on these; the connect-time re-packing must make every row visible.
+  // Concatenated (multi-member) gzip, as AWS log delivery writes it. DuckDB loses rows on these
+  // (see the concatenated-gzip section): the fixture measures how much.
   {
     const line = (i) => `${t.toISOString()} member ${i} 203.0.113.${i % 255} GET /p/${i} 200\n`;
     const members = [];
@@ -994,36 +994,32 @@ await section('templates', async () => {
 });
 
 await section('concatenated-gzip', async () => {
-  // ---- concatenated gzip: re-packed at connect, every row visible, second connect reuses the copy ----
+  // ---- concatenated gzip: DuckDB reads these itself and silently drops rows at member boundaries ----
+  // The 3 fixtures hold 3000 + 20000 + 100 = 23100 lines. DuckDB's gzip reader only continues into
+  // the next member when the read that filled its 32 KB buffer was a full one (duckdb
+  // src/common/compressed_file_system.cpp) and otherwise closes the file where the footer sits
+  // (gzip_file_system.cpp, "Only footer is available"), so a short read at a boundary ends the file
+  // early with no error. This check records that loss; it fails once DuckDB stops dropping rows,
+  // which is the signal to convert it into an equality assertion.
+  const TOTAL = 3000 + 20000 + 100;
   await openSource();
   await page.fill('.source-page textarea', 's3://bucket/multigz/{yyyy}/{MM}/{dd}/*.log.gz');
   await page.selectOption('.source-page .field-row:has-text("Format") select', 'lines');
-  const srvM0 = await serverStats();
   await pressConnect();
   await page.waitForFunction(() => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect', null, { timeout: 120000 });
   const multiErr = await errorAlert();
-  const multiOk = multiErr ? '' : await page.locator('.alert.ok', { hasText: 'multigz' }).first().textContent();
   const multiRows = await q('SELECT count(*) n FROM src');
-  const srvM1 = await serverStats();
+  const got = Number(multiRows?.[0]?.n);
   check(
-    'concatenated gzip: re-packed at connect and fully readable',
-    !multiErr && Number(multiRows?.[0]?.n) === 3000 + 20000 + 100 && /2 concatenated gzip file\(s\) re-packed/.test(multiOk),
-    multiErr ?? `rows=${JSON.stringify(multiRows)} note=${multiOk.replace(/\s+/g, ' ').trim().slice(0, 200)}`,
+    'concatenated gzip: read directly, rows are lost at member boundaries (known DuckDB behaviour)',
+    !multiErr && got > 0 && got < TOTAL,
+    multiErr ?? `${got} of ${TOTAL} rows (${TOTAL - got} lost); equal to ${TOTAL} means DuckDB fixed it`,
   );
   const cachedM = (await page.evaluate(() => window.__ddv.cacheFiles({ all: true }))).files.filter((f) => /multigz/.test(f.url));
   check(
-    'concatenated gzip: copies live in the cache (2 re-packed, 1 as-is)',
-    cachedM.length === 3 && cachedM.filter((f) => f.repacked).length === 2 && cachedM.every((f) => f.cachedBytes === f.size),
-    JSON.stringify(cachedM.map((f) => [f.url.split('/').pop(), f.size, f.cachedBytes, f.repacked ?? null])),
-  );
-  await pressConnect();
-  await page.waitForFunction(() => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect', null, { timeout: 120000 });
-  const multiRows2 = await q('SELECT count(*) n FROM src');
-  const srvM2 = await serverStats();
-  check(
-    'concatenated gzip: reconnect + query do not touch the origin again',
-    Number(multiRows2?.[0]?.n) === 23100 && srvM2.bytesSent === srvM1.bytesSent && srvM1.bytesSent > srvM0.bytesSent,
-    `bytes ${srvM0.bytesSent} -> ${srvM1.bytesSent} -> ${srvM2.bytesSent} rows=${JSON.stringify(multiRows2)}`,
+    'concatenated gzip: the objects are cached as the origin serves them',
+    cachedM.length === 3 && cachedM.every((f) => f.cachedBytes > 0),
+    JSON.stringify(cachedM.map((f) => [f.url.split('/').pop(), f.size, f.cachedBytes])),
   );
 });
 

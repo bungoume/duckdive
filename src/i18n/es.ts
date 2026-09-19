@@ -209,9 +209,6 @@ export const es: Messages = {
   'cache.readOnly':
     'Otra pestaña de Duckdive tiene la caché: esta pestaña lee lo que hay almacenado y descarga el resto sin conservarlo. Los ajustes y el vaciado de la caché se hacen en aquella pestaña.',
   'cache.enable': 'Activar la caché de rangos',
-  'cache.repack': 'Reempaquetar los archivos gzip concatenados al conectar',
-  'cache.repack.title':
-    'La entrega de logs de AWS a veces escribe archivos gzip que no se pueden leer de forma fiable tal cual. Si se activa, cada archivo .gz se descarga una vez al conectar, se corrige si hace falta y se conserva en la caché.',
   'cache.chunkSize': 'Tamaño de fragmento (archivos nuevos)',
   'cache.maxBytes': 'Conservar como máximo',
   'cache.unlimited': 'sin límite',
@@ -625,11 +622,6 @@ export const es: Messages = {
   'src.noMatch.range': ' en {from} → {to}',
   'src.waiting': 'Esperando confirmación ({n} archivos)…',
   'src.seeding': 'Registrando {n} archivo(s) en la caché…',
-  'src.gzDirect': 'DuckDB lee los archivos gzip directamente ({reason}); los objetos gzip concatenados pueden fallar o perder filas',
-  'src.fetchingGz': 'Descargando {n} archivo(s) gzip…',
-  'src.fetchingGzProgress': 'Descargando archivos gzip… {done} / {total} ({bytes} descargados)',
-  'src.repacked': '{n} archivo(s) gzip concatenado(s) reempaquetado(s) para DuckDB',
-  'src.gzFailed': 'No se pudieron descargar {n} archivo(s) gzip (DuckDB los lee directamente): {error}',
   'src.creatingView': 'Creando la vista sobre {n} archivo(s)…',
   'src.skippedByTime': '{n} omitido(s) por la marca de tiempo de su nombre',
   'src.skippedByFilter': '{n} omitido(s) por los filtros sobre {names}',

@@ -90,10 +90,6 @@ export function CachePanel() {
               <input type="checkbox" checked={config.enabled} onChange={(e) => run(cacheSetConfig({ enabled: e.currentTarget.checked }))} />
               {t('cache.enable')}
             </label>
-            <label class="row" title={t('cache.repack.title')}>
-              <input type="checkbox" checked={config.normalizeGzip} onChange={(e) => run(cacheSetConfig({ normalizeGzip: e.currentTarget.checked }))} />
-              {t('cache.repack')}
-            </label>
             <div class="row">
               <span class="hint">{t('cache.chunkSize')}</span>
               <select class="input" style="width:120px" value={config.chunkSize} onChange={(e) => run(cacheSetConfig({ chunkSize: Number(e.currentTarget.value) }))}>

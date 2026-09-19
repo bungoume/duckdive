@@ -82,7 +82,7 @@ const EMPTY_SHA256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b78
 
 /**
  * SigV4 signing keys, one per (date, region, access key). Deriving one costs four HMACs; a
- * connect that signs thousands of object GETs (gzip re-packing) reuses it.
+ * connect that walks thousands of prefixes reuses it.
  */
 const signingKeys = new Map<string, { secret: string; key: ArrayBuffer }>();
 
@@ -128,14 +128,6 @@ async function signGet(target: S3Target, query: Record<string, string>, region: 
   const url = `${target.baseUrl}/?${qs}`;
   if (!creds) return { url, headers: {} };
   return { url, headers: await sigv4Get(target, target.canonicalBase, qs, region, creds) };
-}
-
-/** Sign a GET of one object. Returns the URL to fetch and the headers to send. */
-export async function signObjectGet(target: S3Target, key: string, region: string, creds: AwsCredentials | null): Promise<{ url: string; headers: Record<string, string> }> {
-  const encKey = key.split('/').map(rfc3986).join('/');
-  const url = `${target.baseUrl}/${encKey}`;
-  if (!creds) return { url, headers: {} };
-  return { url, headers: await sigv4Get(target, `${target.canonicalBase}${encKey}`, '', region, creds) };
 }
 
 export interface ListResult {
@@ -544,7 +536,7 @@ export async function resolveS3Patterns(
     }
   }
   // … then list the prefixes in parallel; the merge below keeps the pattern order. A literal key
-  // is listed too (one request) so that its size / ETag seed the cache and gzip re-packing; when
+  // is listed too (one request) so that its size / ETag seed the cache; when
   // that listing is denied the key is still used as it is, since reading it needs no ListBucket.
   let done = 0;
   opts.onProgress?.(0, jobs.length);

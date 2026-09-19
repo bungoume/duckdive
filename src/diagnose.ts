@@ -121,7 +121,7 @@ export async function inspectGzip(buf: Uint8Array): Promise<NonNullable<FileRepo
   else if (!magicOk) verdict = 'does not start with the gzip magic (1f 8b): the bytes DuckDB received are not this .gz file, or the object is not gzip';
   else if (method !== 8) verdict = `gzip header says compression method ${method} (only 8 = deflate is valid): header is damaged or the object is not a standard gzip`;
   else if (members > 1)
-    verdict = `concatenated (multi-member) gzip with ${members} members. DuckDB-Wasm mis-reads member boundaries over HTTP (rows go missing or the header check fails mid-file); enable "Re-pack concatenated gzip files at connect" under Data source → Local range cache and reconnect`;
+    verdict = `concatenated (multi-member) gzip with ${members} members. DuckDB may mis-read member boundaries (rows go missing or the header check fails mid-file); convert these files to Parquet (scripts/alb-to-parquet.sh) if the counts look wrong`;
   else if (membersError) verdict = `damaged gzip: ${membersError}`;
   else if (error) verdict = `single member, but the browser cannot inflate it: ${error}`;
   else if (inflated !== null && inflated !== isize) verdict = `inflates to ${inflated} bytes but the trailer says ${isize}`;
