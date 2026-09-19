@@ -190,15 +190,52 @@ const hostOf = (url: string): string | null => {
   }
 };
 
+/** An authorization endpoint a configuration from elsewhere may name: an https URL, nothing else. */
+function checkedAuthUrl(v: unknown): string {
+  const s = str(v);
+  return hostOf(s) ? s : DEFAULT_OIDC.authUrl;
+}
+
 /**
- * An STS endpoint a link is allowed to ask for. The sign-in exchanges the identity provider's
- * id_token there, and that token is enough to assume the role, so a link that could name any host
- * would be a way to collect it. AWS only; anything else falls back to the region's endpoint.
+ * The hosts AWS itself answers AssumeRoleWithWebIdentity on. `*.amazonaws.com` is not the test to
+ * make: an API Gateway stage (`<id>.execute-api.<region>.amazonaws.com`) and a load balancer's DNS
+ * name (`<name>-<id>.<region>.elb.amazonaws.com`) live there too, and both belong to whoever
+ * created them. The manifest grants `https://*.amazonaws.com/*` so that any bucket can be read
+ * without a prompt, which is exactly why a host under it is no evidence of anything.
  */
-function linkStsEndpoint(v: unknown): string {
+function isStsHost(host: string): boolean {
+  return host === 'sts.amazonaws.com' || /^sts(-fips)?\.[a-z0-9-]{1,32}\.amazonaws\.com$/.test(host);
+}
+
+/**
+ * An STS endpoint a configuration from elsewhere is allowed to ask for. The sign-in exchanges the
+ * identity provider's id_token there, and that token is enough to assume the role, so one that
+ * could name any host would be a way to collect it. AWS's own STS only; anything else falls back
+ * to the region's endpoint. A private endpoint is still typed by hand on the Data source page.
+ */
+function checkedStsEndpoint(v: unknown): string {
   const s = str(v);
   const host = s ? hostOf(s) : null;
-  return host && (host === 'amazonaws.com' || host.endsWith('.amazonaws.com')) ? s : '';
+  return host && isStsHost(host) ? s : '';
+}
+
+/**
+ * The sign-in settings of a source configuration this browser did not write. A shared link is one
+ * such source; so is a restored backup file, because `ddv.source` and `ddv.sources` are written
+ * back as they arrive and nothing downstream checks them. Only the two endpoints that decide where
+ * the id_token goes are touched — the access key ID, the local file handles and the chosen pattern
+ * values are left as they are, since a backup is normally this browser's own.
+ */
+export function checkedSourceItem(raw: unknown): unknown {
+  if (!isObj(raw)) return raw;
+  const o = isObj(raw.oidc) ? raw.oidc : {};
+  return { ...raw, oidc: { ...o, authUrl: checkedAuthUrl(o.authUrl), stsEndpoint: checkedStsEndpoint(o.stsEndpoint) } };
+}
+
+/** The same, for the whole source history (`ddv.sources`). */
+export function checkedSourceHistory(raw: unknown): unknown {
+  if (!Array.isArray(raw)) return raw;
+  return raw.map((e) => (isObj(e) ? { ...e, config: checkedSourceItem(e.config) } : e));
 }
 
 /**
@@ -226,13 +263,13 @@ export function sourceFromLink(raw: unknown): SourceConfig | null {
     authMode: raw.authMode === 'none' || raw.authMode === 'oidc' ? raw.authMode : 'static',
     oidc: {
       // the region is part of the STS host name, so it is checked as strictly as the endpoint
-      authUrl: hostOf(str(o.authUrl)) ? str(o.authUrl) : DEFAULT_OIDC.authUrl,
+      authUrl: checkedAuthUrl(o.authUrl),
       clientId: str(o.clientId),
       scope: str(o.scope, DEFAULT_OIDC.scope),
       extraParams: str(o.extraParams),
       roleArn: str(o.roleArn),
       region: awsRegion(o.region) || DEFAULT_OIDC.region,
-      stsEndpoint: linkStsEndpoint(o.stsEndpoint),
+      stsEndpoint: checkedStsEndpoint(o.stsEndpoint),
       durationSeconds: typeof o.durationSeconds === 'number' ? o.durationSeconds : DEFAULT_OIDC.durationSeconds,
       sessionName: str(o.sessionName, DEFAULT_OIDC.sessionName),
     },

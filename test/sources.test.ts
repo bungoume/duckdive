@@ -69,6 +69,18 @@ describe('sourceFromLink, sign-in settings', () => {
     expect(link({ stsEndpoint: 'http://sts.amazonaws.com/' }).stsEndpoint).toBe('');
     expect(link({ stsEndpoint: 'https://evil.example/sts.amazonaws.com' }).stsEndpoint).toBe('');
     expect(link({ stsEndpoint: 'https://sts.ap-northeast-1.amazonaws.com/' }).stsEndpoint).toBe('https://sts.ap-northeast-1.amazonaws.com/');
+    expect(link({ stsEndpoint: 'https://sts.amazonaws.com/' }).stsEndpoint).toBe('https://sts.amazonaws.com/');
+    expect(link({ stsEndpoint: 'https://sts-fips.us-east-1.amazonaws.com/' }).stsEndpoint).toBe('https://sts-fips.us-east-1.amazonaws.com/');
+  });
+
+  // "somewhere on amazonaws.com" is not the same as "AWS answers there": the manifest grants
+  // https://*.amazonaws.com/* so that any bucket can be read without a prompt, and these two
+  // services hand a host under it to whoever asks for one.
+  it('refuses an AWS-hosted endpoint that belongs to whoever created it', () => {
+    expect(link({ stsEndpoint: 'https://a1b2c3.execute-api.us-east-1.amazonaws.com/p/collect' }).stsEndpoint).toBe('');
+    expect(link({ stsEndpoint: 'https://evil-1234567.us-east-1.elb.amazonaws.com/' }).stsEndpoint).toBe('');
+    expect(link({ stsEndpoint: 'https://evil.s3.amazonaws.com/' }).stsEndpoint).toBe('');
+    expect(link({ stsEndpoint: 'https://sts.amazonaws.com.evil.amazonaws.com/' }).stsEndpoint).toBe('');
   });
 
   it('refuses a region that would move the STS host, and a non-https identity provider', () => {
