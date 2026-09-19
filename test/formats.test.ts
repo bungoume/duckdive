@@ -44,6 +44,22 @@ describe('readers', () => {
     expect(FORMATS.cloudfront.reader(list, false)).not.toContain('filename');
   });
 
+  it('reads numbers as text and casts them in the view, so a "-" cannot fail the query', () => {
+    // AWS writes "-" where a number is absent (CloudFront's sc_content_len for a response without
+    // a Content-Length); a column declared as a number made DuckDB fail every query that read it.
+    expect(FORMATS.alb.reader(list, true)).toContain(`'elb_status_code': 'VARCHAR'`);
+    expect(FORMATS.cloudfront.reader(list, true)).toContain(`'sc_content_len': 'VARCHAR'`);
+    // every numeric column of the layout, not only the one that was found to break
+    expect(FORMATS.alb.replace).toBe(
+      ` REPLACE (TRY_CAST("request_processing_time" AS DOUBLE) AS "request_processing_time", TRY_CAST("target_processing_time" AS DOUBLE) AS "target_processing_time", TRY_CAST("response_processing_time" AS DOUBLE) AS "response_processing_time", TRY_CAST("elb_status_code" AS INTEGER) AS "elb_status_code", TRY_CAST("received_bytes" AS BIGINT) AS "received_bytes", TRY_CAST("sent_bytes" AS BIGINT) AS "sent_bytes")`,
+    );
+    expect(FORMATS.cloudfront.replace).toContain(`TRY_CAST("sc_content_len" AS BIGINT) AS "sc_content_len"`);
+    expect(FORMATS.s3access.replace).toContain(`TRY_CAST("http_status" AS INTEGER) AS "http_status"`);
+    // the time fields are not numeric: they keep their declared type and the reader's timestampformat
+    expect(FORMATS.alb.reader(list, true)).toContain(`'time': 'TIMESTAMP'`);
+    expect(FORMATS.alb.replace).not.toContain('"time"');
+  });
+
   it('CloudTrail unnests Records and keeps the file name', () => {
     const inner = `SELECT * FROM ${FORMATS.cloudtrail.reader(list, true)}`;
     expect(FORMATS.cloudtrail.wrap!(inner)).toMatch(/unnest\(Records\)/);
@@ -96,7 +112,9 @@ describe('OpenTelemetry names', () => {
     const sql = viewSelect(FORMATS.alb, ['s3://b/a.log.gz'], null, true, 'otel');
     expect(sql).not.toContain('SELECT * EXCLUDE');
     expect(sql).toContain('"time" AS "timestamp"');
+    expect(sql).toContain('TRY_CAST("received_bytes" AS BIGINT) AS "http.request.size"');
     expect(sql).toContain('filename AS _file');
+    expect(viewSelect(FORMATS.alb, ['s3://b/a.log.gz'], null, true, 'native')).toContain('* EXCLUDE (filename) REPLACE (TRY_CAST(');
     // a format without a projection is read under its own names whatever the naming says
     expect(viewSelect(FORMATS.parquet, ['s3://b/a.parquet'], null, true, 'otel')).toBe(viewSelect(FORMATS.parquet, ['s3://b/a.parquet'], null, true, 'native'));
   });

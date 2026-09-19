@@ -110,6 +110,8 @@ The Template menu fills in the pattern and format for the usual AWS layouts: ALB
 
 Auto-detection goes by path and extension. Parquet, CSV and JSON are read with DuckDB's own readers (gzip and zstd included). Fixed layouts are recognised for ALB access logs, CloudFront standard logs, CloudTrail (`Records` expanded to one row per event), VPC Flow Logs (columns from the header line), S3 server access logs, LTSV (labels exposed as `log.<label>`), CloudWatch Logs exports and plain text (one row per line). String time fields are parsed as ISO 8601, nginx/Apache format, or epoch seconds/milliseconds.
 
+The fixed layouts declare their own column types, and AWS writes `-` where a number is absent (CloudFront's `sc-content-len` for a response without a `Content-Length`, ALB's status code for a request it never answered). Such a column is read as text and cast in the view, so the value is NULL and the rest of the row is readable; a declared number would instead fail every query that touched the column, on a row in the middle of a day. Athena yields NULL for the same file under the same declared types.
+
 ### Field names
 
 "Field names" on the Data source page reads a fixed layout either under the names the log delivers (the default) or under the names of the [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/). It applies to ALB access logs, CloudFront standard logs and S3 server access logs; every other format keeps the names it delivers, and the choice is then without effect.

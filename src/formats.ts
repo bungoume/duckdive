@@ -19,6 +19,8 @@ export interface FormatDef {
   id: FormatId;
   /** table function over the file list */
   reader: (list: string, withFilename: boolean) => string;
+  /** star modifier for the reader's columns (starts with " REPLACE (") */
+  replace?: string;
   /** extra SELECT expressions (start with ", ") */
   select?: string;
   /** wrap "SELECT … FROM reader" → e.g. unnest Records */
@@ -33,9 +35,32 @@ export interface FormatDef {
 
 const fn = (withFilename: boolean) => (withFilename ? ', filename = true' : '');
 
+/**
+ * A number the log leaves out is written as "-" in these layouts, and a column declared as a
+ * number makes DuckDB fail the whole query on such a row. The error arrives when something reads
+ * that column, so a source connects and then breaks on one row in the middle of a day. Numeric
+ * columns are therefore read as text and cast back in the view: an unreadable number becomes
+ * NULL, which is what Athena yields for the same file under the same declared types.
+ */
+const NUMERIC = /^(TINYINT|SMALLINT|INTEGER|BIGINT|HUGEINT|FLOAT|REAL|DOUBLE|DECIMAL)/;
+
 function csvFixed(list: string, withFilename: boolean, columns: [string, string][], opts: string): string {
-  const cols = '{' + columns.map(([n, t]) => `${lit(n)}: ${lit(t)}`).join(', ') + '}';
+  const cols = '{' + columns.map(([n, t]) => `${lit(n)}: ${lit(NUMERIC.test(t) ? 'VARCHAR' : t)}`).join(', ') + '}';
   return `read_csv(${list}, ${opts}, header = false, auto_detect = false, null_padding = true, strict_mode = false, columns = ${cols}${fn(withFilename)})`;
+}
+
+/** The column at its declared type: a numeric one is read as text by csvFixed, so it is cast here. */
+const typed =
+  (columns: [string, string][]) =>
+  (name: string): string => {
+    const type = columns.find(([n]) => n === name)?.[1] ?? 'VARCHAR';
+    return NUMERIC.test(type) ? `TRY_CAST("${name}" AS ${type})` : `"${name}"`;
+  };
+
+/** `* REPLACE (...)` that gives the numeric columns of a fixed layout their declared type back. */
+function numericReplace(columns: [string, string][]): string {
+  const cast = columns.filter(([, t]) => NUMERIC.test(t));
+  return cast.length ? ` REPLACE (${cast.map(([n, t]) => `TRY_CAST("${n}" AS ${t}) AS "${n}"`).join(', ')})` : '';
 }
 
 // ---- AWS ALB access logs: 34 fields as of 2026 (older files have fewer, new ones may append) ----
@@ -184,133 +209,140 @@ const RE_PATH_ABS = '^[a-zA-Z][a-zA-Z0-9+.-]*://[^/?#]*([^?#]*)';
 const RE_PATH_REL = '^([^?#]*)';
 const RE_QUERY = '^[^?#]*\\?([^#]*)';
 
-const ALB_URL = reqLine('"request"', 2);
+const alb = typed(ALB_COLUMNS);
+const cf = typed(CLOUDFRONT_COLUMNS);
+const s3a = typed(S3ACCESS_COLUMNS);
+
+const ALB_URL = reqLine(alb('request'), 2);
 
 // type (1) is split: the scheme and the HTTP version come from the request line, so it is left
 // with the transport it names. ip_address (34) is the load balancer node, i.e. the local end of
 // both sockets; client (4) and target (5) are the two remote ends.
 const ALB_OTEL: [string, string][] = [
-  ['timestamp', `"time"`],
-  ['client.address', addrOf(`"client_port"`)],
-  ['client.port', portOf(`"client_port"`)],
-  ['destination.address', addrOf(`"target_port"`)],
-  ['destination.port', portOf(`"target_port"`)],
-  ['network.local.address', `"ip_address"`],
-  ['network.protocol.name', `CASE "type" WHEN 'grpcs' THEN 'grpc' WHEN 'ws' THEN 'websocket' WHEN 'wss' THEN 'websocket' WHEN 'http' THEN 'http' WHEN 'https' THEN 'http' WHEN 'h2' THEN 'http' END`],
-  ['network.protocol.version', reqLine('"request"', 4)],
-  ['http.request.method', reqLine('"request"', 1)],
+  ['timestamp', alb('time')],
+  ['client.address', addrOf(alb('client_port'))],
+  ['client.port', portOf(alb('client_port'))],
+  ['destination.address', addrOf(alb('target_port'))],
+  ['destination.port', portOf(alb('target_port'))],
+  ['network.local.address', alb('ip_address')],
+  [
+    'network.protocol.name',
+    `CASE ${alb('type')} WHEN 'grpcs' THEN 'grpc' WHEN 'ws' THEN 'websocket' WHEN 'wss' THEN 'websocket' WHEN 'http' THEN 'http' WHEN 'https' THEN 'http' WHEN 'h2' THEN 'http' END`,
+  ],
+  ['network.protocol.version', reqLine(alb('request'), 4)],
+  ['http.request.method', reqLine(alb('request'), 1)],
   ['url.full', ALB_URL],
   ['url.scheme', urlPart(ALB_URL, RE_SCHEME)],
   ['url.domain', urlPart(ALB_URL, RE_DOMAIN)],
   ['url.port', `TRY_CAST(${urlPart(ALB_URL, RE_PORT)} AS INTEGER)`],
   ['url.path', urlPart(ALB_URL, RE_PATH_ABS)],
   ['url.query', urlPart(ALB_URL, RE_QUERY)],
-  ['server.address', `"domain_name"`],
-  ['http.response.status_code', `"elb_status_code"`],
-  ['http.request.size', `"received_bytes"`],
-  ['http.response.size', `"sent_bytes"`],
-  ['user_agent.original', `"user_agent"`],
-  ['error.type', `"error_reason"`],
-  ['tls.cipher', `"ssl_cipher"`],
-  ['tls.protocol.name', tlsName(`"ssl_protocol"`)],
-  ['tls.protocol.version', tlsVersion(`"ssl_protocol"`)],
-  ['aws.alb.type', `"type"`],
-  ['aws.alb.id', `"elb"`],
-  ['aws.alb.target_status_code', `"target_status_code"`],
-  ['aws.alb.request_processing_time', `"request_processing_time"`],
-  ['aws.alb.target_processing_time', `"target_processing_time"`],
-  ['aws.alb.response_processing_time', `"response_processing_time"`],
-  ['aws.alb.target_group.arn', `"target_group_arn"`],
-  ['aws.alb.trace_id', `"trace_id"`],
-  ['aws.alb.conn_trace_id', `"conn_trace_id"`],
-  ['aws.alb.chosen_cert.arn', `"chosen_cert_arn"`],
-  ['aws.alb.matched_rule_priority', `"matched_rule_priority"`],
-  ['aws.alb.request_creation_time', `"request_creation_time"`],
-  ['aws.alb.actions_executed', `"actions_executed"`],
-  ['aws.alb.redirect_url', `"redirect_url"`],
-  ['aws.alb.target_port_list', `"target_port_list"`],
-  ['aws.alb.target_status_code_list', `"target_status_code_list"`],
-  ['aws.alb.classification', `"classification"`],
-  ['aws.alb.classification_reason', `"classification_reason"`],
-  ['aws.alb.transformed_host', `"transformed_host"`],
-  ['aws.alb.transformed_uri', `"transformed_uri"`],
-  ['aws.alb.request_transform_status', `"request_transform_status"`],
+  ['server.address', alb('domain_name')],
+  ['http.response.status_code', alb('elb_status_code')],
+  ['http.request.size', alb('received_bytes')],
+  ['http.response.size', alb('sent_bytes')],
+  ['user_agent.original', alb('user_agent')],
+  ['error.type', alb('error_reason')],
+  ['tls.cipher', alb('ssl_cipher')],
+  ['tls.protocol.name', tlsName(alb('ssl_protocol'))],
+  ['tls.protocol.version', tlsVersion(alb('ssl_protocol'))],
+  ['aws.alb.type', alb('type')],
+  ['aws.alb.id', alb('elb')],
+  ['aws.alb.target_status_code', alb('target_status_code')],
+  ['aws.alb.request_processing_time', alb('request_processing_time')],
+  ['aws.alb.target_processing_time', alb('target_processing_time')],
+  ['aws.alb.response_processing_time', alb('response_processing_time')],
+  ['aws.alb.target_group.arn', alb('target_group_arn')],
+  ['aws.alb.trace_id', alb('trace_id')],
+  ['aws.alb.conn_trace_id', alb('conn_trace_id')],
+  ['aws.alb.chosen_cert.arn', alb('chosen_cert_arn')],
+  ['aws.alb.matched_rule_priority', alb('matched_rule_priority')],
+  ['aws.alb.request_creation_time', alb('request_creation_time')],
+  ['aws.alb.actions_executed', alb('actions_executed')],
+  ['aws.alb.redirect_url', alb('redirect_url')],
+  ['aws.alb.target_port_list', alb('target_port_list')],
+  ['aws.alb.target_status_code_list', alb('target_status_code_list')],
+  ['aws.alb.classification', alb('classification')],
+  ['aws.alb.classification_reason', alb('classification_reason')],
+  ['aws.alb.transformed_host', alb('transformed_host')],
+  ['aws.alb.transformed_uri', alb('transformed_uri')],
+  ['aws.alb.request_transform_status', alb('request_transform_status')],
 ];
 
 // cs(Host) is the distribution's own domain and x-host-header the one the viewer asked for, so
 // the second is server.address. sc-bytes counts the headers, sc-content-len does not.
 const CLOUDFRONT_OTEL: [string, string][] = [
   ['timestamp', CLOUDFRONT_TIME],
-  ['client.address', `"c_ip"`],
-  ['client.port', `"c_port"`],
-  ['server.address', `"x_host_header"`],
-  ['network.protocol.name', `nullif(regexp_extract(lower("cs_protocol_version"), '^([a-z]+)/', 1), '')`],
-  ['network.protocol.version', `nullif(regexp_extract("cs_protocol_version", '^[A-Za-z]+/([0-9.]+)$', 1), '')`],
-  ['http.request.method', `"cs_method"`],
-  ['url.scheme', `"cs_protocol"`],
-  ['url.path', `"cs_uri_stem"`],
-  ['url.query', `"cs_uri_query"`],
-  ['http.response.status_code', `"sc_status"`],
-  ['http.request.size', `"cs_bytes"`],
-  ['http.response.size', `"sc_bytes"`],
-  ['http.response.body.size', `"sc_content_len"`],
-  ['http.request.header.referer', `"cs_referer"`],
-  ['http.request.header.cookie', `"cs_cookie"`],
-  ['http.request.header.x-forwarded-for', `"x_forwarded_for"`],
-  ['http.response.header.content-type', `"sc_content_type"`],
-  ['user_agent.original', `"cs_user_agent"`],
-  ['tls.cipher', `"ssl_cipher"`],
-  ['tls.protocol.name', tlsName(`"ssl_protocol"`)],
-  ['tls.protocol.version', tlsVersion(`"ssl_protocol"`)],
-  ['aws.request_id', `"x_edge_request_id"`],
-  ['aws.cloudfront.domain', `"cs_host"`],
-  ['aws.cloudfront.edge_location', `"x_edge_location"`],
-  ['aws.cloudfront.result_type', `"x_edge_result_type"`],
-  ['aws.cloudfront.response_result_type', `"x_edge_response_result_type"`],
-  ['aws.cloudfront.detailed_result_type', `"x_edge_detailed_result_type"`],
-  ['aws.cloudfront.time_taken', `"time_taken"`],
-  ['aws.cloudfront.time_to_first_byte', `"time_to_first_byte"`],
-  ['aws.cloudfront.fle_status', `"fle_status"`],
-  ['aws.cloudfront.fle_encrypted_fields', `"fle_encrypted_fields"`],
-  ['aws.cloudfront.range.start', `"sc_range_start"`],
-  ['aws.cloudfront.range.end', `"sc_range_end"`],
+  ['client.address', cf('c_ip')],
+  ['client.port', cf('c_port')],
+  ['server.address', cf('x_host_header')],
+  ['network.protocol.name', `nullif(regexp_extract(lower(${cf('cs_protocol_version')}), '^([a-z]+)/', 1), '')`],
+  ['network.protocol.version', `nullif(regexp_extract(${cf('cs_protocol_version')}, '^[A-Za-z]+/([0-9.]+)$', 1), '')`],
+  ['http.request.method', cf('cs_method')],
+  ['url.scheme', cf('cs_protocol')],
+  ['url.path', cf('cs_uri_stem')],
+  ['url.query', cf('cs_uri_query')],
+  ['http.response.status_code', cf('sc_status')],
+  ['http.request.size', cf('cs_bytes')],
+  ['http.response.size', cf('sc_bytes')],
+  ['http.response.body.size', cf('sc_content_len')],
+  ['http.request.header.referer', cf('cs_referer')],
+  ['http.request.header.cookie', cf('cs_cookie')],
+  ['http.request.header.x-forwarded-for', cf('x_forwarded_for')],
+  ['http.response.header.content-type', cf('sc_content_type')],
+  ['user_agent.original', cf('cs_user_agent')],
+  ['tls.cipher', cf('ssl_cipher')],
+  ['tls.protocol.name', tlsName(cf('ssl_protocol'))],
+  ['tls.protocol.version', tlsVersion(cf('ssl_protocol'))],
+  ['aws.request_id', cf('x_edge_request_id')],
+  ['aws.cloudfront.domain', cf('cs_host')],
+  ['aws.cloudfront.edge_location', cf('x_edge_location')],
+  ['aws.cloudfront.result_type', cf('x_edge_result_type')],
+  ['aws.cloudfront.response_result_type', cf('x_edge_response_result_type')],
+  ['aws.cloudfront.detailed_result_type', cf('x_edge_detailed_result_type')],
+  ['aws.cloudfront.time_taken', cf('time_taken')],
+  ['aws.cloudfront.time_to_first_byte', cf('time_to_first_byte')],
+  ['aws.cloudfront.fle_status', cf('fle_status')],
+  ['aws.cloudfront.fle_encrypted_fields', cf('fle_encrypted_fields')],
+  ['aws.cloudfront.range.start', cf('sc_range_start')],
+  ['aws.cloudfront.range.end', cf('sc_range_end')],
 ];
 
-const S3ACCESS_TARGET = reqLine('"request_uri"', 2);
+const S3ACCESS_TARGET = reqLine(s3a('request_uri'), 2);
 
 // bytes_sent leaves out the response headers (body.size), while ALB's sent_bytes includes them.
 const S3ACCESS_OTEL: [string, string][] = [
   ['timestamp', S3ACCESS_TIME],
-  ['client.address', `"remote_ip"`],
-  ['server.address', `"host_header"`],
-  ['network.protocol.name', `lower(${reqLine('"request_uri"', 3)})`],
-  ['network.protocol.version', reqLine('"request_uri"', 4)],
-  ['http.request.method', reqLine('"request_uri"', 1)],
+  ['client.address', s3a('remote_ip')],
+  ['server.address', s3a('host_header')],
+  ['network.protocol.name', `lower(${reqLine(s3a('request_uri'), 3)})`],
+  ['network.protocol.version', reqLine(s3a('request_uri'), 4)],
+  ['http.request.method', reqLine(s3a('request_uri'), 1)],
   ['url.path', urlPart(S3ACCESS_TARGET, RE_PATH_REL)],
   ['url.query', urlPart(S3ACCESS_TARGET, RE_QUERY)],
-  ['http.response.status_code', `"http_status"`],
-  ['http.response.body.size', `"bytes_sent"`],
-  ['http.request.header.referer', `"referer"`],
-  ['user_agent.original', `"user_agent"`],
-  ['error.type', `"error_code"`],
-  ['user.id', `"requester"`],
-  ['tls.cipher', `"cipher_suite"`],
-  ['tls.protocol.name', tlsName(`"tls_version"`)],
-  ['tls.protocol.version', tlsVersion(`"tls_version"`)],
-  ['aws.request_id', `"request_id"`],
-  ['aws.extended_request_id', `"host_id"`],
-  ['aws.s3.bucket', `"bucket"`],
-  ['aws.s3.bucket_owner', `"bucket_owner"`],
-  ['aws.s3.key', `"key"`],
-  ['aws.s3.operation', `"operation"`],
-  ['aws.s3.object_size', `"object_size"`],
-  ['aws.s3.version_id', `"version_id"`],
-  ['aws.s3.total_time', `"total_time"`],
-  ['aws.s3.turn_around_time', `"turn_around_time"`],
-  ['aws.s3.signature_version', `"signature_version"`],
-  ['aws.s3.authentication_type', `"authentication_type"`],
-  ['aws.s3.access_point_arn', `"access_point_arn"`],
-  ['aws.s3.acl_required', `"acl_required"`],
+  ['http.response.status_code', s3a('http_status')],
+  ['http.response.body.size', s3a('bytes_sent')],
+  ['http.request.header.referer', s3a('referer')],
+  ['user_agent.original', s3a('user_agent')],
+  ['error.type', s3a('error_code')],
+  ['user.id', s3a('requester')],
+  ['tls.cipher', s3a('cipher_suite')],
+  ['tls.protocol.name', tlsName(s3a('tls_version'))],
+  ['tls.protocol.version', tlsVersion(s3a('tls_version'))],
+  ['aws.request_id', s3a('request_id')],
+  ['aws.extended_request_id', s3a('host_id')],
+  ['aws.s3.bucket', s3a('bucket')],
+  ['aws.s3.bucket_owner', s3a('bucket_owner')],
+  ['aws.s3.key', s3a('key')],
+  ['aws.s3.operation', s3a('operation')],
+  ['aws.s3.object_size', s3a('object_size')],
+  ['aws.s3.version_id', s3a('version_id')],
+  ['aws.s3.total_time', s3a('total_time')],
+  ['aws.s3.turn_around_time', s3a('turn_around_time')],
+  ['aws.s3.signature_version', s3a('signature_version')],
+  ['aws.s3.authentication_type', s3a('authentication_type')],
+  ['aws.s3.access_point_arn', s3a('access_point_arn')],
+  ['aws.s3.acl_required', s3a('acl_required')],
 ];
 
 const LTSV_EXPR = `to_json(map_from_entries(list_transform(string_split(line, chr(9)), x -> struct_pack(key := split_part(x, ':', 1), value := x[length(split_part(x, ':', 1)) + 2:]))))`;
@@ -327,6 +359,7 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
   alb: {
     id: 'alb',
     reader: (l, f) => csvFixed(l, f, ALB_COLUMNS, `delim = ' ', quote = '"', escape = '"', timestampformat = '%Y-%m-%dT%H:%M:%S.%fZ'`),
+    replace: numericReplace(ALB_COLUMNS),
     timeField: 'time',
     otel: ALB_OTEL,
     // NLB writes into the same folder with _net. in the name and has other columns entirely,
@@ -336,6 +369,7 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
   cloudfront: {
     id: 'cloudfront',
     reader: (l, f) => csvFixed(l, f, CLOUDFRONT_COLUMNS, `delim = '\t', quote = '', escape = '', skip = 2`),
+    replace: numericReplace(CLOUDFRONT_COLUMNS),
     select: `, ${CLOUDFRONT_TIME} AS "timestamp"`,
     timeField: 'timestamp',
     otel: CLOUDFRONT_OTEL,
@@ -358,6 +392,7 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
   s3access: {
     id: 's3access',
     reader: (l, f) => csvFixed(l, f, S3ACCESS_COLUMNS, `delim = ' ', quote = '"', escape = '"'`),
+    replace: numericReplace(S3ACCESS_COLUMNS),
     select: `, ${S3ACCESS_TIME} AS "timestamp"`,
     timeField: 'timestamp',
     otel: S3ACCESS_OTEL,
