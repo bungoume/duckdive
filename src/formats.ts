@@ -598,6 +598,7 @@ const FLOWLOGS_OTEL: OtelByName = {
 
 /** Flow log fields are hyphenated in text delivery and underscored in Parquet: one key for both. */
 const fieldKey = (name: string) => name.replace(/-/g, '_').toLowerCase();
+const quoteName = (name: string) => `"${name.replace(/"/g, '""')}"`;
 
 /**
  * SELECT list that maps the columns a source turns out to have. `keep` names the columns that are
@@ -606,14 +607,14 @@ const fieldKey = (name: string) => name.replace(/-/g, '_').toLowerCase();
 export function otelRename(byName: OtelByName, columns: string[], keep: Set<string>): string {
   const out: string[] = [];
   for (const col of columns) {
-    const quoted = `"${col.replace(/"/g, '""')}"`;
+    const quoted = quoteName(col);
     if (keep.has(col)) {
       out.push(quoted);
       continue;
     }
     const entry = byName.map[fieldKey(col)];
-    if (entry) for (const [name, expr] of entry) out.push(`${expr ? expr.replace('{}', quoted) : quoted} AS "${name}"`);
-    else out.push(`${quoted} AS "${byName.prefix}${fieldKey(col)}"`);
+    if (entry) for (const [name, expr] of entry) out.push(`${expr ? expr.replace('{}', quoted) : quoted} AS ${quoteName(name)}`);
+    else out.push(`${quoted} AS ${quoteName(byName.prefix + fieldKey(col))}`);
   }
   return out.join(', ');
 }

@@ -164,6 +164,12 @@ describe('OpenTelemetry names for a layout whose columns come from the file', ()
     expect(flow(['some-field-aws-adds-later'])).toContain('AS "aws.vpc.flow.some_field_aws_adds_later"');
   });
 
+  it('quotes a name from the file as one identifier', () => {
+    expect(flow(['x", (select current_setting(\'s3_secret_access_key\')) as "leak'])).toBe(
+      '"x"", (select current_setting(\'s3_secret_access_key\')) as ""leak" AS "aws.vpc.flow.x"", (select current_setting(\'s3_secret_access_key\')) as ""leak"',
+    );
+  });
+
   it("leaves the columns that are duckdive's own alone", () => {
     expect(flow(['_file', 'account', 'srcaddr'], ['_file', 'account'])).toBe('"_file", "account", "srcaddr" AS "source.address"');
   });
