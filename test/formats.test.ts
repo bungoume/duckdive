@@ -107,7 +107,8 @@ describe('OpenTelemetry names', () => {
   });
 
   it('reads a JSON family record by record, so a key a file lacks is NULL and not a bind error', () => {
-    for (const id of ['cloudtrail', 'waf', 'r53resolver'] as const) {
+    // the families span three providers; all of them are read the same way
+    for (const id of ['cloudtrail', 'waf', 'r53resolver', 'gcplog', 'cflogpush'] as const) {
       const sql = viewSelect(FORMATS[id], ['s3://b/a.log.gz'], null, true, 'otel');
       expect(sql).toContain('read_json_objects(');
       // no schema is inferred, so binding the view reads nothing and opens no other file

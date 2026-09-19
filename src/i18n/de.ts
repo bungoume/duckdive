@@ -563,6 +563,8 @@ export const de: Messages = {
   'fmt.s3access': 'S3-Server-Zugriffsprotokoll',
   'fmt.waf': 'AWS-WAF-Logs (.log.gz, JSON Lines)',
   'fmt.r53resolver': 'Route-53-Resolver-Query-Logs (.log.gz, JSON Lines)',
+  'fmt.gcplog': 'Google-Cloud-Logging-Export (JSON Lines)',
+  'fmt.cflogpush': 'Cloudflare Logpush (.log.gz, JSON Lines)',
   'fmt.ltsv': 'LTSV (label:value, tabulatorgetrennt)',
   'fmt.cwlexport': 'CloudWatch Logs-Export (Zeilen aus Zeitstempel + Nachricht)',
   'fmt.lines': 'Reiner Text (eine Zeile pro Datensatz)',
@@ -597,6 +599,12 @@ export const de: Messages = {
   'tpl.firehose.label': 'Kinesis Data Firehose-Zustellung (Standardpräfix)',
   'tpl.firehose.note':
     'Das von Firehose verwendete Standardpräfix YYYY/MM/DD/HH (CloudWatch Logs-Abonnements, EventBridge, WAF über Firehose, …). Datensätze werden als JSON gelesen, mit oder ohne Zeilenumbrüche dazwischen. Wählen Sie das Zeitfeld von Hand, falls es nicht erkannt wird.',
+  'tpl.gcplog.label': 'Google-Cloud-Logging-Sink nach Cloud Storage',
+  'tpl.gcplog.note':
+    'Ein LogEntry pro Zeile. Ersetzen Sie <log-id> durch den Lognamen, unter dem der Sink schreibt (syslog, requests, …), oder nehmen Sie einen Platzhalter. Cloud Storage wird über seinen S3-kompatiblen Endpunkt gelesen: Endpunkt https://storage.googleapis.com, als Access Key ein HMAC-Schlüssel.',
+  'tpl.cflogpush.label': 'Cloudflare Logpush (R2 oder S3)',
+  'tpl.cflogpush.note':
+    'Eine Anfrage pro Zeile. Der Datumsordner setzt die Job-Option "Organize logs into daily subfolders" voraus; ohne sie entfällt {yyyy}{MM}{dd}/. R2 wird über seinen S3-kompatiblen Endpunkt gelesen (https://<account-id>.r2.cloudflarestorage.com, Path-Style).',
   'tpl.cwlexport.label': 'CloudWatch Logs-Export nach S3',
   'tpl.cwlexport.note':
     'Dateien aus "Export data to Amazon S3" (create-export-task): ein Ordner pro Log-Stream, Zeilen der Form "Zeitstempel Nachricht". Der führende Zeitstempel wird zum Zeitfeld, der Rest zu "message".',

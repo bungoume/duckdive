@@ -558,6 +558,8 @@ export const ja: Messages = {
   'fmt.s3access': 'S3 サーバーアクセスログ',
   'fmt.waf': 'AWS WAF ログ (.log.gz, JSON Lines)',
   'fmt.r53resolver': 'Route 53 Resolver クエリログ (.log.gz, JSON Lines)',
+  'fmt.gcplog': 'Google Cloud Logging エクスポート (JSON Lines)',
+  'fmt.cflogpush': 'Cloudflare Logpush (.log.gz, JSON Lines)',
   'fmt.ltsv': 'LTSV(label:value、タブ区切り)',
   'fmt.cwlexport': 'CloudWatch Logs エクスポート(timestamp + message 行)',
   'fmt.lines': 'プレーンテキスト(1 行 1 レコード)',
@@ -591,6 +593,12 @@ export const ja: Messages = {
   'tpl.firehose.label': 'Kinesis Data Firehose 配信(既定プレフィックス)',
   'tpl.firehose.note':
     'Firehose が使う既定の YYYY/MM/DD/HH プレフィックス(CloudWatch Logs サブスクリプション、EventBridge、Firehose 経由の WAF など)。レコードは改行の有無にかかわらず JSON として読みます。時間フィールドが検出されない場合は手動で選択してください。',
+  'tpl.gcplog.label': 'Google Cloud Logging シンク (Cloud Storage)',
+  'tpl.gcplog.note':
+    '1 行 1 LogEntry。<log-id> はシンクが書き込むログ名 (syslog、requests など) に置き換えるか、ワイルドカードにしてください。Cloud Storage は S3 互換エンドポイント経由で読みます: エンドポイントに https://storage.googleapis.com を指定し、アクセスキーには HMAC キーを使います。',
+  'tpl.cflogpush.label': 'Cloudflare Logpush (R2 / S3)',
+  'tpl.cflogpush.note':
+    '1 行 1 リクエスト。日付フォルダはジョブの「Organize logs into daily subfolders」を有効にした場合の形です。無効なら {yyyy}{MM}{dd}/ を削除してください。R2 は S3 互換エンドポイント (https://<account-id>.r2.cloudflarestorage.com、パス形式) で読みます。',
   'tpl.cwlexport.label': 'CloudWatch Logs の S3 エクスポート',
   'tpl.cwlexport.note':
     '「Amazon S3 へのデータのエクスポート」(create-export-task)が書き出すファイル: ログストリームごとに 1 フォルダ、"timestamp message" 形式の行。先頭のタイムスタンプが時間フィールドになり、残りが "message" になります。',

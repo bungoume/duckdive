@@ -567,6 +567,8 @@ export const fr: Messages = {
   'fmt.s3access': "Journal d'accès serveur S3",
   'fmt.waf': 'Journaux AWS WAF (.log.gz, JSON Lines)',
   'fmt.r53resolver': 'Journaux de requêtes Route 53 Resolver (.log.gz, JSON Lines)',
+  'fmt.gcplog': 'Export Google Cloud Logging (JSON Lines)',
+  'fmt.cflogpush': 'Cloudflare Logpush (.log.gz, JSON Lines)',
   'fmt.ltsv': 'LTSV (label:value, séparé par des tabulations)',
   'fmt.cwlexport': 'Export CloudWatch Logs (lignes horodatage + message)',
   'fmt.lines': 'Texte brut (une ligne par enregistrement)',
@@ -602,6 +604,12 @@ export const fr: Messages = {
   'tpl.firehose.label': 'Livraison Kinesis Data Firehose (préfixe par défaut)',
   'tpl.firehose.note':
     "Le préfixe YYYY/MM/DD/HH par défaut utilisé par Firehose (abonnements CloudWatch Logs, EventBridge, WAF via Firehose, …). Les enregistrements sont lus en JSON, avec ou sans sauts de ligne entre eux. Choisissez le champ temporel à la main s'il n'est pas détecté.",
+  'tpl.gcplog.label': 'Sink Google Cloud Logging vers Cloud Storage',
+  'tpl.gcplog.note':
+    "Une LogEntry par ligne. Remplacez <log-id> par le nom du journal sous lequel le sink écrit (syslog, requests, …), ou utilisez un joker. Cloud Storage se lit via son point de terminaison compatible S3 : indiquez https://storage.googleapis.com et utilisez une clé HMAC comme clé d'accès.",
+  'tpl.cflogpush.label': 'Cloudflare Logpush (R2 ou S3)',
+  'tpl.cflogpush.note':
+    "Une requête par ligne. Le dossier de date suppose l'option « Organize logs into daily subfolders » du job ; sans elle, supprimez {yyyy}{MM}{dd}/. R2 se lit via son point de terminaison compatible S3 (https://<account-id>.r2.cloudflarestorage.com, style chemin).",
   'tpl.cwlexport.label': 'Export CloudWatch Logs vers S3',
   'tpl.cwlexport.note':
     "Fichiers écrits par « Exporter les données vers Amazon S3 » (create-export-task) : un dossier par flux de journaux, lignes « horodatage message ». L'horodatage initial devient le champ temporel, le reste est « message ».",

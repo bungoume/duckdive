@@ -556,6 +556,8 @@ export const ko: Messages = {
   'fmt.s3access': 'S3 서버 액세스 로그',
   'fmt.waf': 'AWS WAF 로그 (.log.gz, JSON Lines)',
   'fmt.r53resolver': 'Route 53 Resolver 쿼리 로그 (.log.gz, JSON Lines)',
+  'fmt.gcplog': 'Google Cloud Logging 내보내기 (JSON Lines)',
+  'fmt.cflogpush': 'Cloudflare Logpush (.log.gz, JSON Lines)',
   'fmt.ltsv': 'LTSV (label:value, 탭 구분)',
   'fmt.cwlexport': 'CloudWatch Logs 내보내기 (timestamp + message 줄)',
   'fmt.lines': '일반 텍스트 (한 줄당 한 행)',
@@ -589,6 +591,12 @@ export const ko: Messages = {
   'tpl.firehose.label': 'Kinesis Data Firehose 전송 (기본 접두사)',
   'tpl.firehose.note':
     'Firehose가 사용하는 기본 YYYY/MM/DD/HH 접두사 (CloudWatch Logs 구독, EventBridge, Firehose를 통한 WAF 등). 레코드는 사이에 줄바꿈이 있든 없든 JSON으로 읽습니다. 시간 필드가 감지되지 않으면 직접 선택하세요.',
+  'tpl.gcplog.label': 'Google Cloud Logging 싱크 (Cloud Storage)',
+  'tpl.gcplog.note':
+    '한 줄에 LogEntry 하나. <log-id>는 싱크가 기록하는 로그 이름(syslog, requests 등)으로 바꾸거나 와일드카드를 쓰세요. Cloud Storage는 S3 호환 엔드포인트로 읽습니다: 엔드포인트를 https://storage.googleapis.com 으로 두고 액세스 키에 HMAC 키를 사용하세요.',
+  'tpl.cflogpush.label': 'Cloudflare Logpush (R2 / S3)',
+  'tpl.cflogpush.note':
+    '한 줄에 요청 하나. 날짜 폴더는 작업의 "Organize logs into daily subfolders" 옵션을 켠 형태입니다. 끄면 {yyyy}{MM}{dd}/ 부분을 지우세요. R2는 S3 호환 엔드포인트(https://<account-id>.r2.cloudflarestorage.com, 경로 스타일)로 읽습니다.',
   'tpl.cwlexport.label': 'CloudWatch Logs의 S3 내보내기',
   'tpl.cwlexport.note':
     '"Amazon S3로 데이터 내보내기"(create-export-task)로 생성된 파일: 로그 스트림당 폴더 하나, "timestamp message" 형식의 줄. 앞의 타임스탬프가 시간 필드가 되고 나머지는 "message"가 됩니다.',

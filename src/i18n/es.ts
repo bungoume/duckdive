@@ -566,6 +566,8 @@ export const es: Messages = {
   'fmt.s3access': 'Log de acceso al servidor S3',
   'fmt.waf': 'Registros de AWS WAF (.log.gz, JSON Lines)',
   'fmt.r53resolver': 'Registros de consultas de Route 53 Resolver (.log.gz, JSON Lines)',
+  'fmt.gcplog': 'Exportación de Google Cloud Logging (JSON Lines)',
+  'fmt.cflogpush': 'Cloudflare Logpush (.log.gz, JSON Lines)',
   'fmt.ltsv': 'LTSV (label:value, separado por tabuladores)',
   'fmt.cwlexport': 'Exportación de CloudWatch Logs (líneas timestamp + message)',
   'fmt.lines': 'Texto plano (una fila por línea)',
@@ -600,6 +602,12 @@ export const es: Messages = {
   'tpl.firehose.label': 'Entrega de Kinesis Data Firehose (prefijo por defecto)',
   'tpl.firehose.note':
     'El prefijo por defecto YYYY/MM/DD/HH que usa Firehose (suscripciones de CloudWatch Logs, EventBridge, WAF vía Firehose, …). Los registros se leen como JSON, con o sin saltos de línea entre ellos. Elija el campo de tiempo a mano si no se detecta.',
+  'tpl.gcplog.label': 'Sink de Google Cloud Logging a Cloud Storage',
+  'tpl.gcplog.note':
+    'Una LogEntry por línea. Sustituya <log-id> por el nombre de registro con el que escribe el sink (syslog, requests, …), o use un comodín. Cloud Storage se lee por su punto de conexión compatible con S3: indique https://storage.googleapis.com y use una clave HMAC como clave de acceso.',
+  'tpl.cflogpush.label': 'Cloudflare Logpush (R2 o S3)',
+  'tpl.cflogpush.note':
+    'Una solicitud por línea. La carpeta de fecha supone la opción «Organize logs into daily subfolders» del trabajo; sin ella, elimine {yyyy}{MM}{dd}/. R2 se lee por su punto de conexión compatible con S3 (https://<account-id>.r2.cloudflarestorage.com, estilo de ruta).',
   'tpl.cwlexport.label': 'Exportación de CloudWatch Logs a S3',
   'tpl.cwlexport.note':
     'Archivos escritos por "Export data to Amazon S3" (create-export-task): una carpeta por log stream, líneas de "timestamp message". La marca de tiempo inicial se convierte en el campo de tiempo, el resto es "message".',

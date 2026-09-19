@@ -13,7 +13,8 @@
 import { lit } from './sql';
 import { t } from './i18n';
 
-export type FormatId = 'auto' | 'parquet' | 'csv' | 'json' | 'alb' | 'cloudfront' | 'cloudtrail' | 'flowlogs' | 's3access' | 'waf' | 'r53resolver' | 'ltsv' | 'cwlexport' | 'lines';
+export type FormatId =
+  'auto' | 'parquet' | 'csv' | 'json' | 'alb' | 'cloudfront' | 'cloudtrail' | 'flowlogs' | 's3access' | 'waf' | 'r53resolver' | 'gcplog' | 'cflogpush' | 'ltsv' | 'cwlexport' | 'lines';
 
 /**
  * How a format is read under the OpenTelemetry names. `columns` is the whole projection, in
@@ -450,6 +451,102 @@ const R53RESOLVER_OTEL: [string, string][] = [
   ['body', REC],
 ];
 
+// ---- Google Cloud Logging ----
+//
+// A LogEntry is an envelope around a payload, so `body` is the payload the entry carries and
+// `log.record.original` the entry itself; the two together lose nothing. Severity is the one
+// place where a value is translated: the conventions number the levels, Cloud Logging names them.
+
+const GCP_SEVERITY = `CASE upper(${j('severity')}) WHEN 'DEBUG' THEN 5 WHEN 'INFO' THEN 9 WHEN 'NOTICE' THEN 10 WHEN 'WARNING' THEN 13 WHEN 'ERROR' THEN 17 WHEN 'CRITICAL' THEN 21 WHEN 'ALERT' THEN 22 WHEN 'EMERGENCY' THEN 23 END`;
+const GCP_URL = j('httpRequest.requestUrl');
+
+const GCPLOG_OTEL: [string, string][] = [
+  ['timestamp', jcast('timestamp', 'TIMESTAMP')],
+  ['observed_timestamp', jcast('receiveTimestamp', 'TIMESTAMP')],
+  ['severity_text', j('severity')],
+  ['severity_number', GCP_SEVERITY],
+  // "projects/<project>/traces/<32 hex>" carries the trace id of the W3C context
+  ['trace_id', `nullif(regexp_extract(${j('trace')}, '([0-9a-fA-F]{32})$', 1), '')`],
+  ['span_id', j('spanId')],
+  ['log.record.uid', j('insertId')],
+  ['client.address', j('httpRequest.remoteIp')],
+  ['network.local.address', j('httpRequest.serverIp')],
+  ['network.protocol.name', protoName(j('httpRequest.protocol'))],
+  ['network.protocol.version', protoVersion(j('httpRequest.protocol'))],
+  ['http.request.method', j('httpRequest.requestMethod')],
+  ['url.full', GCP_URL],
+  ['url.scheme', urlPart(GCP_URL, RE_SCHEME)],
+  ['server.address', urlPart(GCP_URL, RE_DOMAIN)],
+  ['url.port', `TRY_CAST(${urlPart(GCP_URL, RE_PORT)} AS INTEGER)`],
+  ['url.path', urlPart(GCP_URL, RE_PATH_ABS)],
+  ['url.query', urlPart(GCP_URL, RE_QUERY)],
+  ['http.response.status_code', jcast('httpRequest.status', 'INTEGER')],
+  ['http.request.size', jcast('httpRequest.requestSize', 'BIGINT')],
+  ['http.response.size', jcast('httpRequest.responseSize', 'BIGINT')],
+  ['http.request.header.referer', j('httpRequest.referer')],
+  ['user_agent.original', j('httpRequest.userAgent')],
+  ['cloud.provider', `'gcp'`],
+  ['cloud.account.id', j('resource.labels.project_id')],
+  ['cloud.region', `coalesce(${j('resource.labels.region')}, ${j('resource.labels.location')})`],
+  ['cloud.availability_zone', j('resource.labels.zone')],
+  ['gcp.log_name', j('logName')],
+  ['gcp.resource.type', j('resource.type')],
+  ['gcp.resource.labels', jraw('resource.labels')],
+  ['gcp.labels', jraw('labels')],
+  ['gcp.operation.id', j('operation.id')],
+  ['gcp.http_request.latency', j('httpRequest.latency')],
+  ['gcp.http_request.cache_hit', jcast('httpRequest.cacheHit', 'BOOLEAN')],
+  ['gcp.http_request.cache_lookup', jcast('httpRequest.cacheLookup', 'BOOLEAN')],
+  ['gcp.source_location', jraw('sourceLocation')],
+  ['body', `coalesce(${jraw('jsonPayload')}, ${jraw('protoPayload')}, ${jraw('textPayload')})`],
+  ['log.record.original', REC],
+];
+
+// ---- Cloudflare Logpush (HTTP requests) ----
+//
+// The fields of a Logpush job are chosen when the job is created, so a given bucket holds only
+// some of these; the ones that were not selected are NULL. EdgeStartTimestamp is RFC 3339 or
+// Unix nanoseconds depending on the job, and both are read.
+
+const cfTime = (path: string) => `coalesce(TRY_CAST(${j(path)} AS TIMESTAMP), make_timestamp(TRY_CAST(${j(path)} AS BIGINT) // 1000))`;
+const CF_URI = j('ClientRequestURI');
+
+const CFLOGPUSH_OTEL: [string, string][] = [
+  ['timestamp', cfTime('EdgeStartTimestamp')],
+  ['client.address', j('ClientIP')],
+  ['client.port', jcast('ClientSrcPort', 'INTEGER')],
+  ['destination.address', j('OriginIP')],
+  ['server.address', j('ClientRequestHost')],
+  ['network.protocol.name', protoName(j('ClientRequestProtocol'))],
+  ['network.protocol.version', protoVersion(j('ClientRequestProtocol'))],
+  ['http.request.method', j('ClientRequestMethod')],
+  ['url.scheme', j('ClientRequestScheme')],
+  ['url.original', CF_URI],
+  ['url.path', `coalesce(${j('ClientRequestPath')}, ${urlPart(CF_URI, RE_PATH_REL)})`],
+  ['url.query', urlPart(CF_URI, RE_QUERY)],
+  ['http.response.status_code', jcast('EdgeResponseStatus', 'INTEGER')],
+  ['http.request.size', jcast('ClientRequestBytes', 'BIGINT')],
+  ['http.response.size', jcast('EdgeResponseBytes', 'BIGINT')],
+  ['http.response.body.size', jcast('EdgeResponseBodyBytes', 'BIGINT')],
+  ['http.request.header.referer', j('ClientRequestReferer')],
+  ['http.response.header.content-type', j('EdgeResponseContentType')],
+  ['user_agent.original', j('ClientRequestUserAgent')],
+  ['tls.cipher', j('ClientSSLCipher')],
+  ['tls.protocol.name', tlsName(j('ClientSSLProtocol'))],
+  ['tls.protocol.version', tlsVersion(j('ClientSSLProtocol'))],
+  ['cloud.provider', `'cloudflare'`],
+  ['cloudflare.ray_id', j('RayID')],
+  ['cloudflare.cache_status', j('CacheCacheStatus')],
+  ['cloudflare.origin_response_status', jcast('OriginResponseStatus', 'INTEGER')],
+  ['cloudflare.client_country', j('ClientCountry')],
+  ['cloudflare.client_asn', jcast('ClientASN', 'BIGINT')],
+  ['cloudflare.security_action', j('SecurityAction')],
+  ['cloudflare.edge_pathing_status', j('EdgePathingStatus')],
+  ['cloudflare.edge_time_to_first_byte_ms', jcast('EdgeTimeToFirstByteMs', 'BIGINT')],
+  ['cloudflare.edge_end_timestamp', cfTime('EdgeEndTimestamp')],
+  ['body', REC],
+];
+
 const LTSV_EXPR = `to_json(map_from_entries(list_transform(string_split(line, chr(9)), x -> struct_pack(key := split_part(x, ':', 1), value := x[length(split_part(x, ':', 1)) + 2:]))))`;
 
 export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
@@ -518,6 +615,18 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
     otel: { columns: S3ACCESS_OTEL },
     detect: /\/\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-[A-F0-9]{16}$/,
   },
+  gcplog: {
+    id: 'gcplog',
+    reader: (l, f) => `read_json_auto(${l}, union_by_name = true${fn(f)})`,
+    timeField: 'timestamp',
+    otel: { columns: GCPLOG_OTEL, reader: ndjson },
+  },
+  cflogpush: {
+    id: 'cflogpush',
+    reader: (l, f) => `read_json_auto(${l}, union_by_name = true${fn(f)})`,
+    timeField: 'EdgeStartTimestamp',
+    otel: { columns: CFLOGPUSH_OTEL, reader: ndjson },
+  },
   ltsv: {
     id: 'ltsv',
     reader: (l, f) => `read_csv(${l}, delim = E'\\x01', quote = '', escape = '', header = false, auto_detect = false, null_padding = true, strict_mode = false, columns = {'line': 'VARCHAR'}${fn(f)})`,
@@ -547,7 +656,24 @@ export function formatLabel(id: FormatId): string {
   return t(`fmt.${id}`);
 }
 
-export const FORMAT_IDS: FormatId[] = ['auto', 'parquet', 'csv', 'json', 'alb', 'cloudfront', 'cloudtrail', 'flowlogs', 's3access', 'waf', 'r53resolver', 'ltsv', 'cwlexport', 'lines'];
+export const FORMAT_IDS: FormatId[] = [
+  'auto',
+  'parquet',
+  'csv',
+  'json',
+  'alb',
+  'cloudfront',
+  'cloudtrail',
+  'flowlogs',
+  's3access',
+  'waf',
+  'r53resolver',
+  'gcplog',
+  'cflogpush',
+  'ltsv',
+  'cwlexport',
+  'lines',
+];
 
 export function detectFormat(urls: string[]): Exclude<FormatId, 'auto'> {
   const first = urls[0] ?? '';
@@ -589,7 +715,22 @@ export function readerFor(fmt: FormatDef, naming: Naming): { reader: FormatDef['
 // ---------- Data source templates ----------
 
 export type TemplateId =
-  'alb' | 'alb-parquet' | 'nlb' | 'cloudfront' | 'cloudtrail' | 'flowlogs' | 'flowlogs-parquet' | 'waf' | 'netfw' | 'r53resolver' | 's3access' | 'firehose' | 'cwlexport' | 'ssm';
+  | 'alb'
+  | 'alb-parquet'
+  | 'nlb'
+  | 'cloudfront'
+  | 'cloudtrail'
+  | 'flowlogs'
+  | 'flowlogs-parquet'
+  | 'waf'
+  | 'netfw'
+  | 'r53resolver'
+  | 's3access'
+  | 'firehose'
+  | 'gcplog'
+  | 'cflogpush'
+  | 'cwlexport'
+  | 'ssm';
 
 export interface Template {
   id: TemplateId;
@@ -666,6 +807,16 @@ export const TEMPLATES: Template[] = [
     id: 'firehose',
     format: 'json',
     urls: 's3://<bucket>/<prefix>/{yyyy}/{MM}/{dd}/{HH}/*',
+  },
+  {
+    id: 'gcplog',
+    format: 'gcplog',
+    urls: 's3://<bucket>/<log-id>/{yyyy}/{MM}/{dd}/*.json',
+  },
+  {
+    id: 'cflogpush',
+    format: 'cflogpush',
+    urls: 's3://<bucket>/<prefix>/{yyyy}{MM}{dd}/*.log.gz',
   },
   {
     id: 'cwlexport',

@@ -549,6 +549,8 @@ export const zh_CN: Messages = {
   'fmt.s3access': 'S3 服务器访问日志',
   'fmt.waf': 'AWS WAF 日志 (.log.gz，JSON Lines)',
   'fmt.r53resolver': 'Route 53 Resolver 查询日志 (.log.gz，JSON Lines)',
+  'fmt.gcplog': 'Google Cloud Logging 导出 (JSON Lines)',
+  'fmt.cflogpush': 'Cloudflare Logpush (.log.gz，JSON Lines)',
   'fmt.ltsv': 'LTSV（label:value，制表符分隔）',
   'fmt.cwlexport': 'CloudWatch Logs 导出（timestamp + message 行）',
   'fmt.lines': '纯文本（每行一条记录）',
@@ -581,6 +583,12 @@ export const zh_CN: Messages = {
     '非分区布局：<prefix>YYYY-MM-DD-HH-MM-SS-UniqueString。基于日期的分区请使用 <prefix>/{account}/{region}/{source_bucket}/{yyyy}/{MM}/{dd}/{yyyy}-{MM}-{dd}-{HH}-*。会派生出“timestamp”列。',
   'tpl.firehose.label': 'Kinesis Data Firehose 投递（默认前缀）',
   'tpl.firehose.note': 'Firehose 使用的默认 YYYY/MM/DD/HH 前缀（CloudWatch Logs 订阅、EventBridge、经 Firehose 的 WAF 等）。记录按 JSON 读取，记录之间有无换行均可。如果未检测到时间字段，请手动选择。',
+  'tpl.gcplog.label': 'Google Cloud Logging 接收器 (Cloud Storage)',
+  'tpl.gcplog.note':
+    '每行一条 LogEntry。请将 <log-id> 替换为接收器写入的日志名称 (syslog、requests 等)，或使用通配符。Cloud Storage 通过 S3 兼容端点读取：将端点设为 https://storage.googleapis.com，并使用 HMAC 密钥作为访问密钥。',
+  'tpl.cflogpush.label': 'Cloudflare Logpush (R2 / S3)',
+  'tpl.cflogpush.note':
+    '每行一条请求。日期文件夹对应任务的 “Organize logs into daily subfolders” 选项；未启用时请删除 {yyyy}{MM}{dd}/ 部分。R2 通过 S3 兼容端点读取 (https://<account-id>.r2.cloudflarestorage.com，路径样式)。',
   'tpl.cwlexport.label': 'CloudWatch Logs 导出到 S3',
   'tpl.cwlexport.note': '由“导出数据到 Amazon S3”（create-export-task）写出的文件：每个日志流一个文件夹，行格式为“timestamp message”。开头的时间戳成为时间字段，其余部分为“message”。',
   'tpl.ssm.label': 'SSM 会话 / 命令日志',

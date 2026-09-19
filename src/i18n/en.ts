@@ -561,6 +561,8 @@ export const en = {
   'fmt.s3access': 'S3 server access log',
   'fmt.waf': 'AWS WAF logs (.log.gz, JSON lines)',
   'fmt.r53resolver': 'Route 53 Resolver query logs (.log.gz, JSON lines)',
+  'fmt.gcplog': 'Google Cloud Logging export (JSON lines)',
+  'fmt.cflogpush': 'Cloudflare Logpush (.log.gz, JSON lines)',
   'fmt.ltsv': 'LTSV (label:value, tab separated)',
   'fmt.cwlexport': 'CloudWatch Logs export (timestamp + message lines)',
   'fmt.lines': 'Plain text (one row per line)',
@@ -594,6 +596,12 @@ export const en = {
   'tpl.firehose.label': 'Kinesis Data Firehose delivery (default prefix)',
   'tpl.firehose.note':
     'The default YYYY/MM/DD/HH prefix used by Firehose (CloudWatch Logs subscriptions, EventBridge, WAF via Firehose, …). Records are read as JSON, with or without newlines between them. Choose the time field by hand if it is not detected.',
+  'tpl.gcplog.label': 'Google Cloud Logging sink to Cloud Storage',
+  'tpl.gcplog.note':
+    'One LogEntry per line. Replace <log-id> with the log name the sink writes under (syslog, requests, …), or use a wildcard. Cloud Storage is read through its S3-compatible endpoint: set the endpoint to https://storage.googleapis.com and use an HMAC key as the access key.',
+  'tpl.cflogpush.label': 'Cloudflare Logpush (R2 or S3)',
+  'tpl.cflogpush.note':
+    'One request per line. The date folder assumes the job\'s "Organize logs into daily subfolders" option; without it, drop the {yyyy}{MM}{dd}/ part. R2 is read through its S3-compatible endpoint (https://<account-id>.r2.cloudflarestorage.com, path style).',
   'tpl.cwlexport.label': 'CloudWatch Logs export to S3',
   'tpl.cwlexport.note':
     'Files written by "Export data to Amazon S3" (create-export-task): one folder per log stream, lines of "timestamp message". The leading timestamp becomes the time field, the rest is "message".',
