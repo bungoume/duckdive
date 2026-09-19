@@ -556,6 +556,8 @@ export const ja: Messages = {
   'fmt.cloudtrail': 'CloudTrail(.json.gz)',
   'fmt.flowlogs': 'VPC Flow Logs(.log.gz、ヘッダー付き)',
   'fmt.s3access': 'S3 サーバーアクセスログ',
+  'fmt.waf': 'AWS WAF ログ (.log.gz, JSON Lines)',
+  'fmt.r53resolver': 'Route 53 Resolver クエリログ (.log.gz, JSON Lines)',
   'fmt.ltsv': 'LTSV(label:value、タブ区切り)',
   'fmt.cwlexport': 'CloudWatch Logs エクスポート(timestamp + message 行)',
   'fmt.lines': 'プレーンテキスト(1 行 1 レコード)',

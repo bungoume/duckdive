@@ -565,6 +565,8 @@ export const fr: Messages = {
   'fmt.cloudtrail': 'CloudTrail (.json.gz)',
   'fmt.flowlogs': 'VPC Flow Logs (.log.gz, avec en-tête)',
   'fmt.s3access': "Journal d'accès serveur S3",
+  'fmt.waf': 'Journaux AWS WAF (.log.gz, JSON Lines)',
+  'fmt.r53resolver': 'Journaux de requêtes Route 53 Resolver (.log.gz, JSON Lines)',
   'fmt.ltsv': 'LTSV (label:value, séparé par des tabulations)',
   'fmt.cwlexport': 'Export CloudWatch Logs (lignes horodatage + message)',
   'fmt.lines': 'Texte brut (une ligne par enregistrement)',

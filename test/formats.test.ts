@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FORMATS, TEMPLATES, detectFormat, hasOtel, otelSelect, resolveFormat, timeFieldFor } from '../src/formats';
+import { FORMATS, FORMAT_IDS, TEMPLATES, detectFormat, hasOtel, otelSelect, resolveFormat, timeFieldFor } from '../src/formats';
 import { viewSelect } from '../src/datasource';
 
 describe('detectFormat', () => {
@@ -11,7 +11,10 @@ describe('detectFormat', () => {
     expect(detectFormat(['s3://b/AWSLogs/1/vpcflowlogs/r/2026/09/16/1_vpcflowlogs_r_fl-1_20260916T0000Z_h.log.gz'])).toBe('flowlogs');
     expect(detectFormat(['s3://b/cf/E2EXAMPLE12345.2026-09-16-01.abcdef12.gz'])).toBe('cloudfront');
     expect(detectFormat(['s3://b/logs/2026-09-16-01-00-00-0123456789ABCDEF'])).toBe('s3access');
-    expect(detectFormat(['s3://b/AWSLogs/1/WAFLogs/r/acl/2026/09/16/01/00/x.log.gz'])).toBe('json');
+    expect(detectFormat(['s3://b/AWSLogs/1/WAFLogs/r/acl/2026/09/16/01/00/x.log.gz'])).toBe('waf');
+    expect(detectFormat(['s3://b/AWSLogs/1/vpcdnsquerylogs/vpc-1/2026/09/16/vpc-1_vpcdnsquerylogs_1_x.log.gz'])).toBe('r53resolver');
+    // Network Firewall has no layout of its own yet, so it stays plain JSON lines
+    expect(detectFormat(['s3://b/AWSLogs/1/network-firewall/alert/r/fw/2026/09/16/01/x.log.gz'])).toBe('json');
     expect(detectFormat(['s3://b/x/access.ltsv.gz'])).toBe('ltsv');
   });
 
@@ -85,7 +88,7 @@ describe('OpenTelemetry names', () => {
   /** The columns the reader declares, straight out of its `columns = {...}` list. */
   const declared = (id: (typeof OTEL_FORMATS)[number]) => [...FORMATS[id].reader(`['x']`, false).matchAll(/'([a-z0-9_]+)': '[A-Z]/g)].map((m) => m[1]).sort();
   /** The columns an expression reads (identifiers are always quoted in the projection). */
-  const used = (id: (typeof OTEL_FORMATS)[number]) => [...new Set(FORMATS[id].otel!.flatMap(([, e]) => [...e.matchAll(/"([a-z0-9_]+)"/g)].map((m) => m[1])))].sort();
+  const used = (id: (typeof OTEL_FORMATS)[number]) => [...new Set(FORMATS[id].otel!.columns.flatMap(([, e]) => [...e.matchAll(/"([a-z0-9_]+)"/g)].map((m) => m[1])))].sort();
 
   it('reads every column of the layout and nothing else', () => {
     // A field AWS appends later is dead until it appears here, and a typo would silently make the
@@ -93,12 +96,29 @@ describe('OpenTelemetry names', () => {
     for (const id of OTEL_FORMATS) expect(used(id)).toEqual(declared(id));
   });
 
-  it('gives every column a name of its own', () => {
-    for (const id of OTEL_FORMATS) {
-      const names = FORMATS[id].otel!.map(([n]) => n);
+  it('gives every column a name of its own, in every layout that has a projection', () => {
+    for (const id of FORMAT_IDS) {
+      const otel = id === 'auto' ? undefined : FORMATS[id].otel;
+      if (!otel) continue;
+      const names = otel.columns.map(([n]) => n);
       expect([...new Set(names)]).toEqual(names);
       expect(names[0]).toBe('timestamp');
     }
+  });
+
+  it('reads a JSON family record by record, so a key a file lacks is NULL and not a bind error', () => {
+    for (const id of ['cloudtrail', 'waf', 'r53resolver'] as const) {
+      const sql = viewSelect(FORMATS[id], ['s3://b/a.log.gz'], null, true, 'otel');
+      expect(sql).toContain('read_json_objects(');
+      // no schema is inferred, so binding the view reads nothing and opens no other file
+      expect(sql).not.toContain('union_by_name');
+      // and nothing is lost: the whole record stays reachable through body.<key>
+      expect(sql).toContain('AS "body"');
+      // the native naming still reads them through the inferred schema
+      expect(viewSelect(FORMATS[id], ['s3://b/a.log.gz'], null, true, 'native')).toContain('read_json_auto(');
+    }
+    // CloudTrail keeps one row per Record without the wrap the native reader needs
+    expect(viewSelect(FORMATS.cloudtrail, ['s3://b/a.json.gz'], null, true, 'otel')).toContain(`unnest(json_extract("json", '$.Records')::JSON[])`);
   });
 
   it('moves the time field to "timestamp" and leaves the other naming alone', () => {

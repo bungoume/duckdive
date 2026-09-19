@@ -13,7 +13,17 @@
 import { lit } from './sql';
 import { t } from './i18n';
 
-export type FormatId = 'auto' | 'parquet' | 'csv' | 'json' | 'alb' | 'cloudfront' | 'cloudtrail' | 'flowlogs' | 's3access' | 'ltsv' | 'cwlexport' | 'lines';
+export type FormatId = 'auto' | 'parquet' | 'csv' | 'json' | 'alb' | 'cloudfront' | 'cloudtrail' | 'flowlogs' | 's3access' | 'waf' | 'r53resolver' | 'ltsv' | 'cwlexport' | 'lines';
+
+/**
+ * How a format is read under the OpenTelemetry names. `columns` is the whole projection, in
+ * order. A projection that brings its own `reader` replaces the format's reader and its wrap:
+ * the JSON families read the records as they are rather than through an inferred schema.
+ */
+export interface OtelProjection {
+  columns: [string, string][];
+  reader?: (list: string, withFilename: boolean) => string;
+}
 
 export interface FormatDef {
   id: FormatId;
@@ -27,8 +37,8 @@ export interface FormatDef {
   wrap?: (inner: string) => string;
   /** preferred time field */
   timeField?: string;
-  /** projection under the OpenTelemetry names ([name, expression]); the time field is then "timestamp" */
-  otel?: [string, string][];
+  /** projection under the OpenTelemetry names; the time field is then "timestamp" */
+  otel?: OtelProjection;
   /** detect from the first URL */
   detect?: RegExp;
 }
@@ -345,6 +355,101 @@ const S3ACCESS_OTEL: [string, string][] = [
   ['aws.s3.acl_required', s3a('acl_required')],
 ];
 
+// ---- JSON log families ----
+//
+// A JSON layout has no column list to project: the keys differ between records and between
+// files, and a path that is missing from one file would make the view fail to bind. Under the
+// OTel naming these formats therefore read the records as they are (read_json_objects) and pull
+// each attribute out by path, which is NULL when a record does not carry it. Nothing is lost:
+// `body` keeps the whole record, and the field sidebar expands its keys like any JSON column.
+
+/** The record column of the JSON readers below. */
+const REC = '"rec"';
+/** A path of the record as text; a record without it yields NULL. */
+const j = (path: string) => `json_extract_string(${REC}, '$.${path}')`;
+/** … as a number, a boolean, or the JSON value itself. */
+const jcast = (path: string, type: string) => `TRY_CAST(${j(path)} AS ${type})`;
+const jraw = (path: string) => `json_extract(${REC}, '$.${path}')`;
+
+/** One record per line, as written (WAF, Route 53 Resolver, Cloud Logging, Logpush). */
+const ndjson = (l: string, f: boolean) => `(SELECT "json" AS rec${f ? ', filename' : ''} FROM read_json_objects(${l}${fn(f)}))`;
+/** CloudTrail delivers {"Records":[ … ]}: one row per element, without inferring their shape. */
+const ctjson = (l: string, f: boolean) => `(SELECT unnest(json_extract("json", '$.Records')::JSON[]) AS rec${f ? ', filename' : ''} FROM read_json_objects(${l}${fn(f)}))`;
+
+/** "HTTP/2.0" → "http" / "2.0", for the layouts that log the protocol that way. */
+const protoName = (e: string) => `nullif(regexp_extract(lower(${e}), '^([a-z]+)/', 1), '')`;
+const protoVersion = (e: string) => `nullif(regexp_extract(${e}, '^[A-Za-z]+/([0-9.]+)$', 1), '')`;
+
+const CLOUDTRAIL_OTEL: [string, string][] = [
+  ['timestamp', jcast('eventTime', 'TIMESTAMP')],
+  ['client.address', j('sourceIPAddress')],
+  ['user_agent.original', j('userAgent')],
+  ['user.id', j('userIdentity.arn')],
+  ['user.name', j('userIdentity.userName')],
+  ['cloud.region', j('awsRegion')],
+  ['cloud.account.id', j('recipientAccountId')],
+  ['error.type', j('errorCode')],
+  ['aws.request_id', j('requestID')],
+  ['log.record.uid', j('eventID')],
+  ['aws.cloudtrail.event_source', j('eventSource')],
+  ['aws.cloudtrail.event_name', j('eventName')],
+  ['aws.cloudtrail.event_type', j('eventType')],
+  ['aws.cloudtrail.event_category', j('eventCategory')],
+  ['aws.cloudtrail.error_message', j('errorMessage')],
+  ['aws.cloudtrail.read_only', jcast('readOnly', 'BOOLEAN')],
+  ['aws.cloudtrail.management_event', jcast('managementEvent', 'BOOLEAN')],
+  ['aws.cloudtrail.shared_event_id', j('sharedEventID')],
+  ['aws.cloudtrail.vpc_endpoint_id', j('vpcEndpointId')],
+  ['aws.cloudtrail.user_identity.type', j('userIdentity.type')],
+  ['aws.cloudtrail.user_identity.account_id', j('userIdentity.accountId')],
+  ['aws.cloudtrail.user_identity.principal_id', j('userIdentity.principalId')],
+  ['aws.cloudtrail.user_identity.session_issuer_arn', j('userIdentity.sessionContext.sessionIssuer.arn')],
+  ['body', REC],
+];
+
+const WAF_OTEL: [string, string][] = [
+  ['timestamp', `epoch_ms(${jcast('timestamp', 'BIGINT')})`],
+  ['client.address', j('httpRequest.clientIp')],
+  ['http.request.method', j('httpRequest.httpMethod')],
+  ['url.path', j('httpRequest.uri')],
+  ['url.query', j('httpRequest.args')],
+  ['network.protocol.name', protoName(j('httpRequest.httpVersion'))],
+  ['network.protocol.version', protoVersion(j('httpRequest.httpVersion'))],
+  ['aws.request_id', j('httpRequest.requestId')],
+  ['aws.waf.action', j('action')],
+  ['aws.waf.terminating_rule_id', j('terminatingRuleId')],
+  ['aws.waf.terminating_rule_type', j('terminatingRuleType')],
+  ['aws.waf.web_acl_id', j('webaclId')],
+  ['aws.waf.source_name', j('httpSourceName')],
+  ['aws.waf.source_id', j('httpSourceId')],
+  ['aws.waf.country', j('httpRequest.country')],
+  ['aws.waf.ja3_fingerprint', j('ja3Fingerprint')],
+  ['aws.waf.response_code_sent', jcast('responseCodeSent', 'INTEGER')],
+  ['aws.waf.labels', jraw('labels')],
+  ['body', REC],
+];
+
+const R53RESOLVER_OTEL: [string, string][] = [
+  ['timestamp', jcast('query_timestamp', 'TIMESTAMP')],
+  ['client.address', j('srcaddr')],
+  ['client.port', jcast('srcport', 'INTEGER')],
+  ['network.transport', `nullif(regexp_extract(lower(${j('transport')}), '^(tcp|udp)', 1), '')`],
+  ['dns.question.name', j('query_name')],
+  ['dns.answers', jraw('answers[*].Rdata')],
+  ['cloud.account.id', j('account_id')],
+  ['cloud.region', j('region')],
+  ['host.id', j('srcids.instance')],
+  ['aws.route53.query_type', j('query_type')],
+  ['aws.route53.query_class', j('query_class')],
+  ['aws.route53.rcode', j('rcode')],
+  ['aws.route53.vpc_id', j('vpc_id')],
+  ['aws.route53.resolver_endpoint_id', j('srcids.resolver_endpoint')],
+  ['aws.route53.firewall_rule_action', j('firewall_rule_action')],
+  ['aws.route53.firewall_rule_group_id', j('firewall_rule_group_id')],
+  ['aws.route53.firewall_domain_list_id', j('firewall_domain_list_id')],
+  ['body', REC],
+];
+
 const LTSV_EXPR = `to_json(map_from_entries(list_transform(string_split(line, chr(9)), x -> struct_pack(key := split_part(x, ':', 1), value := x[length(split_part(x, ':', 1)) + 2:]))))`;
 
 export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
@@ -354,14 +459,14 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
     id: 'json',
     reader: (l, f) => `read_json_auto(${l}, union_by_name = true${fn(f)})`,
     // by extension, or by the delivery paths of AWS services that write JSON lines as *.log.gz
-    detect: /\.(json|jsonl|ndjson)(\.gz|\.zst)?$|\/(WAFLogs|vpcdnsquerylogs|network-firewall)\//,
+    detect: /\.(json|jsonl|ndjson)(\.gz|\.zst)?$|\/network-firewall\//,
   },
   alb: {
     id: 'alb',
     reader: (l, f) => csvFixed(l, f, ALB_COLUMNS, `delim = ' ', quote = '"', escape = '"', timestampformat = '%Y-%m-%dT%H:%M:%S.%fZ'`),
     replace: numericReplace(ALB_COLUMNS),
     timeField: 'time',
-    otel: ALB_OTEL,
+    otel: { columns: ALB_OTEL },
     // NLB writes into the same folder with _net. in the name and has other columns entirely,
     // so the Application Load Balancer is recognised by _app. rather than by the folder
     detect: /\/elasticloadbalancing\/.*_app\./,
@@ -372,7 +477,7 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
     replace: numericReplace(CLOUDFRONT_COLUMNS),
     select: `, ${CLOUDFRONT_TIME} AS "timestamp"`,
     timeField: 'timestamp',
-    otel: CLOUDFRONT_OTEL,
+    otel: { columns: CLOUDFRONT_OTEL },
     detect: /[A-Z0-9]{13,14}\.\d{4}-\d{2}-\d{2}-\d{2}\.[^/]+\.gz$/,
   },
   cloudtrail: {
@@ -381,7 +486,22 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
     // one row per Record; the filename (if requested) is carried along
     wrap: (inner) => `SELECT rec.*, * EXCLUDE (rec) FROM (SELECT unnest(Records) AS rec, * EXCLUDE (Records) FROM (${inner}))`,
     timeField: 'eventTime',
+    otel: { columns: CLOUDTRAIL_OTEL, reader: ctjson },
     detect: /\/CloudTrail\//,
+  },
+  waf: {
+    id: 'waf',
+    reader: (l, f) => `read_json_auto(${l}, union_by_name = true${fn(f)})`,
+    timeField: 'timestamp',
+    otel: { columns: WAF_OTEL, reader: ndjson },
+    detect: /\/WAFLogs\//,
+  },
+  r53resolver: {
+    id: 'r53resolver',
+    reader: (l, f) => `read_json_auto(${l}, union_by_name = true${fn(f)})`,
+    timeField: 'query_timestamp',
+    otel: { columns: R53RESOLVER_OTEL, reader: ndjson },
+    detect: /\/vpcdnsquerylogs\//,
   },
   flowlogs: {
     id: 'flowlogs',
@@ -395,7 +515,7 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
     replace: numericReplace(S3ACCESS_COLUMNS),
     select: `, ${S3ACCESS_TIME} AS "timestamp"`,
     timeField: 'timestamp',
-    otel: S3ACCESS_OTEL,
+    otel: { columns: S3ACCESS_OTEL },
     detect: /\/\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-[A-F0-9]{16}$/,
   },
   ltsv: {
@@ -427,14 +547,14 @@ export function formatLabel(id: FormatId): string {
   return t(`fmt.${id}`);
 }
 
-export const FORMAT_IDS: FormatId[] = ['auto', 'parquet', 'csv', 'json', 'alb', 'cloudfront', 'cloudtrail', 'flowlogs', 's3access', 'ltsv', 'cwlexport', 'lines'];
+export const FORMAT_IDS: FormatId[] = ['auto', 'parquet', 'csv', 'json', 'alb', 'cloudfront', 'cloudtrail', 'flowlogs', 's3access', 'waf', 'r53resolver', 'ltsv', 'cwlexport', 'lines'];
 
 export function detectFormat(urls: string[]): Exclude<FormatId, 'auto'> {
   const first = urls[0] ?? '';
   // Parquet wins over path hints: converted ALB logs or Flow Logs in Parquet still carry the
   // service name in their keys.
   if (/\.parquet$/i.test(first)) return 'parquet';
-  for (const id of ['alb', 'cloudtrail', 'flowlogs', 'cloudfront', 's3access', 'ltsv', 'json', 'csv'] as const) {
+  for (const id of ['alb', 'cloudtrail', 'flowlogs', 'cloudfront', 's3access', 'waf', 'r53resolver', 'ltsv', 'json', 'csv'] as const) {
     const d = FORMATS[id].detect;
     if (d && d.test(first)) return id;
   }
@@ -457,7 +577,13 @@ export function timeFieldFor(fmt: FormatDef, naming: Naming): string | undefined
 
 /** SELECT list of the OTel projection, or null for a format that has none (it is then read under its own names). */
 export function otelSelect(fmt: FormatDef): string | null {
-  return fmt.otel ? fmt.otel.map(([name, expr]) => `${expr} AS "${name}"`).join(', ') : null;
+  return fmt.otel ? fmt.otel.columns.map(([name, expr]) => `${expr} AS "${name}"`).join(', ') : null;
+}
+
+/** The reader a format is read through under `naming`, and whether its wrap still applies. */
+export function readerFor(fmt: FormatDef, naming: Naming): { reader: FormatDef['reader']; wrap?: FormatDef['wrap'] } {
+  const otel = naming === 'otel' ? fmt.otel : undefined;
+  return otel?.reader ? { reader: otel.reader } : { reader: fmt.reader, wrap: fmt.wrap };
 }
 
 // ---------- Data source templates ----------
@@ -518,7 +644,7 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'waf',
-    format: 'json',
+    format: 'waf',
     urls: 's3://<bucket>/AWSLogs/{account}/WAFLogs/{region}/{webacl}/{yyyy}/{MM}/{dd}/{HH}/*/{account}_waflogs_{region}_{webacl}_*.log.gz',
   },
   {
@@ -528,7 +654,7 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'r53resolver',
-    format: 'json',
+    format: 'r53resolver',
     urls: 's3://<bucket>/AWSLogs/{account}/vpcdnsquerylogs/{vpc}/{yyyy}/{MM}/{dd}/{vpc}_vpcdnsquerylogs_{account}_*.log.gz',
   },
   {

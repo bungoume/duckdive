@@ -5,7 +5,7 @@ import { DataProtocol, exec, execAll, getDB, query } from './duck';
 import { describeError } from './errors';
 import { CancelledError, throwIfAborted } from './net';
 import { originPattern } from './permissions';
-import { detectFormat, otelSelect, resolveFormat, timeFieldFor, type FormatDef, type Naming } from './formats';
+import { detectFormat, otelSelect, readerFor, resolveFormat, timeFieldFor, type FormatDef, type Naming } from './formats';
 import {
   DEFAULT_MAX_FILES,
   HAS_DATE_TOKEN,
@@ -249,8 +249,9 @@ export function viewSelect(fmt: FormatDef, files: string[], captures: string | n
   // The OTel projection names every column of the layout itself, so it replaces both the star and
   // the format's derived columns; captures and _file are added to it the same way.
   const cols = (naming === 'otel' ? otelSelect(fmt) : null) ?? `*${withFilename ? ' EXCLUDE (filename)' : ''}${fmt.replace ?? ''}${fmt.select ?? ''}`;
-  let sql = `SELECT ${cols}${captures ?? ''}${withFilename ? ', filename AS _file' : ''} FROM ${fmt.reader(list, withFilename)}`;
-  if (fmt.wrap) sql = fmt.wrap(sql);
+  const { reader, wrap } = readerFor(fmt, naming);
+  let sql = `SELECT ${cols}${captures ?? ''}${withFilename ? ', filename AS _file' : ''} FROM ${reader(list, withFilename)}`;
+  if (wrap) sql = wrap(sql);
   return sql;
 }
 

@@ -554,6 +554,8 @@ export const ko: Messages = {
   'fmt.cloudtrail': 'CloudTrail (.json.gz)',
   'fmt.flowlogs': 'VPC Flow Logs (.log.gz, 헤더 포함)',
   'fmt.s3access': 'S3 서버 액세스 로그',
+  'fmt.waf': 'AWS WAF 로그 (.log.gz, JSON Lines)',
+  'fmt.r53resolver': 'Route 53 Resolver 쿼리 로그 (.log.gz, JSON Lines)',
   'fmt.ltsv': 'LTSV (label:value, 탭 구분)',
   'fmt.cwlexport': 'CloudWatch Logs 내보내기 (timestamp + message 줄)',
   'fmt.lines': '일반 텍스트 (한 줄당 한 행)',

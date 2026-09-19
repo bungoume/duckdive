@@ -547,6 +547,8 @@ export const zh_CN: Messages = {
   'fmt.cloudtrail': 'CloudTrail（.json.gz）',
   'fmt.flowlogs': 'VPC Flow Logs（.log.gz，带表头）',
   'fmt.s3access': 'S3 服务器访问日志',
+  'fmt.waf': 'AWS WAF 日志 (.log.gz，JSON Lines)',
+  'fmt.r53resolver': 'Route 53 Resolver 查询日志 (.log.gz，JSON Lines)',
   'fmt.ltsv': 'LTSV（label:value，制表符分隔）',
   'fmt.cwlexport': 'CloudWatch Logs 导出（timestamp + message 行）',
   'fmt.lines': '纯文本（每行一条记录）',
