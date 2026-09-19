@@ -14,7 +14,7 @@ Six pages:
 - Visualize: area, line, bar, table and metric charts with date histograms, numeric histograms (bucket width chosen from the data unless set), break-downs and top values; 100 % stacking, a logarithmic axis, the previous period as an overlay, any percentile and a per-second rate as metrics, and the chart as an SVG file. Clicking a chart adds a filter or zooms the time range.
 - Dashboard: saved visualizations side by side over one search and time range; a click on any chart filters or zooms all of them.
 - SQL: one DuckDB statement over the connected source, its rows as a table, downloads as CSV, JSON Lines or Parquet.
-- Data source: where the files are, how they are formatted, which field is the time, and how to authenticate.
+- Data source: where the files are, how they are formatted, whether fields keep the log's own names or the OpenTelemetry ones, which field is the time, and how to authenticate.
 - Settings: UI language, date format, time zone, scaled date format for histogram buckets, first day of the week, and the time picker's quick ranges.
 
 ![The Visualize page: a date histogram broken down by the top values of a field](docs/images/visualize.png)
@@ -109,6 +109,18 @@ The Template menu fills in the pattern and format for the usual AWS layouts: ALB
 ### Formats
 
 Auto-detection goes by path and extension. Parquet, CSV and JSON are read with DuckDB's own readers (gzip and zstd included). Fixed layouts are recognised for ALB access logs, CloudFront standard logs, CloudTrail (`Records` expanded to one row per event), VPC Flow Logs (columns from the header line), S3 server access logs, LTSV (labels exposed as `log.<label>`), CloudWatch Logs exports and plain text (one row per line). String time fields are parsed as ISO 8601, nginx/Apache format, or epoch seconds/milliseconds.
+
+### Field names
+
+"Field names" on the Data source page reads a fixed layout either under the names the log delivers (the default) or under the names of the [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/). It applies to ALB access logs, CloudFront standard logs and S3 server access logs; every other format keeps the names it delivers, and the choice is then without effect.
+
+The OTel projection renames every column of the layout exactly once and splits the few fields whose parts the conventions name separately: `client:port` and `target:port` become `client.address` / `client.port` and `destination.address` / `destination.port` (split at the last colon, so an IPv6 address survives), the request line becomes `http.request.method`, `url.full` (`url.scheme`, `url.domain`, `url.port`, `url.path`, `url.query`) and `network.protocol.version`, and `TLSv1.2` becomes `tls.protocol.name` + `tls.protocol.version`. The time field is `timestamp`.
+
+Values are left as the log wrote them: `-` stays `-` and ALB's `-1` stays `-1`; CloudFront's percent-encoded URI, User-Agent and Referer are not decoded. A column that is derived rather than renamed is NULL when what it is derived from has no such part (a malformed ALB request line, `"- - -"`, gives no method and no URL).
+
+The conventions have no attributes for load balancers, CDNs or object storage access, so roughly half of each layout has no counterpart. Those fields keep their own name under the vendor namespace of the service — `aws.alb.*`, `aws.cloudfront.*`, `aws.s3.*` — which is what the conventions ask for. Attributes outside the stable set (`http.request.size`, `tls.*`, `cloud.*`, `aws.*`, `destination.*`, `user.id`) may still change in a future version of the conventions; a rename here is a breaking change of this extension.
+
+Field names are part of a saved search, visualization or dashboard, so those do not carry over between the two namings; switching drops the fields the new naming does not have, the same way switching to another source does.
 
 Gzip files cannot be read partially, so each `.gz` object is fetched in full. Narrow the date range, or convert to hourly Parquet with `scripts/alb-to-parquet.sh` (DuckDB CLI only).
 

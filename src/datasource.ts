@@ -5,7 +5,7 @@ import { DataProtocol, exec, execAll, getDB, query } from './duck';
 import { describeError } from './errors';
 import { CancelledError, throwIfAborted } from './net';
 import { originPattern } from './permissions';
-import { detectFormat, resolveFormat, type FormatDef } from './formats';
+import { detectFormat, otelSelect, resolveFormat, timeFieldFor, type FormatDef, type Naming } from './formats';
 import {
   DEFAULT_MAX_FILES,
   HAS_DATE_TOKEN,
@@ -242,10 +242,14 @@ export async function resolveFiles(
 /**
  * SELECT statement of the source view for a format: reader → derived columns → optional wrap.
  * `captures` (extra SELECT expressions over `filename`) requires filename = true.
+ * Under the `otel` naming a fixed layout is projected onto the semantic-convention names.
  */
-export function viewSelect(fmt: FormatDef, files: string[], captures: string | null, withFilename = true): string {
+export function viewSelect(fmt: FormatDef, files: string[], captures: string | null, withFilename = true, naming: Naming = 'native'): string {
   const list = '[' + files.map(lit).join(', ') + ']';
-  let sql = `SELECT *${withFilename ? ' EXCLUDE (filename)' : ''}${fmt.select ?? ''}${captures ?? ''}${withFilename ? ', filename AS _file' : ''} FROM ${fmt.reader(list, withFilename)}`;
+  // The OTel projection names every column of the layout itself, so it replaces both the star and
+  // the format's derived columns; captures and _file are added to it the same way.
+  const cols = (naming === 'otel' ? otelSelect(fmt) : null) ?? `*${withFilename ? ' EXCLUDE (filename)' : ''}${fmt.select ?? ''}`;
+  let sql = `SELECT ${cols}${captures ?? ''}${withFilename ? ', filename AS _file' : ''} FROM ${fmt.reader(list, withFilename)}`;
   if (fmt.wrap) sql = fmt.wrap(sql);
   return sql;
 }
@@ -299,7 +303,7 @@ async function attachLocal(cfg: SourceConfig, localFiles: File[], progress: Prog
     await db.registerFileHandle(f.name, f, DataProtocol.BROWSER_FILEREADER, true);
     names.push(f.name);
   }
-  await exec(`CREATE OR REPLACE VIEW ${VIEW} AS ${viewSelect(resolveFormat(cfg.format, names), names, null)}`);
+  await exec(`CREATE OR REPLACE VIEW ${VIEW} AS ${viewSelect(resolveFormat(cfg.format, names), names, null, true, cfg.naming)}`);
   const description = t('src.local.description', { n: names.length, names: names.slice(0, 3).join(', '), more: names.length > 3 ? '…' : '' });
   return { description, files: names, fileSizes: [], totalBytes: null, warning: null, rangeDependent: false };
 }
@@ -345,7 +349,7 @@ async function attachRemote(cfg: SourceConfig, creds: AwsCredentials | null, ran
   const notes: string[] = [];
   progress(t('src.creatingView', { n: files.length }), 'db');
   if (lines.some((u) => u.startsWith('s3://'))) await applyS3(cfg, creds);
-  await exec(`CREATE OR REPLACE VIEW ${VIEW} AS ${viewSelect(resolveFormat(cfg.format, files), files, captures.length ? captureSelect(cfg) : null)}`);
+  await exec(`CREATE OR REPLACE VIEW ${VIEW} AS ${viewSelect(resolveFormat(cfg.format, files), files, captures.length ? captureSelect(cfg) : null, true, cfg.naming)}`);
   const expanded = resolved.patterns > 1 || files.length !== lines.length || resolved.skippedByTime > 0 || resolved.skippedByFilter > 0;
   if (resolved.skippedByTime) notes.push(t('src.skippedByTime', { n: resolved.skippedByTime }));
   if (resolved.skippedByFilter) notes.push(t('src.skippedByFilter', { n: resolved.skippedByFilter, names: captures.join(', ') }));
@@ -368,7 +372,7 @@ function pickTimeField(cfg: SourceConfig, fields: Field[], files: string[]): Fie
     if (f && (f.kind === 'date' || isTimeCandidate(f))) return f;
   }
   if (cfg.kind !== 'demo') {
-    const pref = resolveFormat(cfg.format, files).timeField;
+    const pref = timeFieldFor(resolveFormat(cfg.format, files), cfg.naming);
     const f = (pref && findField(fields, pref)) || (cfg.format === 'ltsv' ? (findField(fields, 'log.time') ?? findField(fields, 'log.timestamp')) : null);
     if (f) return f;
   }

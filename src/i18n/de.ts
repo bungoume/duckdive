@@ -124,6 +124,9 @@ export const de: Messages = {
   'ds.vars.none': 'Keine',
   'ds.vars.noValue': 'Kein Wert in der neuesten Partition gefunden.',
   'ds.vars.missing': 'Wählen Sie mindestens einen Wert für: {names}',
+  'ds.naming': 'Feldnamen',
+  'ds.naming.hint':
+    'OpenTelemetry-Namen gelten für die festen Layouts von ALB, CloudFront und S3-Server-Zugriffslogs; jedes andere Format behält die Namen, die es liefert. Gespeicherte Suchen und Visualisierungen nennen Felder beim Namen und gelten deshalb nicht für beide.',
   'ds.name': 'Name',
   'ds.maxFiles': 'Vor dem Verbinden warnen, wenn mehr Dateien als diese Zahl passen (Standard 1000)',
   'ds.listingHint':
@@ -547,6 +550,8 @@ export const de: Messages = {
   'metric.percentile': 'p{p} von {field}',
 
   // ---- file formats ----
+  'naming.native': 'Wie geliefert (Namen des Logs)',
+  'naming.otel': 'OpenTelemetry Semantic Conventions',
   'fmt.auto': 'Automatisch (nach Pfad / Endung)',
   'fmt.parquet': 'Parquet',
   'fmt.csv': 'CSV / TSV / Text (automatische Erkennung)',

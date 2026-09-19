@@ -121,6 +121,8 @@ export const zh_CN: Messages = {
   'ds.vars.none': '全不选',
   'ds.vars.noValue': '在最新分区中未找到取值。',
   'ds.vars.missing': '请为以下变量至少选择一个取值：{names}',
+  'ds.naming': '字段名称',
+  'ds.naming.hint': 'OpenTelemetry 名称适用于 ALB、CloudFront 和 S3 服务器访问日志的固定布局；其他格式保留日志原有名称。已保存的搜索和可视化引用字段名，因此不会在两者之间沿用。',
   'ds.name': '名称',
   'ds.maxFiles': '连接前匹配文件数超过此值时发出警告（默认 1000）',
   'ds.listingHint':
@@ -534,6 +536,8 @@ export const zh_CN: Messages = {
   'metric.percentile': '{field} 的 p{p}',
 
   // ---- file formats ----
+  'naming.native': '保持日志原有名称',
+  'naming.otel': 'OpenTelemetry 语义约定',
   'fmt.auto': '自动（按路径 / 扩展名）',
   'fmt.parquet': 'Parquet',
   'fmt.csv': 'CSV / TSV / 文本（自动检测）',

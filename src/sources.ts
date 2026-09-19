@@ -2,7 +2,7 @@
 // static S3 secrets) and the history of recently connected sources for quick switching.
 
 import { DEFAULT_OIDC, type OidcConfig } from './auth';
-import { FORMAT_IDS, type FormatId } from './formats';
+import { FORMAT_IDS, NAMING_IDS, type FormatId, type Naming } from './formats';
 
 export interface S3Config {
   region: string;
@@ -21,6 +21,8 @@ export interface SourceConfig {
   /** newline separated URLs / globs (s3://..., https://...) */
   urls: string;
   format: FormatId;
+  /** field names: as the log delivers them, or the OpenTelemetry semantic conventions (fixed layouts only) */
+  naming: Naming;
   s3: S3Config;
   /** how S3 credentials are obtained: none (public / presigned), static keys, OIDC → STS */
   authMode: AuthMode;
@@ -39,6 +41,7 @@ export const DEFAULT_SOURCE: SourceConfig = {
   name: 'demo-logs',
   urls: '',
   format: 'auto',
+  naming: 'native',
   s3: { region: 'ap-northeast-1', accessKeyId: '', secretAccessKey: '', sessionToken: '', endpoint: '', urlStyle: 'vhost' },
   authMode: 'static',
   oidc: DEFAULT_OIDC,
@@ -218,6 +221,7 @@ export function sourceFromLink(raw: unknown): SourceConfig | null {
     name: str(raw.name),
     urls: raw.urls,
     format: FORMAT_IDS.includes(raw.format as FormatId) ? (raw.format as FormatId) : 'auto',
+    naming: NAMING_IDS.includes(raw.naming as Naming) ? (raw.naming as Naming) : 'native',
     s3: { region: awsRegion(s3.region), accessKeyId: '', secretAccessKey: '', sessionToken: '', endpoint: str(s3.endpoint), urlStyle: s3.urlStyle === 'path' ? 'path' : 'vhost' },
     authMode: raw.authMode === 'none' || raw.authMode === 'oidc' ? raw.authMode : 'static',
     oidc: {

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { AwsCredentials, OidcConfig } from '../auth';
 import { capturedColumns, requiredOrigins, unselectedTokens, type AttachedSource } from '../datasource';
-import { FORMAT_IDS, TEMPLATES, formatLabel, templateLabel, templateNote } from '../formats';
+import { FORMATS, FORMAT_IDS, NAMING_IDS, TEMPLATES, formatLabel, hasOtel, namingLabel, templateLabel, templateNote } from '../formats';
 import { t, tx } from '../i18n';
 import type { AttachProgress, Variables } from '../hooks/useConnect';
 import { NO_LOCAL, selectionNames, selectionTitle, type LocalSelection } from '../localfiles';
@@ -62,6 +62,8 @@ export function DataSource(props: {
   const setOidc = (p: Partial<OidcConfig>) => setCfg({ ...cfg, oidc: { ...cfg.oidc, ...p } });
   const usesS3 = cfg.kind === 'url' && /(^|\n)\s*s3:\/\//.test(cfg.urls);
   const tokens = cfg.kind === 'url' ? capturedColumns(cfg) : [];
+  // With "auto" the layout is only known once the files are listed, so the choice stays open.
+  const otelAvailable = cfg.format === 'auto' || hasOtel(FORMATS[cfg.format]);
   const vars = props.variables && props.variables.pattern === cfg.urls ? props.variables : null;
   const missing = unselectedTokens(cfg);
   const setTokenValues = (name: string, values: string[]) => set({ tokenValues: { ...(cfg.tokenValues ?? {}), [name]: values } });
@@ -162,6 +164,13 @@ export function DataSource(props: {
                   ))}
                 </select>
               </FormField>
+              <FormField label={t('ds.naming')}>
+                <select class="input" value={cfg.naming} disabled={!otelAvailable} onChange={(e) => set({ naming: e.currentTarget.value as SourceConfig['naming'], timeField: null })}>
+                  {NAMING_IDS.map((id) => (
+                    <option value={id}>{namingLabel(id)}</option>
+                  ))}
+                </select>
+              </FormField>
               <FormField label={t('ds.name')}>
                 <input class="input" value={cfg.name} onInput={(e) => set({ name: e.currentTarget.value })} />
               </FormField>
@@ -169,7 +178,10 @@ export function DataSource(props: {
                 <input class="input" type="number" min={1} value={cfg.maxFiles || ''} placeholder="1000" onInput={(e) => set({ maxFiles: Number(e.currentTarget.value) || 0 })} />
               </FormField>
             </div>
-            <span class="hint">{t('ds.listingHint')}</span>
+            <span class="hint">
+              {cfg.naming === 'otel' ? t('ds.naming.hint') + ' ' : ''}
+              {t('ds.listingHint')}
+            </span>
             {usesS3 && <S3Section cfg={cfg} creds={props.creds} onChange={set} onS3={setS3} onOidc={setOidc} onCreds={props.onCreds} />}
             {isExtension && origins.length > 0 && (
               <div class={'alert mt8 ' + (needPerm ? 'info' : 'ok')}>

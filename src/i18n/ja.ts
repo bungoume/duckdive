@@ -123,6 +123,9 @@ export const ja: Messages = {
   'ds.vars.none': 'なし',
   'ds.vars.noValue': '最新パーティションに値が見つかりませんでした。',
   'ds.vars.missing': '次の変数に 1 つ以上の値を選択してください: {names}',
+  'ds.naming': 'フィールド名',
+  'ds.naming.hint':
+    'OpenTelemetry 名は ALB / CloudFront / S3 サーバアクセスログの固定レイアウトに適用されます。ほかの形式はログのままの名前です。保存した検索や可視化はフィールド名を参照するため、両者の間では引き継がれません。',
   'ds.name': '名前',
   'ds.maxFiles': '接続前に警告を出すファイル数のしきい値(既定 1000)',
   'ds.listingHint':
@@ -542,6 +545,8 @@ export const ja: Messages = {
   'metric.percentile': '{field} の p{p}',
 
   // ---- file formats ----
+  'naming.native': 'ログのままの名前',
+  'naming.otel': 'OpenTelemetry セマンティック規約',
   'fmt.auto': '自動(パス / 拡張子から判定)',
   'fmt.parquet': 'Parquet',
   'fmt.csv': 'CSV / TSV / テキスト(自動検出)',

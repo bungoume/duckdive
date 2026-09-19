@@ -125,6 +125,9 @@ export const en = {
   'ds.vars.none': 'None',
   'ds.vars.noValue': 'No value found in the newest partition.',
   'ds.vars.missing': 'Select at least one value for: {names}',
+  'ds.naming': 'Field names',
+  'ds.naming.hint':
+    'OpenTelemetry names apply to the fixed layouts of ALB, CloudFront and S3 server access logs; every other format keeps the names it delivers. Saved searches and visualizations name fields, so they do not carry over between the two.',
   'ds.name': 'Name',
   'ds.maxFiles': 'Warn when more files than this match before connecting (default 1000)',
   'ds.listingHint':
@@ -545,6 +548,8 @@ export const en = {
   'metric.percentile': 'p{p} of {field}',
 
   // ---- file formats ----
+  'naming.native': "As delivered (the log's own names)",
+  'naming.otel': 'OpenTelemetry semantic conventions',
   'fmt.auto': 'Auto (by path / extension)',
   'fmt.parquet': 'Parquet',
   'fmt.csv': 'CSV / TSV / text (auto-detect)',

@@ -25,6 +25,8 @@ export interface FormatDef {
   wrap?: (inner: string) => string;
   /** preferred time field */
   timeField?: string;
+  /** projection under the OpenTelemetry names ([name, expression]); the time field is then "timestamp" */
+  otel?: [string, string][];
   /** detect from the first URL */
   detect?: RegExp;
 }
@@ -142,6 +144,175 @@ const S3ACCESS_COLUMNS: [string, string][] = [
   ['acl_required', 'VARCHAR'],
 ];
 
+// ---- Derived timestamps, shared by the native `select` and the OTel projection ----
+const CLOUDFRONT_TIME = `("date" || ' ' || "time")::TIMESTAMP`;
+const S3ACCESS_TIME = `try_strptime("time1"[2:] || ' ' || "time2"[:-2], '%d/%b/%Y:%H:%M:%S %z')::TIMESTAMP`;
+
+// ---- OpenTelemetry field names ----
+//
+// A fixed layout can be read under its own field names (`native`) or under the names of the
+// OpenTelemetry semantic conventions (`otel`). The second is a projection: every column of the
+// layout appears exactly once, renamed, and a few are split into the parts the conventions ask
+// for (host:port, the request line, the TLS version). Values are not rewritten; a derived column
+// is NULL when the text it is derived from does not have that part.
+//
+// Names that the conventions do not cover — most of what a load balancer logs — keep the AWS
+// field name under the vendor namespace of the service (aws.alb.*, aws.cloudfront.*, aws.s3.*).
+// Other providers follow the same rule with their own namespace (gcp.*, cloudflare.*).
+
+export type Naming = 'native' | 'otel';
+
+export const NAMING_IDS: Naming[] = ['native', 'otel'];
+
+/** "host:port" → the address; split at the last colon so an IPv6 address survives. A value that is not host:port ("-") is kept as it is. */
+const addrOf = (c: string) => `coalesce(nullif(regexp_extract(${c}, '^(.*):[0-9]+$', 1), ''), ${c})`;
+const portOf = (c: string) => `TRY_CAST(nullif(regexp_extract(${c}, '^.*:([0-9]+)$', 1), '') AS INTEGER)`;
+
+/** "TLSv1.2" → "tls" / "1.2"; anything else, "-" included, is NULL. */
+const tlsName = (c: string) => `nullif(regexp_extract(lower(${c}), '^(tls|ssl)', 1), '')`;
+const tlsVersion = (c: string) => `nullif(regexp_extract(${c}, '^[A-Za-z]+v?([0-9][0-9.]*)$', 1), '')`;
+
+/** Request line "GET <target> HTTP/1.1": 1 = method, 2 = target, 3 = protocol name, 4 = version. A malformed line ("- - -") gives NULL. */
+const reqLine = (c: string, g: 1 | 2 | 3 | 4) => `nullif(regexp_extract(${c}, '^([A-Z]+) (\\S+) ([A-Za-z]+)/([0-9.]+)$', ${g}), '')`;
+
+/** One part of the URL in `u`, NULL when the URL has no such part. */
+const urlPart = (u: string, re: string) => `nullif(regexp_extract(${u}, '${re}', 1), '')`;
+const RE_SCHEME = '^([a-zA-Z][a-zA-Z0-9+.-]*)://';
+const RE_DOMAIN = '^[a-zA-Z][a-zA-Z0-9+.-]*://(\\[[^\\]]*\\]|[^/?#:]*)';
+const RE_PORT = '^[a-zA-Z][a-zA-Z0-9+.-]*://(?:\\[[^\\]]*\\]|[^/?#:]*):([0-9]+)';
+const RE_PATH_ABS = '^[a-zA-Z][a-zA-Z0-9+.-]*://[^/?#]*([^?#]*)';
+const RE_PATH_REL = '^([^?#]*)';
+const RE_QUERY = '^[^?#]*\\?([^#]*)';
+
+const ALB_URL = reqLine('"request"', 2);
+
+// type (1) is split: the scheme and the HTTP version come from the request line, so it is left
+// with the transport it names. ip_address (34) is the load balancer node, i.e. the local end of
+// both sockets; client (4) and target (5) are the two remote ends.
+const ALB_OTEL: [string, string][] = [
+  ['timestamp', `"time"`],
+  ['client.address', addrOf(`"client_port"`)],
+  ['client.port', portOf(`"client_port"`)],
+  ['destination.address', addrOf(`"target_port"`)],
+  ['destination.port', portOf(`"target_port"`)],
+  ['network.local.address', `"ip_address"`],
+  ['network.protocol.name', `CASE "type" WHEN 'grpcs' THEN 'grpc' WHEN 'ws' THEN 'websocket' WHEN 'wss' THEN 'websocket' WHEN 'http' THEN 'http' WHEN 'https' THEN 'http' WHEN 'h2' THEN 'http' END`],
+  ['network.protocol.version', reqLine('"request"', 4)],
+  ['http.request.method', reqLine('"request"', 1)],
+  ['url.full', ALB_URL],
+  ['url.scheme', urlPart(ALB_URL, RE_SCHEME)],
+  ['url.domain', urlPart(ALB_URL, RE_DOMAIN)],
+  ['url.port', `TRY_CAST(${urlPart(ALB_URL, RE_PORT)} AS INTEGER)`],
+  ['url.path', urlPart(ALB_URL, RE_PATH_ABS)],
+  ['url.query', urlPart(ALB_URL, RE_QUERY)],
+  ['server.address', `"domain_name"`],
+  ['http.response.status_code', `"elb_status_code"`],
+  ['http.request.size', `"received_bytes"`],
+  ['http.response.size', `"sent_bytes"`],
+  ['user_agent.original', `"user_agent"`],
+  ['error.type', `"error_reason"`],
+  ['tls.cipher', `"ssl_cipher"`],
+  ['tls.protocol.name', tlsName(`"ssl_protocol"`)],
+  ['tls.protocol.version', tlsVersion(`"ssl_protocol"`)],
+  ['aws.alb.type', `"type"`],
+  ['aws.alb.id', `"elb"`],
+  ['aws.alb.target_status_code', `"target_status_code"`],
+  ['aws.alb.request_processing_time', `"request_processing_time"`],
+  ['aws.alb.target_processing_time', `"target_processing_time"`],
+  ['aws.alb.response_processing_time', `"response_processing_time"`],
+  ['aws.alb.target_group.arn', `"target_group_arn"`],
+  ['aws.alb.trace_id', `"trace_id"`],
+  ['aws.alb.conn_trace_id', `"conn_trace_id"`],
+  ['aws.alb.chosen_cert.arn', `"chosen_cert_arn"`],
+  ['aws.alb.matched_rule_priority', `"matched_rule_priority"`],
+  ['aws.alb.request_creation_time', `"request_creation_time"`],
+  ['aws.alb.actions_executed', `"actions_executed"`],
+  ['aws.alb.redirect_url', `"redirect_url"`],
+  ['aws.alb.target_port_list', `"target_port_list"`],
+  ['aws.alb.target_status_code_list', `"target_status_code_list"`],
+  ['aws.alb.classification', `"classification"`],
+  ['aws.alb.classification_reason', `"classification_reason"`],
+  ['aws.alb.transformed_host', `"transformed_host"`],
+  ['aws.alb.transformed_uri', `"transformed_uri"`],
+  ['aws.alb.request_transform_status', `"request_transform_status"`],
+];
+
+// cs(Host) is the distribution's own domain and x-host-header the one the viewer asked for, so
+// the second is server.address. sc-bytes counts the headers, sc-content-len does not.
+const CLOUDFRONT_OTEL: [string, string][] = [
+  ['timestamp', CLOUDFRONT_TIME],
+  ['client.address', `"c_ip"`],
+  ['client.port', `"c_port"`],
+  ['server.address', `"x_host_header"`],
+  ['network.protocol.name', `nullif(regexp_extract(lower("cs_protocol_version"), '^([a-z]+)/', 1), '')`],
+  ['network.protocol.version', `nullif(regexp_extract("cs_protocol_version", '^[A-Za-z]+/([0-9.]+)$', 1), '')`],
+  ['http.request.method', `"cs_method"`],
+  ['url.scheme', `"cs_protocol"`],
+  ['url.path', `"cs_uri_stem"`],
+  ['url.query', `"cs_uri_query"`],
+  ['http.response.status_code', `"sc_status"`],
+  ['http.request.size', `"cs_bytes"`],
+  ['http.response.size', `"sc_bytes"`],
+  ['http.response.body.size', `"sc_content_len"`],
+  ['http.request.header.referer', `"cs_referer"`],
+  ['http.request.header.cookie', `"cs_cookie"`],
+  ['http.request.header.x-forwarded-for', `"x_forwarded_for"`],
+  ['http.response.header.content-type', `"sc_content_type"`],
+  ['user_agent.original', `"cs_user_agent"`],
+  ['tls.cipher', `"ssl_cipher"`],
+  ['tls.protocol.name', tlsName(`"ssl_protocol"`)],
+  ['tls.protocol.version', tlsVersion(`"ssl_protocol"`)],
+  ['aws.request_id', `"x_edge_request_id"`],
+  ['aws.cloudfront.domain', `"cs_host"`],
+  ['aws.cloudfront.edge_location', `"x_edge_location"`],
+  ['aws.cloudfront.result_type', `"x_edge_result_type"`],
+  ['aws.cloudfront.response_result_type', `"x_edge_response_result_type"`],
+  ['aws.cloudfront.detailed_result_type', `"x_edge_detailed_result_type"`],
+  ['aws.cloudfront.time_taken', `"time_taken"`],
+  ['aws.cloudfront.time_to_first_byte', `"time_to_first_byte"`],
+  ['aws.cloudfront.fle_status', `"fle_status"`],
+  ['aws.cloudfront.fle_encrypted_fields', `"fle_encrypted_fields"`],
+  ['aws.cloudfront.range.start', `"sc_range_start"`],
+  ['aws.cloudfront.range.end', `"sc_range_end"`],
+];
+
+const S3ACCESS_TARGET = reqLine('"request_uri"', 2);
+
+// bytes_sent leaves out the response headers (body.size), while ALB's sent_bytes includes them.
+const S3ACCESS_OTEL: [string, string][] = [
+  ['timestamp', S3ACCESS_TIME],
+  ['client.address', `"remote_ip"`],
+  ['server.address', `"host_header"`],
+  ['network.protocol.name', `lower(${reqLine('"request_uri"', 3)})`],
+  ['network.protocol.version', reqLine('"request_uri"', 4)],
+  ['http.request.method', reqLine('"request_uri"', 1)],
+  ['url.path', urlPart(S3ACCESS_TARGET, RE_PATH_REL)],
+  ['url.query', urlPart(S3ACCESS_TARGET, RE_QUERY)],
+  ['http.response.status_code', `"http_status"`],
+  ['http.response.body.size', `"bytes_sent"`],
+  ['http.request.header.referer', `"referer"`],
+  ['user_agent.original', `"user_agent"`],
+  ['error.type', `"error_code"`],
+  ['user.id', `"requester"`],
+  ['tls.cipher', `"cipher_suite"`],
+  ['tls.protocol.name', tlsName(`"tls_version"`)],
+  ['tls.protocol.version', tlsVersion(`"tls_version"`)],
+  ['aws.request_id', `"request_id"`],
+  ['aws.extended_request_id', `"host_id"`],
+  ['aws.s3.bucket', `"bucket"`],
+  ['aws.s3.bucket_owner', `"bucket_owner"`],
+  ['aws.s3.key', `"key"`],
+  ['aws.s3.operation', `"operation"`],
+  ['aws.s3.object_size', `"object_size"`],
+  ['aws.s3.version_id', `"version_id"`],
+  ['aws.s3.total_time', `"total_time"`],
+  ['aws.s3.turn_around_time', `"turn_around_time"`],
+  ['aws.s3.signature_version', `"signature_version"`],
+  ['aws.s3.authentication_type', `"authentication_type"`],
+  ['aws.s3.access_point_arn', `"access_point_arn"`],
+  ['aws.s3.acl_required', `"acl_required"`],
+];
+
 const LTSV_EXPR = `to_json(map_from_entries(list_transform(string_split(line, chr(9)), x -> struct_pack(key := split_part(x, ':', 1), value := x[length(split_part(x, ':', 1)) + 2:]))))`;
 
 export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
@@ -157,6 +328,7 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
     id: 'alb',
     reader: (l, f) => csvFixed(l, f, ALB_COLUMNS, `delim = ' ', quote = '"', escape = '"', timestampformat = '%Y-%m-%dT%H:%M:%S.%fZ'`),
     timeField: 'time',
+    otel: ALB_OTEL,
     // NLB writes into the same folder with _net. in the name and has other columns entirely,
     // so the Application Load Balancer is recognised by _app. rather than by the folder
     detect: /\/elasticloadbalancing\/.*_app\./,
@@ -164,8 +336,9 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
   cloudfront: {
     id: 'cloudfront',
     reader: (l, f) => csvFixed(l, f, CLOUDFRONT_COLUMNS, `delim = '\t', quote = '', escape = '', skip = 2`),
-    select: `, (date || ' ' || time)::TIMESTAMP AS "timestamp"`,
+    select: `, ${CLOUDFRONT_TIME} AS "timestamp"`,
     timeField: 'timestamp',
+    otel: CLOUDFRONT_OTEL,
     detect: /[A-Z0-9]{13,14}\.\d{4}-\d{2}-\d{2}-\d{2}\.[^/]+\.gz$/,
   },
   cloudtrail: {
@@ -185,8 +358,9 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
   s3access: {
     id: 's3access',
     reader: (l, f) => csvFixed(l, f, S3ACCESS_COLUMNS, `delim = ' ', quote = '"', escape = '"'`),
-    select: `, try_strptime(time1[2:] || ' ' || time2[:-2], '%d/%b/%Y:%H:%M:%S %z')::TIMESTAMP AS "timestamp"`,
+    select: `, ${S3ACCESS_TIME} AS "timestamp"`,
     timeField: 'timestamp',
+    otel: S3ACCESS_OTEL,
     detect: /\/\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-[A-F0-9]{16}$/,
   },
   ltsv: {
@@ -207,6 +381,11 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
     reader: (l, f) => `read_csv(${l}, delim = E'\\x01', quote = '', escape = '', header = false, auto_detect = false, null_padding = true, strict_mode = false, columns = {'line': 'VARCHAR'}${fn(f)})`,
   },
 };
+
+/** Display name of a field naming in the UI language. */
+export function namingLabel(id: Naming): string {
+  return t(`naming.${id}`);
+}
 
 /** Display name of a format in the UI language. */
 export function formatLabel(id: FormatId): string {
@@ -229,6 +408,21 @@ export function detectFormat(urls: string[]): Exclude<FormatId, 'auto'> {
 
 export function resolveFormat(format: FormatId, urls: string[]): FormatDef {
   return FORMATS[format === 'auto' ? detectFormat(urls) : format];
+}
+
+/** Whether a format can be read under the OpenTelemetry names. */
+export function hasOtel(fmt: FormatDef): boolean {
+  return !!fmt.otel;
+}
+
+/** The preferred time field of a format, which the OTel projection renames to "timestamp". */
+export function timeFieldFor(fmt: FormatDef, naming: Naming): string | undefined {
+  return naming === 'otel' && fmt.otel ? 'timestamp' : fmt.timeField;
+}
+
+/** SELECT list of the OTel projection, or null for a format that has none (it is then read under its own names). */
+export function otelSelect(fmt: FormatDef): string | null {
+  return fmt.otel ? fmt.otel.map(([name, expr]) => `${expr} AS "${name}"`).join(', ') : null;
 }
 
 // ---------- Data source templates ----------

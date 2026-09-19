@@ -126,6 +126,9 @@ export const es: Messages = {
   'ds.vars.none': 'Ninguno',
   'ds.vars.noValue': 'No se encontró ningún valor en la partición más reciente.',
   'ds.vars.missing': 'Seleccione al menos un valor para: {names}',
+  'ds.naming': 'Nombres de campo',
+  'ds.naming.hint':
+    'Los nombres de OpenTelemetry se aplican a los formatos fijos de los registros de ALB, CloudFront y acceso al servidor de S3; cualquier otro formato conserva los nombres que entrega. Las búsquedas y visualizaciones guardadas nombran campos, así que no se trasladan entre ambos.',
   'ds.name': 'Nombre',
   'ds.maxFiles': 'Avisar antes de conectar cuando coincidan más archivos que este número (por defecto 1000)',
   'ds.listingHint':
@@ -550,6 +553,8 @@ export const es: Messages = {
   'metric.percentile': 'p{p} de {field}',
 
   // ---- file formats ----
+  'naming.native': 'Tal como llegan (nombres del registro)',
+  'naming.otel': 'Convenciones semánticas de OpenTelemetry',
   'fmt.auto': 'Automático (por ruta / extensión)',
   'fmt.parquet': 'Parquet',
   'fmt.csv': 'CSV / TSV / texto (detección automática)',

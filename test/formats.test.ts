@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { FORMATS, TEMPLATES, detectFormat, resolveFormat } from '../src/formats';
+import { FORMATS, TEMPLATES, detectFormat, hasOtel, otelSelect, resolveFormat, timeFieldFor } from '../src/formats';
+import { viewSelect } from '../src/datasource';
 
 describe('detectFormat', () => {
   it('recognises the AWS delivery layouts by path', () => {
@@ -60,5 +61,43 @@ describe('readers', () => {
       expect(tp.urls.startsWith('s3://<bucket>/')).toBe(true);
       expect(tp.format === 'auto' || tp.format in FORMATS).toBe(true);
     }
+  });
+});
+
+describe('OpenTelemetry names', () => {
+  const OTEL_FORMATS = ['alb', 'cloudfront', 's3access'] as const;
+  /** The columns the reader declares, straight out of its `columns = {...}` list. */
+  const declared = (id: (typeof OTEL_FORMATS)[number]) => [...FORMATS[id].reader(`['x']`, false).matchAll(/'([a-z0-9_]+)': '[A-Z]/g)].map((m) => m[1]).sort();
+  /** The columns an expression reads (identifiers are always quoted in the projection). */
+  const used = (id: (typeof OTEL_FORMATS)[number]) => [...new Set(FORMATS[id].otel!.flatMap(([, e]) => [...e.matchAll(/"([a-z0-9_]+)"/g)].map((m) => m[1])))].sort();
+
+  it('reads every column of the layout and nothing else', () => {
+    // A field AWS appends later is dead until it appears here, and a typo would silently make the
+    // view fail to bind; both are caught by comparing the two lists.
+    for (const id of OTEL_FORMATS) expect(used(id)).toEqual(declared(id));
+  });
+
+  it('gives every column a name of its own', () => {
+    for (const id of OTEL_FORMATS) {
+      const names = FORMATS[id].otel!.map(([n]) => n);
+      expect([...new Set(names)]).toEqual(names);
+      expect(names[0]).toBe('timestamp');
+    }
+  });
+
+  it('moves the time field to "timestamp" and leaves the other naming alone', () => {
+    expect(timeFieldFor(FORMATS.alb, 'otel')).toBe('timestamp');
+    expect(timeFieldFor(FORMATS.alb, 'native')).toBe('time');
+    expect(hasOtel(FORMATS.json)).toBe(false);
+    expect(otelSelect(FORMATS.json)).toBeNull();
+  });
+
+  it('replaces the star and the derived columns of the layout, and keeps _file', () => {
+    const sql = viewSelect(FORMATS.alb, ['s3://b/a.log.gz'], null, true, 'otel');
+    expect(sql).not.toContain('SELECT * EXCLUDE');
+    expect(sql).toContain('"time" AS "timestamp"');
+    expect(sql).toContain('filename AS _file');
+    // a format without a projection is read under its own names whatever the naming says
+    expect(viewSelect(FORMATS.parquet, ['s3://b/a.parquet'], null, true, 'otel')).toBe(viewSelect(FORMATS.parquet, ['s3://b/a.parquet'], null, true, 'native'));
   });
 });

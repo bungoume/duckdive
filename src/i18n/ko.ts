@@ -123,6 +123,9 @@ export const ko: Messages = {
   'ds.vars.none': '없음',
   'ds.vars.noValue': '최신 파티션에서 값을 찾지 못했습니다.',
   'ds.vars.missing': '다음 변수에 대해 값을 하나 이상 선택하세요: {names}',
+  'ds.naming': '필드 이름',
+  'ds.naming.hint':
+    'OpenTelemetry 이름은 ALB, CloudFront, S3 서버 액세스 로그의 고정 레이아웃에 적용됩니다. 다른 형식은 로그가 전달하는 이름을 그대로 씁니다. 저장된 검색과 시각화는 필드 이름을 참조하므로 둘 사이에서 이어지지 않습니다.',
   'ds.name': '이름',
   'ds.maxFiles': '연결 전에 이 수보다 많은 파일이 일치하면 경고 (기본값 1000)',
   'ds.listingHint':
@@ -540,6 +543,8 @@ export const ko: Messages = {
   'metric.percentile': '{field}의 p{p}',
 
   // ---- file formats ----
+  'naming.native': '로그 원래 이름 그대로',
+  'naming.otel': 'OpenTelemetry 시맨틱 규약',
   'fmt.auto': '자동 (경로 / 확장자 기준)',
   'fmt.parquet': 'Parquet',
   'fmt.csv': 'CSV / TSV / 텍스트 (자동 감지)',
