@@ -93,6 +93,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
 
   /** Credentials for cfg (null for static / none). Interactive login only when `interactive`. */
   const resolveCreds = async (cfg: SourceConfig, interactive: boolean): Promise<AwsCredentials | null> => {
+    setCreds(null);
     if (cfg.kind !== 'url' || cfg.authMode !== 'oidc') return null;
     const c = await getCredentials(cfg.oidc, interactive);
     setCreds(c);
@@ -268,7 +269,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
           setUrl((u) => ({ ...u, page: 'source' }));
           return;
         }
-        if (cfg.kind === 'url' && cfg.authMode === 'oidc' && !isUsable(await loadCredentials(), 60)) {
+        if (cfg.kind === 'url' && cfg.authMode === 'oidc' && !isUsable(await loadCredentials(cfg.oidc), 60)) {
           // needs an interactive login: let the user click "Sign in" on the Data source page
           setUrl((u) => ({ ...u, page: 'source' }));
           return;

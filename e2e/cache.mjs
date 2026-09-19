@@ -627,7 +627,7 @@ await section('sts-credentials', async () => {
       sessionName: 'e2e',
     };
     const c = await window.__ddv.assumeRoleWithWebIdentity(cfg, 'fake.id.token');
-    await window.__ddv.storeCredentials(c);
+    await window.__ddv.storeCredentials(c, cfg);
     return c;
   }, dataPort);
   check(

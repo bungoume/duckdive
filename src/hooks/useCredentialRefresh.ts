@@ -19,7 +19,7 @@ export function useCredentialRefresh(source: SourceConfig, attached: AttachedSou
     if (source.kind !== 'url' || source.authMode !== 'oidc' || !attached) return;
     const timer = setInterval(async () => {
       try {
-        const cur = await loadCredentials();
+        const cur = await loadCredentials(source.oidc);
         if (secondsUntilExpiry(cur) > REFRESH_BEFORE_S) return;
         const c = await getCredentials(source.oidc, false, REFRESH_BEFORE_S);
         onCreds(c);

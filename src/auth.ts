@@ -45,6 +45,12 @@ export const DEFAULT_OIDC: OidcConfig = {
 
 const SESSION_KEY = 'ddv.awsCredentials';
 
+interface StoredCredentials {
+  credentials: AwsCredentials;
+  /** The identity provider and AWS role these temporary credentials were obtained for. */
+  oidcKey: string;
+}
+
 export function redirectUrl(): string {
   return isExtension && chrome.identity ? chrome.identity.getRedirectURL() : `${location.origin}/oauth-callback`;
 }
@@ -151,13 +157,26 @@ export async function assumeRoleWithWebIdentity(cfg: OidcConfig, idToken: string
 export async function signIn(cfg: OidcConfig, interactive: boolean): Promise<AwsCredentials> {
   const token = await loginOidc(cfg, interactive);
   const creds = await assumeRoleWithWebIdentity(cfg, token);
-  await storeCredentials(creds);
+  await storeCredentials(creds, cfg);
   return creds;
 }
 
 // Temporary credentials live for the browser session only (src/sessionStore.ts).
-export const storeCredentials = (c: AwsCredentials | null): Promise<void> => writeSession(SESSION_KEY, c);
-export const loadCredentials = (): Promise<AwsCredentials | null> => readSession<AwsCredentials>(SESSION_KEY);
+function oidcKey(cfg: OidcConfig): string {
+  return JSON.stringify([cfg.authUrl, cfg.clientId, cfg.scope, cfg.extraParams, cfg.roleArn, stsEndpointFor(cfg)]);
+}
+
+export const storeCredentials = (c: AwsCredentials | null, cfg?: OidcConfig): Promise<void> =>
+  writeSession(SESSION_KEY, c && cfg ? ({ credentials: c, oidcKey: oidcKey(cfg) } satisfies StoredCredentials) : c);
+
+export async function loadCredentials(cfg?: OidcConfig): Promise<AwsCredentials | null> {
+  const stored = await readSession<AwsCredentials | StoredCredentials>(SESSION_KEY);
+  if (!stored) return null;
+  if ('credentials' in stored && 'oidcKey' in stored) return !cfg || stored.oidcKey === oidcKey(cfg) ? stored.credentials : null;
+  // Credentials written by an older build have no provenance. They may still be displayed or
+  // explicitly cleared, but must not be used for a configured role.
+  return cfg ? null : stored;
+}
 
 export function secondsUntilExpiry(c: AwsCredentials | null): number {
   if (!c?.expiration) return Infinity;
@@ -173,7 +192,7 @@ export function isUsable(c: AwsCredentials | null, minSeconds = 60): boolean {
  * Falls back to an interactive login only when `allowInteractive` is set.
  */
 export async function getCredentials(cfg: OidcConfig, allowInteractive: boolean, minSeconds = 300): Promise<AwsCredentials> {
-  const cached = await loadCredentials();
+  const cached = await loadCredentials(cfg);
   if (isUsable(cached, minSeconds)) return cached!;
   try {
     return await signIn(cfg, false);
