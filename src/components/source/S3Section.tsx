@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
 import { redirectUrl, secondsUntilExpiry, signIn, storeCredentials, type AwsCredentials, type OidcConfig } from '../../auth';
+import { applyS3 } from '../../datasource';
 import { describeError } from '../../errors';
 import { t, tx } from '../../i18n';
 import { isExtension } from '../../permissions';
@@ -23,6 +24,21 @@ export function S3Section(props: {
     setAuthError(null);
     try {
       props.onCreds(await signIn(cfg.oidc, true));
+    } catch (e) {
+      setAuthError(describeError(e));
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+  const doSignOut = async () => {
+    setAuthBusy(true);
+    setAuthError(null);
+    await storeCredentials(null);
+    props.onCreds(null);
+    try {
+      // DuckDB keeps S3 settings independently of the session store. Clear all credential parts
+      // together so signing out also prevents later SQL queries from using the old STS session.
+      await applyS3(cfg, null);
     } catch (e) {
       setAuthError(describeError(e));
     } finally {
@@ -91,13 +107,7 @@ export function S3Section(props: {
             {props.creds ? (
               <span class="hint">
                 {t('ds.oidc.signedIn', { as: props.creds.subject ? t('ds.oidc.as', { subject: props.creds.subject }) : '', min: expiresIn })}
-                <button
-                  class="btn ghost small"
-                  onClick={async () => {
-                    await storeCredentials(null);
-                    props.onCreds(null);
-                  }}
-                >
+                <button class="btn ghost small" disabled={authBusy} onClick={() => void doSignOut()}>
                   {t('ds.oidc.signOut')}
                 </button>
               </span>
