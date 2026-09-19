@@ -1,7 +1,7 @@
 // Bits shared by the Visualize page and the dashboard tiles: what a click on a chart means for
 // the search, and the axis labels of a chart definition.
 import { t } from '../i18n';
-import { NULL_GROUP, OTHER } from '../queries';
+import { NULL_GROUP, OTHER, decodeVisValue } from '../queries';
 import { intervalLabel, newId, type Interval } from '../sql';
 import type { SearchState, VisState } from '../state';
 import type { ChartPick } from './Chart';
@@ -18,11 +18,16 @@ export function searchAfterPick(vis: VisState, groups: string[], pick: ChartPick
   if (vis.breakdown.field && groups.length) {
     if (pick.series === OTHER) {
       const top = groups.filter((g) => g !== OTHER);
-      return top.length ? { ...search, filters: [...search.filters, { id: newId(), field: vis.breakdown.field, op: 'is_not_one_of', values: top }] } : null;
+      if (!top.length) return null;
+      const values = top.map(decodeVisValue).filter((value): value is string => value !== null);
+      const filters = [...search.filters];
+      if (values.length) filters.push({ id: newId(), field: vis.breakdown.field, op: 'is_not_one_of', values });
+      if (top.includes(NULL_GROUP)) filters.push({ id: newId(), field: vis.breakdown.field, op: 'exists' });
+      return { ...search, filters };
     }
-    return withFilter(vis.breakdown.field, pick.series === NULL_GROUP ? null : pick.series);
+    return withFilter(vis.breakdown.field, decodeVisValue(pick.series));
   }
-  if (vis.x.kind === 'terms' && vis.x.field) return withFilter(vis.x.field, pick.x === NULL_GROUP ? null : String(pick.x));
+  if (vis.x.kind === 'terms' && vis.x.field) return withFilter(vis.x.field, decodeVisValue(String(pick.x)));
   if (pick.isTime && pick.x instanceof Date && pick.intervalMs) {
     return { ...search, range: { from: pick.x.toISOString(), to: new Date(pick.x.getTime() + pick.intervalMs).toISOString() } };
   }

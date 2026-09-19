@@ -131,7 +131,7 @@ export function Chart(props: {
       domain: series,
       range: series.map((s, i) => (s === OTHER ? '#98a2b3' : PALETTE[i % PALETTE.length])),
       legend: series.length > 1 || props.result.groups.length > 0,
-      tickFormat: groupLabel,
+      tickFormat: props.result.groups.length ? groupLabel : undefined,
     };
     const baseLabel = props.result.groups.length ? metricLabel(props.metrics[0]) : props.metrics.length === 1 ? metricLabel(props.metrics[0]) : t('chart.value');
     const yLabel = percent ? `${baseLabel} (%)` : baseLabel;
@@ -191,7 +191,7 @@ export function Chart(props: {
         marginBottom: isBand ? 60 : 30,
         style: { fontSize: '11px', background: 'transparent', overflow: 'visible' },
         color,
-        x: isTime ? xTime : isBand ? { domain: xDomain as string[], label: null, tickRotate: xDomain.length > 8 ? -30 : 0 } : { label: null },
+        x: isTime ? xTime : isBand ? { domain: xDomain as string[], label: null, tickRotate: xDomain.length > 8 ? -30 : 0, tickFormat: groupLabel } : { label: null },
         y: {
           label: yLabel,
           grid: true,
@@ -387,7 +387,7 @@ export function Chart(props: {
     if (d0 instanceof Date && d1 instanceof Date && !isNaN(d0.getTime())) props.onBrush(d0, d1);
   };
 
-  const fmtX = (x: Date | string | number) => (x instanceof Date ? formatBucket(x, props.result.interval?.ms ?? 0) : String(x));
+  const fmtX = (x: Date | string | number) => (x instanceof Date ? formatBucket(x, props.result.interval?.ms ?? 0) : props.result.xKind === 'terms' ? groupLabel(String(x)) : String(x));
   const tipLeft = hover ? Math.min(hover.px + 12, width - 260) : 0;
   const tipTop = hover ? Math.max(0, hover.py - 10) : 0;
   const hasBreakdown = props.result.groups.length > 0;
@@ -411,12 +411,10 @@ export function Chart(props: {
             {hover.isTime && hover.intervalMs ? ` – ${formatBucket(new Date((hover.x as Date).getTime() + hover.intervalMs), hover.intervalMs)}` : ''}
           </div>
           <div class="chart-tip-row">
-            <span class="chart-tip-key">{groupLabel(hover.series)}</span>
+            <span class="chart-tip-key">{hasBreakdown ? groupLabel(hover.series) : hover.series}</span>
             <span class="chart-tip-val">{props.percent && (props.chart === 'area' || props.chart === 'bar') ? `${fmtNum(hover.value, 1)} %` : fmtNum(hover.value)}</span>
           </div>
-          {props.onPick && (
-            <div class="chart-tip-hint">{(hasBreakdown && hover.series !== OTHER) || props.result.xKind === 'terms' ? t('chart.clickFilter') : hover.isTime ? t('chart.clickZoom') : ''}</div>
-          )}
+          {props.onPick && <div class="chart-tip-hint">{hasBreakdown || props.result.xKind === 'terms' ? t('chart.clickFilter') : hover.isTime ? t('chart.clickZoom') : ''}</div>}
         </div>
       )}
     </div>

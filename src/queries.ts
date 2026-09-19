@@ -4,7 +4,7 @@ import { findField, quoteIdent } from './fields';
 import { describeError } from './errors';
 import { templateExpr } from './patterns';
 import { searchToSql } from './search';
-import { VIEW, bucketExpr, buildWhere, fieldCompareExpr, lit, niceStep, type Interval } from './sql';
+import { VIEW, bucketExpr, buildWhere, fieldCompareExpr, niceStep, type Interval } from './sql';
 import type { MetricDef, SearchState, SortDir, VisState } from './state';
 import { t } from './i18n';
 
@@ -235,13 +235,26 @@ export interface VisResult {
   sql: string;
 }
 
-/** Sentinel group values (not shown as such: see groupLabel). */
-export const OTHER = 'Other';
-export const NULL_GROUP = '(null)';
+/** Internal visualization values. Raw strings are prefixed so they cannot collide with sentinels. */
+const VALUE_PREFIX = '\u{e000}value:';
+export const OTHER = '\u{e000}other';
+export const NULL_GROUP = '\u{e000}null';
+
+export function encodeVisValue(value: unknown): string {
+  return value === null || value === undefined ? NULL_GROUP : VALUE_PREFIX + String(value);
+}
+
+export function decodeVisValue(value: string): string | null {
+  if (value === NULL_GROUP) return null;
+  return value.startsWith(VALUE_PREFIX) ? value.slice(VALUE_PREFIX.length) : value;
+}
 
 /** Display text of a group / series value. */
 export function groupLabel(g: string): string {
-  return g === OTHER ? t('vis.other') : g === NULL_GROUP ? t('common.null') : g;
+  if (g === OTHER) return t('vis.other');
+  const value = decodeVisValue(g);
+  if (value === null) return t('common.null');
+  return value === t('vis.other') || value === t('common.null') ? JSON.stringify(value) : value;
 }
 
 /**
@@ -285,6 +298,8 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
   const inputs = plans.map((p, i) => (p.input ? `, ${p.input} AS v${i}` : '')).join('');
   const ctes: string[] = [`base AS MATERIALIZED (SELECT ${xExpr ?? 'NULL'} AS x, ${gExpr ?? 'NULL'} AS g${inputs} FROM ${VIEW} WHERE ${where})`];
   let gSel = 'g';
+  let otherSel = '';
+  let groupBy = '1, 2';
   const conds: string[] = [];
   const dir = vis.x.orderDir.toUpperCase();
   const topX = xKind === 'terms' && !!xExpr;
@@ -295,15 +310,18 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
   if (gExpr) {
     ctes.push(`topg AS (SELECT g, ${ms[0]} AS m0 FROM base GROUP BY g ORDER BY m0 DESC NULLS LAST LIMIT ${Math.max(1, vis.breakdown.size)})`);
     const inTopG = `EXISTS (SELECT 1 FROM topg WHERE topg.g IS NOT DISTINCT FROM base.g)`;
-    if (vis.breakdown.other) gSel = `CASE WHEN ${inTopG} THEN g ELSE ${lit(OTHER)} END`;
-    else conds.push(inTopG);
+    if (vis.breakdown.other) {
+      gSel = `CASE WHEN ${inTopG} THEN g ELSE NULL END`;
+      otherSel = `, NOT (${inTopG}) AS __other`;
+      groupBy = '1, 2, 3';
+    } else conds.push(inTopG);
   }
-  const join = topX ? ' JOIN topx ON topx.x = base.x' : '';
-  const sql = `WITH ${ctes.join(',\n')}\nSELECT base.x AS x, ${gSel} AS g, ${mSel}${topX ? ', min(topx.rk) AS xr' : ''} FROM base${join}${conds.length ? ' WHERE ' + conds.join(' AND ') : ''} GROUP BY 1, 2 ORDER BY 1, 2`;
+  const join = topX ? ' JOIN topx ON topx.x IS NOT DISTINCT FROM base.x' : '';
+  const sql = `WITH ${ctes.join(',\n')}\nSELECT base.x AS x, ${gSel} AS g${otherSel}, ${mSel}${topX ? ', min(topx.rk) AS xr' : ''} FROM base${join}${conds.length ? ' WHERE ' + conds.join(' AND ') : ''} GROUP BY ${groupBy} ORDER BY 1, 2`;
   const r = await query(sql);
   const rows: VisRow[] = r.rows.map((row: Row) => ({
-    x: row.x === null || row.x === undefined ? null : xKind === 'terms' ? String(row.x) : Number(row.x),
-    g: row.g === null || row.g === undefined ? (gExpr ? NULL_GROUP : null) : String(row.g),
+    x: xKind === 'terms' ? encodeVisValue(row.x) : row.x === null || row.x === undefined ? null : Number(row.x),
+    g: gExpr ? (row.__other ? OTHER : encodeVisValue(row.g)) : null,
     m: ms.map((_, i) => (row[`m${i}`] === null || row[`m${i}`] === undefined ? NaN : Number(row[`m${i}`]))),
   }));
 
@@ -312,7 +330,7 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
     // the rank of each x comes back with its rows (min over the groups of that x)
     const rank = new Map<string, number>();
     r.rows.forEach((row: Row) => {
-      if (row.x !== null && row.x !== undefined) rank.set(String(row.x), Number(row.xr));
+      rank.set(encodeVisValue(row.x), Number(row.xr));
     });
     xOrder = [...rank.entries()].sort((a, b) => a[1] - b[1]).map((e) => e[0]);
   } else {
