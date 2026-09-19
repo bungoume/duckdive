@@ -4,7 +4,7 @@ import { findField, quoteIdent } from './fields';
 import { describeError } from './errors';
 import { templateExpr } from './patterns';
 import { searchToSql } from './search';
-import { VIEW, bucketExpr, buildWhere, fieldCompareExpr, niceStep, type Interval } from './sql';
+import { VIEW, bucketExpr, buildWhere, fieldCompareExpr, nextBucketStart, niceStep, type Interval } from './sql';
 import type { MetricDef, SearchState, SortDir, VisState } from './state';
 import { t } from './i18n';
 
@@ -265,7 +265,8 @@ export function groupLabel(g: string): string {
  */
 export async function fetchVis(vis: VisState, where: string, timeExpr: string | null, fields: Field[], iv: Interval | null, tzOffset: number, spanSec: number): Promise<VisResult> {
   // a rate is per bucket second on a date histogram, per second of the whole range otherwise
-  const secs = vis.x.kind === 'date_histogram' && iv ? iv.ms / 1000 : spanSec;
+  const variableBucket = vis.x.kind === 'date_histogram' && (iv?.calendar === 'month' || iv?.calendar === 'year');
+  const secs = variableBucket ? 1 : vis.x.kind === 'date_histogram' && iv ? iv.ms / 1000 : spanSec;
   const plans = vis.metrics.map((m) => metricPlan(m, fields, secs));
   const ms = plans.map((p, i) => p.agg(`v${i}`));
   const mSel = ms.map((s, i) => `${s} AS m${i}`).join(', ');
@@ -319,11 +320,20 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
   const join = topX ? ' JOIN topx ON topx.x IS NOT DISTINCT FROM base.x' : '';
   const sql = `WITH ${ctes.join(',\n')}\nSELECT base.x AS x, ${gSel} AS g${otherSel}, ${mSel}${topX ? ', min(topx.rk) AS xr' : ''} FROM base${join}${conds.length ? ' WHERE ' + conds.join(' AND ') : ''} GROUP BY ${groupBy} ORDER BY 1, 2`;
   const r = await query(sql);
-  const rows: VisRow[] = r.rows.map((row: Row) => ({
-    x: xKind === 'terms' ? encodeVisValue(row.x) : row.x === null || row.x === undefined ? null : Number(row.x),
-    g: gExpr ? (row.__other ? OTHER : encodeVisValue(row.g)) : null,
-    m: ms.map((_, i) => (row[`m${i}`] === null || row[`m${i}`] === undefined ? NaN : Number(row[`m${i}`]))),
-  }));
+  const rows: VisRow[] = r.rows.map((row: Row) => {
+    const x = xKind === 'terms' ? encodeVisValue(row.x) : row.x === null || row.x === undefined ? null : Number(row.x);
+    return {
+      x,
+      g: gExpr ? (row.__other ? OTHER : encodeVisValue(row.g)) : null,
+      m: ms.map((_, i) => {
+        const raw = row[`m${i}`];
+        if (raw === null || raw === undefined) return NaN;
+        const value = Number(raw);
+        if (!variableBucket || vis.metrics[i].agg !== 'rate' || typeof x !== 'number' || !iv) return value;
+        return value / ((nextBucketStart(x, iv, tzOffset) - x) / 1000);
+      }),
+    };
+  });
 
   let xOrder: (string | number)[];
   if (topX) {

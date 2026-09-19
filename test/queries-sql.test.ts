@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Field } from '../src/fields';
 import { DEFAULT_VIS } from '../src/state';
+import { intervalByKey } from '../src/sql';
 
 const run = vi.hoisted(() => vi.fn());
 vi.mock('../src/duck', () => ({ query: run }));
@@ -42,5 +43,23 @@ describe('visualization SQL', () => {
       ['"(null)"', '"Other"'],
       ['"Other"', 'Other'],
     ]);
+  });
+
+  it('uses the actual length of calendar buckets for rates', async () => {
+    const jan = Date.UTC(2028, 0, 1);
+    const feb = Date.UTC(2028, 1, 1);
+    run.mockResolvedValueOnce({
+      rows: [
+        { x: jan, g: null, m0: 2_678_400 },
+        { x: feb, g: null, m0: 2_505_600 },
+      ],
+      columns: [],
+      ms: 0,
+    });
+    const vis = { ...DEFAULT_VIS, metrics: [{ id: 'rate', agg: 'rate' as const, field: null }] };
+    const result = await fetchVis(vis, 'TRUE', '"ts"', [], intervalByKey('1M')!, 0, 60);
+
+    expect(run.mock.calls[0][0]).toContain('(count(*)::DOUBLE / 1) AS m0');
+    expect(result.rows.map((row) => row.m[0])).toEqual([1, 1]);
   });
 });
