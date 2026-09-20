@@ -45,7 +45,7 @@ export const fr: Messages = {
   // ---- settings page ----
   'settings.title': 'Paramètres',
   'settings.lang': 'Langue',
-  'settings.lang.hint': "S'applique immédiatement à toute l'interface. Le choix est conservé dans ce navigateur ; une nouvelle installation suit la langue de Chrome.",
+  'settings.lang.hint': "S'applique immédiatement à toute l'interface. Le choix est conservé dans ce navigateur ; une nouvelle installation suit la langue du navigateur.",
   'settings.theme': 'Apparence',
   'settings.theme.system': 'Suivre le système',
   'settings.theme.light': 'Clair',
@@ -144,13 +144,13 @@ export const fr: Messages = {
   'ds.auth.none': 'Aucune (bucket public)',
   'ds.key.title': "Clé d'accès",
   'ds.key.warn':
-    "L'identifiant de la clé d'accès est enregistré avec la source ; le secret et le jeton de session restent en mémoire pour cette session du navigateur seulement et doivent être saisis à nouveau après un redémarrage de Chrome. Préférez des identifiants temporaires (jeton de session) ou la connexion OIDC.",
+    "L'identifiant de la clé d'accès est enregistré avec la source ; le secret et le jeton de session restent en mémoire pour cette session du navigateur seulement et doivent être saisis à nouveau après un redémarrage du navigateur. Préférez des identifiants temporaires (jeton de session) ou la connexion OIDC.",
   'ds.key.id': "ID de clé d'accès",
   'ds.key.secret': "Clé d'accès secrète",
   'ds.key.token': 'Jeton de session (pour les identifiants temporaires)',
   'ds.oidc.title': 'Connexion OIDC → AWS STS',
   'ds.oidc.intro':
-    "Le navigateur se connecte auprès de votre fournisseur d'identité, puis appelle directement STS {api}. Aucune clé de longue durée n'existe nulle part ; les identifiants temporaires restent en mémoire (chrome.storage.session) et sont renouvelés automatiquement. Enregistrez cette URL de redirection chez le fournisseur d'identité : {url}",
+    "Le navigateur se connecte auprès de votre fournisseur d'identité, puis appelle directement STS {api}. Aucune clé de longue durée n'existe nulle part ; les identifiants temporaires restent en mémoire (storage.session) et sont renouvelés automatiquement. Enregistrez cette URL de redirection chez le fournisseur d'identité : {url}",
   'ds.oidc.authUrl': "Point de terminaison d'autorisation",
   'ds.oidc.clientId': 'ID client',
   'ds.oidc.scope': 'Scope',
@@ -173,9 +173,9 @@ export const fr: Messages = {
   'ds.local.chooseFolder': 'Choisir un dossier…',
   'ds.local.selected': '{n} fichier(s) : {names}',
   'ds.local.clear': 'Effacer',
-  'ds.local.remembered': 'Mémorisé : {names}. À la connexion, Chrome redemande l’autorisation de lire les fichiers.',
+  'ds.local.remembered': 'Mémorisé : {names}. À la connexion, le navigateur redemande l’autorisation de lire les fichiers.',
   'ds.local.hint':
-    "Les fichiers sont lus sur place via l'API File du navigateur ; ils ne sont jamais téléversés. La sélection est mémorisée dans les sources récentes ; après un redémarrage, Chrome redemande l'autorisation de lecture.",
+    "Les fichiers sont lus sur place via l'API File du navigateur ; ils ne sont jamais téléversés. La sélection est mémorisée dans les sources récentes ; après un redémarrage, le navigateur redemande l'autorisation de lecture.",
   'ds.demo.hint':
     "Une table synthétique de journaux d'accès (structs host/http/geo, liste tags, colonne JSON extra) est générée dans DuckDB pour que vous puissiez essayer chaque fonctionnalité sans aucun stockage.",
   'ds.connect': 'Connecter',
@@ -631,7 +631,7 @@ export const fr: Messages = {
   'src.local.none': 'Aucun fichier local sélectionné',
   'src.local.emptyFolder': 'Le dossier ne contient aucun fichier Parquet, CSV ou JSON',
   'src.local.forgotten': 'Le navigateur ne connaît plus les fichiers de cette source ; choisissez-les à nouveau.',
-  'src.local.denied': 'Chrome n’a pas accordé l’accès aux fichiers.',
+  'src.local.denied': 'Le navigateur n’a pas accordé l’accès aux fichiers.',
   'src.local.progress': 'Enregistrement des fichiers locaux…',
   'src.local.description': '{n} fichier(s) local(aux) : {names}{more}',
   'src.noUrls': 'Aucune URL configurée',

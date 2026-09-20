@@ -112,7 +112,7 @@ jobs:
           path: release/e2e/*.png
 
   pack:
-    name: store build and zip
+    name: browser builds and store zips
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -126,11 +126,10 @@ jobs:
           runtime: node@26
           cache: true
           require-lockfile: true
-      # The checks scripts/pack.mjs makes (store host permissions only, no `__ddv` hooks, every
-      # locale's description within the store's limit) are what the release depends on, so they run
-      # on every push rather than for the first time at the tag.
+      # The checks scripts/pack.mjs makes for all browser packages are what the release depends on,
+      # so they run on every push rather than for the first time at the tag.
       - run: pnpm run pack
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: store-zip
+          name: store-zips
           path: release/*.zip

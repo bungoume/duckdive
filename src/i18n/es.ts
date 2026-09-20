@@ -45,7 +45,7 @@ export const es: Messages = {
   // ---- settings page ----
   'settings.title': 'Ajustes',
   'settings.lang': 'Idioma',
-  'settings.lang.hint': 'Se aplica de inmediato a toda la interfaz. La elección se guarda en este navegador; una instalación nueva sigue el idioma de Chrome.',
+  'settings.lang.hint': 'Se aplica de inmediato a toda la interfaz. La elección se guarda en este navegador; una instalación nueva sigue el idioma del navegador.',
   'settings.theme': 'Apariencia',
   'settings.theme.system': 'Seguir al sistema',
   'settings.theme.light': 'Claro',
@@ -145,13 +145,13 @@ export const es: Messages = {
   'ds.auth.none': 'Ninguna (bucket público)',
   'ds.key.title': 'Clave de acceso',
   'ds.key.warn':
-    'El ID de la clave de acceso se guarda con el origen; el secreto y el token de sesión permanecen en memoria solo durante esta sesión del navegador y deben introducirse de nuevo tras reiniciar Chrome. Prefiera credenciales temporales (token de sesión) o el inicio de sesión OIDC.',
+    'El ID de la clave de acceso se guarda con el origen; el secreto y el token de sesión permanecen en memoria solo durante esta sesión del navegador y deben introducirse de nuevo tras reiniciar el navegador. Prefiera credenciales temporales (token de sesión) o el inicio de sesión OIDC.',
   'ds.key.id': 'ID de clave de acceso',
   'ds.key.secret': 'Clave de acceso secreta',
   'ds.key.token': 'Token de sesión (para credenciales temporales)',
   'ds.oidc.title': 'Inicio de sesión OIDC → AWS STS',
   'ds.oidc.intro':
-    'El navegador inicia sesión en su proveedor de identidad y luego llama directamente a STS {api}. No existe ninguna clave de larga duración; las credenciales temporales viven en memoria (chrome.storage.session) y se renuevan automáticamente. Registre esta URL de redirección en el proveedor de identidad: {url}',
+    'El navegador inicia sesión en su proveedor de identidad y luego llama directamente a STS {api}. No existe ninguna clave de larga duración; las credenciales temporales viven en memoria (storage.session) y se renuevan automáticamente. Registre esta URL de redirección en el proveedor de identidad: {url}',
   'ds.oidc.authUrl': 'Endpoint de autorización',
   'ds.oidc.clientId': 'ID de cliente',
   'ds.oidc.scope': 'Scope',
@@ -174,9 +174,9 @@ export const es: Messages = {
   'ds.local.chooseFolder': 'Elegir carpeta…',
   'ds.local.selected': '{n} archivo(s): {names}',
   'ds.local.clear': 'Limpiar',
-  'ds.local.remembered': 'Recordado: {names}. Al conectar, Chrome vuelve a pedir permiso para leer los archivos.',
+  'ds.local.remembered': 'Recordado: {names}. Al conectar, el navegador vuelve a pedir permiso para leer los archivos.',
   'ds.local.hint':
-    'Los archivos se leen en su sitio mediante la File API del navegador; nunca se suben. Lo que elija aquí se guarda en los orígenes recientes; tras un reinicio, Chrome vuelve a pedir permiso de lectura.',
+    'Los archivos se leen en su sitio mediante la File API del navegador; nunca se suben. Lo que elija aquí se guarda en los orígenes recientes; tras un reinicio, el navegador vuelve a pedir permiso de lectura.',
   'ds.demo.hint':
     'Se genera en DuckDB una tabla sintética de logs de acceso (structs host/http/geo, lista de tags, columna JSON extra) para que pueda probar todas las funciones sin ningún almacenamiento.',
   'ds.connect': 'Conectar',
@@ -629,7 +629,7 @@ export const es: Messages = {
   'src.local.none': 'No se ha seleccionado ningún archivo local',
   'src.local.emptyFolder': 'La carpeta no contiene archivos Parquet, CSV ni JSON',
   'src.local.forgotten': 'El navegador ya no conoce los archivos de este origen; elíjalos de nuevo.',
-  'src.local.denied': 'Chrome no concedió acceso a los archivos.',
+  'src.local.denied': 'El navegador no concedió acceso a los archivos.',
   'src.local.progress': 'Registrando archivos locales…',
   'src.local.description': '{n} archivo(s) local(es): {names}{more}',
   'src.noUrls': 'No hay URLs configuradas',

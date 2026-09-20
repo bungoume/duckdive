@@ -2,11 +2,12 @@
 // embed JSX (code samples, bold counts). The dictionaries are typed against `en`, so a missing
 // key in any language is a compile error.
 //
-// The language is chosen once at startup (saved choice, else the browser / Chrome UI language)
+// The language is chosen once at startup (saved choice, else the browser UI language)
 // and can be switched from the header; the choice lives in localStorage like the other settings.
 
 import type { ComponentChildren } from 'preact';
 import { createStore, useStore } from '../store';
+import { webext } from '../webext';
 import { en } from './en';
 import { ja } from './ja';
 import { zh_CN } from './zh_CN';
@@ -39,11 +40,11 @@ function isLang(s: unknown): s is Lang {
   return typeof s === 'string' && s in TABLE;
 }
 
-/** Best language for the browser / Chrome UI locale (en when nothing matches). */
+/** Best language for the browser UI locale (en when nothing matches). */
 export function detectLang(): Lang {
   let tag: string;
   try {
-    tag = (typeof chrome !== 'undefined' && chrome.i18n?.getUILanguage?.()) || navigator.language || '';
+    tag = webext?.i18n?.getUILanguage?.() || navigator.language || '';
   } catch {
     tag = navigator.language || '';
   }

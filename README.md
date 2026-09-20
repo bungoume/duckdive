@@ -1,8 +1,10 @@
 # Duckdive
 
+[![Install Duckdive from the Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install_Duckdive-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/duckdive/kohchgcbcmdcoondpjoiaccfkhadkpki)
+
 ![Duckdive - search and visualize S3 logs in your browser](docs/images/banner.png)
 
-A Chrome extension that searches and charts log files. It reads Parquet, CSV and JSON from S3 or S3-compatible storage, from HTTPS URLs, or from local files, and queries them in the browser. Nothing is sent anywhere else.
+A browser extension that searches and charts log files. It reads Parquet, CSV and JSON from S3 or S3-compatible storage, from HTTPS URLs, or from local files, and queries them in the browser. Nothing is sent anywhere else.
 
 There is no server to run and no index to build: install the extension, point it at a bucket and search. DuckDB compiled to WebAssembly answers the queries in the tab, and bytes that have been read once stay on the machine.
 
@@ -33,17 +35,24 @@ An extension can read from a bucket without any change to the bucket's configura
 
 ```
 pnpm install
-pnpm run build      # writes dist/
-pnpm run pack       # builds, then writes release/duckdive-<version>.zip
-pnpm run icons      # regenerates icons and store images from assets/logo.svg
-pnpm run build:e2e  # build with the test hooks and localhost allowed (for the e2e tests and screenshots)
+pnpm run build          # writes dist/{chrome,firefox,edge}/
+pnpm run build:firefox  # build one browser only (also build:chrome and build:edge)
+pnpm run pack           # builds all three, then writes release/duckdive-<browser>-<version>.zip
+pnpm run icons          # regenerates icons and store images from assets/logo.svg
+pnpm run build:e2e      # Chrome build with the test hooks and localhost allowed
 ```
 
 `package.json#packageManager` pins the pnpm version and the hash of its tarball, so `pnpm` resolves to that exact release through Corepack (0.34.7 or newer for pnpm 12) or pnpm's own version management. `pnpm-workspace.yaml` sets a 7-day cooldown (`minimumReleaseAge`): a version published more recently is never installed, transitive dependencies included, and `pnpm-lock.yaml` pins every package by its integrity hash. pnpm also refuses a release whose publish evidence is weaker than an earlier one (`trustPolicy: no-downgrade`). `.github/SECURITY.md` describes how to report a vulnerability. `.github/renovate.json` opens update PRs with the same cooldown and keeps the GitHub Actions pinned to commit SHAs. Every push and pull request is scanned: CodeQL with the extended query suite, gitleaks for committed secrets, OSV against the lock file, Semgrep's pattern rules, and a dependency review of what the pull request adds; actionlint and zizmor check the workflows themselves.
 
-Open `chrome://extensions`, enable Developer mode, choose "Load unpacked" and select `dist/`. The toolbar button opens the app. `pnpm run dev` rebuilds `dist/` on every change; reload the extension afterwards.
+To install an unpacked build, select the directory for that browser:
 
-The extension ID is `kohchgcbcmdcoondpjoiaccfkhadkpki`. The manifest carries the Web Store's public key so an unpacked build gets the same ID; `pnpm run pack` removes the key from the zip because the store rejects it. It builds first and then refuses to zip anything that is not a store build: an extra host permission or a `__ddv` hook left in a bundle stops it, so the e2e build that `pnpm run test:all` leaves behind can never be uploaded.
+- Chrome: open `chrome://extensions`, enable Developer mode, choose "Load unpacked", and select `dist/chrome/`.
+- Edge: open `edge://extensions`, enable Developer mode, choose "Load unpacked", and select `dist/edge/`.
+- Firefox: open `about:debugging#/runtime/this-firefox`, choose "Load Temporary Add-on", and select `dist/firefox/manifest.json`.
+
+The toolbar button opens the app. `pnpm run dev`, `pnpm run dev:firefox`, and `pnpm run dev:edge` watch the corresponding build; reload the extension afterwards.
+
+The Chrome extension ID is `kohchgcbcmdcoondpjoiaccfkhadkpki`. Its development manifest carries the Chrome Web Store public key so an unpacked build gets the same ID; Edge and Firefox have their own store identities. Firefox uses the fixed Gecko ID `duckdive@bungoume`, which also keeps its OIDC redirect URL stable. `pnpm run pack` builds and validates every target, removes Chrome's development key, excludes source maps, and refuses packages with extra host permissions or `__ddv` test hooks.
 
 ## Releases
 
@@ -51,11 +60,11 @@ Commits on `main` follow [Conventional Commits](https://www.conventionalcommits.
 
 release-please keeps one pull request open and rewrites it on every push to `main` with the next version, the new `CHANGELOG.md` section and the release notes. Nothing is published until that pull request is merged; merging it is the release.
 
-`.github/workflows/release.yml` then tags the version, creates a GitHub Release with the changelog section as its notes, and attaches `duckdive-X.Y.Z.zip` built by `pnpm run pack`. That zip is what goes to the Web Store, by hand. The version is written by release-please into `package.json` (it becomes the manifest's `version`) and `.github/release-please-manifest.json`; no version is edited and no tag is pushed by hand. Tags and published releases are never moved or rewritten; a mistake is fixed by the next version.
+`.github/workflows/release.yml` then tags the version, creates a GitHub Release with the changelog section as its notes, and attaches the Chrome, Firefox and Edge zips built by `pnpm run pack`. Those packages go to their respective stores by hand. The version is written by release-please into `package.json` (it becomes every manifest's `version`) and `.github/release-please-manifest.json`; no version is edited and no tag is pushed by hand. Tags and published releases are never moved or rewritten; a mistake is fixed by the next version.
 
 ## Languages
 
-The UI is available in English, Japanese, Simplified Chinese, Korean, German, French and Spanish. The language follows Chrome's UI language on first start and can be changed on the Settings page; the choice is kept in this browser (`localStorage`, key `ddv.lang`). English is the fallback for unknown locales.
+The UI is available in English, Japanese, Simplified Chinese, Korean, German, French and Spanish. The language follows the browser's UI language on first start and can be changed on the Settings page; the choice is kept in this browser (`localStorage`, key `ddv.lang`). English is the fallback for unknown locales.
 
 Strings live in `src/i18n/<lang>.ts`, one flat dictionary per language typed against `src/i18n/en.ts`, so a missing key is a compile error. `t('key', { n })` fills `{n}` placeholders; `tx()` does the same when a placeholder is a JSX node. The extension name and store description come from `public/_locales/<lang>/messages.json` (each description must stay within the store's 132-character limit; `pnpm run pack` checks it). To add a language: copy `en.ts`, register it in `src/i18n/index.ts` (`LANGS` and the dictionary table) and add a `_locales` folder. Field names, SQL, pattern examples, DuckDB / STS error messages, the diagnose report's technical verdicts and the Visualize panel's function vocabulary (Function, Minimum interval, Date histogram / Top values / Intervals, Count / Sum / Average / … ) stay in English on purpose.
 
@@ -84,7 +93,7 @@ The Data source page accepts one of:
 
 ### Recent sources
 
-Every successful connect to an S3 / HTTPS or demo source is remembered (up to 20, newest first, in this browser's `localStorage` under `ddv.sources`, including the access key ID and chosen pattern values; secret keys are kept for the browser session only, see Authentication). The drop-down in the header switches between them from any page; the Data source page lists them with Connect and Remove buttons. Two configurations are the same entry when their destination matches (kind, URL lines, endpoint, region, URL style and authentication mode); name, format and time field are updated in place. Switching keeps the time range and the query, and drops filters, columns, sorts and chart fields that name a field the new source does not have. Local sources are remembered through their file handles (IndexedDB, `ddv-local`): after a restart Chrome asks for permission to read them again when you connect. Files of a folder are registered under their path below it, so equal names in different sub-folders stay apart.
+Every successful connect to an S3 / HTTPS or demo source is remembered (up to 20, newest first, in this browser's `localStorage` under `ddv.sources`, including the access key ID and chosen pattern values; secret keys are kept for the browser session only, see Authentication). The drop-down in the header switches between them from any page; the Data source page lists them with Connect and Remove buttons. Two configurations are the same entry when their destination matches (kind, URL lines, endpoint, region, URL style and authentication mode); name, format and time field are updated in place. Switching keeps the time range and the query, and drops filters, columns, sorts and chart fields that name a field the new source does not have. On browsers with persistent file handles, local sources are remembered through those handles (IndexedDB, `ddv-local`), and the browser asks for read permission again after a restart. Files of a folder are registered under their path below it, so equal names in different sub-folders stay apart.
 
 ### Patterns
 
@@ -152,15 +161,15 @@ Connecting to ten thousand files costs only the listing; no per-file requests ar
 
 ### Hosts
 
-`https://*.amazonaws.com/*` is granted at install. Any other host (MinIO, R2, CloudFront, localhost) triggers Chrome's permission prompt when you connect. Granted hosts are listed on the Data source page and can be revoked there.
+`https://*.amazonaws.com/*` is granted at install. Any other host (MinIO, R2, CloudFront, localhost) triggers the browser's permission prompt when you connect. Granted hosts are listed on the Data source page and can be revoked there.
 
 Leaving the endpoint empty produces `https://<bucket>.s3.amazonaws.com/<key>`. A regional endpoint such as `s3.ap-northeast-1.amazonaws.com` produces virtual-hosted URLs. An `http://` or `https://` endpoint produces path-style URLs for S3-compatible services.
 
 ### Authentication
 
-Sign in (OIDC) → STS is the intended mode. Create an OAuth client at your identity provider with `https://kohchgcbcmdcoondpjoiaccfkhadkpki.chromiumapp.org/` as the redirect URI (`response_type=id_token` must be allowed). Register the provider in IAM and create a role that trusts it; see `docs/iam-role-trust-policy.json` and `docs/README.md`. Enter the authorization endpoint, client ID and role ARN on the Data source page. Temporary credentials live in `chrome.storage.session` and are refreshed ten minutes before they expire.
+Sign in (OIDC) → STS is the intended mode. Create an OAuth client at your identity provider with the redirect URI shown on the Data source page (`response_type=id_token` must be allowed); Chrome uses `https://kohchgcbcmdcoondpjoiaccfkhadkpki.chromiumapp.org/`, while Firefox and Edge have their own extension IDs and redirect URIs. Register the provider in IAM and create a role that trusts it; see `docs/iam-role-trust-policy.json` and `docs/README.md`. Enter the authorization endpoint, client ID and role ARN on the Data source page. Temporary credentials live in `storage.session` and are refreshed ten minutes before they expire.
 
-Access key mode keeps the access key ID with the source configuration and the secret access key / session token in `chrome.storage.session` only, i.e. in memory until the browser closes; after a restart the Data source page shows the key ID and asks for the secret again. Use a read-only policy. None is for public buckets and presigned URLs.
+Access key mode keeps the access key ID with the source configuration and the secret access key / session token in `storage.session` only, i.e. in memory until the browser closes; after a restart the Data source page shows the key ID and asks for the secret again. Use a read-only policy. None is for public buckets and presigned URLs.
 
 ## Query syntax
 
@@ -207,7 +216,7 @@ The SQL page runs one statement against the view `src`, which holds the connecte
 
 ## Range cache
 
-`src/worker/duckdb-cache-worker.ts` wraps the duckdb-wasm worker and replaces its `XMLHttpRequest`; the page controls the cache over a `MessagePort` handed to the worker as its first message (`src/cache.ts`). Range requests are aligned to chunks (1 MB by default) and stored in one append-only file in OPFS with a JSON index. Chunks are dropped when the object's ETag changes. The cached data is kept within a size limit (4 GB by default, chosen under Local range cache): beyond it whole files are dropped, least recently used first, down to 80 % of the limit, and the slab file is compacted when the dropped chunks make up a fifth of it. Presigned-URL parameters are excluded from the cache key. DuckDB extensions are cached too, so later starts work offline. One tab owns the cache (a Web Lock) and writes; another tab opens the same slab in the shared `readwrite-unsafe` mode but never writes: it serves what the owner's index lists (re-read every five seconds) and downloads the rest without keeping it. Browsers without shared access handles (before Chrome 121) run the second tab uncached.
+`src/worker/duckdb-cache-worker.ts` wraps the duckdb-wasm worker and replaces its `XMLHttpRequest`; the page controls the cache over a `MessagePort` handed to the worker as its first message (`src/cache.ts`). Range requests are aligned to chunks (1 MB by default) and stored in one append-only file in OPFS with a JSON index. Chunks are dropped when the object's ETag changes. The cached data is kept within a size limit (4 GB by default, chosen under Local range cache): beyond it whole files are dropped, least recently used first, down to 80 % of the limit, and the slab file is compacted when the dropped chunks make up a fifth of it. Presigned-URL parameters are excluded from the cache key. DuckDB extensions are cached too, so later starts work offline. One tab owns the cache (a Web Lock) and writes; a browser with shared access handles lets another tab open the same slab read-only and serve cached chunks. Other browsers run the second tab uncached.
 
 duckdb-wasm downloads whole HTTP files by default. `src/duck.ts` opens the database with `reliableHeadRequests: true` and `allowFullHTTPReads: false` to force range reads.
 
@@ -224,11 +233,11 @@ node e2e/smoke.mjs     # Discover and Visualize on the demo dataset
 node e2e/cache.mjs     # permissions, OPFS persistence, SigV4 and STS against a local range server
 ```
 
-The unit tests in `test/` run in Node against the pure modules (with Web Storage and `location` stubbed in `test/setup.ts`); everything that needs DuckDB or Chrome is covered by the Playwright suites. `.github/workflows/ci.yml` runs the same steps on every push and pull request.
+The unit tests in `test/` run in Node against the pure modules (with Web Storage and `location` stubbed in `test/setup.ts`); the Playwright suites cover DuckDB and the Chrome build. `.github/workflows/ci.yml` runs the same steps on every push and pull request.
 
 `e2e/cache.mjs` needs the `duckdb` CLI to generate fixtures; `SECTIONS=cache-limit,templates node e2e/cache.mjs` runs only the named sections while working on one of them; the S3 sections expect the keys that `s3-static-keys` enters, so the full run is the reference. Both use Playwright's headless Chromium with the built extension loaded and drive the app through `window.__ddv`, hooks that exist only in dev builds and in builds made with `VITE_DDV_DEBUG=1` (`src/debug.ts`); a store build publishes nothing on the page. The tests assert English text, so `e2e/ext-context.mjs` pins the UI language to English before the page loads; set `DDV_LANG=ja` (or another language id) to run `pnpm run screenshots` (after `pnpm run build:e2e`) in that language.
 
-Run the suites one at a time: both start the local range server on port 5299, and a second run quietly shares the first server instead of binding its own. Do not rebuild `dist/` while one is running, or a reload mid-run loads half of two builds. A failed step writes a screenshot to `release/e2e/` (`OUT` overrides it), which CI uploads as an artifact.
+Run the suites one at a time: both start the local range server on port 5299, and a second run quietly shares the first server instead of binding its own. Do not rebuild `dist/chrome/` while one is running, or a reload mid-run loads half of two builds. A failed step writes a screenshot to `release/e2e/` (`OUT` overrides it), which CI uploads as an artifact.
 
 ## Layout
 
@@ -257,7 +266,7 @@ e2e/                               Playwright tests and the local range server
 - Full-text search is a regular expression with word boundaries, not an analyzer.
 - DuckDB-Wasm is single-threaded and limited to under 4 GB of memory. Use the time range and partitions to keep scans small.
 - Saved visualizations and settings are in the extension's localStorage. The URL carries the query and chart definition, and "Share" adds the data source, so links work for anyone with the extension installed.
-- Chrome and Edge only.
+- Chrome 116+, Firefox 140+ and current Chromium-based Edge.
 
 ## Changelog
 
@@ -265,4 +274,4 @@ See `CHANGELOG.md`.
 
 ## License
 
-MIT. Licenses of bundled packages are written to `THIRD_PARTY_LICENSES.txt` in `dist/` at build time. The privacy policy is in `docs/PRIVACY.md`.
+MIT. Licenses of bundled packages are written to `THIRD_PARTY_LICENSES.txt` in each directory under `dist/` at build time. The privacy policy is in `docs/PRIVACY.md`.

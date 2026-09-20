@@ -1,11 +1,12 @@
 // AWS credentials without a server:
-//   OIDC login (chrome.identity.launchWebAuthFlow, implicit id_token) →
+//   OIDC login (identity.launchWebAuthFlow, implicit id_token) →
 //   STS AssumeRoleWithWebIdentity (unsigned call) → temporary S3 credentials.
 
 import { fetchWithTimeout } from './net';
 import { expose } from './debug';
 import { isExtension } from './permissions';
 import { readSession, writeSession } from './sessionStore';
+import { webext } from './webext';
 
 export interface OidcConfig {
   /** Authorization endpoint, e.g. https://accounts.google.com/o/oauth2/v2/auth */
@@ -52,7 +53,7 @@ interface StoredCredentials {
 }
 
 export function redirectUrl(): string {
-  return isExtension && chrome.identity ? chrome.identity.getRedirectURL() : `${location.origin}/oauth-callback`;
+  return isExtension && webext.identity ? webext.identity.getRedirectURL() : `${location.origin}/oauth-callback`;
 }
 
 function randomString(n = 32): string {
@@ -92,10 +93,10 @@ function parseJwt(token: string): Record<string, unknown> {
 
 /** Run the OIDC flow and return the id_token. */
 export async function loginOidc(cfg: OidcConfig, interactive: boolean): Promise<string> {
-  if (!isExtension || !chrome.identity?.launchWebAuthFlow) throw new Error('chrome.identity is only available inside the extension');
+  if (!isExtension || !webext.identity?.launchWebAuthFlow) throw new Error('The browser identity API is only available inside the extension');
   if (!cfg.clientId) throw new Error('OIDC client ID is not configured');
   const { url, state, nonce } = buildAuthUrl(cfg, interactive);
-  const resp = await chrome.identity.launchWebAuthFlow({ url, interactive });
+  const resp = await webext.identity.launchWebAuthFlow({ url, interactive });
   if (!resp) throw new Error('OIDC login was cancelled');
   const frag = new URL(resp).hash.replace(/^#/, '');
   const params = new URLSearchParams(frag || new URL(resp).search);

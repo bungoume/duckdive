@@ -7,7 +7,7 @@
 /** Deadline for one page-side HTTP request (ListObjectsV2 page, STS call). */
 export const REQUEST_TIMEOUT_MS = 10_000;
 
-/** How many listing requests run at once (Chrome allows 6 connections per host anyway). */
+/** How many listing requests run at once (browsers commonly allow 6 connections per host). */
 export const LIST_CONCURRENCY = 6;
 
 export class TimeoutError extends Error {

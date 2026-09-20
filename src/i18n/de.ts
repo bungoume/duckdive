@@ -45,7 +45,7 @@ export const de: Messages = {
   // ---- settings page ----
   'settings.title': 'Einstellungen',
   'settings.lang': 'Sprache',
-  'settings.lang.hint': 'Gilt sofort für die gesamte Oberfläche. Die Auswahl wird in diesem Browser gespeichert; bei einer neuen Installation gilt die Chrome-Sprache.',
+  'settings.lang.hint': 'Gilt sofort für die gesamte Oberfläche. Die Auswahl wird in diesem Browser gespeichert; bei einer neuen Installation gilt die Browsersprache.',
   'settings.theme': 'Darstellung',
   'settings.theme.system': 'Wie das System',
   'settings.theme.light': 'Hell',
@@ -143,13 +143,13 @@ export const de: Messages = {
   'ds.auth.none': 'Keine (öffentlicher Bucket)',
   'ds.key.title': 'Zugriffsschlüssel',
   'ds.key.warn':
-    'Die Zugriffsschlüssel-ID wird mit der Quelle gespeichert; Secret und Session-Token bleiben nur für diese Browsersitzung im Speicher und müssen nach einem Neustart von Chrome erneut eingegeben werden. Bevorzugen Sie temporäre Anmeldedaten (Session-Token) oder die OIDC-Anmeldung.',
+    'Die Zugriffsschlüssel-ID wird mit der Quelle gespeichert; Secret und Session-Token bleiben nur für diese Browsersitzung im Speicher und müssen nach einem Neustart des Browsers erneut eingegeben werden. Bevorzugen Sie temporäre Anmeldedaten (Session-Token) oder die OIDC-Anmeldung.',
   'ds.key.id': 'Access key ID',
   'ds.key.secret': 'Secret access key',
   'ds.key.token': 'Session-Token (für temporäre Anmeldedaten)',
   'ds.oidc.title': 'OIDC-Anmeldung → AWS STS',
   'ds.oidc.intro':
-    'Der Browser meldet sich bei Ihrem Identitätsanbieter an und ruft dann direkt STS {api} auf. Nirgends existiert ein langlebiger Schlüssel; temporäre Anmeldedaten liegen im Speicher (chrome.storage.session) und werden automatisch erneuert. Registrieren Sie diese Redirect-URL beim Identitätsanbieter: {url}',
+    'Der Browser meldet sich bei Ihrem Identitätsanbieter an und ruft dann direkt STS {api} auf. Nirgends existiert ein langlebiger Schlüssel; temporäre Anmeldedaten liegen im Speicher (storage.session) und werden automatisch erneuert. Registrieren Sie diese Redirect-URL beim Identitätsanbieter: {url}',
   'ds.oidc.authUrl': 'Authorization-Endpunkt',
   'ds.oidc.clientId': 'Client-ID',
   'ds.oidc.scope': 'Scope',
@@ -172,9 +172,9 @@ export const de: Messages = {
   'ds.local.chooseFolder': 'Ordner wählen…',
   'ds.local.selected': '{n} Datei(en): {names}',
   'ds.local.clear': 'Leeren',
-  'ds.local.remembered': 'Gemerkt: {names}. Beim Verbinden fragt Chrome erneut nach der Leseberechtigung.',
+  'ds.local.remembered': 'Gemerkt: {names}. Beim Verbinden fragt der Browser erneut nach der Leseberechtigung.',
   'ds.local.hint':
-    'Dateien werden über die File API des Browsers an Ort und Stelle gelesen; sie werden nie hochgeladen. Die Auswahl wird unter den letzten Quellen gemerkt; nach einem Neustart fragt Chrome erneut nach der Leseberechtigung.',
+    'Dateien werden über die File API des Browsers an Ort und Stelle gelesen; sie werden nie hochgeladen. Die Auswahl wird unter den letzten Quellen gemerkt; nach einem Neustart fragt der Browser erneut nach der Leseberechtigung.',
   'ds.demo.hint':
     'Eine synthetische Zugriffsprotokoll-Tabelle (host/http/geo-Structs, tags-Liste, JSON-Spalte extra) wird in DuckDB erzeugt, damit Sie alle Funktionen ohne Speicher ausprobieren können.',
   'ds.connect': 'Verbinden',
@@ -625,7 +625,7 @@ export const de: Messages = {
   'src.local.none': 'Keine lokalen Dateien ausgewählt',
   'src.local.emptyFolder': 'Der Ordner enthält keine Parquet-, CSV- oder JSON-Dateien',
   'src.local.forgotten': 'Die Dateien dieser Quelle sind dem Browser nicht mehr bekannt; wählen Sie sie erneut.',
-  'src.local.denied': 'Chrome hat den Zugriff auf die Dateien nicht gewährt.',
+  'src.local.denied': 'Der Browser hat den Zugriff auf die Dateien nicht gewährt.',
   'src.local.progress': 'Lokale Dateien werden registriert…',
   'src.local.description': '{n} lokale Datei(en): {names}{more}',
   'src.noUrls': 'Keine URLs konfiguriert',

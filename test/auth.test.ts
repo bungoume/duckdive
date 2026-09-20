@@ -17,7 +17,7 @@ describe('credential cache', () => {
     await storeCredentials(credentials, a);
     await expect(getCredentials(a, false)).resolves.toEqual(credentials);
     await expect(loadCredentials(b)).resolves.toBeNull();
-    await expect(getCredentials(b, false)).rejects.toThrow('chrome.identity');
+    await expect(getCredentials(b, false)).rejects.toThrow('browser identity API');
   });
 
   it('does not reuse an unscoped entry written by an older build', async () => {

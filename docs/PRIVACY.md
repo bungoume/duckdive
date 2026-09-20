@@ -1,8 +1,8 @@
 # Duckdive Privacy Policy
 
-_Last updated: 2026-09-17_
+_Last updated: 2026-09-20_
 
-Duckdive is a Chrome extension that searches and visualizes log files stored in Amazon S3 (or S3-compatible / HTTPS storage) entirely inside your browser. This policy explains what data the extension handles and where it goes.
+Duckdive is a browser extension that searches and visualizes log files stored in Amazon S3 (or S3-compatible / HTTPS storage) entirely inside your browser. This policy explains what data the extension handles and where it goes.
 
 ## Summary
 
@@ -12,23 +12,23 @@ Duckdive is a Chrome extension that searches and visualizes log files stored in 
 
 ## Data the extension handles
 
-| Data                                                                                               | Where it is stored                                                                                                                                                 | Sent to                                                                                    |
-| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| Log data read from your storage                                                                    | Memory and, when the cache is enabled, a private storage area of the browser on your device                                                                        | Nowhere. It is read directly from the endpoint you configured and never leaves the browser |
-| Data source settings (URLs, region, field names, format, identity provider settings, IAM role ARN) | The extension's `localStorage` on your device                                                                                                                      | Nowhere                                                                                    |
-| Static AWS access keys, if you choose the "static keys" mode                                       | The access key ID with the settings in `localStorage`; the secret key and session token in `chrome.storage.session` only (memory, cleared when the browser closes) | Only to the S3 endpoint you configured, as request signatures                              |
-| Temporary AWS credentials obtained via sign-in                                                     | `chrome.storage.session` (memory only, cleared when the browser closes)                                                                                            | Only to the S3 endpoint you configured, as request signatures                              |
-| OpenID Connect ID token obtained via sign-in                                                       | Memory, for the duration of one STS call                                                                                                                           | AWS STS (`AssumeRoleWithWebIdentity`) at the endpoint you configured                       |
-| Your queries and filters                                                                           | The page URL and `localStorage` on your device                                                                                                                     | Nowhere; they are executed on your device                                                  |
-| Custom SQL filters you wrote or reviewed                                                           | `localStorage` on your device (a list used to tell your own filters from ones carried by a link someone sent you)                                                  | Nowhere                                                                                    |
-| Handles of local files or folders you picked                                                       | IndexedDB on your device; Chrome asks for your permission before they are read again after a restart                                                               | Nowhere                                                                                    |
+| Data                                                                                               | Where it is stored                                                                                                                                          | Sent to                                                                                    |
+| -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Log data read from your storage                                                                    | Memory and, when the cache is enabled, a private storage area of the browser on your device                                                                 | Nowhere. It is read directly from the endpoint you configured and never leaves the browser |
+| Data source settings (URLs, region, field names, format, identity provider settings, IAM role ARN) | The extension's `localStorage` on your device                                                                                                               | Nowhere                                                                                    |
+| Static AWS access keys, if you choose the "static keys" mode                                       | The access key ID with the settings in `localStorage`; the secret key and session token in `storage.session` only (memory, cleared when the browser closes) | Only to the S3 endpoint you configured, as request signatures                              |
+| Temporary AWS credentials obtained via sign-in                                                     | `storage.session` (memory only, cleared when the browser closes)                                                                                            | Only to the S3 endpoint you configured, as request signatures                              |
+| OpenID Connect ID token obtained via sign-in                                                       | Memory, for the duration of one STS call                                                                                                                    | AWS STS (`AssumeRoleWithWebIdentity`) at the endpoint you configured                       |
+| Your queries and filters                                                                           | The page URL and `localStorage` on your device                                                                                                              | Nowhere; they are executed on your device                                                  |
+| Custom SQL filters you wrote or reviewed                                                           | `localStorage` on your device (a list used to tell your own filters from ones carried by a link someone sent you)                                           | Nowhere                                                                                    |
+| Handles of local files or folders you picked                                                       | IndexedDB on your device when the browser supports persistent handles; the browser asks for permission before reading them again after a restart            | Nowhere                                                                                    |
 
 ## Permissions
 
 - **storage / unlimitedStorage** — keep your settings and the local range cache of log files on your device. Log files can be large, so the default storage quota is not enough.
-- **identity** — open your identity provider's sign-in page (`chrome.identity.launchWebAuthFlow`) so the extension can exchange the resulting ID token for temporary AWS credentials. No Google account data is requested beyond what your identity provider returns in the ID token.
+- **identity** — open your identity provider's sign-in page (`identity.launchWebAuthFlow`) so the extension can exchange the resulting ID token for temporary AWS credentials. No Google account data is requested beyond what your identity provider returns in the ID token.
 - **Host permission for `*.amazonaws.com`** — read objects from S3 and call STS.
-- **Optional host permissions** — when you enter a URL that is not on `amazonaws.com` (for example an S3-compatible service, a CDN, or a local server), the extension asks for access to that specific origin at that moment. You can revoke it from the Data source page or from Chrome's extension settings.
+- **Optional host permissions** — when you enter a URL that is not on `amazonaws.com` (for example an S3-compatible service, a CDN, or a local server), the extension asks for access to that specific origin at that moment. You can revoke it from the Data source page or from the browser's extension settings.
 
 ## Third parties
 
@@ -58,8 +58,8 @@ Open an issue at <https://github.com/bungoume/duckdive/issues>.
 - Duckdive にサーバはありません。拡張が通信するのは、利用者が設定したストレージのエンドポイントと、サインインを有効にした場合の IdP と AWS STS だけです。
 - 開発者は利用者のデータ、認証情報、クエリ、利用状況を一切受け取りません。解析・テレメトリ・広告のコードは含まれていません。
 - ログデータはメモリと端末内のブラウザ専用領域(キャッシュ)にのみ保存され、外部に送信されません。
-- 設定と静的アクセスキーのアクセスキー ID は拡張の `localStorage` に保存されます。静的キーのシークレットとセッショントークン、サインインで得た一時キーは `chrome.storage.session`(メモリのみ、ブラウザ終了で消える)に保存されます。
+- 設定と静的アクセスキーのアクセスキー ID は拡張の `localStorage` に保存されます。静的キーのシークレットとセッショントークン、サインインで得た一時キーは `storage.session`(メモリのみ、ブラウザ終了で消える)に保存されます。
 - 自分で書いた、または内容を確認したカスタム SQL フィルタの一覧を `localStorage` に保持し、他人から送られたリンクに含まれる SQL と区別します。
-- ローカルファイルやフォルダを選択した場合、そのハンドルを端末内の IndexedDB に保持します。再起動後に再度読み込む際は Chrome が許可を求めます。
-- `amazonaws.com` 以外の URL を入力した場合は、そのオリジンへのアクセス権限をその場で求めます。権限は Data source ページや Chrome の拡張設定から取り消せます。
+- ブラウザが永続ファイルハンドルに対応している場合、選択したローカルファイルやフォルダのハンドルを端末内の IndexedDB に保持します。再起動後に再度読み込む際はブラウザが許可を求めます。
+- `amazonaws.com` 以外の URL を入力した場合は、そのオリジンへのアクセス権限をその場で求めます。権限は Data source ページやブラウザの拡張設定から取り消せます。
 - 「Clear cache」でキャッシュを削除でき、拡張を削除するとすべての保存データが消えます。

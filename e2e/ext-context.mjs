@@ -1,10 +1,10 @@
-// Launch Chromium with the built extension (dist/) loaded and open the app page.
+// Launch Chromium with the Chrome build (dist/chrome/) loaded and open the app page.
 import { chromium } from 'playwright';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-export async function launchExtension({ dist = new URL('../dist', import.meta.url).pathname, headless = true } = {}) {
+export async function launchExtension({ dist = new URL('../dist/chrome', import.meta.url).pathname, headless = true } = {}) {
   const userDataDir = mkdtempSync(join(tmpdir(), 'ddv-ext-'));
   const context = await chromium.launchPersistentContext(userDataDir, {
     channel: 'chromium',

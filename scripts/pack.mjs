@@ -1,61 +1,65 @@
-// Zip dist/ into release/<name>-<version>.zip for the Chrome Web Store.
-// The store rejects a manifest that contains "key" (it manages the signing key itself),
-// so the zip gets a copy of the manifest without it; dist/ keeps the key for "Load unpacked".
-import { execSync } from 'node:child_process';
+// Package each browser build as a store-ready zip at release/duckdive-<browser>-<version>.zip.
+import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const root = new URL('..', import.meta.url).pathname;
 const pkg = JSON.parse(readFileSync(`${root}package.json`, 'utf8'));
-if (!existsSync(`${root}dist/manifest.json`)) {
-  console.error('dist/manifest.json not found – run `pnpm run build` first');
-  process.exit(1);
-}
+const targets = ['chrome', 'firefox', 'edge'];
+const storeHosts = ['https://*.amazonaws.com/*'];
+
 mkdirSync(`${root}release`, { recursive: true });
-const zip = `${root}release/${pkg.name}-${pkg.version}.zip`;
-rmSync(zip, { force: true });
 
-/** The host permissions a store build asks for at install time (vite.config.ts, without DDV_EXTRA_HOSTS). */
-const STORE_HOSTS = ['https://*.amazonaws.com/*'];
-
-/**
- * `pnpm run test:all` builds for the e2e suites, which grants http://localhost/* and publishes the
- * test hooks on window.__ddv. Zipping that dist/ would upload a build that reaches a local server
- * and exposes its internals to any page, so the staged copy is checked before it is zipped.
- */
-function refuseTestBuild(stage, manifest) {
+/** Refuse debug builds or a manifest meant for a different browser. */
+function verifyBuild(stage, manifest, target) {
   const hosts = manifest.host_permissions ?? [];
-  if (hosts.length !== STORE_HOSTS.length || hosts.some((h, i) => h !== STORE_HOSTS[i])) {
-    console.error(`dist/ asks for host permissions ${JSON.stringify(hosts)}; a store build asks for ${JSON.stringify(STORE_HOSTS)}. Run \`pnpm run build\`.`);
-    process.exit(1);
+  if (hosts.length !== storeHosts.length || hosts.some((host, i) => host !== storeHosts[i])) {
+    throw new Error(`${target} asks for host permissions ${JSON.stringify(hosts)}; a store build asks for ${JSON.stringify(storeHosts)}`);
   }
-  for (const f of readdirSync(join(stage, 'assets'))) {
-    if (f.endsWith('.js') && readFileSync(join(stage, 'assets', f), 'utf8').includes('__ddv')) {
-      console.error(`assets/${f} still carries the __ddv test hooks. Run \`pnpm run build\`.`);
-      process.exit(1);
-    }
+  for (const file of readdirSync(join(stage, 'assets'))) {
+    if (file.endsWith('.js') && readFileSync(join(stage, 'assets', file), 'utf8').includes('__ddv')) throw new Error(`${target} assets/${file} still carries the __ddv test hooks`);
+  }
+
+  if (target === 'firefox') {
+    if (!manifest.background?.scripts?.includes('background.js') || manifest.background.service_worker) throw new Error('Firefox must use background.scripts, not background.service_worker');
+    if (!manifest.browser_specific_settings?.gecko?.id) throw new Error('Firefox must declare a Gecko add-on ID');
+    if (manifest.key || manifest.minimum_chrome_version) throw new Error('Firefox contains Chromium-only manifest fields');
+  } else {
+    if (manifest.background?.service_worker !== 'background.js' || manifest.background.scripts) throw new Error(`${target} must use background.service_worker`);
+    if (target === 'chrome' && !manifest.key) throw new Error('The unpacked Chrome build must carry its public key');
+    if (target === 'edge' && manifest.key) throw new Error("The Edge build must not carry Chrome's public key");
   }
 }
 
-const stage = mkdtempSync(join(tmpdir(), 'ddv-pack-'));
-try {
-  cpSync(`${root}dist`, stage, { recursive: true, filter: (src) => !src.endsWith('.map') });
-  const manifest = JSON.parse(readFileSync(join(stage, 'manifest.json'), 'utf8'));
-  refuseTestBuild(stage, manifest);
-  delete manifest.key;
-  // The description comes from _locales/<lang>/messages.json; the store caps every locale at 132 characters.
+/** The localized description stays within the strictest store limit used by these packages. */
+function verifyLocales(stage) {
   for (const lang of readdirSync(join(stage, '_locales'))) {
-    const msgs = JSON.parse(readFileSync(join(stage, '_locales', lang, 'messages.json'), 'utf8'));
-    const desc = msgs.appDesc?.message ?? '';
-    if (desc.length > 132) {
-      console.error(`_locales/${lang} appDesc is ${desc.length} characters; the store allows 132`);
-      process.exit(1);
-    }
+    const messages = JSON.parse(readFileSync(join(stage, '_locales', lang, 'messages.json'), 'utf8'));
+    const description = messages.appDesc?.message ?? '';
+    if (description.length > 132) throw new Error(`_locales/${lang} appDesc is ${description.length} characters; the package limit is 132`);
   }
-  writeFileSync(join(stage, 'manifest.json'), JSON.stringify(manifest, null, 2));
-  execSync(`cd "${stage}" && zip -qr -X "${zip}" .`, { stdio: 'inherit' });
-} finally {
-  rmSync(stage, { recursive: true, force: true });
 }
-console.log(`wrote ${zip} (manifest without "key")`);
+
+for (const target of targets) {
+  const source = join(root, 'dist', target);
+  if (!existsSync(join(source, 'manifest.json'))) throw new Error(`${target} build not found; run \`pnpm run build\``);
+
+  const zip = join(root, 'release', `${pkg.name}-${target}-${pkg.version}.zip`);
+  rmSync(zip, { force: true });
+  const stage = mkdtempSync(join(tmpdir(), `ddv-pack-${target}-`));
+  try {
+    cpSync(source, stage, { recursive: true, filter: (path) => !path.endsWith('.map') });
+    const manifestPath = join(stage, 'manifest.json');
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    verifyBuild(stage, manifest, target);
+    verifyLocales(stage);
+    // Store signing determines the installed Chrome ID; `key` is only for stable unpacked builds.
+    if (target === 'chrome') delete manifest.key;
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+    execFileSync('zip', ['-qr', '-X', zip, '.'], { cwd: stage, stdio: 'inherit' });
+  } finally {
+    rmSync(stage, { recursive: true, force: true });
+  }
+  console.log(`wrote ${zip}`);
+}

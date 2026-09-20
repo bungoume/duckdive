@@ -1,6 +1,6 @@
 // Local files as a data source. Files and folders picked or dropped through the File System
 // Access API come with handles; kept in IndexedDB they survive a restart, so a local source can
-// be remembered and reopened (Chrome then asks for read permission again). Files from a plain
+// be remembered and reopened (the browser then asks for read permission again). Files from a plain
 // <input type="file"> or a browser without handles are used once.
 
 import { t } from './i18n';
@@ -146,7 +146,7 @@ export const loadHandles = (id: string) => withStore<FileSystemHandle[] | undefi
 export const forgetHandles = (id: string) => withStore('readwrite', (s) => s.delete(id));
 
 /**
- * Reopen a remembered local source. Returns null when Chrome would have to ask for permission
+ * Reopen a remembered local source. Returns null when the browser would have to ask for permission
  * and `interactive` is false (start-up); throws when the handles are gone or access is refused.
  */
 export async function openLocal(id: string, interactive: boolean): Promise<LocalSelection | null> {

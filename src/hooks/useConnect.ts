@@ -136,7 +136,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
         });
       });
     try {
-      // A remembered local source: its files come from the stored handles (Chrome may ask for permission).
+      // A remembered local source: its files come from the stored handles (the browser may ask for permission).
       let sel = local;
       if (cfg.kind === 'local' && !sel.files.length && cfg.localId) {
         report(t('app.progress.openingLocal'), 'list');

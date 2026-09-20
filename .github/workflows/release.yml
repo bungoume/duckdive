@@ -3,7 +3,7 @@ name: Release
 # Every push to main updates the release pull request: release-please keeps the version in
 # package.json, the new CHANGELOG.md section and the release notes inside it, built from the
 # Conventional Commit subjects since the last tag. Merging that pull request tags the version
-# and creates the GitHub Release; the second job attaches the store zip to it. Tags are never
+# and creates the GitHub Release; the second job attaches every browser package to it. Tags are never
 # moved or rewritten; a broken release is fixed by the next version.
 
 on:
@@ -37,7 +37,7 @@ jobs:
           manifest-file: .github/release-please-manifest.json
 
   publish:
-    name: build the store zip and attach it to the release
+    name: build the browser packages and attach them to the release
     needs: release-please
     if: needs.release-please.outputs.release_created == 'true'
     runs-on: ubuntu-latest
@@ -60,10 +60,10 @@ jobs:
       - run: pnpm run typecheck
       - run: pnpm run lint
       - run: pnpm run test:unit
-      # Builds a store build and refuses to zip anything else (scripts/pack.mjs).
+      # Builds and validates the Chrome, Firefox and Edge store packages (scripts/pack.mjs).
       - run: pnpm run pack
 
-      - name: Attach the store zip
+      - name: Attach the browser packages
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.release-please.outputs.tag_name }}

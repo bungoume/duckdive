@@ -1,5 +1,5 @@
 // Static S3 secrets (secret access key, session token) never touch disk: they live in
-// chrome.storage.session (memory only, cleared when the browser closes; sessionStorage outside
+// storage.session (memory only, cleared when the browser closes; sessionStorage outside
 // the extension), keyed by the source's identity plus the access key ID. localStorage keeps the
 // rest of the configuration, access key ID included, so after a restart the form shows which key
 // was in use and asks for its secret again.
