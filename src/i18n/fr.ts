@@ -509,6 +509,7 @@ export const fr: Messages = {
   'q.ar.15m': 'Toutes les 15 min',
 
   // ---- time picker ----
+  'tp.invalid': 'Période invalide. Saisissez des dates valides, avec un début antérieur ou égal à la fin.',
   'tp.quick': 'Sélection rapide',
   'tp.last': 'Dernières',
   'tp.unit.s': 'secondes',

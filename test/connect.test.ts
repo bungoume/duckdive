@@ -51,6 +51,14 @@ describe('switching sources', () => {
     expect(attach.mock.lastCall?.[3]).toEqual({ from: new Date('2026-09-21T00:00:00Z'), to: new Date('2026-09-23T00:00:00Z') });
   });
 
+  it('does not list or attach a URL source with an invalid restored range', async () => {
+    attach.mockClear();
+    await TestConnection({ ...url, search: { ...url.search, range: { from: 'now--1m', to: 'now' } } }).connect(sourceB);
+    expect(attach).not.toHaveBeenCalled();
+    expect(TestConnection().attachError).toContain('Invalid time range');
+    expect(TestConnection().attached).toEqual(attachedA);
+  });
+
   it('keeps the old source identity and data after a listing failure, with the new form editable', async () => {
     attach.mockRejectedValueOnce(new Error('Listing failed'));
     await TestConnection().switchSource(sourceB);

@@ -498,6 +498,7 @@ export const ko: Messages = {
   'q.ar.15m': '15분마다',
 
   // ---- time picker ----
+  'tp.invalid': '잘못된 시간 범위입니다. 시작이 종료보다 늦지 않도록 유효한 날짜를 입력하세요.',
   'tp.quick': '빠른 선택',
   'tp.last': '최근',
   'tp.unit.s': '초',

@@ -505,6 +505,7 @@ export const de: Messages = {
   'q.ar.15m': 'Alle 15 min',
 
   // ---- time picker ----
+  'tp.invalid': 'Ungültiger Zeitraum. Geben Sie gültige Daten ein, wobei der Beginn vor oder gleich dem Ende liegt.',
   'tp.quick': 'Schnellauswahl',
   'tp.last': 'Letzte',
   'tp.unit.s': 'Sekunden',

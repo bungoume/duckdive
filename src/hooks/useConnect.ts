@@ -144,6 +144,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
         });
       });
     try {
+      if (cfg.kind === 'url' && !window) throw new Error(t('tp.invalid'));
       // A remembered local source: its files come from the stored handles (the browser may ask for permission).
       let sel = local;
       if (cfg.kind === 'local' && !sel.files.length && cfg.localId) {

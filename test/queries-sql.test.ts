@@ -110,3 +110,12 @@ describe('visualization SQL', () => {
     expect(run.mock.calls[1][0]).not.toContain('Infinity');
   });
 });
+
+describe('invalid time ranges', () => {
+  it.each(['now--1m', 'not a date', 'now+1h', 'now-999999999999999999999s', 'now-999999999999y', 'now-999999999999999999999s/d'])('rejects %s without producing an unbounded query', (from) => {
+    const result = compileSearch({ ...DEFAULT_SEARCH, range: { from, to: 'now' } }, [], '"ts"');
+    expect(result.where).toBe('FALSE');
+    expect(result.error).toContain('Invalid time range');
+    expect(result.from).toBeNull();
+  });
+});

@@ -508,6 +508,7 @@ export const es: Messages = {
   'q.ar.15m': 'Cada 15 min',
 
   // ---- time picker ----
+  'tp.invalid': 'Intervalo no válido. Introduzca fechas válidas con el inicio anterior o igual al final.',
   'tp.quick': 'Selección rápida',
   'tp.last': 'Últimos',
   'tp.unit.s': 'segundos',

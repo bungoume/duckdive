@@ -17,16 +17,13 @@ export interface Compiled {
 }
 
 export function compileSearch(search: SearchState, fields: Field[], timeExpr: string | null): Compiled {
-  let querySql: string;
-  let error: string | null = null;
   try {
-    querySql = searchToSql(search.query, fields);
+    const querySql = searchToSql(search.query, fields);
+    const w = buildWhere({ timeExpr, range: search.range, querySql, filters: search.filters, fields });
+    return { where: w.sql, from: w.from, to: w.to, error: null };
   } catch (e) {
-    error = describeError(e);
-    querySql = 'FALSE';
+    return { where: 'FALSE', from: null, to: null, error: describeError(e) };
   }
-  const w = buildWhere({ timeExpr, range: search.range, querySql, filters: search.filters, fields });
-  return { where: w.sql, from: w.from, to: w.to, error };
 }
 
 export interface Bucket {

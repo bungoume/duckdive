@@ -281,12 +281,11 @@ export function buildWhere(p: WhereParts): { sql: string; from: Date | null; to:
   let to: Date | null = null;
   if (p.timeExpr) {
     const r = resolveRange(p.range);
-    if (r) {
-      from = r.from;
-      to = r.to;
-      conds.push(`${p.timeExpr} >= ${tsLit(r.from)}`);
-      conds.push(`${p.timeExpr} <= ${tsLit(r.to)}`);
-    }
+    if (!r) throw new Error(t('tp.invalid'));
+    from = r.from;
+    to = r.to;
+    conds.push(`${p.timeExpr} >= ${tsLit(r.from)}`);
+    conds.push(`${p.timeExpr} <= ${tsLit(r.to)}`);
   }
   if (p.querySql && p.querySql !== 'TRUE') conds.push(`(${p.querySql})`);
   for (const f of p.filters) {

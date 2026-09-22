@@ -491,6 +491,7 @@ export const zh_CN: Messages = {
   'q.ar.15m': '每 15 分钟',
 
   // ---- time picker ----
+  'tp.invalid': '时间范围无效。请输入有效日期，开始时间不能晚于结束时间。',
   'tp.quick': '快速选择',
   'tp.last': '最近',
   'tp.unit.s': '秒',

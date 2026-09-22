@@ -11,6 +11,11 @@ export function TimePicker(props: { range: TimeRange; onChange: (r: TimeRange) =
   const resolved = resolveRange(props.range);
   const [absFrom, setAbsFrom] = useState(resolved ? toDatetimeLocal(resolved.from) : '');
   const [absTo, setAbsTo] = useState(resolved ? toDatetimeLocal(resolved.to) : '');
+  const relative = { from: `now-${n}${unit}`, to: 'now' };
+  const validRelative = Number.isSafeInteger(n) && n > 0 && !!resolveRange(relative);
+  const from = fromDatetimeLocal(absFrom);
+  const to = fromDatetimeLocal(absTo);
+  const validAbsolute = !!from && !!to && from <= to;
 
   const shift = (dir: -1 | 1) => {
     const r = resolveRange(props.range);
@@ -61,8 +66,10 @@ export function TimePicker(props: { range: TimeRange; onChange: (r: TimeRange) =
             </select>
             <button
               class="btn primary small"
+              disabled={!validRelative}
               onClick={() => {
-                props.onChange({ from: `now-${n}${unit}`, to: 'now' });
+                if (!validRelative) return;
+                props.onChange(relative);
                 setOpen(false);
               }}
             >
@@ -96,11 +103,10 @@ export function TimePicker(props: { range: TimeRange; onChange: (r: TimeRange) =
               <div class="row end">
                 <button
                   class="btn small"
+                  disabled={!validAbsolute}
                   onClick={() => {
-                    const f = fromDatetimeLocal(absFrom);
-                    const t = fromDatetimeLocal(absTo);
-                    if (!f || !t) return;
-                    props.onChange({ from: f.toISOString(), to: t.toISOString() });
+                    if (!validAbsolute) return;
+                    props.onChange({ from: from.toISOString(), to: to.toISOString() });
                     setOpen(false);
                   }}
                 >

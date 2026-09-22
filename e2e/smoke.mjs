@@ -52,6 +52,18 @@ await step('discover-initial', async () => {
   if (repeated.length) throw new Error(`the opening queries ran more than once: ${repeated.join(' | ')}`);
   await page.screenshot({ path: `${out}/01-discover.png` });
 });
+await step('invalid-relative-range', async () => {
+  await page.locator('.timepicker .btn').first().click();
+  const input = page.locator('.tp-body input[type=number]');
+  for (const value of ['-1', '0', '', '1.5']) {
+    await input.fill(value);
+    assert.equal(await page.locator('.tp-body').getByRole('button', { name: 'Apply', exact: true }).isDisabled(), true);
+  }
+  await input.fill('15');
+  assert.equal(await page.locator('.tp-body').getByRole('button', { name: 'Apply', exact: true }).isEnabled(), true);
+  await page.locator('.timepicker .btn').first().click();
+});
+
 await step('sql-numeric-values', async () => {
   const { rows } = await page.evaluate(() =>
     window.__ddv.query(

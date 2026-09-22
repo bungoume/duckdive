@@ -500,6 +500,7 @@ export const ja: Messages = {
   'q.ar.15m': '15 分ごと',
 
   // ---- time picker ----
+  'tp.invalid': '時間範囲が不正です。開始日時が終了日時以前になるよう、有効な日時を入力してください。',
   'tp.quick': 'クイック選択',
   'tp.last': '直近',
   'tp.unit.s': '秒',

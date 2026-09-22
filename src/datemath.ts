@@ -132,10 +132,16 @@ export interface TimeRange {
 }
 
 export function resolveRange(r: TimeRange, now = new Date()): { from: Date; to: Date } | null {
-  const from = parseDateMath(r.from, false, now);
-  const to = parseDateMath(r.to, true, now);
-  if (!from || !to) return null;
-  return { from, to };
+  try {
+    const from = parseDateMath(r.from, false, now);
+    const to = parseDateMath(r.to, true, now);
+    if (!from || !to || !Number.isFinite(from.getTime()) || !Number.isFinite(to.getTime()) || from > to) return null;
+    return { from, to };
+  } catch (e) {
+    // Calendar arithmetic outside Date's range cannot be formatted by Intl.
+    if (e instanceof RangeError) return null;
+    throw e;
+  }
 }
 
 /** The "Commonly used" ranges of the time picker (Settings page). */

@@ -503,6 +503,7 @@ export const en = {
   'q.ar.15m': 'Every 15 min',
 
   // ---- time picker ----
+  'tp.invalid': 'Invalid time range. Enter valid dates with the start at or before the end.',
   'tp.quick': 'Quick select',
   'tp.last': 'Last',
   'tp.unit.s': 'seconds',
