@@ -1,9 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { capturedColumns, isRangeDependent, resolveFiles, s3EndpointFor, s3HttpsUrl } from '../src/datasource';
+import { captureSelect, capturedColumns, isRangeDependent, resolveFiles, s3EndpointFor, s3HttpsUrl } from '../src/datasource';
 import { s3Target } from '../src/s3list';
 import { DEFAULT_SOURCE } from '../src/sources';
 
 const s3 = (patch: Partial<typeof DEFAULT_SOURCE.s3> = {}) => ({ ...DEFAULT_SOURCE.s3, region: 'ap-northeast-1', ...patch });
+
+describe('captured columns across patterns', () => {
+  it('uses each matching pattern and its own capture group for a shared column', () => {
+    const sql = captureSelect({ ...DEFAULT_SOURCE, urls: 's3://a/{account}/*.parquet\ns3://b/{region}/{account}/*.parquet' });
+    expect(sql).toContain("WHEN regexp_matches(filename, '^s3://a/([^/]*?)/[^/]*\\.parquet$') THEN regexp_extract(filename, '^s3://a/([^/]*?)/[^/]*\\.parquet$', 1)");
+    expect(sql).toContain("WHEN regexp_matches(filename, '^s3://b/([^/]*?)/([^/]*?)/[^/]*\\.parquet$') THEN regexp_extract(filename, '^s3://b/([^/]*?)/([^/]*?)/[^/]*\\.parquet$', 2)");
+    expect(sql.match(/AS "account"/g)).toHaveLength(1);
+    expect(sql).toContain('ELSE \'\' END AS "account"');
+    expect(sql).toContain('regexp_extract(filename, \'^s3://b/([^/]*?)/([^/]*?)/[^/]*\\.parquet$\', 1) AS "region"');
+  });
+
+  it('keeps single-pattern behavior and escapes SQL literals and column names', () => {
+    expect(captureSelect({ ...DEFAULT_SOURCE, urls: "s3://a/it's/{account}/*.parquet" })).toBe(", regexp_extract(filename, '^s3://a/it''s/([^/]*?)/[^/]*\\.parquet$', 1) AS \"account\"");
+    expect(captureSelect({ ...DEFAULT_SOURCE, urls: 's3://a/*.parquet' })).toBe('');
+  });
+});
 
 describe('HTTPS file resolution', () => {
   const config = (urls: string) => ({ ...DEFAULT_SOURCE, kind: 'url' as const, urls });

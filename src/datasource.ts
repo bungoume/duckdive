@@ -284,17 +284,22 @@ async function viewColumns(view: string): Promise<string[]> {
 }
 
 /** SELECT list that turns {name} tokens of the patterns into columns extracted from the file name. */
-function captureSelect(cfg: SourceConfig): string {
-  const cols: string[] = [];
-  const done = new Set<string>();
+export function captureSelect(cfg: SourceConfig): string {
+  const byName = new Map<string, { pattern: string; extract: string }[]>();
   for (const u of sourceUrls(cfg)) {
     const cap = captureRegex(u);
     cap.names.forEach((n, i) => {
-      if (done.has(n)) return;
-      done.add(n);
-      cols.push(`regexp_extract(filename, ${lit(cap.source)}, ${i + 1}) AS ${quoteIdent(n)}`);
+      const cases = byName.get(n) ?? [];
+      cases.push({ pattern: lit(cap.source), extract: `regexp_extract(filename, ${lit(cap.source)}, ${i + 1})` });
+      byName.set(n, cases);
     });
   }
+  const cols = [...byName].map(([name, cases]) => {
+    // Each pattern can put this token in a different capture group. Pick the first matching
+    // pattern, including a legitimately empty capture; a non-matching file still yields ''.
+    const expr = cases.length === 1 ? cases[0].extract : `CASE ${cases.map((c) => `WHEN regexp_matches(filename, ${c.pattern}) THEN ${c.extract}`).join(' ')} ELSE '' END`;
+    return `${expr} AS ${quoteIdent(name)}`;
+  });
   return cols.length ? ', ' + cols.join(', ') : '';
 }
 
