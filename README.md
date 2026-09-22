@@ -244,15 +244,26 @@ Run the suites one at a time: both start the local range server on port 5299, an
 ```
 vite.config.ts                     manifest generation
 src/background.ts                  toolbar button
-src/worker/duckdb-cache-worker.ts  XHR replacement, OPFS cache, duckdb-wasm worker
-src/cache.ts, duck.ts              cache control port, DuckDB session and query queue
+src/worker/duckdb-cache-worker.ts  range request policy and DuckDB worker startup
+src/worker/cache-storage.ts        OPFS files, index, eviction and compaction
+src/worker/cache-network.ts        synchronous network requests and deadlines
+src/worker/cache-xhr.ts            XMLHttpRequest adapter
+src/cache.ts, cacheProtocol.ts     cache client and shared request/reply types
+src/duck.ts, queryScope.ts         DuckDB queue and cancellable query ownership
 src/auth.ts, secrets.ts            OIDC login and STS; session-only static keys
 src/permissions.ts                 host permissions
 src/datasource.ts, s3list.ts       listing, pattern expansion, view creation
-src/search.ts, sql.ts, queries.ts  query compilation
-src/hooks/                         connect life cycle, download gate, credential refresh
+src/formats.ts, formats/           registry; each format's reader and projections
+src/sourceTemplates.ts             Data source form presets
+src/search.ts, sql.ts              search parser and SQL expressions
+src/queryPlans.ts, queries.ts      query plans/result decoding; database execution
+src/datemath.ts                    date arithmetic and captured evaluation context
+src/connection.ts                  source connection state and effects
+src/hooks/                         UI lifecycle adapters, download gate, credential refresh
 src/components/                    UI (components/source/: the Data source page's sections)
-src/state.ts, sources.ts           URL state and saved charts; source settings and history
+src/state.ts, stateCodec.ts        view models/defaults; validation of restored data
+src/urlState.ts, savedViews.ts     URL serialization; saved chart persistence
+src/sources.ts                     source settings, wire format and history
 src/store.ts, errors.ts            store helper behind useSettings / useLang; error text
 src/trust.ts, debug.ts             custom-SQL trust list; test hooks (e2e builds only)
 test/                              vitest unit tests for the pure modules
@@ -260,6 +271,14 @@ scripts/                           duckdb-wasm bundling, icons, packaging, ALB t
 docs/                              IAM examples, privacy policy, README images
 e2e/                               Playwright tests and the local range server
 ```
+
+`connection.ts` owns connection attempts, cancellation and large-source confirmation. A new attempt invalidates the previous one, including any outstanding secret load or confirmation. `useConnect` subscribes to that state and translates UI changes into connection requests.
+
+A search captures one `TimeContext` (current instant, time zone and first day of the week). File selection, SQL filters and comparison periods share it. `queryPlans.ts` builds SQL and decodes rows; `queries.ts` executes the plans. Each main query view owns a `QueryScope`: replacing or unmounting it cancels its work, including SQL still waiting in the database queue.
+
+`state.ts` contains view models rather than browser storage access. Restored values pass through `stateCodec.ts`, while `urlState.ts` and `savedViews.ts` handle their respective storage formats. New shared-view and saved-chart payloads carry version 1; existing unversioned payloads still load. Source time-field selection is explicit in memory (`auto`, `none`, or a named field), and retains its existing persisted representation. External custom SQL still passes through the trust check.
+
+Keep format-specific SQL with its reader under `src/formats/`, and cache persistence details in `cache-storage.ts`. Run `pnpm run format` before committing; code is formatted at a 120-column target width.
 
 ## Limits
 
