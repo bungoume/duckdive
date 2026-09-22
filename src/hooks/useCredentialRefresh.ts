@@ -3,7 +3,7 @@
 // so the page can say why queries are about to fail instead of showing bare 403s.
 
 import { useEffect, useState } from 'preact/hooks';
-import { getCredentials, loadCredentials, secondsUntilExpiry, type AwsCredentials } from '../auth';
+import { credentialSessionGuard, getCredentials, loadCredentials, secondsUntilExpiry, type AwsCredentials } from '../auth';
 import { applyS3, type AttachedSource } from '../datasource';
 import { describeError } from '../errors';
 import type { SourceConfig } from '../sources';
@@ -26,9 +26,10 @@ export function useCredentialRefresh(
     const generation = connectionGeneration.current;
     let live = true;
     let pending = false;
-    const isCurrent = () => live && generation === connectionGeneration.current;
+    const connectionCurrent = () => live && generation === connectionGeneration.current;
     const timer = setInterval(async () => {
-      if (pending || !isCurrent()) return;
+      if (pending || !connectionCurrent()) return;
+      const isCurrent = credentialSessionGuard(connectionCurrent);
       pending = true;
       try {
         const cur = await loadCredentials(source.oidc);

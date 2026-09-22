@@ -9,6 +9,7 @@ vi.mock('../src/auth', async (original) => ({ ...(await original<object>()), loa
 vi.mock('../src/datasource', () => ({ applyS3: mocks.apply }));
 
 import { useCredentialRefresh } from '../src/hooks/useCredentialRefresh';
+import { storeCredentials } from '../src/auth';
 
 const credentials: AwsCredentials = { accessKeyId: 'refreshed', secretAccessKey: 'secret', sessionToken: 'token', expiration: new Date(0).toISOString() };
 const generation = { current: 0 };
@@ -33,17 +34,35 @@ afterEach(() => {
 });
 
 describe('credential refresh lifecycle', () => {
-  it.each(['cleanup', 'new connection'])('discards a completed refresh after %s', async (reason) => {
+  it.each(['cleanup', 'new connection', 'sign-out'])('discards a completed refresh after %s', async (reason) => {
     let finish!: (c: AwsCredentials) => void;
     mocks.get.mockImplementation(() => new Promise<AwsCredentials>((resolve) => (finish = resolve)));
     TestRefresh();
     await vi.advanceTimersByTimeAsync(60_000);
     if (reason === 'cleanup') cleanup?.();
+    else if (reason === 'sign-out') await storeCredentials(null);
     else generation.current++;
     expect(mocks.get.mock.calls[0][3]()).toBe(false); // auth must not persist this obsolete session either
     finish(credentials);
     await vi.advanceTimersByTimeAsync(0);
     expect(mocks.apply).not.toHaveBeenCalled();
+    expect(onCreds).not.toHaveBeenCalled();
+  });
+
+  it('invalidates credentials queued for application when signing out', async () => {
+    let applyGuard!: () => boolean;
+    let finish!: () => void;
+    mocks.get.mockResolvedValue(credentials);
+    mocks.apply.mockImplementation((_source, _creds, guard) => {
+      applyGuard = guard;
+      return new Promise<void>((resolve) => (finish = resolve));
+    });
+    TestRefresh();
+    await vi.advanceTimersByTimeAsync(60_000);
+    await storeCredentials(null);
+    expect(applyGuard()).toBe(false);
+    finish();
+    await vi.advanceTimersByTimeAsync(0);
     expect(onCreds).not.toHaveBeenCalled();
   });
 

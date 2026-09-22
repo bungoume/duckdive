@@ -156,12 +156,21 @@ export async function assumeRoleWithWebIdentity(cfg: OidcConfig, idToken: string
 }
 
 export async function signIn(cfg: OidcConfig, interactive: boolean, isCurrent: () => boolean = () => true): Promise<AwsCredentials> {
+  const sessionCurrent = credentialSessionGuard(isCurrent);
   const token = await loginOidc(cfg, interactive);
-  if (!isCurrent()) throw new CancelledError();
+  if (!sessionCurrent()) throw new CancelledError();
   const creds = await assumeRoleWithWebIdentity(cfg, token);
-  if (!isCurrent()) throw new CancelledError();
+  if (!sessionCurrent()) throw new CancelledError();
   await storeCredentials(creds, cfg);
+  if (!sessionCurrent()) throw new CancelledError();
   return creds;
+}
+
+let credentialGeneration = 0;
+/** A sign-out invalidates work already waiting for identity, STS, storage or the SQL queue. */
+export function credentialSessionGuard(isCurrent: () => boolean = () => true): () => boolean {
+  const generation = credentialGeneration;
+  return () => generation === credentialGeneration && isCurrent();
 }
 
 // Temporary credentials live for the browser session only (src/sessionStore.ts).
@@ -169,8 +178,10 @@ function oidcKey(cfg: OidcConfig): string {
   return JSON.stringify([cfg.authUrl, cfg.clientId, cfg.scope, cfg.extraParams, cfg.roleArn, stsEndpointFor(cfg)]);
 }
 
-export const storeCredentials = (c: AwsCredentials | null, cfg?: OidcConfig): Promise<void> =>
-  writeSession(SESSION_KEY, c && cfg ? ({ credentials: c, oidcKey: oidcKey(cfg) } satisfies StoredCredentials) : c);
+export const storeCredentials = (c: AwsCredentials | null, cfg?: OidcConfig): Promise<void> => {
+  if (!c) credentialGeneration++;
+  return writeSession(SESSION_KEY, c && cfg ? ({ credentials: c, oidcKey: oidcKey(cfg) } satisfies StoredCredentials) : c);
+};
 
 function isCredentials(value: unknown): value is AwsCredentials {
   if (!value || typeof value !== 'object') return false;
@@ -213,6 +224,7 @@ export function isUsable(c: AwsCredentials | null, minSeconds = 60): boolean {
  * Falls back to an interactive login only when `allowInteractive` is set.
  */
 export async function getCredentials(cfg: OidcConfig, allowInteractive: boolean, minSeconds = 300, isCurrent: () => boolean = () => true): Promise<AwsCredentials> {
+  isCurrent = credentialSessionGuard(isCurrent);
   const cached = await loadCredentials(cfg);
   if (!isCurrent()) throw new CancelledError();
   if (isUsable(cached, minSeconds)) return cached!;
