@@ -5,7 +5,8 @@ import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS, type UrlState } from '..
 import { storeSavedVis } from '../src/savedViews';
 
 const attach = vi.hoisted(() => vi.fn());
-vi.mock('../src/datasource', async (original) => ({ ...(await original<object>()), attachSource: attach }));
+const discover = vi.hoisted(() => vi.fn());
+vi.mock('../src/datasource', async (original) => ({ ...(await original<object>()), attachSource: attach, discoverVariables: discover }));
 vi.mock('../src/duck', () => ({ cancelAllQueries: async () => undefined }));
 const secrets = vi.hoisted(() => vi.fn());
 vi.mock('../src/secrets', () => ({ withSecrets: secrets, storeSecrets: async () => undefined }));
@@ -42,6 +43,7 @@ beforeEach(async () => {
   localStorage.clear();
   secrets.mockReset().mockImplementation(async (config) => config);
   attach.mockReset().mockResolvedValue(attachedA);
+  discover.mockReset();
   connection = createConnection(
     sourceA,
     () => undefined,
@@ -109,6 +111,20 @@ describe('switching sources', () => {
 });
 
 describe('connection lifecycle', () => {
+  it('keeps discovered values when connecting the selected pattern', async () => {
+    const config = { ...sourceB, urls: 's3://bucket/{account}/*.parquet' };
+    const found = { values: { account: [{ value: '123', count: 1 }] }, listedFiles: 1 };
+    discover.mockResolvedValueOnce(found);
+    await connection.connect(config, request(config));
+    const variables = connection.get().variables;
+    expect(variables).toEqual({ pattern: config.urls, ...found });
+    await connection.connect({ ...config, tokenValues: { account: ['123'] } }, request(config));
+    expect(connection.get().variables).toBe(variables);
+    expect(connection.get().phase.status).toBe('idle');
+    expect(connection.get().attached).toEqual(attachedA);
+    expect(discover).toHaveBeenCalledTimes(1);
+  });
+
   it('ignores a superseded secret load before it can attach', async () => {
     let finish!: (config: typeof sourceA) => void;
     secrets.mockImplementationOnce(

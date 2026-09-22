@@ -113,7 +113,7 @@ export function createConnection(initialSource: SourceConfig, onSourcePage: () =
         phase: { status: 'connecting', progress: { message: message + note, phase } },
       });
     };
-    update({ phase: { status: 'connecting', progress: null }, variables: null });
+    update({ phase: { status: 'connecting', progress: null } });
     let confirmedLarge = false;
     const confirmLarge = (info: LargeSourceInfo) =>
       new Promise<boolean>((resolve) => {
