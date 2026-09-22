@@ -175,7 +175,7 @@ export function createConnection(initialSource: SourceConfig, onSourcePage: () =
       if (stale()) return null;
       // The user already accepted this file set: do not ask again at query time.
       if (confirmedLarge) ackedFiles.current = a.files.join('\n');
-      const saved: SourceConfig = { ...cfg, timeField: a.timeField?.name ?? (cfg.timeField === '' ? '' : null) };
+      const saved: SourceConfig = { ...cfg, timeField: a.timeField ? { mode: 'field', name: a.timeField.name } : cfg.timeField.mode === 'none' ? { mode: 'none' } : { mode: 'auto' } };
       if (cfg.kind === 'local' && sel.handles.length) {
         // picked with handles: keep them so the source can be reopened from the history
         saved.localId = cfg.localId ?? newId();
@@ -238,7 +238,7 @@ export function createConnection(initialSource: SourceConfig, onSourcePage: () =
     const { attached, source } = store.get();
     if (!attached) return;
     const field = name ? (findField(attached.fields, name) ?? null) : null;
-    const config = { ...source, timeField: field?.name ?? '' };
+    const config: SourceConfig = { ...source, timeField: field ? { mode: 'field', name: field.name } : { mode: 'none' } };
     saveSource(config);
     update({ source: config, attached: { ...attached, timeField: field }, history: rememberSource(config) });
   };

@@ -13,14 +13,14 @@ const url: SourceConfig = {
   s3: { region: 'ap-northeast-1', accessKeyId: 'AKIA', secretAccessKey: 'shh', sessionToken: 'tok', endpoint: 'http://minio:9000', urlStyle: 'path' },
   authMode: 'static',
   tokenValues: { alb: ['a', 'b'] },
-  timeField: 'time',
+  timeField: { mode: 'field', name: 'time' },
 };
 
 describe('shareableSource', () => {
   it.each(['demo', 'url'] as const)('preserves explicit time filtering disablement for %s links', (kind) => {
-    const shared = shareableSource({ ...url, kind, timeField: '' })!;
-    expect(sourceFromLink(shared)?.timeField).toBe('');
-    expect(sourceFromLink({ ...shared, timeField: null })?.timeField).toBeNull();
+    const shared = shareableSource({ ...url, kind, timeField: { mode: 'none' } })!;
+    expect(sourceFromLink(shared)?.timeField).toEqual({ mode: 'none' });
+    expect(sourceFromLink({ ...shared, timeField: null })?.timeField).toEqual({ mode: 'auto' });
   });
 
   it('drops secrets and the key ID, and never shares local files', () => {
@@ -34,7 +34,7 @@ describe('shareableSource', () => {
 
 describe('sourceFromLink', () => {
   it('takes only the fields a source needs, with secrets always empty', () => {
-    const s = sourceFromLink({ ...url, s3: { ...url.s3, accessKeyId: 'AKIA', secretAccessKey: 'leak' }, oidc: { clientId: 'c', roleArn: 'arn' }, extra: 1 })!;
+    const s = sourceFromLink({ ...shareableSource(url), s3: { ...url.s3, accessKeyId: 'AKIA', secretAccessKey: 'leak' }, oidc: { clientId: 'c', roleArn: 'arn' }, extra: 1 })!;
     expect(s.kind).toBe('url');
     expect(s.s3).toEqual({ region: 'ap-northeast-1', accessKeyId: '', secretAccessKey: '', sessionToken: '', endpoint: 'http://minio:9000', urlStyle: 'path' });
     expect(s.oidc.clientId).toBe('c');
@@ -42,7 +42,7 @@ describe('sourceFromLink', () => {
     expect(s.oidc.authUrl).toBe(DEFAULT_SOURCE.oidc.authUrl);
     expect(s.format).toBe('alb');
     expect(s.tokenValues).toEqual({ alb: ['a', 'b'] });
-    expect(s.timeField).toBe('time');
+    expect(s.timeField).toEqual({ mode: 'field', name: 'time' });
     expect((s as unknown as Record<string, unknown>).extra).toBeUndefined();
   });
 

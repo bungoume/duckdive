@@ -15,6 +15,17 @@ export interface S3Config {
 
 export type AuthMode = 'none' | 'static' | 'oidc';
 
+export type TimeFieldSelection = { mode: 'auto' } | { mode: 'none' } | { mode: 'field'; name: string };
+
+/** The legacy wire format stays stable for existing links, backups and older installations. */
+export function decodeTimeField(raw: unknown): TimeFieldSelection {
+  return typeof raw !== 'string' ? { mode: 'auto' } : raw === '' ? { mode: 'none' } : { mode: 'field', name: raw };
+}
+
+function encodeTimeField(selection: TimeFieldSelection): string | null {
+  return selection.mode === 'auto' ? null : selection.mode === 'none' ? '' : selection.name;
+}
+
 export interface SourceConfig {
   kind: 'demo' | 'url' | 'local';
   name: string;
@@ -31,8 +42,8 @@ export interface SourceConfig {
   maxFiles: number;
   /** values chosen for {name} tokens of the pattern (required before connecting) */
   tokenValues: Record<string, string[]>;
-  /** null: auto-detect; empty string: explicitly disable time filtering; otherwise a field name. */
-  timeField: string | null;
+  /** Automatic detection, no time filtering, or an explicit field. */
+  timeField: TimeFieldSelection;
   /** local sources: key of the file handles kept in IndexedDB (see localfiles.ts); `urls` then lists what was picked */
   localId?: string;
 }
@@ -48,7 +59,7 @@ export const DEFAULT_SOURCE: SourceConfig = {
   oidc: DEFAULT_OIDC,
   maxFiles: 0,
   tokenValues: {},
-  timeField: null,
+  timeField: { mode: 'auto' },
 };
 
 const LS_SOURCE = 'ddv.source';
@@ -62,7 +73,7 @@ export function loadSource(): SourceConfig {
     const raw = localStorage.getItem(LS_SOURCE);
     if (raw) {
       const o = JSON.parse(raw);
-      return { ...DEFAULT_SOURCE, ...o, s3: { ...DEFAULT_SOURCE.s3, ...(o.s3 ?? {}) }, oidc: { ...DEFAULT_OIDC, ...(o.oidc ?? {}) } };
+      return { ...DEFAULT_SOURCE, ...o, timeField: decodeTimeField(o.timeField), s3: { ...DEFAULT_SOURCE.s3, ...(o.s3 ?? {}) }, oidc: { ...DEFAULT_OIDC, ...(o.oidc ?? {}) } };
     }
   } catch {
     /* ignore */
@@ -76,9 +87,15 @@ export function stripSecrets(cfg: SourceConfig): SourceConfig {
   return { ...cfg, s3: { ...cfg.s3, secretAccessKey: '', sessionToken: '' } };
 }
 
+type StoredSource = Omit<SourceConfig, 'timeField'> & { timeField: string | null };
+
+function encodeSource(config: SourceConfig): StoredSource {
+  return { ...stripSecrets(config), timeField: encodeTimeField(config.timeField) };
+}
+
 export function saveSource(s: SourceConfig) {
   try {
-    localStorage.setItem(LS_SOURCE, JSON.stringify(stripSecrets(s)));
+    localStorage.setItem(LS_SOURCE, JSON.stringify(encodeSource(s)));
   } catch {
     /* ignore */
   }
@@ -120,10 +137,10 @@ export function sourceForKnownLink(link: SourceConfig, known: SourceConfig): Sou
 
 function normalizeEntry(o: unknown): SourceHistoryEntry | null {
   if (!o || typeof o !== 'object') return null;
-  const e = o as Partial<SourceHistoryEntry>;
+  const e = o as { config?: Partial<StoredSource>; lastUsed?: unknown };
   if (!e.config || typeof e.config !== 'object') return null;
-  const c = e.config as Partial<SourceConfig>;
-  const config: SourceConfig = { ...DEFAULT_SOURCE, ...c, s3: { ...DEFAULT_SOURCE.s3, ...(c.s3 ?? {}) }, oidc: { ...DEFAULT_OIDC, ...(c.oidc ?? {}) } };
+  const c = e.config;
+  const config: SourceConfig = { ...DEFAULT_SOURCE, ...c, timeField: decodeTimeField(c.timeField), s3: { ...DEFAULT_SOURCE.s3, ...(c.s3 ?? {}) }, oidc: { ...DEFAULT_OIDC, ...(c.oidc ?? {}) } };
   const key = sourceKey(config);
   if (!key) return null;
   return { key, lastUsed: typeof e.lastUsed === 'string' ? e.lastUsed : '', config };
@@ -148,7 +165,7 @@ export function loadSourceHistory(): SourceHistoryEntry[] {
 
 function storeSourceHistory(list: SourceHistoryEntry[]) {
   try {
-    localStorage.setItem(LS_SOURCES, JSON.stringify(list));
+    localStorage.setItem(LS_SOURCES, JSON.stringify(list.map((entry) => ({ ...entry, config: encodeSource(entry.config) }))));
   } catch {
     /* ignore */
   }
@@ -176,10 +193,10 @@ const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 
 const str = (v: unknown, fallback = '') => (typeof v === 'string' ? v : fallback);
 
 /** The source as a link carries it: no secrets, no key ID, and never a local one (its files are on this machine). */
-export function shareableSource(cfg: SourceConfig): SourceConfig | null {
+export function shareableSource(cfg: SourceConfig): StoredSource | null {
   if (cfg.kind === 'local') return null;
-  if (cfg.kind === 'demo') return { ...DEFAULT_SOURCE, kind: 'demo', name: cfg.name || 'demo-logs', timeField: cfg.timeField };
-  return { ...cfg, s3: { ...cfg.s3, accessKeyId: '', secretAccessKey: '', sessionToken: '' } };
+  if (cfg.kind === 'demo') return encodeSource({ ...DEFAULT_SOURCE, kind: 'demo', name: cfg.name || 'demo-logs', timeField: cfg.timeField });
+  return { ...encodeSource(cfg), s3: { ...cfg.s3, accessKeyId: '', secretAccessKey: '', sessionToken: '' } };
 }
 
 /** An AWS region name, or '' when the text is not one. */
@@ -254,7 +271,7 @@ const isTokenName = (k: string) => k !== '__proto__' && /^[A-Za-z_][A-Za-z0-9_]*
 /** A source from a link someone sent: every field checked, secrets and key IDs never taken; null when unusable. */
 export function sourceFromLink(raw: unknown): SourceConfig | null {
   if (!isObj(raw)) return null;
-  if (raw.kind === 'demo') return { ...DEFAULT_SOURCE, kind: 'demo', name: 'demo-logs', timeField: typeof raw.timeField === 'string' ? raw.timeField : null };
+  if (raw.kind === 'demo') return { ...DEFAULT_SOURCE, kind: 'demo', name: 'demo-logs', timeField: decodeTimeField(raw.timeField) };
   if (raw.kind !== 'url' || typeof raw.urls !== 'string' || !raw.urls.trim()) return null;
   const s3 = isObj(raw.s3) ? raw.s3 : {};
   const o = isObj(raw.oidc) ? raw.oidc : {};
@@ -282,7 +299,7 @@ export function sourceFromLink(raw: unknown): SourceConfig | null {
     },
     maxFiles: typeof raw.maxFiles === 'number' && raw.maxFiles >= 0 ? Math.floor(raw.maxFiles) : 0,
     tokenValues,
-    timeField: typeof raw.timeField === 'string' ? raw.timeField : null,
+    timeField: decodeTimeField(raw.timeField),
   };
 }
 

@@ -42,12 +42,12 @@ export function DataSource(props: {
   const selectLocal = (sel: LocalSelection) => {
     setLocal(sel);
     const names = selectionNames(sel);
-    setCfg({ ...cfg, localId: undefined, urls: names.join('\n'), name: selectionTitle(names), timeField: null });
+    setCfg({ ...cfg, localId: undefined, urls: names.join('\n'), name: selectionTitle(names), timeField: { mode: 'auto' } });
   };
   const [templateId, setTemplateId] = useState<string>('');
   const [pendingTemplate, setPendingTemplate] = useState<(typeof TEMPLATES)[number] | null>(null);
   const applyTemplate = (tp: (typeof TEMPLATES)[number]) => {
-    set({ urls: tp.urls, format: tp.format, timeField: null, tokenValues: {}, name: cfg.name === 'demo-logs' || !cfg.name ? tp.id : cfg.name });
+    set({ urls: tp.urls, format: tp.format, timeField: { mode: 'auto' }, tokenValues: {}, name: cfg.name === 'demo-logs' || !cfg.name ? tp.id : cfg.name });
     setTemplateId(tp.id);
     setPendingTemplate(null);
   };
@@ -130,7 +130,7 @@ export function DataSource(props: {
               <textarea
                 class="input"
                 value={cfg.urls}
-                onInput={(e) => set({ urls: e.currentTarget.value, timeField: null, tokenValues: {} })}
+                onInput={(e) => set({ urls: e.currentTarget.value, timeField: { mode: 'auto' }, tokenValues: {} })}
                 placeholder={
                   's3://my-logs/AWSLogs/123456789012/elasticloadbalancing/ap-northeast-1/{yyyy}/{MM}/{dd}/*.log.gz\ns3://my-bucket/events/dt={yyyy}-{MM}-{dd}/*.parquet\nhttps://d1234.cloudfront.net/logs/2026-09-09.parquet'
                 }
@@ -166,7 +166,7 @@ export function DataSource(props: {
                 </select>
               </FormField>
               <FormField label={t('ds.naming')}>
-                <select class="input" value={cfg.naming} disabled={!otelAvailable} onChange={(e) => set({ naming: e.currentTarget.value as SourceConfig['naming'], timeField: null })}>
+                <select class="input" value={cfg.naming} disabled={!otelAvailable} onChange={(e) => set({ naming: e.currentTarget.value as SourceConfig['naming'], timeField: { mode: 'auto' } })}>
                   {NAMING_IDS.map((id) => (
                     <option value={id}>{namingLabel(id)}</option>
                   ))}
@@ -220,7 +220,7 @@ export function DataSource(props: {
         <ConnectedCard
           attached={props.attached}
           onTimeField={(name) => {
-            if (cfg === props.config || (props.currentKey && sourceKey(cfg) === props.currentKey)) setCfg({ ...cfg, timeField: name ?? '' });
+            if (cfg === props.config || (props.currentKey && sourceKey(cfg) === props.currentKey)) setCfg({ ...cfg, timeField: name ? { mode: 'field', name } : { mode: 'none' } });
             props.onTimeField(name);
           }}
         />

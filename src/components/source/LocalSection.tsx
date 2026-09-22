@@ -91,7 +91,7 @@ export function LocalSection(props: { cfg: SourceConfig; selection: LocalSelecti
           style="width:260px"
           value={props.cfg.naming}
           disabled={props.cfg.format !== 'auto' && !hasOtel(FORMATS[props.cfg.format])}
-          onChange={(e) => props.onChange({ naming: e.currentTarget.value as SourceConfig['naming'], timeField: null })}
+          onChange={(e) => props.onChange({ naming: e.currentTarget.value as SourceConfig['naming'], timeField: { mode: 'auto' } })}
         >
           {NAMING_IDS.map((id) => (
             <option key={id} value={id}>

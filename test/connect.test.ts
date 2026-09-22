@@ -60,10 +60,10 @@ describe('switching sources', () => {
 
   it('remembers an explicit choice of no time field in both the source and history', async () => {
     TestConnection().onTimeField(null);
-    expect(loadSource().timeField).toBe('');
-    expect(TestConnection().history[0].config.timeField).toBe('');
+    expect(loadSource().timeField).toEqual({ mode: 'none' });
+    expect(TestConnection().history[0].config.timeField).toEqual({ mode: 'none' });
     await TestConnection().connect(TestConnection().source);
-    expect(loadSource().timeField).toBe('');
+    expect(loadSource().timeField).toEqual({ mode: 'none' });
   });
 
   it('does not list or attach a URL source with an invalid restored range', async () => {

@@ -397,9 +397,9 @@ async function attachRemote(cfg: SourceConfig, creds: AwsCredentials | null, ran
 
 /** The remembered choice if it still looks like a time column, else the format's preference, else the best-named date column. */
 function pickTimeField(cfg: SourceConfig, fields: Field[], files: string[]): Field | null {
-  if (cfg.timeField === '') return null;
-  if (cfg.timeField) {
-    const f = findField(fields, cfg.timeField);
+  if (cfg.timeField.mode === 'none') return null;
+  if (cfg.timeField.mode === 'field') {
+    const f = findField(fields, cfg.timeField.name);
     if (f && (f.kind === 'date' || isTimeCandidate(f))) return f;
   }
   if (cfg.kind !== 'demo') {
