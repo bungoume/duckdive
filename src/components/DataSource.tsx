@@ -6,7 +6,7 @@ import { t, tx } from '../i18n';
 import type { AttachProgress, Variables } from '../hooks/useConnect';
 import { NO_LOCAL, selectionNames, selectionTitle, type LocalSelection } from '../localfiles';
 import { hasHostPermissions, isExtension } from '../permissions';
-import { sourceKey, type SourceConfig, type SourceHistoryEntry } from '../sources';
+import { type SourceConfig, type SourceHistoryEntry } from '../sources';
 import { CachePanel } from './CachePanel';
 import { ConnectedCard } from './source/ConnectedCard';
 import { HistoryCard } from './source/HistoryCard';
@@ -19,6 +19,7 @@ import { FormField } from './ui';
 /** The Data source page. The form starts from `config`; the parent remounts it (by key) when a remembered source is loaded. */
 export function DataSource(props: {
   config: SourceConfig;
+  currentKey: string | null;
   history: SourceHistoryEntry[];
   attached: AttachedSource | null;
   error: string | null;
@@ -216,9 +217,7 @@ export function DataSource(props: {
       </div>
 
       {props.attached && <ConnectedCard attached={props.attached} onTimeField={props.onTimeField} />}
-      {props.history.length > 0 && (
-        <HistoryCard history={props.history} currentKey={props.attached ? sourceKey(props.config) : null} busy={props.busy} onUse={props.onUseHistory} onForget={props.onForgetHistory} />
-      )}
+      {props.history.length > 0 && <HistoryCard history={props.history} currentKey={props.currentKey} busy={props.busy} onUse={props.onUseHistory} onForget={props.onForgetHistory} />}
       <HostsCard refreshKey={props.attached} />
       <CachePanel />
     </div>

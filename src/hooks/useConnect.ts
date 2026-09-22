@@ -71,6 +71,8 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
   const [ready, setReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [source, setSource] = useState<SourceConfig>(() => loadSource());
+  // A history/link selection remains editable if it fails, without relabelling the active data.
+  const [pendingSource, setPendingSource] = useState<SourceConfig | null>(null);
   // Recently connected sources (newest first) for quick switching; bumped on every successful connect.
   const [history, setHistory] = useState<SourceHistoryEntry[]>(() => loadSourceHistory());
   // Incremented when a remembered source is loaded, so the Data source form picks up the new config.
@@ -117,6 +119,9 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
     const stale = () => attemptSeq.current !== attempt;
     const report = (message: string, phase: AttachProgress['phase']) => {
       if (stale()) return;
+      // From the first DB mutation onward the old view/credentials may no longer be usable.
+      // Only a fully attached source can make the query pages available again.
+      if (phase === 'db') setAttached(null);
       const note = phase === 'db' ? (queryBusy.current ? t('app.note.queued') : t('app.note.inDb')) : '';
       setAttachProgress({ message: message + note, phase });
     };
@@ -173,16 +178,18 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
       if (stale()) return null;
       // The user already accepted this file set: do not ask again at query time.
       if (confirmedLarge) ackedFiles.current = a.files.join('\n');
-      expose({ attached: a });
-      setDiagnoseContext(cfg.kind === 'url' ? { files: a.files, fileSizes: a.fileSizes, format: cfg.format } : null);
-      setAttached(a);
       const saved: SourceConfig = { ...cfg, timeField: a.timeField?.name ?? null };
       if (cfg.kind === 'local' && sel.handles.length) {
         // picked with handles: keep them so the source can be reopened from the history
         saved.localId = cfg.localId ?? newId();
         await storeHandles(saved.localId, sel.handles);
       }
+      if (stale()) return null;
+      expose({ attached: a });
+      setDiagnoseContext(cfg.kind === 'url' ? { files: a.files, fileSizes: a.fileSizes, format: cfg.format } : null);
+      setAttached(a);
       setSource(saved);
+      setPendingSource(null);
       saveSource(saved);
       void storeSecrets(saved);
       setHistory(rememberSource(saved));
@@ -206,7 +213,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
    */
   const switchSource = async (entry: SourceConfig) => {
     const cfg = await withSecrets(entry);
-    setSource(cfg);
+    setPendingSource(cfg);
     setSwitchSeq((n) => n + 1);
     const a = await connect(cfg, NO_LOCAL, true);
     if (!a) {
@@ -325,6 +332,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
     ready,
     initError,
     source,
+    formSource: pendingSource ?? source,
     history,
     switchSeq,
     attached,

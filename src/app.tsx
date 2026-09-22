@@ -80,6 +80,7 @@ export function App() {
     ready,
     initError,
     source,
+    formSource,
     history,
     switchSeq,
     attached,
@@ -249,7 +250,8 @@ export function App() {
       {page === 'source' && (
         <DataSource
           key={switchSeq}
-          config={source}
+          config={formSource}
+          currentKey={attached ? sourceKey(source) : null}
           history={history}
           attached={attached}
           error={attachError}
