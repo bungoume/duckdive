@@ -20,6 +20,7 @@ import {
   endpointStyle,
   s3Target,
   type TokenValue,
+  type ResolvedFile,
 } from './s3list';
 
 export { detectFormat };
@@ -178,8 +179,7 @@ export async function resolveFiles(
   valueFilters: ValueFilters = {},
   opts: AttachOptions = {},
 ): Promise<{
-  urls: string[];
-  sizes: (number | null)[];
+  files: ResolvedFile[];
   seeds: SeedFile[];
   patterns: number;
   skippedByTime: number;
@@ -196,14 +196,12 @@ export async function resolveFiles(
   }
   const s3Patterns = lines.filter((u) => u.startsWith('s3://'));
   const others = lines.filter((u) => !u.startsWith('s3://'));
-  const out: string[] = [];
-  const sizes: (number | null)[] = [];
+  const files: ResolvedFile[] = [];
   const seeds: SeedFile[] = [];
   let patterns = 0;
   let skippedByTime = 0;
   let skippedByFilter = 0;
   let timePruned = false;
-  let totalBytes: number | null = null;
   let warning: string | null = null;
   for (const u0 of others) {
     const part = patternPart(u0);
@@ -212,8 +210,7 @@ export async function resolveFiles(
     const concrete = concretePatterns(u, range);
     patterns += concrete.length;
     if (concrete.some((c) => HAS_WILDCARD.test(c))) throw new Error(t('src.wildcardS3Only', { url: u }));
-    out.push(...concrete.map((c) => c + suffix));
-    sizes.push(...concrete.map(() => null));
+    files.push(...concrete.map((c) => ({ url: c + suffix, metadata: null })));
   }
   if (s3Patterns.length) {
     const r = await resolveS3Patterns(
@@ -233,19 +230,16 @@ export async function resolveFiles(
     skippedByTime = r.skippedByTime;
     timePruned = r.timePruned;
     skippedByFilter = r.skippedByFilter;
-    out.push(...r.urls);
-    const listed = r.objects.length === r.urls.length;
-    sizes.push(...r.urls.map((_, i) => (listed ? r.objects[i].size : null)));
-    if (listed) {
-      totalBytes = r.objects.reduce((a, o) => a + o.size, 0);
-      r.urls.forEach((u, i) => {
-        const https = s3HttpsUrl(u, cfg.s3);
-        if (https) seeds.push({ url: https, size: r.objects[i].size, etag: r.objects[i].etag, lastModified: r.objects[i].lastModified, s3: parseS3Url(u) ?? undefined });
-      });
+    files.push(...r.files);
+    for (const { url, metadata } of r.files) {
+      if (!metadata) continue;
+      const https = s3HttpsUrl(url, cfg.s3);
+      if (https) seeds.push({ url: https, size: metadata.size, etag: metadata.etag, lastModified: metadata.lastModified, s3: parseS3Url(url) ?? undefined });
     }
     warning = r.warning;
   }
-  return { urls: out, sizes, seeds, patterns, skippedByTime, skippedByFilter, timePruned, totalBytes, warning };
+  const totalBytes = files.length && files.every((f) => f.metadata !== null) ? files.reduce((sum, f) => sum + f.metadata!.size, 0) : null;
+  return { files, seeds, patterns, skippedByTime, skippedByFilter, timePruned, totalBytes, warning };
 }
 
 /**
@@ -350,14 +344,14 @@ async function attachRemote(cfg: SourceConfig, creds: AwsCredentials | null, ran
   progress(t('src.listingFiles'), 'list');
   const resolved = await resolveFiles(cfg, creds, range, valueFilters, opts);
   throwIfAborted(opts.signal);
-  if (!resolved.urls.length) {
+  if (!resolved.files.length) {
     throw new Error(
       isRangeDependent(cfg) && !range
         ? t('src.dateNeedsRange')
         : t('src.noMatch', { patterns: lines.join(', '), range: range ? t('src.noMatch.range', { from: range.from.toISOString(), to: range.to.toISOString() }) : '' }),
     );
   }
-  const files = resolved.urls;
+  const files = resolved.files.map((f) => f.url);
   const totalBytes = resolved.totalBytes;
   let warning = resolved.warning;
   const captures = capturedColumns(cfg);
@@ -396,7 +390,7 @@ async function attachRemote(cfg: SourceConfig, creds: AwsCredentials | null, ran
   // Date tokens are not the only way the range decides which files there are: a key whose name
   // carries a timestamp is dropped when it falls outside the range, so such a source has to
   // re-list when the range moves, or it keeps showing the files the first range asked for.
-  return { description, files, fileSizes: resolved.sizes, totalBytes, warning, rangeDependent: isRangeDependent(cfg) || resolved.timePruned };
+  return { description, files, fileSizes: resolved.files.map((f) => f.metadata?.size ?? null), totalBytes, warning, rangeDependent: isRangeDependent(cfg) || resolved.timePruned };
 }
 
 /** The remembered choice if it still looks like a time column, else the format's preference, else the best-named date column. */

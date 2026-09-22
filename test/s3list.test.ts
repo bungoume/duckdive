@@ -65,7 +65,7 @@ describe('named tokens', () => {
       {},
       { account: ['acme'] },
     );
-    expect(result.urls).toEqual(['s3://logs/acme/part-a.parquet', 's3://logs/acme/part-b.parquet']);
+    expect(result.files.map((f) => f.url)).toEqual(['s3://logs/acme/part-a.parquet', 's3://logs/acme/part-b.parquet']);
     expect(result.skippedByFilter).toBe(0);
   });
 
@@ -169,8 +169,8 @@ describe('overlapping source patterns', () => {
       [wildcard, literal, literal],
     ]) {
       const result = await resolveS3Patterns(patterns, { region: '', endpoint: '', urlStyle: 'path', accessKeyId: '', secretAccessKey: '', sessionToken: '' }, null, range, 100, { tenant: ['beta'] });
-      expect(result.urls).toEqual([literal]);
-      expect(result.objects).toHaveLength(1);
+      expect(result.files.map((f) => f.url)).toEqual([literal]);
+      expect(result.files[0].metadata?.key).toBe(key);
     }
   });
 });

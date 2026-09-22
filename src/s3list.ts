@@ -394,10 +394,14 @@ export async function expandS3Glob(url: string, s3: S3Config, creds: AwsCredenti
   return walk('', 0);
 }
 
+/** A concrete URL and the listing metadata, when ListBucket was available. */
+export interface ResolvedFile {
+  url: string;
+  metadata: S3Object | null;
+}
+
 export interface ResolvedFiles {
-  /** URLs to hand to DuckDB (s3://bucket/key) */
-  urls: string[];
-  objects: S3Object[];
+  files: ResolvedFile[];
   /** how many concrete patterns were listed */
   patterns: number;
   /** set when more than maxFiles matched: the connection still works, but queries will be slow */
@@ -530,8 +534,7 @@ export async function resolveS3Patterns(
   opts: ListOptions = {},
   selections: Record<string, string[]> = {},
 ): Promise<ResolvedFiles & { skippedByTime: number; skippedByFilter: number; timePruned: boolean }> {
-  const urls: string[] = [];
-  const objects: S3Object[] = [];
+  const files: ResolvedFile[] = [];
   let skippedByTime = 0;
   let skippedByFilter = 0;
   let timePruned = false;
@@ -572,7 +575,7 @@ export async function resolveS3Patterns(
     if (!found) {
       if (!wild && !seen.has(concrete)) {
         seen.add(concrete);
-        urls.push(concrete);
+        files.push({ url: concrete, metadata: null });
       }
       return;
     }
@@ -598,14 +601,13 @@ export async function resolveS3Patterns(
         }
       }
       seen.add(u);
-      urls.push(u);
-      objects.push(o);
+      files.push({ url: u, metadata: o });
     }
   });
   let warning: string | null = null;
-  if (urls.length > maxFiles) {
-    const bytes = objects.reduce((a, o) => a + o.size, 0);
-    warning = tr('src.warning.many', { files: urls.length.toLocaleString(), mb: (bytes / 1048576).toFixed(0), max: maxFiles.toLocaleString() });
+  if (files.length > maxFiles) {
+    const bytes = files.reduce((a, f) => a + (f.metadata?.size ?? 0), 0);
+    warning = tr('src.warning.many', { files: files.length.toLocaleString(), mb: (bytes / 1048576).toFixed(0), max: maxFiles.toLocaleString() });
   }
-  return { urls, objects, patterns: jobs.length, skippedByTime, skippedByFilter, timePruned, warning };
+  return { files, patterns: jobs.length, skippedByTime, skippedByFilter, timePruned, warning };
 }
