@@ -3,6 +3,7 @@ import type { Filter, FilterOp } from './sql';
 import { sqlLabel } from './sql';
 import { shareableSource, sourceFromLink, type SourceConfig } from './sources';
 import { isTrustedSql } from './trust';
+import { createStore } from './store';
 
 export type AppPage = 'discover' | 'visualize' | 'dashboard' | 'sql' | 'source' | 'settings';
 
@@ -267,6 +268,8 @@ export function syncUrlStateFromLocation(): { state: UrlState; full: boolean } {
 }
 
 const LS_VIS = 'ddv.savedVis';
+/** Consumers that select source files must react when a comparison tile is pinned or edited. */
+export const savedVisRevision = createStore(0);
 
 export interface SavedVis {
   id: string;
@@ -301,6 +304,7 @@ export function storeSavedVis(list: SavedVis[]) {
   } catch {
     /* ignore */
   }
+  savedVisRevision.set(savedVisRevision.get() + 1);
 }
 
 const LS_SEARCHES = 'ddv.savedSearches';

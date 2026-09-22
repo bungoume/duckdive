@@ -194,4 +194,4 @@ server.on('error', (e) => {
   console.error(`range-server cannot listen on ${port}: ${e.message}`);
   process.exit(1);
 });
-server.listen(port, () => console.log(`range-server serving ${dir} on http://localhost:${port}`));
+server.listen(port, () => console.log(`range-server serving ${dir} on http://localhost:${server.address().port}`));

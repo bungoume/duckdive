@@ -7,6 +7,7 @@ import { searchToSql } from './search';
 import { VIEW, bucketExpr, buildWhere, fieldCompareExpr, nextBucketStart, niceStep, type Interval } from './sql';
 import { MAX_BREAKDOWN_VALUES, MAX_TERM_VALUES, type MetricDef, type SearchState, type SortDir, type VisState } from './state';
 import { t } from './i18n';
+import { supportsComparison } from './comparison';
 
 export interface Compiled {
   where: string;
@@ -238,7 +239,7 @@ export interface VisResult {
 /** The same search constraints over the preceding period; dashboard tiles add their saved search. */
 export function previousPeriodWhere(vis: VisState, compiled: Compiled, searches: SearchState[], fields: Field[], timeExpr: string | null): string | null {
   const span = compiled.from && compiled.to ? compiled.to.getTime() - compiled.from.getTime() : 0;
-  if (!vis.compare || vis.x.kind !== 'date_histogram' || !['area', 'line', 'bar'].includes(vis.chart) || span <= 0 || !compiled.from || !compiled.to) return null;
+  if (!supportsComparison(vis) || span <= 0 || !compiled.from || !compiled.to) return null;
   const range = { from: new Date(compiled.from.getTime() - span).toISOString(), to: compiled.from.toISOString() };
   return searches.map((search) => `(${compileSearch({ ...search, range }, fields, timeExpr).where})`).join(' AND ');
 }

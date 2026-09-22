@@ -34,7 +34,7 @@
     "pack": "pnpm run build && node scripts/pack.mjs",
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "node e2e/smoke.mjs",
+    "test:e2e": "node e2e/smoke.mjs && node e2e/comparison.mjs",
     "test:cache": "node e2e/cache.mjs",
     "screenshots": "node e2e/screenshots.mjs",
     "test": "pnpm run typecheck && pnpm run lint && pnpm run test:unit",

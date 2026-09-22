@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AttachOptions, AttachedSource } from '../src/datasource';
 import { DEFAULT_SOURCE, loadSource } from '../src/sources';
-import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS } from '../src/state';
+import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS, storeSavedVis, type UrlState } from '../src/state';
 
 const hook = vi.hoisted(() => ({ slots: [] as unknown[], cursor: 0 }));
 // Drive connect's async transitions independently of the mount/auto-refresh effects.
@@ -31,9 +31,9 @@ const sourceB = { ...DEFAULT_SOURCE, kind: 'url' as const, name: 'B', urls: 'htt
 const attachedA: AttachedSource = { fields: [], files: ['A'], fileSizes: [], captures: [], timeField: null, rowCount: 1, description: 'A', rangeDependent: false, totalBytes: null, warning: null };
 const attachedB = { ...attachedA, files: ['B'], description: 'B' };
 
-function TestConnection() {
+function TestConnection(state: UrlState = url) {
   hook.cursor = 0;
-  return useConnect(url, () => undefined, { current: false });
+  return useConnect(state, () => undefined, { current: false });
 }
 
 beforeEach(async () => {
@@ -44,6 +44,13 @@ beforeEach(async () => {
 });
 
 describe('switching sources', () => {
+  it.each(['visualize', 'dashboard'] as const)('attaches the previous period for a comparison on %s', async (page) => {
+    const state = { ...url, page, search: { ...url.search, range: { from: '2026-09-22T00:00:00Z', to: '2026-09-23T00:00:00Z' } }, vis: { ...DEFAULT_VIS, compare: true } };
+    storeSavedVis([{ id: 'comparison', title: '', savedAt: '', search: state.search, vis: state.vis, pinned: true }]);
+    await TestConnection(state).connect(sourceB);
+    expect(attach.mock.lastCall?.[3]).toEqual({ from: new Date('2026-09-21T00:00:00Z'), to: new Date('2026-09-23T00:00:00Z') });
+  });
+
   it('keeps the old source identity and data after a listing failure, with the new form editable', async () => {
     attach.mockRejectedValueOnce(new Error('Listing failed'));
     await TestConnection().switchSource(sourceB);

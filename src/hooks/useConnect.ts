@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState, type Dispatch, type StateUpdater } from 'preact/hooks';
 import { getCredentials, isUsable, loadCredentials, type AwsCredentials } from '../auth';
 import { attachSource, capturedColumns, discoverVariables, requiredOrigins, unselectedTokens, type AttachedSource, type LargeSourceInfo, type TimeWindow, type ValueFilters } from '../datasource';
-import { resolveRange } from '../datemath';
+import { fileWindow, needsComparison } from '../comparison';
 import { expose } from '../debug';
 import { setDiagnoseContext } from '../diagnose';
 import { describeError } from '../errors';
@@ -20,7 +20,8 @@ import type { TokenValue } from '../s3list';
 import { forgetSecrets, storeSecrets, withSecrets } from '../secrets';
 import { forgetSource, loadSource, loadSourceHistory, rememberSource, saveSource, sourceKey, type SourceConfig, type SourceHistoryEntry } from '../sources';
 import { newId } from '../sql';
-import { type UrlState } from '../state';
+import { loadSavedVis, savedVisRevision, type UrlState } from '../state';
+import { useStore } from '../store';
 
 /** What the running connect is doing; `phase` decides whether Cancel is offered. */
 export interface AttachProgress {
@@ -42,8 +43,8 @@ export interface LargeConfirm {
 }
 
 /** What a file resolution depends on: the time range and the captured-column filters of `cfg`, and the auto-refresh tick (new files may have arrived). */
-function rangeKeyFor(cfg: SourceConfig, url: UrlState, tick: number): string {
-  return `${url.search.range.from}|${url.search.range.to}|${JSON.stringify(valueFiltersFor(cfg, url))}|${tick}`;
+function rangeKeyFor(cfg: SourceConfig, url: UrlState, tick: number, compare: boolean): string {
+  return `${url.search.range.from}|${url.search.range.to}|${JSON.stringify(valueFiltersFor(cfg, url))}|${tick}|${compare}`;
 }
 
 /** Active "is" / "is one of" filters on columns captured from file names → file pruning. */
@@ -68,6 +69,8 @@ export function valueFiltersFor(cfg: SourceConfig, url: UrlState): ValueFilters 
  * @param refreshTick advances on auto refresh: sources whose file list depends on the time range re-list it
  */
 export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState>>, queryBusy: { current: boolean }, linkSource: SourceConfig | null = null, refreshTick = 0) {
+  useStore(savedVisRevision);
+  const compare = needsComparison(url, loadSavedVis());
   const [ready, setReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [source, setSource] = useState<SourceConfig>(() => loadSource());
@@ -104,8 +107,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
   };
 
   const currentWindow = (): TimeWindow | null => {
-    const r = resolveRange(url.search.range);
-    return r ? { from: r.from, to: r.to } : null;
+    return fileWindow(url.search.range, compare);
   };
 
   const connect = async (cfg: SourceConfig, local: LocalSelection = NO_LOCAL, interactive = true, window: TimeWindow | null = currentWindow()): Promise<AttachedSource | null> => {
@@ -116,7 +118,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
     const attempt = ++attemptSeq.current;
     const ctl = new AbortController();
     attemptCtl.current = ctl;
-    attemptedKey.current = rangeKeyFor(cfg, url, refreshTick);
+    attemptedKey.current = rangeKeyFor(cfg, url, refreshTick, compare);
     const stale = () => attemptSeq.current !== attempt;
     const report = (message: string, phase: AttachProgress['phase']) => {
       if (stale()) return;
@@ -304,7 +306,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
   // running is picked up as soon as that connect ends, because the effect also runs when
   // `attaching` flips; comparing against the attempted key (not the last successful one) keeps a
   // failing source from reconnecting in a loop.
-  const rangeKey = rangeKeyFor(source, url, refreshTick);
+  const rangeKey = rangeKeyFor(source, url, refreshTick, compare);
   if (!attemptedKey.current) attemptedKey.current = rangeKey;
   useEffect(() => {
     if (attaching || attemptedKey.current === rangeKey) return;
