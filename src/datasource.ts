@@ -74,9 +74,14 @@ export interface AttachOptions {
 /** Matched sizes above this ask for confirmation even when the file count is small. */
 const LARGE_BYTES = 512 * 1024 * 1024;
 
+/** HTTP query strings carry signatures, not glob/date tokens. Keep their original encoding. */
+function patternPart(url: string): string {
+  return /^https?:\/\//.test(url) ? url.split(/[?#]/, 1)[0] : url;
+}
+
 export function capturedColumns(cfg: SourceConfig): string[] {
   const out: string[] = [];
-  for (const u of sourceUrls(cfg)) for (const n of namedTokens(u)) if (!out.includes(n)) out.push(n);
+  for (const u of sourceUrls(cfg)) for (const n of namedTokens(patternPart(u))) if (!out.includes(n)) out.push(n);
   return out;
 }
 
@@ -101,7 +106,7 @@ export function s3HttpsUrl(url: string, s3: SourceConfig['s3']): string | null {
 export function requiredOrigins(cfg: SourceConfig): string[] {
   const out = new Set<string>();
   for (const raw of sourceUrls(cfg)) {
-    const u = namedToGlob(raw)
+    const u = namedToGlob(patternPart(raw))
       .replace(/\{(yyyy|yy|MM|dd|HH)\}/g, '0')
       .replace(/[*?[\]]/g, 'x');
     const https = u.startsWith('s3://') ? s3HttpsUrl(u, cfg.s3) : u;
@@ -157,7 +162,7 @@ export async function discoverVariables(
 }
 
 export function isRangeDependent(cfg: SourceConfig): boolean {
-  return cfg.kind === 'url' && sourceUrls(cfg).some((u) => HAS_DATE_TOKEN.test(u));
+  return cfg.kind === 'url' && sourceUrls(cfg).some((u) => HAS_DATE_TOKEN.test(patternPart(u)));
 }
 
 /**
@@ -199,11 +204,13 @@ export async function resolveFiles(
   let totalBytes: number | null = null;
   let warning: string | null = null;
   for (const u0 of others) {
-    const u = namedToGlob(u0);
+    const part = patternPart(u0);
+    const suffix = u0.slice(part.length);
+    const u = namedToGlob(part);
     const concrete = concretePatterns(u, range);
     patterns += concrete.length;
     if (concrete.some((c) => HAS_WILDCARD.test(c))) throw new Error(t('src.wildcardS3Only', { url: u }));
-    out.push(...concrete);
+    out.push(...concrete.map((c) => c + suffix));
     sizes.push(...concrete.map(() => null));
   }
   if (s3Patterns.length) {
