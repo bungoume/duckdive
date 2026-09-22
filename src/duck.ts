@@ -66,37 +66,59 @@ export function getConn(): duckdb.AsyncDuckDBConnection {
 
 export const DataProtocol = duckdb.DuckDBDataProtocol;
 
+interface ArrowTypeLike {
+  typeId?: number;
+  scale?: number;
+  children?: ArrowFieldLike[];
+  valueType?: ArrowTypeLike;
+}
+interface ArrowFieldLike {
+  name: string;
+  type?: ArrowTypeLike;
+}
+
 /** Convert an Arrow value to a plain JS value that is safe for JSON / display. */
-export function toPlain(v: unknown): unknown {
+export function toPlain(v: unknown, type?: ArrowTypeLike): unknown {
   if (v === null || v === undefined) return null;
   if (typeof v === 'bigint') {
     return v >= BigInt(Number.MIN_SAFE_INTEGER) && v <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(v) : v.toString();
   }
+  // Arrow Type.Dictionary = -1; lists also have valueType, but keep their child schema.
+  if (type?.typeId === -1) type = type.valueType;
+  // Arrow's BigNum.toJSON() includes JSON quotes and carries the unscaled integer.
+  // Use its exact string and the schema's scale instead of rounding through Number.
+  if (typeof v === 'object' && Symbol.for('isArrowBigNum') in v) {
+    const raw = String(v);
+    const scale = type?.scale ?? 0;
+    if (!scale) return toPlain(BigInt(raw));
+    const sign = raw.startsWith('-') ? '-' : '';
+    const digits = raw.replace(/^-/, '').padStart(scale + 1, '0');
+    return scale > 0 ? `${sign}${digits.slice(0, -scale)}.${digits.slice(-scale)}` : `${raw}${'0'.repeat(-scale)}`;
+  }
   if (v instanceof Date) return v.toISOString();
   if (v instanceof Uint8Array) return `<${v.length} bytes>`;
-  if (Array.isArray(v)) return v.map(toPlain);
+  if (Array.isArray(v)) return v.map((x) => toPlain(x, type?.children?.[0]?.type));
   if (typeof v === 'object') {
-    const o = v as { toArray?: () => unknown[]; toJSON?: () => unknown };
-    if (typeof o.toArray === 'function') return o.toArray().map(toPlain);
-    if (typeof o.toJSON === 'function') return toPlain(o.toJSON());
+    const o = v as { toArray?: () => ArrayLike<unknown>; toJSON?: () => unknown };
+    if (typeof o.toJSON === 'function') return toPlain(o.toJSON(), type);
+    if (typeof o.toArray === 'function') return Array.from(o.toArray(), (x) => toPlain(x, type?.children?.[0]?.type));
     const out: Row = {};
-    for (const [k, val] of Object.entries(v as Row)) out[k] = toPlain(val);
+    for (const [k, val] of Object.entries(v as Row)) out[k] = toPlain(val, type?.children?.find((f) => f.name === k)?.type);
     return out;
   }
   return v;
 }
 
 interface ArrowTableLike {
-  schema: { fields: { name: string }[] };
+  schema: { fields: ArrowFieldLike[] };
   [Symbol.iterator](): Iterator<Record<string, unknown>>;
 }
 
 export function tableToRows(t: ArrowTableLike): Row[] {
-  const names = t.schema.fields.map((f) => f.name);
   const rows: Row[] = [];
   for (const r of t) {
     const o: Row = {};
-    for (const n of names) o[n] = toPlain(r[n]);
+    for (const f of t.schema.fields) o[f.name] = toPlain(r[f.name], f.type);
     rows.push(o);
   }
   return rows;

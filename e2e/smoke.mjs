@@ -1,5 +1,6 @@
 // Smoke test of the extension UI (Discover / Visualize) on the demo dataset.
 //   pnpm run build && node e2e/smoke.mjs        screenshots → release/e2e/*.png
+import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { launchExtension, settled } from './ext-context.mjs';
 
@@ -51,6 +52,15 @@ await step('discover-initial', async () => {
   if (repeated.length) throw new Error(`the opening queries ran more than once: ${repeated.join(' | ')}`);
   await page.screenshot({ path: `${out}/01-discover.png` });
 });
+await step('sql-numeric-values', async () => {
+  const { rows } = await page.evaluate(() =>
+    window.__ddv.query(
+      "SELECT 42::HUGEINT AS huge, 1.25::DECIMAL(10,2) AS dec, -0.01::DECIMAL(10,2) AS neg, 9007199254740993::HUGEINT AS large, sum(i) AS total, {'values': [1.25::DECIMAL(10,2), -0.01::DECIMAL(10,2)]} AS nested FROM range(100) t(i)",
+    ),
+  );
+  assert.deepEqual(rows, [{ huge: 42, dec: '1.25', neg: '-0.01', large: '9007199254740993', total: 4950, nested: { values: ['1.25', '-0.01'] } }]);
+});
+
 await step('json-literal-keys', async () => {
   const result = await page.evaluate(async () => {
     const data = { 'http.status_code': 500, http: { status_code: 200 }, 'a/b~c': 'literal', '': true, 'q\'"[0]': 'quoted' };
