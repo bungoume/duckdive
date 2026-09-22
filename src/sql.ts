@@ -174,7 +174,7 @@ function valueLiteral(f: Field, v: string, context: TimeContext): string | null 
   if (f.kind === 'number') return numberLiteral(v);
   if (f.kind === 'boolean') return v.toLowerCase() === 'true' ? 'TRUE' : 'FALSE';
   if (f.kind === 'date') {
-    const d = v.startsWith('now') ? parseDateMath(v, false, context.now, context) : parseAbsolute(v, context.timeZone);
+    const d = v.startsWith('now') ? parseDateMath(v, false, context) : parseAbsolute(v, context.timeZone);
     return d ? tsLit(d) : null;
   }
   return lit(v);
@@ -280,7 +280,7 @@ export function buildWhere(p: WhereParts, context = timeContext()): { sql: strin
   let from: Date | null = null;
   let to: Date | null = null;
   if (p.timeExpr) {
-    const r = resolveRange(p.range, context.now, context);
+    const r = resolveRange(p.range, context);
     if (!r) throw new Error(t('tp.invalid'));
     from = r.from;
     to = r.to;

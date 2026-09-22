@@ -111,12 +111,12 @@ function absolute(s: string, tz = effectiveTimeZone()): Date | null {
   return isNaN(loose.getTime()) ? null : loose;
 }
 
-export function parseDateMath(expr: string, roundUp = false, now: Date = new Date(), context = timeContext(now)): Date | null {
+export function parseDateMath(expr: string, roundUp = false, context = timeContext()): Date | null {
   const s = expr.trim();
   if (!s) return null;
   if (!s.startsWith('now')) return absolute(s, context.timeZone);
   const tz = context.timeZone;
-  let d = new Date(now);
+  let d = new Date(context.now);
   let rest = s.slice(3);
   const re = /^([+-]\d+[smhHdwMy]|\/[smhHdwMy])/;
   while (rest.length) {
@@ -142,10 +142,10 @@ export interface TimeRange {
   to: string;
 }
 
-export function resolveRange(r: TimeRange, now = new Date(), context = timeContext(now)): { from: Date; to: Date } | null {
+export function resolveRange(r: TimeRange, context = timeContext()): { from: Date; to: Date } | null {
   try {
-    const from = parseDateMath(r.from, false, now, context);
-    const to = parseDateMath(r.to, true, now, context);
+    const from = parseDateMath(r.from, false, context);
+    const to = parseDateMath(r.to, true, context);
     if (!from || !to || !Number.isFinite(from.getTime()) || !Number.isFinite(to.getTime()) || from > to) return null;
     return { from, to };
   } catch (e) {

@@ -453,7 +453,7 @@ function scalarLiteral(f: Field, v: string, roundUp = false, context: TimeContex
     return n;
   }
   if (f.kind === 'date') {
-    const d = v.startsWith('now') ? parseDateMath(v, roundUp, context.now, context) : parseAbsolute(v, context.timeZone);
+    const d = v.startsWith('now') ? parseDateMath(v, roundUp, context) : parseAbsolute(v, context.timeZone);
     if (!d) throw new SearchQueryError(`"${v}" is not a date (field ${f.name})`);
     return tsLit(d);
   }

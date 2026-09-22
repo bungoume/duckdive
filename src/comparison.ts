@@ -12,7 +12,7 @@ export function needsComparison(url: UrlState, saved: SavedVis[]): boolean {
 
 /** The source must contain the preceding period before a comparison query can see its rows. */
 export function fileWindow(range: TimeRange, compare: boolean, context = timeContext()): { from: Date; to: Date } | null {
-  const r = resolveRange(range, context.now, context);
+  const r = resolveRange(range, context);
   if (!r) return null;
   const span = r.to.getTime() - r.from.getTime();
   return compare && span > 0 ? { from: new Date(r.from.getTime() - span), to: r.to } : r;
