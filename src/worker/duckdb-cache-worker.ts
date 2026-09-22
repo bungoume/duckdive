@@ -714,16 +714,8 @@ function handleRangeGet(url: string, headers: HeaderMap, rangeHeader: string, re
       const chunkEnd = Math.min(entry.size, chunkStart + cs) - 1;
       const res = nativeSync('GET', url, { ...headers, range: `bytes=${chunkStart}-${chunkEnd}` }, true);
       logNet(url, `bytes=${chunkStart}-${chunkEnd}`, res, chunkStart);
-      if (res.status === 200 && res.body && res.body.byteLength === entry.size) {
-        // the origin ignored Range and sent the whole object: slice what was asked for
-        log({ method: 'GET', url, range: rangeHeader, outcome: 'range-ignored-full-body' });
-        buf = new Uint8Array(res.body.slice(chunkStart, chunkEnd + 1));
-      } else if (res.status !== 206 || !res.body) {
-        // server does not honour ranges (or auth failed): give DuckDB the real answer
-        stats.passthrough++;
-        log({ method: 'GET', url, range: rangeHeader, outcome: `passthrough:${res.status}` });
-        return res.status === 206 ? nativeSync('GET', url, headers, true, WHOLE_FILE_TIMEOUT_MS) : res;
-      } else {
+      // Validate every successful response before slicing or combining it with cached bytes.
+      if ((res.status === 200 || res.status === 206) && res.body) {
         const etag = etagFrom(res);
         if (entry.etag && etag && etag !== entry.etag) {
           // the object was replaced under us: whatever was assembled so far belongs to the old
@@ -734,6 +726,17 @@ function handleRangeGet(url: string, headers: HeaderMap, rangeHeader: string, re
           stats.passthrough++;
           return nativeSync('GET', url, headers, true, WHOLE_FILE_TIMEOUT_MS);
         }
+      }
+      if (res.status === 200 && res.body && res.body.byteLength === entry.size) {
+        // the origin ignored Range and sent the whole object: slice what was asked for
+        log({ method: 'GET', url, range: rangeHeader, outcome: 'range-ignored-full-body' });
+        buf = new Uint8Array(res.body.slice(chunkStart, chunkEnd + 1));
+      } else if (res.status !== 206 || !res.body) {
+        // server does not honour ranges (or auth failed): give DuckDB the real answer
+        stats.passthrough++;
+        log({ method: 'GET', url, range: rangeHeader, outcome: `passthrough:${res.status}` });
+        return res.status === 206 ? nativeSync('GET', url, headers, true, WHOLE_FILE_TIMEOUT_MS) : res;
+      } else {
         buf = new Uint8Array(res.body);
       }
       if (buf.byteLength !== chunkEnd - chunkStart + 1) {
