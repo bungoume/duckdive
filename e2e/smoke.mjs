@@ -571,6 +571,17 @@ await step('sql-page', async () => {
   const rows = await page.locator('.sql-result tbody tr').count();
   console.log(`     heads=${heads.join('|')} rows=${rows}`);
   if (heads.join('|') !== 'level|n' || !rows) throw new Error('no result table');
+  // Export accepts the same terminated SELECT as the editor, including Unicode and comments.
+  for (const sql of ["SELECT '日本;語' AS value; -- done", 'SELECT $$日本;語$$ AS value /* ; nested /* ; */ */;', "SELECT '日本;語' AS value -- trailing comment"]) {
+    await page.fill('.sql-text', sql);
+    await page.press('.sql-text', 'Control+Enter');
+    await settled(page);
+    const downloaded = page.waitForEvent('download');
+    await page.locator('.sql-result').getByRole('button', { name: 'CSV', exact: true }).click();
+    const download = await downloaded;
+    const csv = readFileSync(await download.path(), 'utf8');
+    if (!csv.includes('日本;語')) throw new Error('export changed SQL literal: ' + csv);
+  }
   // the current search becomes a statement
   await page.click('.sql-page button:has-text("Current search")');
   const text = await page.inputValue('.sql-text');

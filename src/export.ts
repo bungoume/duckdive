@@ -3,6 +3,7 @@
 
 import { getDB, query } from './duck';
 import { lit } from './sql';
+import { TokenType } from '@duckdb/duckdb-wasm';
 
 export type ExportFormat = 'csv' | 'jsonl' | 'parquet';
 
@@ -16,7 +17,19 @@ export async function exportToBlob(sql: string, format: ExportFormat): Promise<B
   const db = getDB();
   const name = `ddv-export-${Date.now()}.${format}`;
   try {
-    await query(`COPY (${sql}) TO ${lit(name)} (${COPY_OPTIONS[format]})`);
+    // Let DuckDB distinguish statement terminators from semicolons in strings/comments.
+    // Token offsets refer to UTF-8 bytes, not JavaScript character positions.
+    const tokens = await db.tokenize(sql);
+    const sqlBytes = new TextEncoder().encode(sql);
+    let end = sqlBytes.length;
+    for (let i = tokens.offsets.length - 1; i >= 0; i--) {
+      if (tokens.types[i] === TokenType.COMMENT) continue;
+      if (tokens.types[i] !== TokenType.OPERATOR || sqlBytes[tokens.offsets[i]] !== 59) break;
+      end = tokens.offsets[i];
+    }
+    const statement = new TextDecoder().decode(sqlBytes.subarray(0, end));
+    // A trailing line comment must not swallow COPY's closing parenthesis.
+    await query(`COPY (\n${statement}\n) TO ${lit(name)} (${COPY_OPTIONS[format]})`);
     const bytes = await db.copyFileToBuffer(name);
     // a copy: the worker's buffer may be a view into shared memory, which Blob does not accept
     return new Blob([new Uint8Array(bytes).buffer as ArrayBuffer], { type: MIME[format] });
