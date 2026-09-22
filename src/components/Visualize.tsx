@@ -1,12 +1,10 @@
-import { describeError } from '../errors';
-import { CancelledError } from '../net';
 import { formatDate } from '../datefmt';
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useMemo, useState } from 'preact/hooks';
 import type { TimeRange } from '../datemath';
 import type { Field } from '../fields';
 import { findField } from '../fields';
-import { compileSearch, fetchVis, metricLabel, previousPeriodWhere, shiftVisResult, type VisResult } from '../queries';
-import { INTERVALS, autoInterval, bucketOffsetMinutes, intervalByKey, intervalLabel, newId, type Filter, type Interval } from '../sql';
+import { compileSearch, metricLabel } from '../queries';
+import { INTERVALS, intervalLabel, newId, type Filter } from '../sql';
 import { t } from '../i18n';
 import { MAX_BREAKDOWN_VALUES, MAX_TERM_VALUES, loadSavedVis, storeSavedVis, type ChartType, type MetricAgg, type MetricDef, type SavedVis, type SearchState, type VisState } from '../state';
 import { Chart, type ChartPick } from './Chart';
@@ -16,6 +14,7 @@ import { FilterBar } from './FilterBar';
 import { DiagnosePanel } from './DiagnosePanel';
 import { QueryBar } from './QueryBar';
 import { withCacheHint } from '../diagnose';
+import { useVisQuery } from '../hooks/useVisQuery';
 import { downloadBlob } from '../export';
 import { FormField } from './ui';
 import { breakdownLabel, searchAfterPick, xAxisLabel } from './visutil';
@@ -97,61 +96,10 @@ export function Visualize(props: {
   // refreshTick is not read: a new tick re-resolves `now` in the range
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const compiled = useMemo(() => compileSearch(search, fields, timeExpr), [search, fields, timeExpr, refreshTick]);
-  const effVis: VisState = vis.chart === 'metric' ? { ...vis, x: { ...vis.x, kind: 'none' } } : vis;
-  const interval: Interval | null = useMemo(() => {
-    if (!compiled.from || !compiled.to) return null;
-    return vis.x.interval === 'auto' ? autoInterval(compiled.from, compiled.to, 50) : (intervalByKey(vis.x.interval) ?? autoInterval(compiled.from, compiled.to, 50));
-  }, [compiled, vis.x.interval]);
-
-  // buckets are aligned with the display time zone (a settings change re-renders the app, so this follows it)
-  const tzOffset = bucketOffsetMinutes(compiled.to ?? undefined);
-
-  const [result, setResult] = useState<VisResult | null>(null);
-  /** the previous period, its buckets shifted onto this period's (compare mode) */
-  const [previous, setPrevious] = useState<VisResult | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { result, previous, busy, error: queryError, interval, compare } = useVisQuery({ vis, compiled, searches: [search], fields, timeExpr, targetBuckets: 50, onBusy, paused, refreshTick });
+  const error = queryError ? withCacheHint(queryError) : null;
   const [showSql, setShowSql] = useState(false);
   const [saved, setSaved] = useState<SavedVis[]>(() => loadSavedVis());
-  const runId = useRef(0);
-  // Only the parts of the definition fetchVis reads. The title, the metric labels and the chart
-  // type live in the rendering, so typing a title must not re-run the aggregation once per
-  // keystroke and switching a line chart to an area chart must not re-run it at all.
-  const queryKey = JSON.stringify([effVis.x, effVis.metrics.map((m) => [m.agg, m.field, m.param]), effVis.breakdown]);
-  const spanMs = compiled.from && compiled.to ? compiled.to.getTime() - compiled.from.getTime() : 0;
-  const isTimeChart = vis.x.kind === 'date_histogram' && (vis.chart === 'area' || vis.chart === 'line' || vis.chart === 'bar');
-  const compare = !!vis.compare && isTimeChart && spanMs > 0;
-  // the same search over the period of the same length just before this one
-  const previousWhere = useMemo(() => previousPeriodWhere(vis, compiled, [search], fields, timeExpr), [vis, compiled, search, fields, timeExpr]);
-
-  useEffect(() => {
-    if (compiled.error || paused) return;
-    const id = ++runId.current;
-    setBusy(true);
-    onBusy(true);
-    setError(null);
-    Promise.all([
-      fetchVis(effVis, compiled.where, timeExpr, fields, interval, tzOffset, spanMs / 1000),
-      previousWhere ? fetchVis(effVis, previousWhere, timeExpr, fields, interval, tzOffset, spanMs / 1000) : Promise.resolve(null),
-    ])
-      .then(([r, p]) => {
-        if (id !== runId.current) return;
-        setResult(r);
-        setPrevious(shiftVisResult(p, spanMs));
-      })
-      .catch((e) => {
-        if (id === runId.current && !(e instanceof CancelledError)) setError(withCacheHint(describeError(e)));
-      })
-      .finally(() => {
-        if (id === runId.current) {
-          setBusy(false);
-          onBusy(false);
-        }
-      });
-    // the chart definition and the interval are compared by value, so a restored URL with the same content does not re-query;
-    // refreshTick re-runs an unchanged search (absolute range) on auto refresh
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compiled.where, previousWhere, compiled.error, queryKey, interval?.key, tzOffset, timeExpr, spanMs, paused, onBusy, refreshTick]);
 
   const setVis = (patch: Partial<VisState>) => props.onVis({ ...vis, ...patch });
   const setX = (patch: Partial<VisState['x']>) => setVis({ x: { ...vis.x, ...patch } });

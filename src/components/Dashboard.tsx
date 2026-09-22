@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { describeError } from '../errors';
+import { useMemo, useState } from 'preact/hooks';
 import type { Field } from '../fields';
 import { t } from '../i18n';
-import { CancelledError } from '../net';
-import { compileSearch, fetchVis, previousPeriodWhere, shiftVisResult, type Compiled, type VisResult } from '../queries';
-import { autoInterval, bucketOffsetMinutes, intervalByKey, type Interval } from '../sql';
-import { loadSavedVis, storeSavedVis, type SavedVis, type SearchState, type VisState } from '../state';
+import { compileSearch, type Compiled } from '../queries';
+import { useVisQuery } from '../hooks/useVisQuery';
+import { loadSavedVis, storeSavedVis, type SavedVis, type SearchState } from '../state';
 import { Chart } from './Chart';
 import { FilterBar } from './FilterBar';
 import { QueryBar } from './QueryBar';
@@ -21,7 +19,6 @@ interface TileProps {
   /** the page's search, compiled; the tile adds its own query and filters */
   compiled: Compiled;
   search: SearchState;
-  tzOffset: number;
   onSearch: (s: SearchState) => void;
   onOpen: () => void;
   onRemove: () => void;
@@ -31,45 +28,22 @@ interface TileProps {
 }
 
 function Tile(props: TileProps) {
-  const { item, fields, timeExpr, compiled, tzOffset, paused, refreshTick } = props;
-  const vis: VisState = useMemo(() => (item.vis.chart === 'metric' ? { ...item.vis, x: { ...item.vis.x, kind: 'none' } } : item.vis), [item.vis]);
+  const { item, fields, timeExpr, compiled, paused, refreshTick } = props;
+  const vis = item.vis;
   // the tile's own query and filters, over the page's time range
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const own = useMemo(() => compileSearch({ ...item.search, range: props.search.range }, fields, timeExpr), [item.search, props.search.range, fields, timeExpr, refreshTick]);
-  const where = `(${compiled.where}) AND (${own.where})`;
-  const interval: Interval | null = useMemo(() => {
-    if (!compiled.from || !compiled.to) return null;
-    return vis.x.interval === 'auto' ? autoInterval(compiled.from, compiled.to, 40) : (intervalByKey(vis.x.interval) ?? autoInterval(compiled.from, compiled.to, 40));
-  }, [compiled.from, compiled.to, vis.x.interval]);
-  const spanSec = compiled.from && compiled.to ? Math.max(0, (compiled.to.getTime() - compiled.from.getTime()) / 1000) : 0;
-  const [result, setResult] = useState<VisResult | null>(null);
-  const [previous, setPrevious] = useState<VisResult | null>(null);
-  const previousWhere = useMemo(() => previousPeriodWhere(vis, compiled, [props.search, item.search], fields, timeExpr), [vis, compiled, props.search, item.search, fields, timeExpr]);
-  const [error, setError] = useState<string | null>(null);
-  const runId = useRef(0);
-  const visKey = JSON.stringify(vis);
-
-  useEffect(() => {
-    if (compiled.error || own.error || paused) return;
-    const id = ++runId.current;
-    props.onBusy(true);
-    setError(null);
-    Promise.all([
-      fetchVis(vis, where, timeExpr, fields, interval, tzOffset, spanSec),
-      previousWhere ? fetchVis(vis, previousWhere, timeExpr, fields, interval, tzOffset, spanSec) : Promise.resolve(null),
-    ])
-      .then(([r, p]) => {
-        if (id !== runId.current) return;
-        setResult(r);
-        setPrevious(shiftVisResult(p, spanSec * 1000));
-      })
-      .catch((e) => {
-        if (id === runId.current && !(e instanceof CancelledError)) setError(describeError(e));
-      })
-      .finally(() => props.onBusy(false));
-    // the chart definition is compared by value; refreshTick re-runs an unchanged search on auto refresh
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [where, previousWhere, compiled.error, own.error, visKey, interval?.key, tzOffset, timeExpr, spanSec, paused, refreshTick]);
+  const { result, previous, error, interval, compare } = useVisQuery({
+    vis,
+    compiled: { ...compiled, where: `(${compiled.where}) AND (${own.where})`, error: compiled.error ?? own.error },
+    searches: [props.search, item.search],
+    fields,
+    timeExpr,
+    targetBuckets: 40,
+    onBusy: props.onBusy,
+    paused,
+    refreshTick,
+  });
 
   const chart = vis.chart;
   const err = compiled.error ?? own.error ?? error;
@@ -98,7 +72,7 @@ function Tile(props: TileProps) {
           height={240}
           percent={vis.percent}
           log={vis.log}
-          compare={previousWhere ? previous : null}
+          compare={compare ? previous : null}
           onBrush={(from, to) => props.onSearch({ ...props.search, range: { from: from.toISOString(), to: to.toISOString() } })}
           onPick={(pick) => {
             const next = searchAfterPick(vis, result.groups, pick, props.search);
@@ -106,7 +80,7 @@ function Tile(props: TileProps) {
           }}
         />
       )}
-      {previousWhere && previous && <div class="legend-note">{t('vis.previousNote')}</div>}
+      {compare && previous && <div class="legend-note">{t('vis.previousNote')}</div>}
       {!result && !err && <div class="empty">{t('common.loading')}</div>}
     </div>
   );
@@ -131,7 +105,6 @@ export function Dashboard(props: {
   // refreshTick re-resolves `now` in the range on auto refresh
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const compiled = useMemo(() => compileSearch(search, fields, timeExpr), [search, fields, timeExpr, refreshTick]);
-  const tzOffset = bucketOffsetMinutes(compiled.to ?? undefined);
   const pinned = saved.filter((s) => s.pinned);
   const others = saved.filter((s) => !s.pinned);
 
@@ -202,7 +175,6 @@ export function Dashboard(props: {
               timeExpr={timeExpr}
               compiled={compiled}
               search={search}
-              tzOffset={tzOffset}
               onSearch={props.onSearch}
               onOpen={() => props.onOpen(s)}
               onRemove={() => setPinned(s.id, false)}
