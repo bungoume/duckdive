@@ -580,7 +580,6 @@ export async function resolveS3Patterns(
     for (const o of found) {
       const u = `s3://${bucket}/${o.key}`;
       if (seen.has(u)) continue;
-      seen.add(u);
       // a key the user typed out is never dropped by the name-timestamp heuristic
       if (wild && keyTimestamp(o.key)) {
         // the range decides which of these files there are, so it has to be re-listed when it moves
@@ -598,6 +597,7 @@ export async function resolveS3Patterns(
           continue;
         }
       }
+      seen.add(u);
       urls.push(u);
       objects.push(o);
     }

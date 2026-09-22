@@ -142,3 +142,35 @@ describe('S3 addressing', () => {
     expect(s3Target('b', { ...base, urlStyle: 'path' }).baseUrl).toBe('https://s3.ap-northeast-1.amazonaws.com/b');
   });
 });
+
+describe('overlapping source patterns', () => {
+  it.each(['time', 'token'] as const)('keeps an explicit file after %s pruning in another pattern, in either order', async (reason) => {
+    const key = reason === 'time' ? 'old_20260920T0105Z_id.log.gz' : 'acme/data.csv';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('<ListBucketResult/>')),
+    );
+    vi.stubGlobal(
+      'DOMParser',
+      class {
+        parseFromString() {
+          return {
+            getElementsByTagName: (tag: string) => (tag === 'Contents' ? [{ getElementsByTagName: (name: string) => [{ textContent: name === 'Key' ? key : name === 'Size' ? '4' : '' }] }] : []),
+          };
+        }
+      },
+    );
+    const wildcard = reason === 'time' ? 's3://logs/*.gz' : 's3://logs/{tenant}/*.csv';
+    const literal = `s3://logs/${key}`;
+    const range = { from: new Date('2026-09-22T00:00:00Z'), to: new Date('2026-09-23T00:00:00Z') };
+    for (const patterns of [
+      [wildcard, literal],
+      [literal, wildcard],
+      [wildcard, literal, literal],
+    ]) {
+      const result = await resolveS3Patterns(patterns, { region: '', endpoint: '', urlStyle: 'path', accessKeyId: '', secretAccessKey: '', sessionToken: '' }, null, range, 100, { tenant: ['beta'] });
+      expect(result.urls).toEqual([literal]);
+      expect(result.objects).toHaveLength(1);
+    }
+  });
+});
