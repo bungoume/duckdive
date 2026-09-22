@@ -5,28 +5,9 @@ import { updateSettings, useSettings } from '../settings';
 import { Popover } from './ui';
 import { TimePicker } from './TimePicker';
 import type { TimeRange } from '../datemath';
+import { loadHistory, rememberHistory } from '../history';
 
 const HISTORY_KEY = 'ddv.queryHistory';
-const HISTORY_MAX = 20;
-
-function loadHistory(): string[] {
-  try {
-    const list: unknown = JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]');
-    return Array.isArray(list) ? list.filter((q): q is string => typeof q === 'string') : [];
-  } catch {
-    return [];
-  }
-}
-
-function rememberQuery(q: string) {
-  const query = q.trim();
-  if (!query) return;
-  try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify([query, ...loadHistory().filter((x) => x !== query)].slice(0, HISTORY_MAX)));
-  } catch {
-    /* ignore */
-  }
-}
 
 /** What the drop-down under the input offers: field names for the token at the caret, or recent queries for an empty box. */
 interface Suggestions {
@@ -58,7 +39,7 @@ export function QueryBar(props: { query: string; range: TimeRange; error: string
   const suggest = (value: string, caret: number) => {
     if (!value.trim()) {
       // recent queries are offered, none highlighted: Enter on an empty box runs the empty query
-      const h = loadHistory();
+      const h = loadHistory(HISTORY_KEY);
       setSel(-1);
       setSugg(h.length ? { items: h, kind: 'history', from: 0, to: value.length } : null);
       return;
@@ -97,7 +78,7 @@ export function QueryBar(props: { query: string; range: TimeRange; error: string
     });
   };
   const submit = (query: string, range = props.range) => {
-    rememberQuery(query);
+    rememberHistory(HISTORY_KEY, query);
     setSugg(null);
     props.onSubmit(query, range);
   };

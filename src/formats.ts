@@ -622,12 +622,16 @@ export function otelRename(byName: OtelByName, columns: string[], keep: Set<stri
 
 const LTSV_EXPR = `to_json(map_from_entries(list_transform(string_split(line, chr(9)), x -> struct_pack(key := split_part(x, ':', 1), value := x[length(split_part(x, ':', 1)) + 2:]))))`;
 
+const readJson: FormatDef['reader'] = (l, f) => `read_json_auto(${l}, union_by_name = true${fn(f)})`;
+const readLines: FormatDef['reader'] = (l, f) =>
+  `read_csv(${l}, delim = E'\\x01', quote = '', escape = '', header = false, auto_detect = false, null_padding = true, strict_mode = false, columns = {'line': 'VARCHAR'}${fn(f)})`;
+
 export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
   parquet: { id: 'parquet', reader: (l, f) => `read_parquet(${l}${fn(f)})` },
   csv: { id: 'csv', reader: (l, f) => `read_csv_auto(${l}${fn(f)})`, detect: /\.(csv|tsv|log|txt)(\.gz|\.zst)?$/ },
   json: {
     id: 'json',
-    reader: (l, f) => `read_json_auto(${l}, union_by_name = true${fn(f)})`,
+    reader: readJson,
     // by extension, or by the delivery paths of AWS services that write JSON lines as *.log.gz
     detect: /\.(json|jsonl|ndjson)(\.gz|\.zst)?$|\/network-firewall\//,
   },
@@ -661,14 +665,14 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
   },
   waf: {
     id: 'waf',
-    reader: (l, f) => `read_json_auto(${l}, union_by_name = true${fn(f)})`,
+    reader: readJson,
     timeField: 'timestamp',
     otel: { columns: WAF_OTEL, reader: ndjson },
     detect: /\/WAFLogs\//,
   },
   r53resolver: {
     id: 'r53resolver',
-    reader: (l, f) => `read_json_auto(${l}, union_by_name = true${fn(f)})`,
+    reader: readJson,
     timeField: 'query_timestamp',
     otel: { columns: R53RESOLVER_OTEL, reader: ndjson },
     detect: /\/vpcdnsquerylogs\//,
@@ -692,32 +696,32 @@ export const FORMATS: Record<Exclude<FormatId, 'auto'>, FormatDef> = {
   },
   gcplog: {
     id: 'gcplog',
-    reader: (l, f) => `read_json_auto(${l}, union_by_name = true${fn(f)})`,
+    reader: readJson,
     timeField: 'timestamp',
     otel: { columns: GCPLOG_OTEL, reader: ndjson },
   },
   cflogpush: {
     id: 'cflogpush',
-    reader: (l, f) => `read_json_auto(${l}, union_by_name = true${fn(f)})`,
+    reader: readJson,
     timeField: 'EdgeStartTimestamp',
     otel: { columns: CFLOGPUSH_OTEL, reader: ndjson },
   },
   ltsv: {
     id: 'ltsv',
-    reader: (l, f) => `read_csv(${l}, delim = E'\\x01', quote = '', escape = '', header = false, auto_detect = false, null_padding = true, strict_mode = false, columns = {'line': 'VARCHAR'}${fn(f)})`,
+    reader: readLines,
     select: `, ${LTSV_EXPR} AS log`,
     detect: /\.ltsv(\.gz|\.zst)?$/,
   },
   cwlexport: {
     id: 'cwlexport',
-    reader: (l, f) => `read_csv(${l}, delim = E'\\x01', quote = '', escape = '', header = false, auto_detect = false, null_padding = true, strict_mode = false, columns = {'line': 'VARCHAR'}${fn(f)})`,
+    reader: readLines,
     // "2026-09-11T00:00:00.000Z message…": the leading ISO timestamp becomes the time field
     select: `, TRY_CAST(split_part(line, ' ', 1) AS TIMESTAMP) AS "timestamp", line[length(split_part(line, ' ', 1)) + 2:] AS message`,
     timeField: 'timestamp',
   },
   lines: {
     id: 'lines',
-    reader: (l, f) => `read_csv(${l}, delim = E'\\x01', quote = '', escape = '', header = false, auto_detect = false, null_padding = true, strict_mode = false, columns = {'line': 'VARCHAR'}${fn(f)})`,
+    reader: readLines,
   },
 };
 

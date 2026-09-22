@@ -9,10 +9,10 @@ import { compileSearch } from '../queries';
 import { VIEW } from '../sql';
 import type { SearchState } from '../state';
 import { Popover, fmtValue } from './ui';
+import { loadHistory, rememberHistory } from '../history';
 
 const LS_SQL = 'ddv.sql';
 const LS_SQL_HISTORY = 'ddv.sqlHistory';
-const HISTORY_MAX = 20;
 /** rows rendered before "Show all" */
 const PAGE = 500;
 
@@ -21,15 +21,6 @@ function loadText(): string {
     return localStorage.getItem(LS_SQL) ?? `SELECT * FROM ${VIEW} LIMIT 100`;
   } catch {
     return `SELECT * FROM ${VIEW} LIMIT 100`;
-  }
-}
-
-function loadHistory(): string[] {
-  try {
-    const list: unknown = JSON.parse(localStorage.getItem(LS_SQL_HISTORY) ?? '[]');
-    return Array.isArray(list) ? list.filter((s): s is string => typeof s === 'string') : [];
-  } catch {
-    return [];
   }
 }
 
@@ -43,7 +34,7 @@ interface Result {
 /** The SQL page: one statement over the source view, its rows as a table, downloads of the result. */
 export function SqlPage(props: { fields: Field[]; timeExpr: string | null; search: SearchState; onBusy: (b: boolean) => void; paused?: boolean }) {
   const [text, setText] = useState(loadText);
-  const [history, setHistory] = useState(loadHistory);
+  const [history, setHistory] = useState(() => loadHistory(LS_SQL_HISTORY));
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -71,13 +62,7 @@ export function SqlPage(props: { fields: Field[]; timeExpr: string | null; searc
       const r = await query(sql);
       if (id !== runId.current) return;
       setResult({ columns: r.columns, rows: r.rows, ms: r.ms, sql });
-      const h = [sql, ...history.filter((s) => s !== sql)].slice(0, HISTORY_MAX);
-      setHistory(h);
-      try {
-        localStorage.setItem(LS_SQL_HISTORY, JSON.stringify(h));
-      } catch {
-        /* ignore */
-      }
+      setHistory(rememberHistory(LS_SQL_HISTORY, sql, history));
     } catch (e) {
       if (id === runId.current && !(e instanceof CancelledError)) setError(describeError(e));
     } finally {

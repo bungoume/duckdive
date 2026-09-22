@@ -418,7 +418,6 @@ function needsCompaction(): boolean {
 }
 
 let compactTimer: ReturnType<typeof setTimeout> | null = null;
-let compacting = false;
 
 /** Compact a little later, once the burst of writes that caused the evictions has passed. */
 function scheduleCompact() {
@@ -426,7 +425,7 @@ function scheduleCompact() {
   if (compactTimer) return;
   compactTimer = setTimeout(() => {
     compactTimer = null;
-    if (!compacting && needsCompaction()) void compact();
+    if (!compactRun && needsCompaction()) void compact();
   }, 10_000);
 }
 
@@ -540,9 +539,7 @@ let compactRun: Promise<void> | null = null;
 async function compact(): Promise<void> {
   if (!dir || !slab || readOnly) return;
   if (compactRun) return compactRun;
-  compacting = true;
   compactRun = compactSlab().finally(() => {
-    compacting = false;
     compactRun = null;
   });
   return compactRun;
