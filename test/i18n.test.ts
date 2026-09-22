@@ -34,7 +34,9 @@ describe('t', () => {
 describe('tx', () => {
   it('splits the message around the placeholders and puts the nodes in their places', () => {
     // a message that begins with one placeholder and has two of them next to each other
-    expect(tx('app.large.text', { files: ['F'], bytes: ['B'], threshold: 'T' })).toEqual(expect.arrayContaining([['F'], ['B']]));
+    expect(tx('app.large.text', { files: ['F'], bytes: ['B'], threshold: 'T' })).toEqual(
+      expect.arrayContaining([['F'], ['B']]),
+    );
     const parts = tx('app.gate.files', { n: ['N'] });
     expect(parts).toContain(parts.find((p) => Array.isArray(p)));
     // an unknown placeholder stays as written rather than disappearing

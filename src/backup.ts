@@ -53,7 +53,8 @@ export function parseBackup(text: string): Record<string, string> {
     throw new Error('not JSON');
   }
   const b = raw as Partial<Backup> | null;
-  if (!b || typeof b !== 'object' || b.app !== 'duckdive' || !b.items || typeof b.items !== 'object') throw new Error('not a Duckdive backup');
+  if (!b || typeof b !== 'object' || b.app !== 'duckdive' || !b.items || typeof b.items !== 'object')
+    throw new Error('not a Duckdive backup');
   const items: Record<string, string> = {};
   for (const [k, v] of Object.entries(b.items)) {
     if (!k.startsWith(PREFIX) || NEVER_IN_A_BACKUP.has(k) || typeof v !== 'string') continue;

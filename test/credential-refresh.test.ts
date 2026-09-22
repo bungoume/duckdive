@@ -3,21 +3,45 @@ import { DEFAULT_SOURCE } from '../src/sources';
 import type { AttachedSource } from '../src/datasource';
 import type { AwsCredentials } from '../src/auth';
 
-const mocks = vi.hoisted(() => ({ effect: null as (() => (() => void) | undefined) | null, load: vi.fn(), get: vi.fn(), apply: vi.fn(), setError: vi.fn() }));
-vi.mock('preact/hooks', () => ({ useEffect: (fn: typeof mocks.effect) => (mocks.effect = fn), useState: () => [null, mocks.setError] }));
-vi.mock('../src/auth', async (original) => ({ ...(await original<object>()), loadCredentials: mocks.load, getCredentials: mocks.get }));
+const mocks = vi.hoisted(() => ({
+  effect: null as (() => (() => void) | undefined) | null,
+  load: vi.fn(),
+  get: vi.fn(),
+  apply: vi.fn(),
+  setError: vi.fn(),
+}));
+vi.mock('preact/hooks', () => ({
+  useEffect: (fn: typeof mocks.effect) => (mocks.effect = fn),
+  useState: () => [null, mocks.setError],
+}));
+vi.mock('../src/auth', async (original) => ({
+  ...(await original<object>()),
+  loadCredentials: mocks.load,
+  getCredentials: mocks.get,
+}));
 vi.mock('../src/datasource', () => ({ applyS3: mocks.apply }));
 
 import { useCredentialRefresh } from '../src/hooks/useCredentialRefresh';
 import { storeCredentials } from '../src/auth';
 
-const credentials: AwsCredentials = { accessKeyId: 'refreshed', secretAccessKey: 'secret', sessionToken: 'token', expiration: new Date(0).toISOString() };
+const credentials: AwsCredentials = {
+  accessKeyId: 'refreshed',
+  secretAccessKey: 'secret',
+  sessionToken: 'token',
+  expiration: new Date(0).toISOString(),
+};
 const generation = { current: 0 };
 const onCreds = vi.fn();
 let cleanup: (() => void) | undefined;
 
 function TestRefresh() {
-  useCredentialRefresh({ ...DEFAULT_SOURCE, kind: 'url', authMode: 'oidc' }, {} as AttachedSource, onCreds, generation, false);
+  useCredentialRefresh(
+    { ...DEFAULT_SOURCE, kind: 'url', authMode: 'oidc' },
+    {} as AttachedSource,
+    onCreds,
+    generation,
+    false,
+  );
   cleanup = mocks.effect!();
 }
 

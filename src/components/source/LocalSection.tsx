@@ -3,13 +3,27 @@ import { expose } from '../../debug';
 import { describeError } from '../../errors';
 import { FORMATS, FORMAT_IDS, NAMING_IDS, formatLabel, hasOtel, namingLabel } from '../../formats';
 import { t } from '../../i18n';
-import { NO_LOCAL, dropped, fsAccessAvailable, pickFiles, pickFolder, selectionNames, selectionOf, type LocalSelection } from '../../localfiles';
+import {
+  NO_LOCAL,
+  dropped,
+  fsAccessAvailable,
+  pickFiles,
+  pickFolder,
+  selectionNames,
+  selectionOf,
+  type LocalSelection,
+} from '../../localfiles';
 import type { SourceConfig } from '../../sources';
 
 const ACCEPT = '.parquet,.csv,.tsv,.json,.jsonl,.ndjson,.log,.txt,.ltsv,.gz,.zst';
 
 /** The "Local files" part of the Data source page: a drop zone, the pickers and what was picked. */
-export function LocalSection(props: { cfg: SourceConfig; selection: LocalSelection; onSelect: (s: LocalSelection) => void; onChange: (p: Partial<SourceConfig>) => void }) {
+export function LocalSection(props: {
+  cfg: SourceConfig;
+  selection: LocalSelection;
+  onSelect: (s: LocalSelection) => void;
+  onChange: (p: Partial<SourceConfig>) => void;
+}) {
   const [over, setOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,7 +75,12 @@ export function LocalSection(props: { cfg: SourceConfig; selection: LocalSelecti
             </button>
           </span>
         ) : (
-          <input type="file" multiple accept={ACCEPT} onChange={(e) => props.onSelect({ files: Array.from(e.currentTarget.files ?? []), handles: [] })} />
+          <input
+            type="file"
+            multiple
+            accept={ACCEPT}
+            onChange={(e) => props.onSelect({ files: Array.from(e.currentTarget.files ?? []), handles: [] })}
+          />
         )}
       </div>
       {names.length > 0 && (
@@ -76,7 +95,12 @@ export function LocalSection(props: { cfg: SourceConfig; selection: LocalSelecti
       {error && <div class="alert error">{error}</div>}
       <label class="row hint mt6">
         {t('common.format')}
-        <select class="input" style="width:260px" value={props.cfg.format} onChange={(e) => props.onChange({ format: e.currentTarget.value as SourceConfig['format'] })}>
+        <select
+          class="input"
+          style="width:260px"
+          value={props.cfg.format}
+          onChange={(e) => props.onChange({ format: e.currentTarget.value as SourceConfig['format'] })}
+        >
           {FORMAT_IDS.map((id) => (
             <option key={id} value={id}>
               {formatLabel(id)}
@@ -91,7 +115,9 @@ export function LocalSection(props: { cfg: SourceConfig; selection: LocalSelecti
           style="width:260px"
           value={props.cfg.naming}
           disabled={props.cfg.format !== 'auto' && !hasOtel(FORMATS[props.cfg.format])}
-          onChange={(e) => props.onChange({ naming: e.currentTarget.value as SourceConfig['naming'], timeField: { mode: 'auto' } })}
+          onChange={(e) =>
+            props.onChange({ naming: e.currentTarget.value as SourceConfig['naming'], timeField: { mode: 'auto' } })
+          }
         >
           {NAMING_IDS.map((id) => (
             <option key={id} value={id}>

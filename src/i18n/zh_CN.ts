@@ -51,19 +51,24 @@ export const zh_CN: Messages = {
   'settings.theme.light': '浅色',
   'settings.theme.dark': '深色',
   'settings.formatByName': '按字段名格式化大小和时长',
-  'settings.formatByName.hint': '在文档表中，名为 …bytes 或 …size 的字段显示为 1.2 MB，以 _ms 结尾的字段显示为 1.23 s；原始值在提示中。',
+  'settings.formatByName.hint':
+    '在文档表中，名为 …bytes 或 …size 的字段显示为 1.2 MB，以 _ms 结尾的字段显示为 1.23 s；原始值在提示中。',
   'settings.section.time': '日期与时间',
   'settings.dateFormat': '日期格式',
-  'settings.dateFormat.hint': '所有显示日期的模式：YYYY MM DD HH mm ss SSS、ddd / dddd（星期）、MMM / MMMM（月份名）、A（AM/PM）、Z（时差）、[text] 表示原样输出。',
+  'settings.dateFormat.hint':
+    '所有显示日期的模式：YYYY MM DD HH mm ss SSS、ddd / dddd（星期）、MMM / MMMM（月份名）、A（AM/PM）、Z（时差）、[text] 表示原样输出。',
   'settings.preview': '预览：{value}',
   'settings.timeZone': '时区',
-  'settings.timeZone.hint': 'IANA 名称，如 Asia/Shanghai 或 UTC；留空则使用浏览器时区（{browser}）。作用于日期显示、绝对时间选择器和 "now/d" 取整。',
+  'settings.timeZone.hint':
+    'IANA 名称，如 Asia/Shanghai 或 UTC；留空则使用浏览器时区（{browser}）。作用于日期显示、绝对时间选择器和 "now/d" 取整。',
   'settings.scaled': '按间隔缩放的日期格式',
-  'settings.scaled.hint': '[ISO 8601 时长, 模式] 的 JSON 列表：当日期直方图的桶宽不小于该时长时，提示和表格使用对应模式（"" 表示小于 1 秒）。坐标轴标签会根据显示范围自动选择。',
+  'settings.scaled.hint':
+    '[ISO 8601 时长, 模式] 的 JSON 列表：当日期直方图的桶宽不小于该时长时，提示和表格使用对应模式（"" 表示小于 1 秒）。坐标轴标签会根据显示范围自动选择。',
   'settings.dow': '每周起始日',
   'settings.dow.hint': '"now/w" 范围和按周分桶所使用的一周第一天。',
   'settings.quickRanges': '时间筛选快捷范围',
-  'settings.quickRanges.hint': 'date-math 语法的 {"from", "to", "display"} JSON 列表。省略 "display" 时标签按界面语言自动生成。',
+  'settings.quickRanges.hint':
+    'date-math 语法的 {"from", "to", "display"} JSON 列表。省略 "display" 时标签按界面语言自动生成。',
   'settings.reset': '恢复默认值',
   'settings.saved': '已保存。',
   'settings.backup': '备份',
@@ -115,7 +120,8 @@ export const zh_CN: Messages = {
   'ds.vars.title': '模式变量 · {names}',
   'ds.vars.listed': '最新分区中有 {n} 个文件',
   'ds.vars.selectAll': '选择全部取值',
-  'ds.vars.hint': '模式中的每个 {name} 都是一个变量。点击“{button}”：将列出最新分区，{names} 的取值会显示在这里，由您选择要读取的取值（每个变量至少一个）。在此之前不会读取任何内容。',
+  'ds.vars.hint':
+    '模式中的每个 {name} 都是一个变量。点击“{button}”：将列出最新分区，{names} 的取值会显示在这里，由您选择要读取的取值（每个变量至少一个）。在此之前不会读取任何内容。',
   'ds.vars.count': '{n} 个取值 · 已选 {sel} 个',
   'ds.vars.all': '全选',
   'ds.vars.none': '全不选',
@@ -139,12 +145,14 @@ export const zh_CN: Messages = {
   'ds.auth.static': '访问密钥（密钥仅在本浏览器会话中保留）',
   'ds.auth.none': '无（公开存储桶）',
   'ds.key.title': '访问密钥',
-  'ds.key.warn': '访问密钥 ID 随数据源设置一起保存；密钥和会话令牌仅在本浏览器会话期间保存在内存中，浏览器重启后需要重新输入。建议使用临时凭证（会话令牌）或 OIDC 登录。',
+  'ds.key.warn':
+    '访问密钥 ID 随数据源设置一起保存；密钥和会话令牌仅在本浏览器会话期间保存在内存中，浏览器重启后需要重新输入。建议使用临时凭证（会话令牌）或 OIDC 登录。',
   'ds.key.id': '访问密钥 ID',
   'ds.key.secret': '私有访问密钥',
   'ds.key.token': '会话令牌（用于临时凭证）',
   'ds.oidc.title': 'OIDC 登录 → AWS STS',
-  'ds.oidc.intro': '浏览器先在您的身份提供商处登录，然后直接调用 STS {api}。任何地方都不存在长期密钥；临时凭证保存在内存中（storage.session）并自动刷新。请在身份提供商处注册此重定向 URL：{url}',
+  'ds.oidc.intro':
+    '浏览器先在您的身份提供商处登录，然后直接调用 STS {api}。任何地方都不存在长期密钥；临时凭证保存在内存中（storage.session）并自动刷新。请在身份提供商处注册此重定向 URL：{url}',
   'ds.oidc.authUrl': '授权端点',
   'ds.oidc.clientId': '客户端 ID',
   'ds.oidc.scope': '范围（scope）',
@@ -168,8 +176,10 @@ export const zh_CN: Messages = {
   'ds.local.selected': '{n} 个文件：{names}',
   'ds.local.clear': '清除',
   'ds.local.remembered': '已记住：{names}。点击连接时浏览器会再次请求读取权限。',
-  'ds.local.hint': '文件通过浏览器 File API 就地读取，绝不会上传。此处选择的内容会保存在最近的数据源中；重启后浏览器会再次请求读取权限。',
-  'ds.demo.hint': '会在 DuckDB 中生成一张合成的访问日志表（host/http/geo 结构体、tags 列表、JSON extra 列），无需任何存储即可试用全部功能。',
+  'ds.local.hint':
+    '文件通过浏览器 File API 就地读取，绝不会上传。此处选择的内容会保存在最近的数据源中；重启后浏览器会再次请求读取权限。',
+  'ds.demo.hint':
+    '会在 DuckDB 中生成一张合成的访问日志表（host/http/geo 结构体、tags 列表、JSON extra 列），无需任何存储即可试用全部功能。',
   'ds.connect': '连接',
   'ds.connecting': '正在连接…',
   'ds.listAndConnect': '列出取值并连接',
@@ -181,7 +191,8 @@ export const zh_CN: Messages = {
   'ds.timeField.none': '（无 – 不按时间筛选）',
   'ds.connected.rangeDependent': '此数据源使用日期标记：时间范围变化时会重新解析文件列表。',
   'ds.connected.captures': '从文件名捕获的列：{names}（对它们筛选也会缩减文件列表）。',
-  'ds.connected.large': '匹配文件合计 {mb} MB。文本 / gzip 文件会整体且逐个下载，因此此范围内的首次查询会很慢。请缩小时间范围，或将较大范围转换为按小时的 Parquet（scripts/alb-to-parquet.sh）。',
+  'ds.connected.large':
+    '匹配文件合计 {mb} MB。文本 / gzip 文件会整体且逐个下载，因此此范围内的首次查询会很慢。请缩小时间范围，或将较大范围转换为按小时的 Parquet（scripts/alb-to-parquet.sh）。',
   'ds.connected.files': '文件（{n}）',
   'ds.connected.fieldsTitle': '字段',
   'ds.hosts.title': '已授权主机',
@@ -196,15 +207,18 @@ export const zh_CN: Messages = {
 
   // ---- Local range cache panel ----
   'cache.title': '本地范围缓存',
-  'cache.intro': '读取过一次的数据会保存在本机，重复查询不会再次下载。只会获取从未读取过的部分。当存储中的文件发生变化时，副本会被丢弃。',
+  'cache.intro':
+    '读取过一次的数据会保存在本机，重复查询不会再次下载。只会获取从未读取过的部分。当存储中的文件发生变化时，副本会被丢弃。',
   'cache.opfsDisabled': '{error} – 缓存已禁用，每次读取都会访问源站。',
-  'cache.readOnly': '另一个 Duckdive 标签页持有缓存：此标签页读取已存储的数据，缺少的部分直接下载而不保存。缓存设置和清除请在那个标签页进行。',
+  'cache.readOnly':
+    '另一个 Duckdive 标签页持有缓存：此标签页读取已存储的数据，缺少的部分直接下载而不保存。缓存设置和清除请在那个标签页进行。',
   'cache.enable': '启用范围缓存',
   'cache.chunkSize': '块大小（新文件）',
   'cache.maxBytes': '最多保留',
   'cache.unlimited': '不限',
   'cache.session': '本次会话',
-  'cache.session.text': 'DuckDB 读取了 {total}：其中 {fromCache} 来自磁盘（{ratio}%） · 从源站下载 {downloaded}，共 {misses} 个块 · {hits} 次块命中 · {passthrough} 次直通',
+  'cache.session.text':
+    'DuckDB 读取了 {total}：其中 {fromCache} 来自磁盘（{ratio}%） · 从源站下载 {downloaded}，共 {misses} 个块 · {hits} 次块命中 · {passthrough} 次直通',
   'cache.storage': '存储',
   'cache.storage.text': '已用 {used}，配额 {quota} · {mode}',
   'cache.storage.persistent': '持久',
@@ -240,7 +254,8 @@ export const zh_CN: Messages = {
   'disc.saved.placeholder': '名称（留空则使用查询）',
   'disc.saved.untitled': '搜索 {n}',
   'disc.saved.none': '尚未保存任何内容。已保存的搜索存放在此浏览器中（localStorage）。',
-  'disc.cacheHint': '{error}\n\n使用下方的“{button}”定位并检查 DuckDB 拒绝的文件。如果怀疑是缓存问题：数据源 → 本地范围缓存 → “{clear}”，或取消勾选“{enable}”。',
+  'disc.cacheHint':
+    '{error}\n\n使用下方的“{button}”定位并检查 DuckDB 拒绝的文件。如果怀疑是缓存问题：数据源 → 本地范围缓存 → “{clear}”，或取消勾选“{enable}”。',
 
   // ---- export (Discover) ----
   'exp.button': '导出',
@@ -285,7 +300,8 @@ export const zh_CN: Messages = {
   // ---- log patterns ----
   'pat.button': '模式',
   'pat.title': '消息模式',
-  'pat.hint': '数字、IP 地址、长十六进制 ID 和 UUID 会被替换为 <n>、<ip>、<hex> 和 <uuid>，然后按剩余文本分组。“+”只保留该模式的行（自定义 SQL 筛选）。',
+  'pat.hint':
+    '数字、IP 地址、长十六进制 ID 和 UUID 会被替换为 <n>、<ip>、<hex> 和 <uuid>，然后按剩余文本分组。“+”只保留该模式的行（自定义 SQL 筛选）。',
   'pat.showing': '{total} 条记录中的 {n} 种模式',
   'pat.count': '数量',
   'pat.pattern': '模式与示例',
@@ -375,16 +391,19 @@ export const zh_CN: Messages = {
   // ---- diagnose panel ----
   'diag.find': '查找出错的文件',
   'diag.finding': '正在查找出错的文件…',
-  'diag.hint': '用 count(*) 查询对已连接的文件进行二分查找，并检查每个问题文件的字节内容（每个问题文件约需两次完整扫描）。',
+  'diag.hint':
+    '用 count(*) 查询对已连接的文件进行二分查找，并检查每个问题文件的字节内容（每个问题文件约需两次完整扫描）。',
   'diag.cancelled': '已取消（数据源已重新连接）',
-  'diag.allOk': '刚才用 count(*) 读取全部 {n} 个文件均正常。故障可能是暂时性的（网络或缓存返回了错误的响应：请查看数据源 → 本地范围缓存下的请求日志），或仅与出错的查询有关。',
+  'diag.allOk':
+    '刚才用 count(*) 读取全部 {n} 个文件均正常。故障可能是暂时性的（网络或缓存返回了错误的响应：请查看数据源 → 本地范围缓存下的请求日志），或仅与出错的查询有关。',
   'diag.failing': '在 {queries} 次查询中找到 {n} 个出错的文件{truncated}。',
   'diag.truncated': '（找到前几个后即停止）',
   'diag.size': '大小',
   'diag.sizeText': '列出 {listed} / 读取 {read}',
   'diag.mismatch': '（不一致：对象在列出后发生了变化）',
   'diag.firstBytes': '起始字节',
-  'diag.gzipText': 'magic {magic}，method {method}，flags 0x{flags}，trailer ISIZE {isize}，浏览器解压 {inflated}，成员数 {members}',
+  'diag.gzipText':
+    'magic {magic}，method {method}，flags 0x{flags}，trailer ISIZE {isize}，浏览器解压 {inflated}，成员数 {members}',
   'diag.ok': '正常',
   'diag.bad': '错误',
   'diag.inflateFailed': '失败（{error}）',
@@ -457,7 +476,8 @@ export const zh_CN: Messages = {
   'flt.addButton': '+ 添加筛选',
   'flt.clearAll': '全部清除',
   'flt.not': '排除: ',
-  'flt.untrusted': '此链接包含 {n} 个不是在此浏览器中编写的自定义 SQL 过滤器。它们已被禁用:请逐个打开、检查 SQL,仅在信任发送者时启用(过滤器可以读取本扩展的 S3 凭证并访问网络)。',
+  'flt.untrusted':
+    '此链接包含 {n} 个不是在此浏览器中编写的自定义 SQL 过滤器。它们已被禁用:请逐个打开、检查 SQL,仅在信任发送者时启用(过滤器可以读取本扩展的 S3 凭证并访问网络)。',
   'flt.menu.trust': '启用(我已检查此 SQL)',
   'flt.desc.between': '{from} 到 {to}',
 
@@ -477,7 +497,8 @@ export const zh_CN: Messages = {
   'q.help.not': '否定。+term：必须包含',
   'q.help.bool': '布尔运算符 AND、OR、NOT（大写）、&&、||、!。相邻词之间为 OR。',
   'q.help.datemath': '日期字段的范围可用日期运算：now、now-1h、now/d（当天开始）、now-1d/d',
-  'q.helpNote': '嵌套的 struct / JSON 字段使用点路径（geo.country、extra.user_id）。特殊字符用 \\ 转义（path:\\/api\\/v1）。按 {enter} 运行。',
+  'q.helpNote':
+    '嵌套的 struct / JSON 字段使用点路径（geo.country、extra.user_id）。特殊字符用 \\ 转义（path:\\/api\\/v1）。按 {enter} 运行。',
   'q.completeNote': '输入时会提示字段名；按 {tab} 插入高亮的候选。输入框为空时列出最近的查询。',
   'q.shortcuts': '快捷键：{slash} 在任意位置聚焦搜索框，{prev} 和 {next} 将时间范围按其长度前后移动。',
   'q.running': '运行中…',
@@ -558,32 +579,38 @@ export const zh_CN: Messages = {
 
   // ---- data source templates ----
   'tpl.alb.label': 'ALB 访问日志',
-  'tpl.alb.note': 'account / region / alb 会成为列；对 alb 筛选可只读取一个负载均衡器。如果配置了存储桶前缀，请加在 AWSLogs 之前。',
+  'tpl.alb.note':
+    'account / region / alb 会成为列；对 alb 筛选可只读取一个负载均衡器。如果配置了存储桶前缀，请加在 AWSLogs 之前。',
   'tpl.alb-parquet.label': '转换为 Parquet 的 ALB 访问日志（scripts/alb-to-parquet.sh）',
   'tpl.alb-parquet.note':
     '由 scripts/alb-to-parquet.sh 写出的按小时 Parquet：<prefix>/<alb>/dt=YYYY-MM-DD/hour=HH/data.parquet。dt 和 hour 会成为分区列；如果目标路径已指定单个负载均衡器，请去掉“{alb}/”。',
   'tpl.nlb.label': 'NLB 访问日志',
   'tpl.nlb.note': '仅限 TLS 监听器日志（空格分隔，自动检测）。必要时请手动选择时间字段。',
   'tpl.cloudfront.label': 'CloudFront 日志',
-  'tpl.cloudfront.note': '旧版标准日志（带 #Fields 表头的 TSV）。如果日志位于存储桶根目录，请去掉“<prefix>/”。会由 date + time 派生出“timestamp”列。',
+  'tpl.cloudfront.note':
+    '旧版标准日志（带 #Fields 表头的 TSV）。如果日志位于存储桶根目录，请去掉“<prefix>/”。会由 date + time 派生出“timestamp”列。',
   'tpl.cloudtrail.label': 'CloudTrail',
-  'tpl.cloudtrail.note': '每条 Record 一行（eventTime、eventSource、eventName、userIdentity、requestParameters、…）。组织跟踪请加入组织 ID：AWSLogs/o-xxxx/{account}/…',
+  'tpl.cloudtrail.note':
+    '每条 Record 一行（eventTime、eventSource、eventName、userIdentity、requestParameters、…）。组织跟踪请加入组织 ID：AWSLogs/o-xxxx/{account}/…',
   'tpl.flowlogs.label': 'VPC Flow Logs',
   'tpl.flowlogs.note': '带表头的文本（自定义格式也可用）。使用“start”（epoch 秒）作为时间字段。',
   'tpl.flowlogs-parquet.label': 'VPC Flow Logs（Parquet，Hive 兼容前缀）',
   'tpl.flowlogs-parquet.note':
     '以 Parquet 投递、启用“Hive 兼容 S3 前缀”并按小时分区的流日志。未启用 Hive 选项时，布局为 AWSLogs/{account}/vpcflowlogs/{region}/{yyyy}/{MM}/{dd}/{HH}/*.log.parquet。“start”（epoch 秒）为时间字段。',
   'tpl.waf.label': 'WAF 日志（S3 投递）',
-  'tpl.waf.note': 'JSON 行，每个请求一行；“timestamp”（epoch 毫秒）为时间字段。CloudFront 前的 Web ACL 使用“cloudfront”作为区域。',
+  'tpl.waf.note':
+    'JSON 行，每个请求一行；“timestamp”（epoch 毫秒）为时间字段。CloudFront 前的 Web ACL 使用“cloudfront”作为区域。',
   'tpl.netfw.label': 'Network Firewall 日志',
-  'tpl.netfw.note': 'log_type 为“alert”或“flow”（可对其筛选，或直接用名称替换 {log_type}）。JSON 行；“event_timestamp”（epoch 秒）为时间字段。',
+  'tpl.netfw.note':
+    'log_type 为“alert”或“flow”（可对其筛选，或直接用名称替换 {log_type}）。JSON 行；“event_timestamp”（epoch 秒）为时间字段。',
   'tpl.r53resolver.label': 'Route 53 Resolver 查询日志',
   'tpl.r53resolver.note': 'JSON 行，每次 DNS 查询一行；“query_timestamp”为时间字段。',
   'tpl.s3access.label': 'S3 服务器访问日志',
   'tpl.s3access.note':
     '非分区布局：<prefix>YYYY-MM-DD-HH-MM-SS-UniqueString。基于日期的分区请使用 <prefix>/{account}/{region}/{source_bucket}/{yyyy}/{MM}/{dd}/{yyyy}-{MM}-{dd}-{HH}-*。会派生出“timestamp”列。',
   'tpl.firehose.label': 'Kinesis Data Firehose 投递（默认前缀）',
-  'tpl.firehose.note': 'Firehose 使用的默认 YYYY/MM/DD/HH 前缀（CloudWatch Logs 订阅、EventBridge、经 Firehose 的 WAF 等）。记录按 JSON 读取，记录之间有无换行均可。如果未检测到时间字段，请手动选择。',
+  'tpl.firehose.note':
+    'Firehose 使用的默认 YYYY/MM/DD/HH 前缀（CloudWatch Logs 订阅、EventBridge、经 Firehose 的 WAF 等）。记录按 JSON 读取，记录之间有无换行均可。如果未检测到时间字段，请手动选择。',
   'tpl.gcplog.label': 'Google Cloud Logging 接收器 (Cloud Storage)',
   'tpl.gcplog.note':
     '每行一条 LogEntry。请将 <log-id> 替换为接收器写入的日志名称 (syslog、requests 等)，或使用通配符。Cloud Storage 通过 S3 兼容端点读取：将端点设为 https://storage.googleapis.com，并使用 HMAC 密钥作为访问密钥。',
@@ -591,9 +618,11 @@ export const zh_CN: Messages = {
   'tpl.cflogpush.note':
     '每行一条请求。日期文件夹对应任务的 “Organize logs into daily subfolders” 选项；未启用时请删除 {yyyy}{MM}{dd}/ 部分。R2 通过 S3 兼容端点读取 (https://<account-id>.r2.cloudflarestorage.com，路径样式)。',
   'tpl.cwlexport.label': 'CloudWatch Logs 导出到 S3',
-  'tpl.cwlexport.note': '由“导出数据到 Amazon S3”（create-export-task）写出的文件：每个日志流一个文件夹，行格式为“timestamp message”。开头的时间戳成为时间字段，其余部分为“message”。',
+  'tpl.cwlexport.note':
+    '由“导出数据到 Amazon S3”（create-export-task）写出的文件：每个日志流一个文件夹，行格式为“timestamp message”。开头的时间戳成为时间字段，其余部分为“message”。',
   'tpl.ssm.label': 'SSM 会话 / 命令日志',
-  'tpl.ssm.note': 'Session Manager 记录和 Run Command 的 stdout/stderr 是非结构化的：每行成为一行记录，文件名保存在 _file 中。没有时间字段。',
+  'tpl.ssm.note':
+    'Session Manager 记录和 Run Command 的 stdout/stderr 是非结构化的：每行成为一行记录，文件名保存在 _file 中。没有时间字段。',
 
   // ---- connect / listing (datasource.ts, s3list.ts) ----
   'src.listingValues': '正在列出取值… {done} / {total}',
@@ -624,7 +653,8 @@ export const zh_CN: Messages = {
   'src.description.urls': '{n} 个 URL：{first}{more}',
   'src.readingSchema': '正在读取架构…',
   'src.counting': '正在统计行数…',
-  'src.tooManyObjects': '{bucket}/{prefix} 下的对象超过 {max} 个；请在通配符前添加字面前缀（例如负载均衡器名称）或缩小时间范围',
+  'src.tooManyObjects':
+    '{bucket}/{prefix} 下的对象超过 {max} 个；请在通配符前添加字面前缀（例如负载均衡器名称）或缩小时间范围',
   'src.tooManyPrefixes': '时间范围展开后的前缀过多',
   'src.warning.many':
     '{files} 个文件（{mb} MB）与此时间范围匹配，超过了警告阈值 {max}。连接本身不会读取任何内容，但文本 / gzip 文件会整体且逐个下载，因此此范围内的首次查询会很慢。请缩小时间范围（按小时而非按天），或用 scripts/alb-to-parquet.sh 将较大范围转换为按小时的 Parquet。',

@@ -43,7 +43,8 @@ export function tsLit(d: Date): string {
   return `TIMESTAMP '${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}.${pad(d.getUTCMilliseconds(), 3)}'`;
 }
 
-export type IntervalKey = '1s' | '5s' | '10s' | '30s' | '1m' | '5m' | '10m' | '30m' | '1h' | '3h' | '12h' | '1d' | '1w' | '1M' | '1y';
+export type IntervalKey =
+  '1s' | '5s' | '10s' | '30s' | '1m' | '5m' | '10m' | '30m' | '1h' | '3h' | '12h' | '1d' | '1w' | '1M' | '1y';
 
 export interface Interval {
   /** nominal ms per bucket (axis spacing; calendar buckets vary in length) */
@@ -112,7 +113,12 @@ function weekOrigin(dayOfWeek: number): string {
  * that zone's midnight, weekly ones on the configured first day of the week, monthly ones on the
  * 1st). Returns epoch milliseconds as DOUBLE.
  */
-export function bucketExpr(timeExpr: string, iv: Interval, offsetMinutes: number = bucketOffsetMinutes(), dayOfWeek = getSettings().dayOfWeek): string {
+export function bucketExpr(
+  timeExpr: string,
+  iv: Interval,
+  offsetMinutes: number = bucketOffsetMinutes(),
+  dayOfWeek = getSettings().dayOfWeek,
+): string {
   const shift = offsetMinutes ? ` + to_minutes(${offsetMinutes})` : '';
   const unshift = offsetMinutes ? ` - to_minutes(${offsetMinutes})` : '';
   const origin = iv.calendar === 'week' ? `, ${weekOrigin(dayOfWeek)}` : '';
@@ -144,7 +150,8 @@ export function niceStep(raw: number): number {
   return (m >= 5 ? 5 : m >= 2 ? 2 : 1) * p;
 }
 
-export type FilterOp = 'is' | 'is_not' | 'is_one_of' | 'is_not_one_of' | 'exists' | 'does_not_exist' | 'between' | 'query';
+export type FilterOp =
+  'is' | 'is_not' | 'is_one_of' | 'is_not_one_of' | 'exists' | 'does_not_exist' | 'between' | 'query';
 
 export interface Filter {
   id: string;
@@ -196,7 +203,8 @@ export function filterToSQL(fl: Filter, fields: Field[], context = timeContext()
     const e = fieldCompareExpr(f);
     // values that cannot be compared with the field match nothing (and "is not" then matches everything)
     const one = (v: string | undefined) => (v === undefined ? null : valueLiteral(f, v, context));
-    const many = (vs: string[] | undefined) => (vs ?? []).map((v) => valueLiteral(f, v, context)).filter((x): x is string => x !== null);
+    const many = (vs: string[] | undefined) =>
+      (vs ?? []).map((v) => valueLiteral(f, v, context)).filter((x): x is string => x !== null);
     switch (fl.op) {
       case 'is': {
         const v = one(fl.value);
@@ -275,7 +283,10 @@ export interface WhereParts {
   fields: Field[];
 }
 
-export function buildWhere(p: WhereParts, context = timeContext()): { sql: string; from: Date | null; to: Date | null } {
+export function buildWhere(
+  p: WhereParts,
+  context = timeContext(),
+): { sql: string; from: Date | null; to: Date | null } {
   const conds: string[] = [];
   let from: Date | null = null;
   let to: Date | null = null;

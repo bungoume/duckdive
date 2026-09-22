@@ -7,7 +7,11 @@ import { type DiscoverState, type SavedSearch, type SearchState } from '../state
 import { Popover } from './ui';
 
 /** "Saved" on the Discover page: keep the query, filters, columns and sort under a name; load one back. */
-export function SavedSearches(props: { search: SearchState; discover: DiscoverState; onLoad: (s: SavedSearch) => void }) {
+export function SavedSearches(props: {
+  search: SearchState;
+  discover: DiscoverState;
+  onLoad: (s: SavedSearch) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [list, setList] = useState<SavedSearch[]>(() => loadSavedSearches());
   const [title, setTitle] = useState('');
@@ -19,7 +23,13 @@ export function SavedSearches(props: { search: SearchState; discover: DiscoverSt
   const save = () => {
     const name = title.trim() || props.search.query.trim() || t('disc.saved.untitled', { n: list.length + 1 });
     const existing = list.find((s) => s.title === name);
-    const item: SavedSearch = { id: existing?.id ?? newId(), title: name, savedAt: new Date().toISOString(), search: props.search, discover: props.discover };
+    const item: SavedSearch = {
+      id: existing?.id ?? newId(),
+      title: name,
+      savedAt: new Date().toISOString(),
+      search: props.search,
+      discover: props.discover,
+    };
     update(existing ? list.map((s) => (s.id === existing.id ? item : s)) : [...list, item]);
     setTitle('');
   };
@@ -73,7 +83,12 @@ export function SavedSearches(props: { search: SearchState; discover: DiscoverSt
             >
               {s.title}
             </span>
-            <button class="btn ghost small danger" onClick={() => update(list.filter((x) => x.id !== s.id))} title={t('common.delete')} aria-label={t('common.delete')}>
+            <button
+              class="btn ghost small danger"
+              onClick={() => update(list.filter((x) => x.id !== s.id))}
+              title={t('common.delete')}
+              aria-label={t('common.delete')}
+            >
               ✕
             </button>
           </div>

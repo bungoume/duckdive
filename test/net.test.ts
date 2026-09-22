@@ -35,7 +35,13 @@ describe('mapLimit', () => {
 
 describe('fetchWithTimeout', () => {
   it('turns a deadline into a TimeoutError that names what did not answer', async () => {
-    vi.stubGlobal('fetch', (_url: string, init: RequestInit) => new Promise((_r, reject) => init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))));
+    vi.stubGlobal(
+      'fetch',
+      (_url: string, init: RequestInit) =>
+        new Promise((_r, reject) =>
+          init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))),
+        ),
+    );
     const e = await fetchWithTimeout('https://example.com', {}, 'the listing', null, 10).catch((x) => x);
     expect(e).toBeInstanceOf(TimeoutError);
     expect(String(e)).toContain('the listing');
@@ -45,10 +51,18 @@ describe('fetchWithTimeout', () => {
   it('turns the caller cancelling into a CancelledError, before the request and during it', async () => {
     const done = new AbortController();
     done.abort();
-    await expect(fetchWithTimeout('https://example.com', {}, 'the listing', done.signal)).rejects.toBeInstanceOf(CancelledError);
+    await expect(fetchWithTimeout('https://example.com', {}, 'the listing', done.signal)).rejects.toBeInstanceOf(
+      CancelledError,
+    );
 
     const ctl = new AbortController();
-    vi.stubGlobal('fetch', (_url: string, init: RequestInit) => new Promise((_r, reject) => init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))));
+    vi.stubGlobal(
+      'fetch',
+      (_url: string, init: RequestInit) =>
+        new Promise((_r, reject) =>
+          init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))),
+        ),
+    );
     const p = fetchWithTimeout('https://example.com', {}, 'the listing', ctl.signal, 5000).catch((x) => x);
     ctl.abort();
     expect(await p).toBeInstanceOf(CancelledError);

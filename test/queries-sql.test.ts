@@ -6,12 +6,32 @@ import { intervalByKey } from '../src/sql';
 const run = vi.hoisted(() => vi.fn());
 vi.mock('../src/duck', () => ({ query: run }));
 
-import { NULL_GROUP, OTHER, compileSearch, encodeVisValue, groupLabel, previousPeriodWhere, shiftVisResult, type VisResult } from '../src/queryPlans';
+import {
+  NULL_GROUP,
+  OTHER,
+  compileSearch,
+  encodeVisValue,
+  groupLabel,
+  previousPeriodWhere,
+  shiftVisResult,
+  type VisResult,
+} from '../src/queryPlans';
 import { fetchVis } from '../src/queries';
 
 describe('previous-period charts', () => {
-  const level: Field = { name: 'level', expr: '"level"', kind: 'string', duckType: 'VARCHAR', column: 'level', searchable: true };
-  const search = { ...DEFAULT_SEARCH, range: { from: '2026-09-22T01:00:00Z', to: '2026-09-22T02:00:00Z' }, query: 'level:error' };
+  const level: Field = {
+    name: 'level',
+    expr: '"level"',
+    kind: 'string',
+    duckType: 'VARCHAR',
+    column: 'level',
+    searchable: true,
+  };
+  const search = {
+    ...DEFAULT_SEARCH,
+    range: { from: '2026-09-22T01:00:00Z', to: '2026-09-22T02:00:00Z' },
+    query: 'level:error',
+  };
   const compiled = compileSearch(search, [level], '"ts"');
 
   it('moves both dashboard and saved-search time constraints to the preceding period', () => {
@@ -26,12 +46,31 @@ describe('previous-period charts', () => {
 
   it('does not query a comparison for a disabled option or a non-time chart', () => {
     expect(previousPeriodWhere(DEFAULT_VIS, compiled, [search], [level], '"ts"')).toBeNull();
-    expect(previousPeriodWhere({ ...DEFAULT_VIS, compare: true, chart: 'metric' }, compiled, [search], [level], '"ts"')).toBeNull();
-    expect(previousPeriodWhere({ ...DEFAULT_VIS, compare: true, x: { ...DEFAULT_VIS.x, kind: 'terms' } }, compiled, [search], [level], '"ts"')).toBeNull();
+    expect(
+      previousPeriodWhere({ ...DEFAULT_VIS, compare: true, chart: 'metric' }, compiled, [search], [level], '"ts"'),
+    ).toBeNull();
+    expect(
+      previousPeriodWhere(
+        { ...DEFAULT_VIS, compare: true, x: { ...DEFAULT_VIS.x, kind: 'terms' } },
+        compiled,
+        [search],
+        [level],
+        '"ts"',
+      ),
+    ).toBeNull();
   });
 
   it('aligns previous buckets without mutating their original result', () => {
-    const result: VisResult = { rows: [{ x: 1000, g: null, m: [2] }], xOrder: [1000], groups: [], xKind: 'date_histogram', interval: null, tzOffset: 0, step: null, sql: '' };
+    const result: VisResult = {
+      rows: [{ x: 1000, g: null, m: [2] }],
+      xOrder: [1000],
+      groups: [],
+      xKind: 'date_histogram',
+      interval: null,
+      tzOffset: 0,
+      step: null,
+      sql: '',
+    };
     const shifted = shiftVisResult(result, 3600000)!;
     expect(shifted.rows[0].x).toBe(3601000);
     expect(shifted.xOrder).toEqual([3601000]);
@@ -43,7 +82,14 @@ describe('visualization SQL', () => {
   beforeEach(() => run.mockReset().mockResolvedValue({ rows: [], columns: [], ms: 0 }));
 
   it('matches a null value selected as a top group', async () => {
-    const host: Field = { name: 'host', expr: '"host"', kind: 'string', duckType: 'VARCHAR', column: 'host', searchable: true };
+    const host: Field = {
+      name: 'host',
+      expr: '"host"',
+      kind: 'string',
+      duckType: 'VARCHAR',
+      column: 'host',
+      searchable: true,
+    };
     const vis = { ...DEFAULT_VIS, breakdown: { field: 'host', size: 1, other: false } };
     await fetchVis(vis, 'TRUE', null, [host], null, 0, 60);
     expect(run).toHaveBeenCalledOnce();
@@ -60,9 +106,27 @@ describe('visualization SQL', () => {
       columns: [],
       ms: 0,
     });
-    const host: Field = { name: 'host', expr: '"host"', kind: 'string', duckType: 'VARCHAR', column: 'host', searchable: true };
-    const level: Field = { name: 'level', expr: '"level"', kind: 'string', duckType: 'VARCHAR', column: 'level', searchable: true };
-    const vis = { ...DEFAULT_VIS, x: { ...DEFAULT_VIS.x, kind: 'terms' as const, field: 'host', size: 3 }, breakdown: { field: 'level', size: 2, other: true } };
+    const host: Field = {
+      name: 'host',
+      expr: '"host"',
+      kind: 'string',
+      duckType: 'VARCHAR',
+      column: 'host',
+      searchable: true,
+    };
+    const level: Field = {
+      name: 'level',
+      expr: '"level"',
+      kind: 'string',
+      duckType: 'VARCHAR',
+      column: 'level',
+      searchable: true,
+    };
+    const vis = {
+      ...DEFAULT_VIS,
+      x: { ...DEFAULT_VIS.x, kind: 'terms' as const, field: 'host', size: 3 },
+      breakdown: { field: 'level', size: 2, other: true },
+    };
     const result = await fetchVis(vis, 'TRUE', null, [host, level], null, 0, 60);
 
     expect(run.mock.calls[0][0]).toContain('topx.x IS NOT DISTINCT FROM base.x');
@@ -95,17 +159,40 @@ describe('visualization SQL', () => {
   });
 
   it('bounds top-N limits again when called with unsanitized state', async () => {
-    const host: Field = { name: 'host', expr: '"host"', kind: 'string', duckType: 'VARCHAR', column: 'host', searchable: true };
-    const vis = { ...DEFAULT_VIS, x: { ...DEFAULT_VIS.x, kind: 'terms' as const, field: 'host', size: 1e100 }, breakdown: { field: 'host', size: 1e100, other: true } };
+    const host: Field = {
+      name: 'host',
+      expr: '"host"',
+      kind: 'string',
+      duckType: 'VARCHAR',
+      column: 'host',
+      searchable: true,
+    };
+    const vis = {
+      ...DEFAULT_VIS,
+      x: { ...DEFAULT_VIS.x, kind: 'terms' as const, field: 'host', size: 1e100 },
+      breakdown: { field: 'host', size: 1e100, other: true },
+    };
     await fetchVis(vis, 'TRUE', null, [host], null, 0, 60);
     expect(run.mock.calls[0][0]).toContain('LIMIT 500');
     expect(run.mock.calls[0][0]).toContain('LIMIT 50');
   });
 
   it('treats a non-finite numeric histogram interval as automatic', async () => {
-    run.mockResolvedValueOnce({ rows: [{ mn: 0, mx: 100 }], columns: [], ms: 0 }).mockResolvedValueOnce({ rows: [], columns: [], ms: 0 });
-    const bytes: Field = { name: 'bytes', expr: '"bytes"', kind: 'number', duckType: 'DOUBLE', column: 'bytes', searchable: false };
-    const vis = { ...DEFAULT_VIS, x: { ...DEFAULT_VIS.x, kind: 'histogram' as const, field: 'bytes', interval: '1e309' } };
+    run
+      .mockResolvedValueOnce({ rows: [{ mn: 0, mx: 100 }], columns: [], ms: 0 })
+      .mockResolvedValueOnce({ rows: [], columns: [], ms: 0 });
+    const bytes: Field = {
+      name: 'bytes',
+      expr: '"bytes"',
+      kind: 'number',
+      duckType: 'DOUBLE',
+      column: 'bytes',
+      searchable: false,
+    };
+    const vis = {
+      ...DEFAULT_VIS,
+      x: { ...DEFAULT_VIS.x, kind: 'histogram' as const, field: 'bytes', interval: '1e309' },
+    };
     const result = await fetchVis(vis, 'TRUE', null, [bytes], null, 0, 60);
     expect(result.step).toBe(2);
     expect(run.mock.calls[1][0]).not.toContain('Infinity');
@@ -113,7 +200,14 @@ describe('visualization SQL', () => {
 });
 
 describe('invalid time ranges', () => {
-  it.each(['now--1m', 'not a date', 'now+1h', 'now-999999999999999999999s', 'now-999999999999y', 'now-999999999999999999999s/d'])('rejects %s without producing an unbounded query', (from) => {
+  it.each([
+    'now--1m',
+    'not a date',
+    'now+1h',
+    'now-999999999999999999999s',
+    'now-999999999999y',
+    'now-999999999999999999999s/d',
+  ])('rejects %s without producing an unbounded query', (from) => {
     const result = compileSearch({ ...DEFAULT_SEARCH, range: { from, to: 'now' } }, [], '"ts"');
     expect(result.where).toBe('FALSE');
     expect(result.error).toContain('Invalid time range');
@@ -122,7 +216,14 @@ describe('invalid time ranges', () => {
 });
 
 it('uses one explicit clock and calendar for the range, query, filters and comparison', () => {
-  const field: Field = { name: 'ts', column: 'ts', expr: '"ts"', kind: 'date', duckType: 'TIMESTAMP', searchable: false };
+  const field: Field = {
+    name: 'ts',
+    column: 'ts',
+    expr: '"ts"',
+    kind: 'date',
+    duckType: 'TIMESTAMP',
+    searchable: false,
+  };
   const context = { now: new Date('2026-09-22T12:00:00Z'), timeZone: 'Asia/Tokyo', dayOfWeek: 1 };
   const search = {
     query: 'ts:[now-1h TO now]',
@@ -135,6 +236,11 @@ it('uses one explicit clock and calendar for the range, query, filters and compa
   const previous = previousPeriodWhere({ ...DEFAULT_VIS, compare: true }, compiled, [search], [field], '"ts"')!;
   expect(previous).toContain('2026-09-22 10:00:00.000');
   expect(previous.match(/2026-09-22 12:00:00.000/g)).toHaveLength(2);
-  const midnight = compileSearch({ ...search, query: 'ts:>"2026-09-22 00:00"', filters: [], range: { from: 'now/d', to: 'now' } }, [field], '"ts"', context);
+  const midnight = compileSearch(
+    { ...search, query: 'ts:>"2026-09-22 00:00"', filters: [], range: { from: 'now/d', to: 'now' } },
+    [field],
+    '"ts"',
+    context,
+  );
   expect(midnight.where.match(/2026-09-21 15:00:00.000/g)).toHaveLength(2);
 });

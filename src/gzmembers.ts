@@ -48,7 +48,8 @@ export function inflateGzipMembers(buf: Uint8Array): GzipInfo {
   let pos = 0;
   while (pos < buf.length) {
     const start = gzipDataStart(buf, pos);
-    if (start < 0) throw new Error(members ? `trailing data after member ${members} at offset ${pos}` : 'not a gzip stream');
+    if (start < 0)
+      throw new Error(members ? `trailing data after member ${members} at offset ${pos}` : 'not a gzip stream');
     const inf = new Inflate({ windowBits: -15 });
     inf.push(buf.subarray(start), true);
     if (inf.err) throw new Error(`member ${members + 1}: ${inf.msg || `inflate error ${inf.err}`}`);
@@ -57,8 +58,10 @@ export function inflateGzipMembers(buf: Uint8Array): GzipInfo {
     const consumed = (inf as unknown as { strm: { next_in: number } }).strm.next_in;
     const trailer = start + consumed;
     if (trailer + 8 > buf.length) throw new Error(`member ${members + 1}: truncated trailer`);
-    const isize = (buf[trailer + 4] | (buf[trailer + 5] << 8) | (buf[trailer + 6] << 16) | (buf[trailer + 7] << 24)) >>> 0;
-    if (out.length % 2 ** 32 !== isize) throw new Error(`member ${members + 1}: size mismatch (${out.length} vs ISIZE ${isize})`);
+    const isize =
+      (buf[trailer + 4] | (buf[trailer + 5] << 8) | (buf[trailer + 6] << 16) | (buf[trailer + 7] << 24)) >>> 0;
+    if (out.length % 2 ** 32 !== isize)
+      throw new Error(`member ${members + 1}: size mismatch (${out.length} vs ISIZE ${isize})`);
     parts.push(out);
     total += out.length;
     members++;

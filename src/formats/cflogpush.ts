@@ -1,4 +1,17 @@
-import { j, jcast, protoName, protoVersion, urlPart, RE_PATH_REL, RE_QUERY, tlsName, tlsVersion, REC, readJson, ndjson } from './shared';
+import {
+  j,
+  jcast,
+  protoName,
+  protoVersion,
+  urlPart,
+  RE_PATH_REL,
+  RE_QUERY,
+  tlsName,
+  tlsVersion,
+  REC,
+  readJson,
+  ndjson,
+} from './shared';
 import { type FormatDef } from './types';
 
 // ---- Cloudflare Logpush (HTTP requests) ----
@@ -7,7 +20,8 @@ import { type FormatDef } from './types';
 // some of these; the ones that were not selected are NULL. EdgeStartTimestamp is RFC 3339 or
 // Unix nanoseconds depending on the job, and both are read.
 
-const cfTime = (path: string) => `coalesce(TRY_CAST(${j(path)} AS TIMESTAMP), make_timestamp(TRY_CAST(${j(path)} AS BIGINT) // 1000))`;
+const cfTime = (path: string) =>
+  `coalesce(TRY_CAST(${j(path)} AS TIMESTAMP), make_timestamp(TRY_CAST(${j(path)} AS BIGINT) // 1000))`;
 
 const CF_URI = j('ClientRequestURI');
 

@@ -59,7 +59,15 @@ export function textWidth(s: string, font = AXIS_FONT): number {
 
 /** The first tick at or before wall time `w` for `step`. */
 function floorWall(w: WallTime & { weekday: number }, step: Step, dayOfWeek: number): WallTime {
-  const z: WallTime = { year: w.year, month: w.month, day: w.day, hour: w.hour, minute: w.minute, second: w.second, ms: 0 };
+  const z: WallTime = {
+    year: w.year,
+    month: w.month,
+    day: w.day,
+    hour: w.hour,
+    minute: w.minute,
+    second: w.second,
+    ms: 0,
+  };
   switch (step.unit) {
     case 'second':
       z.second = Math.floor(z.second / step.k) * step.k;
@@ -138,7 +146,8 @@ function ticksFor(t0: number, t1: number, step: Step, tz: string, dayOfWeek: num
     last = t;
   }
   // the day-of-month run restarts on the 1st: drop a month's last tick when it would crowd it
-  if (step.unit === 'day' && step.k > 1) return out.filter((d, i) => i === out.length - 1 || out[i + 1].getTime() - d.getTime() >= (step.k - 0.5) * DAY);
+  if (step.unit === 'day' && step.k > 1)
+    return out.filter((d, i) => i === out.length - 1 || out[i + 1].getTime() - d.getTime() >= (step.k - 0.5) * DAY);
   return out;
 }
 
@@ -176,7 +185,14 @@ export interface TimeAxis {
  * Ticks and labels for a time axis showing [from, to] across `width` px of plot area.
  * `intervalMs` (the bucket size) keeps the ticks from being finer than the data.
  */
-export function timeAxis(from: Date, to: Date, width: number, intervalMs = 0, tz: string = effectiveTimeZone(), font = AXIS_FONT): TimeAxis {
+export function timeAxis(
+  from: Date,
+  to: Date,
+  width: number,
+  intervalMs = 0,
+  tz: string = effectiveTimeZone(),
+  font = AXIS_FONT,
+): TimeAxis {
   const t0 = Math.min(from.getTime(), to.getTime());
   const t1 = Math.max(from.getTime(), to.getTime());
   const span = Math.max(1, t1 - t0);
@@ -193,7 +209,8 @@ export function timeAxis(from: Date, to: Date, width: number, intervalMs = 0, tz
     chosen = { ticks, tickFormat, pattern };
     if (ticks.length < 2) break;
     let minGap = Infinity;
-    for (let i = 1; i < ticks.length; i++) minGap = Math.min(minGap, (ticks[i].getTime() - ticks[i - 1].getTime()) * pxPerMs);
+    for (let i = 1; i < ticks.length; i++)
+      minGap = Math.min(minGap, (ticks[i].getTime() - ticks[i - 1].getTime()) * pxPerMs);
     const widest = Math.max(...ticks.map((d) => textWidth(tickFormat(d), font)));
     if (minGap >= widest + GAP) break;
   }

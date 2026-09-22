@@ -6,7 +6,16 @@ import type { Field } from '../fields';
 import { findField } from '../fields';
 import { compileSearch, type Doc, type VisResult } from '../queryPlans';
 import { fetchCount, fetchDocs, fetchHistogram, fetchVis, type Bucket } from '../queries';
-import { INTERVALS, autoInterval, bucketOffsetMinutes, intervalByKey, intervalLabel, newId, type Filter, type Interval } from '../sql';
+import {
+  INTERVALS,
+  autoInterval,
+  bucketOffsetMinutes,
+  intervalByKey,
+  intervalLabel,
+  newId,
+  type Filter,
+  type Interval,
+} from '../sql';
 import { t } from '../i18n';
 import type { DiscoverState, SavedSearch, SearchState, VisState } from '../state';
 import { Chart } from './Chart';
@@ -44,21 +53,34 @@ export function Discover(props: {
   refreshTick?: number;
 }) {
   const { fields, timeExpr, search, discover, onBusy, paused, refreshTick } = props;
-  const compiled = useMemo(() => compileSearch(search, fields, timeExpr, props.evaluation), [search, fields, timeExpr, props.evaluation]);
+  const compiled = useMemo(
+    () => compileSearch(search, fields, timeExpr, props.evaluation),
+    [search, fields, timeExpr, props.evaluation],
+  );
   const interval: Interval | null = useMemo(() => {
     if (!compiled.from || !compiled.to) return null;
-    return discover.interval === 'auto' ? autoInterval(compiled.from, compiled.to) : (intervalByKey(discover.interval) ?? autoInterval(compiled.from, compiled.to));
+    return discover.interval === 'auto'
+      ? autoInterval(compiled.from, compiled.to)
+      : (intervalByKey(discover.interval) ?? autoInterval(compiled.from, compiled.to));
   }, [compiled, discover.interval]);
 
   // buckets are aligned with the display time zone (a settings change re-renders the app, so this follows it)
   const tzOffset = bucketOffsetMinutes(compiled.to ?? compiled.context.now, compiled.context.timeZone);
-  const spanSec = compiled.from && compiled.to ? Math.max(0, (compiled.to.getTime() - compiled.from.getTime()) / 1000) : 0;
+  const spanSec =
+    compiled.from && compiled.to ? Math.max(0, (compiled.to.getTime() - compiled.from.getTime()) / 1000) : 0;
   // a break-down turns the histogram into a stacked bar chart of the field's top values (the Visualize query)
   const breakdownField = discover.breakdown ? findField(fields, discover.breakdown) : undefined;
   const histVis: VisState = useMemo(
     () => ({
       chart: 'bar',
-      x: { kind: 'date_histogram', field: null, interval: discover.interval, size: 10, orderBy: 'metric', orderDir: 'desc' },
+      x: {
+        kind: 'date_histogram',
+        field: null,
+        interval: discover.interval,
+        size: 10,
+        orderBy: 'metric',
+        orderDir: 'desc',
+      },
       metrics: [{ id: 'm0', agg: 'count', field: null }],
       breakdown: { field: breakdownField?.name ?? null, size: 5, other: true },
       title: '',
@@ -80,7 +102,8 @@ export function Discover(props: {
   const [showSql, setShowSql] = useState(false);
   const [showPatterns, setShowPatterns] = useState(false);
   const [patternFieldName, setPatternFieldName] = useState<string | null>(null);
-  const patternField = (patternFieldName ? findField(fields, patternFieldName) : undefined) ?? defaultPatternField(fields);
+  const patternField =
+    (patternFieldName ? findField(fields, patternFieldName) : undefined) ?? defaultPatternField(fields);
   const scope = useRef(createQueryScope()).current;
 
   const sortKey = JSON.stringify(discover.sort);
@@ -103,12 +126,31 @@ export function Discover(props: {
         const withSplit = withHistogram && !!breakdownField;
         const [n, b, v, d] = await Promise.all([
           withHistogram ? Promise.resolve(null) : fetchCount(compiled.where, run.signal),
-          withHistogram && !withSplit ? fetchHistogram(compiled.where, timeExpr!, interval!, tzOffset, run.signal, compiled.context) : Promise.resolve([]),
-          withSplit ? fetchVis(histVis, compiled.where, timeExpr, fields, interval, tzOffset, spanSec, run.signal, compiled.context) : Promise.resolve(null),
+          withHistogram && !withSplit
+            ? fetchHistogram(compiled.where, timeExpr!, interval!, tzOffset, run.signal, compiled.context)
+            : Promise.resolve([]),
+          withSplit
+            ? fetchVis(
+                histVis,
+                compiled.where,
+                timeExpr,
+                fields,
+                interval,
+                tzOffset,
+                spanSec,
+                run.signal,
+                compiled.context,
+              )
+            : Promise.resolve(null),
           fetchDocs(compiled.where, timeExpr, fields, discover.sort, discover.columns, PAGE, 0, 'desc', run.signal),
         ]);
         if (!run.isCurrent()) return;
-        setCount(n ?? (v ? v.rows.reduce((a, r) => a + (Number.isFinite(r.m[0]) ? r.m[0] : 0), 0) : b.reduce((a, x) => a + x.c, 0)));
+        setCount(
+          n ??
+            (v
+              ? v.rows.reduce((a, r) => a + (Number.isFinite(r.m[0]) ? r.m[0] : 0), 0)
+              : b.reduce((a, x) => a + x.c, 0)),
+        );
         setBuckets(b);
         setSplit(v);
         setDocs(d.docs);
@@ -126,7 +168,19 @@ export function Discover(props: {
     // sort, columns and interval are compared by value, so a restored URL with the same content does not re-query;
     // refreshTick re-runs an unchanged search (absolute range) on auto refresh
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compiled.where, compiled.error, interval?.key, tzOffset, sortKey, colKey, breakdownField?.name, timeExpr, paused, onBusy, refreshTick]);
+  }, [
+    compiled.where,
+    compiled.error,
+    interval?.key,
+    tzOffset,
+    sortKey,
+    colKey,
+    breakdownField?.name,
+    timeExpr,
+    paused,
+    onBusy,
+    refreshTick,
+  ]);
 
   const loadMore = async () => {
     // The next page belongs to the search that is on screen. Changing the sort while it is being
@@ -135,7 +189,17 @@ export function Discover(props: {
     const run = scope.start(onBusy);
     setBusy(true);
     try {
-      const more = await fetchDocs(compiled.where, timeExpr, fields, discover.sort, discover.columns, PAGE, docs.length, 'desc', run.signal);
+      const more = await fetchDocs(
+        compiled.where,
+        timeExpr,
+        fields,
+        discover.sort,
+        discover.columns,
+        PAGE,
+        docs.length,
+        'desc',
+        run.signal,
+      );
       if (!run.isCurrent()) return;
       setDocs((d) => [...d, ...more.docs]);
     } catch (e) {
@@ -150,7 +214,10 @@ export function Discover(props: {
   const addFilter = (field: string, value: string | null, negate: boolean) => {
     const f = findField(fields, field);
     if (!f) return;
-    const fl: Filter = value === null ? { id: newId(), field: f.name, op: 'does_not_exist', negate } : { id: newId(), field: f.name, op: 'is', value, negate };
+    const fl: Filter =
+      value === null
+        ? { id: newId(), field: f.name, op: 'does_not_exist', negate }
+        : { id: newId(), field: f.name, op: 'is', value, negate };
     setFilters([...search.filters, fl]);
   };
   const addExists = (field: string) => {
@@ -158,7 +225,9 @@ export function Discover(props: {
     if (f) setFilters([...search.filters, { id: newId(), field: f.name, op: 'exists' }]);
   };
   const toggleColumn = (name: string) => {
-    const cols = discover.columns.includes(name) ? discover.columns.filter((c) => c !== name) : [...discover.columns, name];
+    const cols = discover.columns.includes(name)
+      ? discover.columns.filter((c) => c !== name)
+      : [...discover.columns, name];
     props.onDiscover({ ...discover, columns: cols });
   };
   const onSort = (field: string) => {
@@ -166,7 +235,8 @@ export function Discover(props: {
     const dir = cur ? (cur.dir === 'desc' ? 'asc' : 'desc') : 'desc';
     props.onDiscover({ ...discover, sort: [{ field, dir }] });
   };
-  const onBrush = (from: Date, to: Date) => props.onSearch({ ...search, range: { from: from.toISOString(), to: to.toISOString() } });
+  const onBrush = (from: Date, to: Date) =>
+    props.onSearch({ ...search, range: { from: from.toISOString(), to: to.toISOString() } });
   const submit = (query: string, range: TimeRange) => props.onSearch({ ...search, query, range });
   /** A saved search: its query, filters, columns and sort; the time range stays as it is. */
   const loadSaved = (s: SavedSearch) => {
@@ -174,18 +244,36 @@ export function Discover(props: {
     props.onDiscover(s.discover);
   };
 
-  const filled = useMemo(() => (interval && compiled.from && compiled.to ? fillBuckets(buckets, compiled.to, interval, tzOffset) : buckets), [buckets, interval, compiled, tzOffset]);
+  const filled = useMemo(
+    () => (interval && compiled.from && compiled.to ? fillBuckets(buckets, compiled.to, interval, tzOffset) : buckets),
+    [buckets, interval, compiled, tzOffset],
+  );
 
   return (
     <div class="page">
       <div class="topbar">
-        <QueryBar query={search.query} range={search.range} error={compiled.error ?? error} busy={busy} fields={fields} onSubmit={submit} />
+        <QueryBar
+          query={search.query}
+          range={search.range}
+          error={compiled.error ?? error}
+          busy={busy}
+          fields={fields}
+          onSubmit={submit}
+        />
         <DiagnosePanel error={error} />
         <FilterBar filters={search.filters} fields={fields} onChange={setFilters} />
       </div>
       {busy && <div class="loading-bar" />}
       <div class="discover">
-        <FieldSidebar fields={fields} selected={discover.columns} where={compiled.where} mode="discover" onToggleColumn={toggleColumn} onAddFilter={addFilter} onVisualize={props.onVisualizeField} />
+        <FieldSidebar
+          fields={fields}
+          selected={discover.columns}
+          where={compiled.where}
+          mode="discover"
+          onToggleColumn={toggleColumn}
+          onAddFilter={addFilter}
+          onVisualize={props.onVisualizeField}
+        />
         <div class="main">
           <div class="hits">
             <span class="n">{count === null ? '…' : count.toLocaleString()}</span>
@@ -195,11 +283,23 @@ export function Discover(props: {
               {compiled.from && compiled.to ? ` · ${formatLocal(compiled.from)} → ${formatLocal(compiled.to)}` : ''}
             </span>
             <span class="grow" />
-            <button class={'sql-toggle' + (showPatterns ? ' on' : '')} onClick={() => setShowPatterns(!showPatterns)} aria-pressed={showPatterns}>
+            <button
+              class={'sql-toggle' + (showPatterns ? ' on' : '')}
+              onClick={() => setShowPatterns(!showPatterns)}
+              aria-pressed={showPatterns}
+            >
               {t('pat.button')}
             </button>
             <SavedSearches search={search} discover={discover} onLoad={loadSaved} />
-            <ExportMenu where={compiled.where} timeField={props.timeField} timeExpr={timeExpr} fields={fields} sort={discover.sort} columns={discover.columns} disabled={!!compiled.error || paused} />
+            <ExportMenu
+              where={compiled.where}
+              timeField={props.timeField}
+              timeExpr={timeExpr}
+              fields={fields}
+              sort={discover.sort}
+              columns={discover.columns}
+              disabled={!!compiled.error || paused}
+            />
             <button class="sql-toggle" onClick={() => setShowSql(!showSql)}>
               {showSql ? t('disc.hideSql') : t('disc.showSql')}
             </button>
@@ -212,7 +312,12 @@ export function Discover(props: {
           {timeExpr && interval && compiled.from && compiled.to && (
             <div class="chart-panel">
               <div class="chart-head">
-                <span>{t('disc.perInterval', { field: props.timeField?.name ?? '', interval: intervalLabel(interval).toLowerCase() })}</span>
+                <span>
+                  {t('disc.perInterval', {
+                    field: props.timeField?.name ?? '',
+                    interval: intervalLabel(interval).toLowerCase(),
+                  })}
+                </span>
                 <select
                   class="input chart-select"
                   title={t('disc.breakdown')}
@@ -257,13 +362,27 @@ export function Discover(props: {
                   }}
                 />
               ) : (
-                <Histogram buckets={filled} interval={interval} tzOffset={tzOffset} from={compiled.from} to={compiled.to} onBrush={onBrush} />
+                <Histogram
+                  buckets={filled}
+                  interval={interval}
+                  tzOffset={tzOffset}
+                  from={compiled.from}
+                  to={compiled.to}
+                  onBrush={onBrush}
+                />
               )}
             </div>
           )}
           {showPatterns && (
             <div class="doc-wrap">
-              <PatternsPanel fields={fields} where={compiled.where} field={patternField} onField={setPatternFieldName} onFilter={(f) => setFilters([...search.filters, f])} refreshTick={refreshTick} />
+              <PatternsPanel
+                fields={fields}
+                where={compiled.where}
+                field={patternField}
+                onField={setPatternFieldName}
+                onFilter={(f) => setFilters([...search.filters, f])}
+                refreshTick={refreshTick}
+              />
             </div>
           )}
           <div class="doc-wrap">

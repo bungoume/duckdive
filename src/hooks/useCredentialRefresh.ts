@@ -3,7 +3,13 @@
 // so the page can say why queries are about to fail instead of showing bare 403s.
 
 import { useEffect, useState } from 'preact/hooks';
-import { credentialSessionGuard, getCredentials, loadCredentials, secondsUntilExpiry, type AwsCredentials } from '../auth';
+import {
+  credentialSessionGuard,
+  getCredentials,
+  loadCredentials,
+  secondsUntilExpiry,
+  type AwsCredentials,
+} from '../auth';
 import { applyS3, type AttachedSource } from '../datasource';
 import { describeError } from '../errors';
 import type { SourceConfig } from '../sources';

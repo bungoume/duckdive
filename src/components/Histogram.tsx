@@ -16,7 +16,15 @@ export function fillBuckets(b: Bucket[], to: Date, iv: Interval, tzOffset: numbe
   return bucketStarts(b[0].t, to.getTime(), iv, tzOffset).map((t) => ({ t, c: map.get(t) ?? 0 }));
 }
 
-export function Histogram(props: { buckets: Bucket[]; interval: Interval; tzOffset: number; from: Date; to: Date; height?: number; onBrush: (from: Date, to: Date) => void }) {
+export function Histogram(props: {
+  buckets: Bucket[];
+  interval: Interval;
+  tzOffset: number;
+  from: Date;
+  to: Date;
+  height?: number;
+  onBrush: (from: Date, to: Date) => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [brush, setBrush] = useState<{ x0: number; x1: number } | null>(null);
   /** Plot's figure element exposes its scales; only the x scale's inverse is used (brush → dates). */
@@ -38,7 +46,11 @@ export function Histogram(props: { buckets: Bucket[]; interval: Interval; tzOffs
     const el = ref.current;
     if (!el) return;
     // a bar spans its bucket, whose end is the next bucket start (calendar months differ in length)
-    const data = props.buckets.map((b) => ({ t: new Date(b.t), t2: new Date(nextBucketStart(b.t, props.interval, props.tzOffset)), c: b.c }));
+    const data = props.buckets.map((b) => ({
+      t: new Date(b.t),
+      t2: new Date(nextBucketStart(b.t, props.interval, props.tzOffset)),
+      c: b.c,
+    }));
     const marginLeft = 50;
     const marginRight = 20;
     const axis = timeAxis(props.from, props.to, width - marginLeft - marginRight, props.interval.ms);
@@ -49,7 +61,14 @@ export function Histogram(props: { buckets: Bucket[]; interval: Interval; tzOffs
       marginRight,
       marginBottom: 28,
       style: { fontSize: '11px', background: 'transparent', overflow: 'visible' },
-      x: { type: 'time', domain: [props.from, props.to], label: null, grid: false, ticks: axis.ticks, tickFormat: axis.tickFormat },
+      x: {
+        type: 'time',
+        domain: [props.from, props.to],
+        label: null,
+        grid: false,
+        ticks: axis.ticks,
+        tickFormat: axis.tickFormat,
+      },
       y: { label: t('hist.count'), grid: true, nice: true, tickFormat: fmtAxisNumber },
       marks: [
         Plot.rectY(data, { x1: 't', x2: 't2', y: 'c', fill: PALETTE[0], inset: 1, insetLeft: 0.5, insetRight: 0.5 }),
@@ -59,7 +78,8 @@ export function Histogram(props: { buckets: Bucket[]; interval: Interval; tzOffs
           Plot.pointerX({
             x: 't',
             y: 'c',
-            title: (d: { t: Date; c: number }) => `${formatBucket(d.t, props.interval.ms)}\n${t('hist.records', { n: d.c.toLocaleString() })}`,
+            title: (d: { t: Date; c: number }) =>
+              `${formatBucket(d.t, props.interval.ms)}\n${t('hist.records', { n: d.c.toLocaleString() })}`,
           }),
         ),
       ],
@@ -117,7 +137,9 @@ export function Histogram(props: { buckets: Bucket[]; interval: Interval; tzOffs
       style="cursor:crosshair"
     >
       <div ref={ref} />
-      {brush && <div class="brush" style={{ left: Math.min(brush.x0, brush.x1), width: Math.abs(brush.x1 - brush.x0) }} />}
+      {brush && (
+        <div class="brush" style={{ left: Math.min(brush.x0, brush.x1), width: Math.abs(brush.x1 - brush.x0) }} />
+      )}
     </div>
   );
 }

@@ -4,7 +4,10 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-export async function launchExtension({ dist = new URL('../dist/chrome', import.meta.url).pathname, headless = true } = {}) {
+export async function launchExtension({
+  dist = new URL('../dist/chrome', import.meta.url).pathname,
+  headless = true,
+} = {}) {
   const userDataDir = mkdtempSync(join(tmpdir(), 'ddv-ext-'));
   const context = await chromium.launchPersistentContext(userDataDir, {
     channel: 'chromium',
@@ -56,8 +59,16 @@ export async function waitReady(page, timeout = 120000) {
  * source.
  */
 export async function settled(page, timeout = 120000) {
-  const busy = () => !!document.querySelector('.loading-bar') || (window.__ddv?.queriesRunning?.() ?? 0) > 0 || !!window.__ddv?.attaching || !!window.__ddv?.resolvePending;
-  const idle = () => !document.querySelector('.loading-bar') && (window.__ddv?.queriesRunning?.() ?? 0) === 0 && !window.__ddv?.attaching && !window.__ddv?.resolvePending;
+  const busy = () =>
+    !!document.querySelector('.loading-bar') ||
+    (window.__ddv?.queriesRunning?.() ?? 0) > 0 ||
+    !!window.__ddv?.attaching ||
+    !!window.__ddv?.resolvePending;
+  const idle = () =>
+    !document.querySelector('.loading-bar') &&
+    (window.__ddv?.queriesRunning?.() ?? 0) === 0 &&
+    !window.__ddv?.attaching &&
+    !window.__ddv?.resolvePending;
   const t0 = Date.now();
   await page.waitForFunction(busy, null, { timeout: 1500 }).catch(() => undefined);
   for (;;) {

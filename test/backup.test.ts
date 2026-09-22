@@ -9,7 +9,12 @@ describe('backup', () => {
     localStorage.setItem('ddv.lang', 'ja');
     localStorage.setItem('other', 'x');
     const b = makeBackup(new Date('2026-09-17T00:00:00Z'));
-    expect(b).toEqual({ app: 'duckdive', version: 1, exportedAt: '2026-09-17T00:00:00.000Z', items: { 'ddv.settings': '{"a":1}', 'ddv.lang': 'ja' } });
+    expect(b).toEqual({
+      app: 'duckdive',
+      version: 1,
+      exportedAt: '2026-09-17T00:00:00.000Z',
+      items: { 'ddv.settings': '{"a":1}', 'ddv.lang': 'ja' },
+    });
     localStorage.clear();
     expect(restoreBackup(parseBackup(JSON.stringify(b)))).toBe(2);
     expect(localStorage.getItem('ddv.lang')).toBe('ja');
@@ -28,7 +33,11 @@ describe('backup', () => {
       authMode: 'oidc',
       localId: 'abc',
       s3: { accessKeyId: 'AKIAOWN' },
-      oidc: { clientId: 'c', roleArn: 'arn:aws:iam::1:role/r', stsEndpoint: 'https://a1b2c3.execute-api.us-east-1.amazonaws.com/p' },
+      oidc: {
+        clientId: 'c',
+        roleArn: 'arn:aws:iam::1:role/r',
+        stsEndpoint: 'https://a1b2c3.execute-api.us-east-1.amazonaws.com/p',
+      },
     };
     const file = (items: Record<string, string>) => JSON.stringify({ app: 'duckdive', version: 1, items });
     const one = JSON.parse(parseBackup(file({ 'ddv.source': JSON.stringify(hostile) }))['ddv.source']);
@@ -45,7 +54,9 @@ describe('backup', () => {
 
     // AWS's own STS survives, and an entry that is not JSON is left out
     const ok = { ...hostile, oidc: { ...hostile.oidc, stsEndpoint: 'https://sts.us-east-1.amazonaws.com/' } };
-    expect(JSON.parse(parseBackup(file({ 'ddv.source': JSON.stringify(ok) }))['ddv.source']).oidc.stsEndpoint).toBe('https://sts.us-east-1.amazonaws.com/');
+    expect(JSON.parse(parseBackup(file({ 'ddv.source': JSON.stringify(ok) }))['ddv.source']).oidc.stsEndpoint).toBe(
+      'https://sts.us-east-1.amazonaws.com/',
+    );
     expect(parseBackup(file({ 'ddv.source': 'not json', 'ddv.lang': 'ja' }))).toEqual({ 'ddv.lang': 'ja' });
   });
 
@@ -54,6 +65,8 @@ describe('backup', () => {
     localStorage.setItem('ddv.lang', 'ja');
     expect(makeBackup().items).toEqual({ 'ddv.lang': 'ja' });
     // nor does a hand-made file get to put one back
-    expect(parseBackup('{"app":"duckdive","items":{"ddv.trustedSql":"[\\"evil\\"]","ddv.lang":"en"}}')).toEqual({ 'ddv.lang': 'en' });
+    expect(parseBackup('{"app":"duckdive","items":{"ddv.trustedSql":"[\\"evil\\"]","ddv.lang":"en"}}')).toEqual({
+      'ddv.lang': 'en',
+    });
   });
 });

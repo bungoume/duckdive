@@ -28,10 +28,24 @@ export function kindOf(duckType: string): FieldKind {
   if (t.startsWith('UNION')) return 'object';
   if (t.endsWith('[]') || t.startsWith('LIST') || t.startsWith('ARRAY')) return 'list';
   if (t === 'JSON') return 'json';
-  if (t === 'VARCHAR' || t === 'TEXT' || t === 'STRING' || t === 'UUID' || t.startsWith('ENUM') || t === 'CHAR' || t.startsWith('VARCHAR(')) return 'string';
+  if (
+    t === 'VARCHAR' ||
+    t === 'TEXT' ||
+    t === 'STRING' ||
+    t === 'UUID' ||
+    t.startsWith('ENUM') ||
+    t === 'CHAR' ||
+    t.startsWith('VARCHAR(')
+  )
+    return 'string';
   if (t === 'BOOLEAN' || t === 'BOOL') return 'boolean';
   if (t.startsWith('TIMESTAMP') || t === 'DATE' || t === 'DATETIME') return 'date';
-  if (/^(TINYINT|SMALLINT|INTEGER|INT|BIGINT|HUGEINT|UTINYINT|USMALLINT|UINTEGER|UBIGINT|UHUGEINT|FLOAT|REAL|DOUBLE|DECIMAL|NUMERIC)/.test(t)) return 'number';
+  if (
+    /^(TINYINT|SMALLINT|INTEGER|INT|BIGINT|HUGEINT|UTINYINT|USMALLINT|UINTEGER|UBIGINT|UHUGEINT|FLOAT|REAL|DOUBLE|DECIMAL|NUMERIC)/.test(
+      t,
+    )
+  )
+    return 'number';
   return 'unknown';
 }
 
@@ -101,7 +115,14 @@ export function parseStructType(t: string): [string, string][] | null {
   return out;
 }
 
-function expandStruct(prefixName: string, prefixExpr: string, column: string, duckType: string, depth: number, out: Field[]) {
+function expandStruct(
+  prefixName: string,
+  prefixExpr: string,
+  column: string,
+  duckType: string,
+  depth: number,
+  out: Field[],
+) {
   const members = parseStructType(duckType);
   if (!members || depth > 4) return;
   for (const [name, type] of members) {
@@ -161,14 +182,23 @@ async function expandJson(view: string, col: string, out: Field[]) {
  * which for remote files means another round of HEAD / footer requests.
  */
 export async function introspectFields(view: string): Promise<Field[]> {
-  const r = await query(`SELECT column_name, data_type FROM duckdb_columns() WHERE table_name = ${lit(view)} AND schema_name = current_schema() ORDER BY column_index`);
+  const r = await query(
+    `SELECT column_name, data_type FROM duckdb_columns() WHERE table_name = ${lit(view)} AND schema_name = current_schema() ORDER BY column_index`,
+  );
   const out: Field[] = [];
   for (const row of r.rows) {
     const col = String(row.column_name);
     const type = String(row.data_type);
     const kind = kindOf(type);
     const expr = quoteIdent(col);
-    out.push({ name: col, expr, kind, duckType: type, column: col, searchable: kind === 'string' || kind === 'json' || kind === 'list' });
+    out.push({
+      name: col,
+      expr,
+      kind,
+      duckType: type,
+      column: col,
+      searchable: kind === 'string' || kind === 'json' || kind === 'list',
+    });
     if (kind === 'object') expandStruct(col, expr, col, type, 0, out);
     else if (kind === 'json') await expandJson(view, col, out);
   }
@@ -200,5 +230,8 @@ export function isTimeCandidate(f: Field): boolean {
   if (f.kind === 'date') return true;
   const n = f.name.toLowerCase();
   if (n === 'start' || n === 'end') return f.kind === 'number';
-  return (f.kind === 'number' || f.kind === 'string') && /(^|[_.])(ts|time|timestamp|date|datetime|created|updated|@timestamp|eventtime)(_at|_ms|_us|_ns)?$/.test(n);
+  return (
+    (f.kind === 'number' || f.kind === 'string') &&
+    /(^|[_.])(ts|time|timestamp|date|datetime|created|updated|@timestamp|eventtime)(_at|_ms|_us|_ns)?$/.test(n)
+  );
 }

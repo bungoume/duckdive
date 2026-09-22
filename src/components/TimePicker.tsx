@@ -1,6 +1,14 @@
 import { useState } from 'preact/hooks';
 import { FormField, Popover } from './ui';
-import { describeRange, fromDatetimeLocal, quickRangeLabel, quickRanges, resolveRange, toDatetimeLocal, type TimeRange } from '../datemath';
+import {
+  describeRange,
+  fromDatetimeLocal,
+  quickRangeLabel,
+  quickRanges,
+  resolveRange,
+  toDatetimeLocal,
+  type TimeRange,
+} from '../datemath';
 import { formatDate } from '../datefmt';
 import { t } from '../i18n';
 
@@ -42,7 +50,11 @@ export function TimePicker(props: { range: TimeRange; onChange: (r: TimeRange) =
         onClose={() => setOpen(false)}
         align="right"
         button={
-          <button class="btn" onClick={openPicker} title={resolved ? `${formatDate(resolved.from)} → ${formatDate(resolved.to)}` : ''}>
+          <button
+            class="btn"
+            onClick={openPicker}
+            title={resolved ? `${formatDate(resolved.from)} → ${formatDate(resolved.to)}` : ''}
+          >
             <span aria-hidden="true">◷</span> {describeRange(props.range)}{' '}
             <span class="subdued" aria-hidden="true">
               ▾
@@ -54,7 +66,14 @@ export function TimePicker(props: { range: TimeRange; onChange: (r: TimeRange) =
           <h4>{t('tp.quick')}</h4>
           <div class="row" style="margin-bottom:10px">
             <span>{t('tp.last')}</span>
-            <input class="input" type="number" min={1} value={n} style="width:80px" onInput={(e) => setN(Number(e.currentTarget.value))} />
+            <input
+              class="input"
+              type="number"
+              min={1}
+              value={n}
+              style="width:80px"
+              onInput={(e) => setN(Number(e.currentTarget.value))}
+            />
             <select class="input" style="width:120px" value={unit} onChange={(e) => setUnit(e.currentTarget.value)}>
               <option value="s">{t('tp.unit.s')}</option>
               <option value="m">{t('tp.unit.m')}</option>
@@ -95,10 +114,22 @@ export function TimePicker(props: { range: TimeRange; onChange: (r: TimeRange) =
             <div class="col">
               <h4>{t('tp.absolute')}</h4>
               <FormField label={t('tp.start')}>
-                <input class="input" type="datetime-local" step={1} value={absFrom} onInput={(e) => setAbsFrom(e.currentTarget.value)} />
+                <input
+                  class="input"
+                  type="datetime-local"
+                  step={1}
+                  value={absFrom}
+                  onInput={(e) => setAbsFrom(e.currentTarget.value)}
+                />
               </FormField>
               <FormField label={t('tp.end')}>
-                <input class="input" type="datetime-local" step={1} value={absTo} onInput={(e) => setAbsTo(e.currentTarget.value)} />
+                <input
+                  class="input"
+                  type="datetime-local"
+                  step={1}
+                  value={absTo}
+                  onInput={(e) => setAbsTo(e.currentTarget.value)}
+                />
               </FormField>
               <div class="row end">
                 <button

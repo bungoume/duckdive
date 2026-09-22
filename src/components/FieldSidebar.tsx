@@ -31,7 +31,10 @@ export function FieldSidebar(props: {
     let alive = true;
     setLoading(true);
     // numbers get a summary and a small distribution on top of their most frequent values
-    Promise.all([fetchTopValues(props.where, f), f.kind === 'number' ? fetchNumberStats(props.where, f) : Promise.resolve(null)])
+    Promise.all([
+      fetchTopValues(props.where, f),
+      f.kind === 'number' ? fetchNumberStats(props.where, f) : Promise.resolve(null),
+    ])
       .then(([r, st]) => {
         if (!alive) return;
         setTops(r);
@@ -63,7 +66,10 @@ export function FieldSidebar(props: {
   /** Open (or close) the details popover next to the item that was clicked or activated from the keyboard. */
   const toggleDetails = (f: Field, el: HTMLElement) => {
     const r = el.getBoundingClientRect();
-    setAnchor({ left: Math.min(r.right + 4, window.innerWidth - 336), top: Math.max(8, Math.min(r.top, window.innerHeight - 360)) });
+    setAnchor({
+      left: Math.min(r.right + 4, window.innerWidth - 336),
+      top: Math.max(8, Math.min(r.top, window.innerHeight - 360)),
+    });
     setOpen(open === f.name ? null : f.name);
   };
 
@@ -162,7 +168,13 @@ export function FieldSidebar(props: {
                     <div key={v.value ?? ''} class="topval">
                       <div>
                         <div class="v mono" title={v.value ?? t('common.null')}>
-                          {v.value === null ? <i>{t('common.null')}</i> : v.value === '' ? <i>{t('common.empty')}</i> : v.value}
+                          {v.value === null ? (
+                            <i>{t('common.null')}</i>
+                          ) : v.value === '' ? (
+                            <i>{t('common.empty')}</i>
+                          ) : (
+                            v.value
+                          )}
                         </div>
                         <div class="bar">
                           <div style={{ width: `${Math.round(v.pct * 100)}%` }} />
@@ -170,10 +182,18 @@ export function FieldSidebar(props: {
                       </div>
                       <span class="hint">{(v.pct * 100).toFixed(1)}%</span>
                       <span class="pm">
-                        <button title={t('doc.filterFor')} aria-label={t('doc.filterFor')} onClick={() => props.onAddFilter(f.name, v.value, false)}>
+                        <button
+                          title={t('doc.filterFor')}
+                          aria-label={t('doc.filterFor')}
+                          onClick={() => props.onAddFilter(f.name, v.value, false)}
+                        >
                           +
                         </button>
-                        <button title={t('doc.filterOut')} aria-label={t('doc.filterOut')} onClick={() => props.onAddFilter(f.name, v.value, true)}>
+                        <button
+                          title={t('doc.filterOut')}
+                          aria-label={t('doc.filterOut')}
+                          onClick={() => props.onAddFilter(f.name, v.value, true)}
+                        >
                           −
                         </button>
                       </span>

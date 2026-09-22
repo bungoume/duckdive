@@ -18,7 +18,10 @@ export function cacheWorkerPort(): MessagePort {
   return workerPort;
 }
 
-const waiting = new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout> }>();
+const waiting = new Map<
+  string,
+  { resolve: (v: unknown) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout> }
+>();
 port.onmessage = (ev) => {
   const d = ev.data as { id?: string; ok?: boolean; error?: string };
   if (!d?.id) return;
@@ -30,7 +33,11 @@ port.onmessage = (ev) => {
   else w.resolve(d);
 };
 
-function send<K extends keyof CacheRequests>(type: K, payload: CacheRequests[K], timeoutMs = 5000): Promise<CacheResponses[K]> {
+function send<K extends keyof CacheRequests>(
+  type: K,
+  payload: CacheRequests[K],
+  timeoutMs = 5000,
+): Promise<CacheResponses[K]> {
   const id = Math.random().toString(36).slice(2);
   return new Promise<CacheResponses[K]>((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -75,4 +82,14 @@ export function fmtBytes(n: number): string {
   return `${n.toFixed(i === 0 ? 0 : 1)} ${u[i]}`;
 }
 
-expose({ cacheStats, cacheFiles, cacheClear, cachePurge, cacheSetConfig, storageEstimate, cachePing, cacheCompact, cacheSeed });
+expose({
+  cacheStats,
+  cacheFiles,
+  cacheClear,
+  cachePurge,
+  cacheSetConfig,
+  storageEstimate,
+  cachePing,
+  cacheCompact,
+  cacheSeed,
+});

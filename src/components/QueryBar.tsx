@@ -28,7 +28,14 @@ const AUTO_REFRESH = [
   { ms: 900_000, key: '15m' },
 ] as const;
 
-export function QueryBar(props: { query: string; range: TimeRange; error: string | null; busy: boolean; fields?: Field[]; onSubmit: (query: string, range: TimeRange) => void }) {
+export function QueryBar(props: {
+  query: string;
+  range: TimeRange;
+  error: string | null;
+  busy: boolean;
+  fields?: Field[];
+  onSubmit: (query: string, range: TimeRange) => void;
+}) {
   const [text, setText] = useState(props.query);
   const [help, setHelp] = useState(false);
   const [sugg, setSugg] = useState<Suggestions | null>(null);
@@ -107,7 +114,9 @@ export function QueryBar(props: { query: string; range: TimeRange; error: string
               setText(e.currentTarget.value);
               suggest(e.currentTarget.value, e.currentTarget.selectionStart ?? e.currentTarget.value.length);
             }}
-            onFocus={(e) => suggest(e.currentTarget.value, e.currentTarget.selectionStart ?? e.currentTarget.value.length)}
+            onFocus={(e) =>
+              suggest(e.currentTarget.value, e.currentTarget.selectionStart ?? e.currentTarget.value.length)
+            }
             onClick={(e) => {
               if (!sugg) suggest(e.currentTarget.value, e.currentTarget.selectionStart ?? e.currentTarget.value.length);
             }}
@@ -116,7 +125,10 @@ export function QueryBar(props: { query: string; range: TimeRange; error: string
               if (sugg) {
                 if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
                   e.preventDefault();
-                  setSel((Math.max(sel, 0) + (e.key === 'ArrowDown' ? (sel < 0 ? 0 : 1) : sugg.items.length - 1)) % sugg.items.length);
+                  setSel(
+                    (Math.max(sel, 0) + (e.key === 'ArrowDown' ? (sel < 0 ? 0 : 1) : sugg.items.length - 1)) %
+                      sugg.items.length,
+                  );
                   return;
                 }
                 // Tab takes the highlighted field name; Enter takes a recent query only once one was picked with the arrows

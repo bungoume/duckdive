@@ -6,7 +6,11 @@ import { storeSavedVis } from '../src/savedViews';
 
 const attach = vi.hoisted(() => vi.fn());
 const discover = vi.hoisted(() => vi.fn());
-vi.mock('../src/datasource', async (original) => ({ ...(await original<object>()), attachSource: attach, discoverVariables: discover }));
+vi.mock('../src/datasource', async (original) => ({
+  ...(await original<object>()),
+  attachSource: attach,
+  discoverVariables: discover,
+}));
 vi.mock('../src/duck', () => ({ cancelAllQueries: async () => undefined }));
 const secrets = vi.hoisted(() => vi.fn());
 vi.mock('../src/secrets', () => ({ withSecrets: secrets, storeSecrets: async () => undefined }));
@@ -18,8 +22,25 @@ import { loadSavedVis } from '../src/savedViews';
 
 const url = { page: 'discover' as const, search: DEFAULT_SEARCH, discover: DEFAULT_DISCOVER, vis: DEFAULT_VIS };
 const sourceA = { ...DEFAULT_SOURCE, name: 'A' };
-const sourceB = { ...DEFAULT_SOURCE, kind: 'url' as const, name: 'B', urls: 'https://logs.example.com/B.parquet', authMode: 'none' as const };
-const attachedA: AttachedSource = { fields: [], files: ['A'], fileSizes: [], captures: [], timeField: null, rowCount: 1, description: 'A', rangeDependent: false, totalBytes: null, warning: null };
+const sourceB = {
+  ...DEFAULT_SOURCE,
+  kind: 'url' as const,
+  name: 'B',
+  urls: 'https://logs.example.com/B.parquet',
+  authMode: 'none' as const,
+};
+const attachedA: AttachedSource = {
+  fields: [],
+  files: ['A'],
+  fileSizes: [],
+  captures: [],
+  timeField: null,
+  rowCount: 1,
+  description: 'A',
+  rangeDependent: false,
+  totalBytes: null,
+  warning: null,
+};
 const attachedB = { ...attachedA, files: ['B'], description: 'B' };
 
 let connection: ReturnType<typeof createConnection>;
@@ -54,10 +75,18 @@ beforeEach(async () => {
 
 describe('switching sources', () => {
   it.each(['visualize', 'dashboard'] as const)('attaches the previous period for a comparison on %s', async (page) => {
-    const state = { ...url, page, search: { ...url.search, range: { from: '2026-09-22T00:00:00Z', to: '2026-09-23T00:00:00Z' } }, vis: { ...DEFAULT_VIS, compare: true } };
+    const state = {
+      ...url,
+      page,
+      search: { ...url.search, range: { from: '2026-09-22T00:00:00Z', to: '2026-09-23T00:00:00Z' } },
+      vis: { ...DEFAULT_VIS, compare: true },
+    };
     storeSavedVis([{ id: 'comparison', title: '', savedAt: '', search: state.search, vis: state.vis, pinned: true }]);
     await TestConnection(state).connect(sourceB);
-    expect(attach.mock.lastCall?.[3]).toEqual({ from: new Date('2026-09-21T00:00:00Z'), to: new Date('2026-09-23T00:00:00Z') });
+    expect(attach.mock.lastCall?.[3]).toEqual({
+      from: new Date('2026-09-21T00:00:00Z'),
+      to: new Date('2026-09-23T00:00:00Z'),
+    });
   });
 
   it('remembers an explicit choice of no time field in both the source and history', async () => {

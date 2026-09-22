@@ -56,7 +56,12 @@ function FilterEditor(props: { fields: Field[]; initial?: Filter; onSave: (f: Fi
       )}
       {custom && (
         <FormField label={t('flt.sql')}>
-          <textarea class="input" value={sql} onInput={(e) => setSql(e.currentTarget.value)} placeholder={'e.g. "http"."latency_ms" > 500 AND "level" <> \'info\''} />
+          <textarea
+            class="input"
+            value={sql}
+            onInput={(e) => setSql(e.currentTarget.value)}
+            placeholder={'e.g. "http"."latency_ms" > 500 AND "level" <> \'info\''}
+          />
         </FormField>
       )}
       <div class="row end">
@@ -66,7 +71,13 @@ function FilterEditor(props: { fields: Field[]; initial?: Filter; onSave: (f: Fi
         <button
           class="btn primary small"
           onClick={() => {
-            const f: Filter = { id: props.initial?.id ?? newId(), field, op, negate: props.initial?.negate, disabled: props.initial?.disabled };
+            const f: Filter = {
+              id: props.initial?.id ?? newId(),
+              field,
+              op,
+              negate: props.initial?.negate,
+              disabled: props.initial?.disabled,
+            };
             if (op === 'is' || op === 'is_not') f.value = value;
             if (op === 'is_one_of' || op === 'is_not_one_of')
               f.values = value
@@ -96,7 +107,8 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
   const [menu, setMenu] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const update = (id: string, patch: Partial<Filter>) => props.onChange(props.filters.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+  const update = (id: string, patch: Partial<Filter>) =>
+    props.onChange(props.filters.map((f) => (f.id === id ? { ...f, ...patch } : f)));
   const replace = (id: string, nf: Filter) => props.onChange(props.filters.map((f) => (f.id === id ? nf : f)));
   const remove = (id: string) => props.onChange(props.filters.filter((f) => f.id !== id));
   /** A custom SQL filter saved from the editor was written (or reviewed) here: remember it as trusted. */
@@ -122,7 +134,16 @@ export function FilterBar(props: { filters: Filter[]; fields: Field[]; onChange:
             setEditing(null);
           }}
           button={
-            <span class={'pill' + (f.negate ? ' negate' : '') + (f.disabled ? ' disabled' : '') + (f.untrusted ? ' untrusted' : '')} title={describeFilter(f)} data-not={t('flt.not')}>
+            <span
+              class={
+                'pill' +
+                (f.negate ? ' negate' : '') +
+                (f.disabled ? ' disabled' : '') +
+                (f.untrusted ? ' untrusted' : '')
+              }
+              title={describeFilter(f)}
+              data-not={t('flt.not')}
+            >
               <span
                 class="txt"
                 style="cursor:pointer"

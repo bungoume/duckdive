@@ -18,7 +18,9 @@ try {
   // Extension icons: transparent background, exact pixel sizes.
   for (const s of [16, 32, 48, 128]) {
     await page.setViewportSize({ width: s, height: s });
-    await page.setContent(`<style>html,body{margin:0;background:transparent}img{display:block;width:${s}px;height:${s}px}</style><img src="${dataUrl}">`);
+    await page.setContent(
+      `<style>html,body{margin:0;background:transparent}img{display:block;width:${s}px;height:${s}px}</style><img src="${dataUrl}">`,
+    );
     writeFileSync(`${root}public/icons/icon-${s}.png`, await page.screenshot({ omitBackground: true }));
   }
   // Store listing icon (128×128, same image) and the small promo tile (440×280).

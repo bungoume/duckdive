@@ -10,7 +10,18 @@ import { bucketStarts, nextBucketStart, type Interval } from '../sql';
 import type { ChartType, MetricDef } from '../state';
 import { fmtAxisNumber, fmtNum } from './ui';
 
-export const PALETTE = ['#54B399', '#6092C0', '#D36086', '#9170B8', '#CA8EAE', '#D6BF57', '#B9A888', '#DA8B45', '#AA6556', '#E7664C'];
+export const PALETTE = [
+  '#54B399',
+  '#6092C0',
+  '#D36086',
+  '#9170B8',
+  '#CA8EAE',
+  '#D6BF57',
+  '#B9A888',
+  '#DA8B45',
+  '#AA6556',
+  '#E7664C',
+];
 
 interface Series {
   x: Date | string | number;
@@ -19,7 +30,11 @@ interface Series {
 }
 
 /** Turn a VisResult into long-form series data, one series per (metric x group); `percent` scales every x to 100. */
-export function toSeries(r: VisResult, metrics: MetricDef[], percent = false): { data: Series[]; series: string[]; xDomain: (Date | string | number)[] } {
+export function toSeries(
+  r: VisResult,
+  metrics: MetricDef[],
+  percent = false,
+): { data: Series[]; series: string[]; xDomain: (Date | string | number)[] } {
   const hasG = r.groups.length > 0;
   const metricIdx = hasG ? [0] : metrics.map((_, i) => i);
   const series: string[] = [];
@@ -95,7 +110,14 @@ export function Chart(props: {
   const drag = useRef<{ x: number; y: number } | null>(null);
   // hit-testing model rebuilt with every render of the plot
   const model = useRef<{
-    plot: { scale?: (n: string) => { invert?: (v: number) => unknown; apply?: (v: unknown) => number; bandwidth?: number; domain?: unknown[] } } | null;
+    plot: {
+      scale?: (n: string) => {
+        invert?: (v: number) => unknown;
+        apply?: (v: unknown) => number;
+        bandwidth?: number;
+        domain?: unknown[];
+      };
+    } | null;
     stacked: boolean;
     isTime: boolean;
     isBand: boolean;
@@ -106,7 +128,18 @@ export function Chart(props: {
     series: string[];
     /** per x: series → [y0, y1] (stacked) or value (line) */
     bands: Map<string, { s: string; y0: number; y1: number; v: number }[]>;
-  }>({ plot: null, stacked: false, isTime: false, isBand: false, ivMs: 0, iv: null, tzOffset: 0, xs: [], series: [], bands: new Map() });
+  }>({
+    plot: null,
+    stacked: false,
+    isTime: false,
+    isBand: false,
+    ivMs: 0,
+    iv: null,
+    tzOffset: 0,
+    xs: [],
+    series: [],
+    bands: new Map(),
+  });
   const highlighted = useRef<Element | null>(null);
   // axis / legend labels are baked into the plot: rebuild it when the language changes
   const lang = useLang();
@@ -133,7 +166,11 @@ export function Chart(props: {
       legend: series.length > 1 || props.result.groups.length > 0,
       tickFormat: props.result.groups.length ? groupLabel : undefined,
     };
-    const baseLabel = props.result.groups.length ? metricLabel(props.metrics[0]) : props.metrics.length === 1 ? metricLabel(props.metrics[0]) : t('chart.value');
+    const baseLabel = props.result.groups.length
+      ? metricLabel(props.metrics[0])
+      : props.metrics.length === 1
+        ? metricLabel(props.metrics[0])
+        : t('chart.value');
     const yLabel = percent ? `${baseLabel} (%)` : baseLabel;
     const marks: unknown[] = [Plot.ruleY([0])];
     const ivMs = props.result.interval?.ms ?? 0;
@@ -143,13 +180,30 @@ export function Chart(props: {
     if (props.compare && isTime) {
       // the previous period: dashed lines of the same series, under the marks of this period
       const prev = toSeries(props.compare, props.metrics, percent).data.filter((d) => series.includes(d.s));
-      marks.push(Plot.lineY(prev, { x: 'x', y: 'y', stroke: 's', strokeWidth: 1.5, strokeDasharray: '4 3', strokeOpacity: 0.8, curve: 'monotone-x' }));
+      marks.push(
+        Plot.lineY(prev, {
+          x: 'x',
+          y: 'y',
+          stroke: 's',
+          strokeWidth: 1.5,
+          strokeDasharray: '4 3',
+          strokeOpacity: 0.8,
+          curve: 'monotone-x',
+        }),
+      );
     }
     if (props.chart === 'line') {
       marks.push(Plot.lineY(data, { x: 'x', y: 'y', stroke: 's', strokeWidth: 2, curve: 'monotone-x' }));
     } else if (props.chart === 'area') {
-      marks.push(Plot.areaY(data, { x: 'x', y: 'y', fill: 's', fillOpacity: 0.85, order: series, curve: 'monotone-x' }));
-      marks.push(Plot.lineY(data, Plot.stackY2({ x: 'x', y: 'y', stroke: 's', order: series, strokeWidth: 1, curve: 'monotone-x' })));
+      marks.push(
+        Plot.areaY(data, { x: 'x', y: 'y', fill: 's', fillOpacity: 0.85, order: series, curve: 'monotone-x' }),
+      );
+      marks.push(
+        Plot.lineY(
+          data,
+          Plot.stackY2({ x: 'x', y: 'y', stroke: 's', order: series, strokeWidth: 1, curve: 'monotone-x' }),
+        ),
+      );
     } else if (props.chart === 'bar') {
       if (isTime) {
         const d2 = data.map((d) => ({ ...d, x2: new Date(bucketEnd((d.x as Date).getTime())) }));
@@ -173,13 +227,25 @@ export function Chart(props: {
     // time axis: wall-clock aligned ticks that fit the plot width, labelled as briefly as the range allows
     const marginLeft = 56;
     const marginRight = 20;
-    let xTime: Record<string, unknown> = { type: 'time', label: null, grid: false, tickFormat: (d: Date) => formatBucket(d, ivMs) };
+    let xTime: Record<string, unknown> = {
+      type: 'time',
+      label: null,
+      grid: false,
+      tickFormat: (d: Date) => formatBucket(d, ivMs),
+    };
     if (isTime && xDomain.length) {
       const ts = xDomain as Date[];
       const t0 = ts[0];
       const t1 = new Date(props.chart === 'bar' ? bucketEnd(ts[ts.length - 1].getTime()) : ts[ts.length - 1].getTime());
       const axis = timeAxis(t0, t1, width - marginLeft - marginRight, ivMs);
-      xTime = { type: 'time', domain: [t0, t1], label: null, grid: false, ticks: axis.ticks, tickFormat: axis.tickFormat };
+      xTime = {
+        type: 'time',
+        domain: [t0, t1],
+        label: null,
+        grid: false,
+        ticks: axis.ticks,
+        tickFormat: axis.tickFormat,
+      };
     }
     let plot: (HTMLElement | SVGSVGElement) & { remove(): void };
     try {
@@ -191,7 +257,16 @@ export function Chart(props: {
         marginBottom: isBand ? 60 : 30,
         style: { fontSize: '11px', background: 'transparent', overflow: 'visible' },
         color,
-        x: isTime ? xTime : isBand ? { domain: xDomain as string[], label: null, tickRotate: xDomain.length > 8 ? -30 : 0, tickFormat: groupLabel } : { label: null },
+        x: isTime
+          ? xTime
+          : isBand
+            ? {
+                domain: xDomain as string[],
+                label: null,
+                tickRotate: xDomain.length > 8 ? -30 : 0,
+                tickFormat: groupLabel,
+              }
+            : { label: null },
         y: {
           label: yLabel,
           grid: true,
@@ -211,11 +286,33 @@ export function Chart(props: {
       return;
     }
     el.replaceChildren(plot);
-    model.current = { plot: plot as unknown as typeof model.current.plot, stacked, isTime, isBand, ivMs, iv, tzOffset: props.result.tzOffset, xs: xDomain, series, bands };
+    model.current = {
+      plot: plot as unknown as typeof model.current.plot,
+      stacked,
+      isTime,
+      isBand,
+      ivMs,
+      iv,
+      tzOffset: props.result.tzOffset,
+      xs: xDomain,
+      series,
+      bands,
+    };
     highlighted.current = null;
     setHover(null);
     return () => plot.remove();
-  }, [props.result, props.metrics, props.chart, props.height, props.percent, props.log, props.compare, width, lang, settings]);
+  }, [
+    props.result,
+    props.metrics,
+    props.chart,
+    props.height,
+    props.percent,
+    props.log,
+    props.compare,
+    width,
+    lang,
+    settings,
+  ]);
 
   /** The plot's own <svg> (with a legend, Plot renders small swatch svgs before it). */
   const chartSvg = (): SVGSVGElement | null => {
@@ -295,7 +392,17 @@ export function Chart(props: {
     if (!pick) return null;
     // intervalMs is the length of this bucket (calendar months differ), so x + intervalMs is its end
     const intervalMs = m.isTime && x instanceof Date ? bucketEnd(x.getTime()) - x.getTime() : m.ivMs;
-    return { x, series: pick.s, value: pick.v, isTime: m.isTime, intervalMs, px, py, xIndex: m.xs.indexOf(x), sIndex: m.series.indexOf(pick.s) };
+    return {
+      x,
+      series: pick.s,
+      value: pick.v,
+      isTime: m.isTime,
+      intervalMs,
+      px,
+      py,
+      xIndex: m.xs.indexOf(x),
+      sIndex: m.series.indexOf(pick.s),
+    };
   };
 
   /** Emphasise the mark under the cursor (area / line path of the series, or the bar itself). */
@@ -312,7 +419,9 @@ export function Chart(props: {
     if (!svg) return;
     const el: Element | null =
       props.chart === 'bar'
-        ? (svg.querySelectorAll('g[aria-label="rect"] rect, g[aria-label="bar"] rect')[hit.xIndex * model.current.series.length + hit.sIndex] ?? null)
+        ? (svg.querySelectorAll('g[aria-label="rect"] rect, g[aria-label="bar"] rect')[
+            hit.xIndex * model.current.series.length + hit.sIndex
+          ] ?? null)
         : props.chart === 'area'
           ? (svg.querySelectorAll('g[aria-label="area"] path')[hit.sIndex] ?? null)
           : (svg.querySelectorAll('g[aria-label="line"] path')[hit.sIndex] ?? null);
@@ -346,7 +455,8 @@ export function Chart(props: {
     const rect = ref.current.getBoundingClientRect();
     const px = e.clientX - rect.left;
     const py = e.clientY - rect.top;
-    if (drag.current && isTime && props.onBrush && (brush || Math.abs(px - drag.current.x) >= 4)) setBrush({ x0: drag.current.x, x1: px });
+    if (drag.current && isTime && props.onBrush && (brush || Math.abs(px - drag.current.x) >= 4))
+      setBrush({ x0: drag.current.x, x1: px });
     const hit = hitTest(px, py);
     setHover(hit);
     highlight(hit);
@@ -374,7 +484,9 @@ export function Chart(props: {
       return;
     }
     if (!isTime || !props.onBrush || !brush) return;
-    const fig = ref.current.firstElementChild as unknown as { scale?: (n: string) => { invert?: (v: number) => unknown } } | null;
+    const fig = ref.current.firstElementChild as unknown as {
+      scale?: (n: string) => { invert?: (v: number) => unknown };
+    } | null;
     const svg = chartSvg();
     if (!fig || !svg) return;
     const sr = svg.getBoundingClientRect();
@@ -387,7 +499,12 @@ export function Chart(props: {
     if (d0 instanceof Date && d1 instanceof Date && !isNaN(d0.getTime())) props.onBrush(d0, d1);
   };
 
-  const fmtX = (x: Date | string | number) => (x instanceof Date ? formatBucket(x, props.result.interval?.ms ?? 0) : props.result.xKind === 'terms' ? groupLabel(String(x)) : String(x));
+  const fmtX = (x: Date | string | number) =>
+    x instanceof Date
+      ? formatBucket(x, props.result.interval?.ms ?? 0)
+      : props.result.xKind === 'terms'
+        ? groupLabel(String(x))
+        : String(x);
   const tipLeft = hover ? Math.min(hover.px + 12, width - 260) : 0;
   const tipTop = hover ? Math.max(0, hover.py - 10) : 0;
   const hasBreakdown = props.result.groups.length > 0;
@@ -400,21 +517,45 @@ export function Chart(props: {
       onPointerUp={onUp}
       onPointerLeave={onLeave}
       onPointerCancel={onCancel}
-      style={{ cursor: brush ? 'crosshair' : hover && props.onPick ? 'pointer' : isTime && props.onBrush ? 'crosshair' : 'default' }}
+      style={{
+        cursor: brush
+          ? 'crosshair'
+          : hover && props.onPick
+            ? 'pointer'
+            : isTime && props.onBrush
+              ? 'crosshair'
+              : 'default',
+      }}
     >
       <div ref={ref} />
-      {brush && <div class="brush" style={{ left: Math.min(brush.x0, brush.x1), width: Math.abs(brush.x1 - brush.x0) }} />}
+      {brush && (
+        <div class="brush" style={{ left: Math.min(brush.x0, brush.x1), width: Math.abs(brush.x1 - brush.x0) }} />
+      )}
       {hover && (
         <div class="chart-tip" style={{ left: tipLeft, top: tipTop }}>
           <div class="chart-tip-x">
             {fmtX(hover.x)}
-            {hover.isTime && hover.intervalMs ? ` – ${formatBucket(new Date((hover.x as Date).getTime() + hover.intervalMs), hover.intervalMs)}` : ''}
+            {hover.isTime && hover.intervalMs
+              ? ` – ${formatBucket(new Date((hover.x as Date).getTime() + hover.intervalMs), hover.intervalMs)}`
+              : ''}
           </div>
           <div class="chart-tip-row">
             <span class="chart-tip-key">{hasBreakdown ? groupLabel(hover.series) : hover.series}</span>
-            <span class="chart-tip-val">{props.percent && (props.chart === 'area' || props.chart === 'bar') ? `${fmtNum(hover.value, 1)} %` : fmtNum(hover.value)}</span>
+            <span class="chart-tip-val">
+              {props.percent && (props.chart === 'area' || props.chart === 'bar')
+                ? `${fmtNum(hover.value, 1)} %`
+                : fmtNum(hover.value)}
+            </span>
           </div>
-          {props.onPick && <div class="chart-tip-hint">{hasBreakdown || props.result.xKind === 'terms' ? t('chart.clickFilter') : hover.isTime ? t('chart.clickZoom') : ''}</div>}
+          {props.onPick && (
+            <div class="chart-tip-hint">
+              {hasBreakdown || props.result.xKind === 'terms'
+                ? t('chart.clickFilter')
+                : hover.isTime
+                  ? t('chart.clickZoom')
+                  : ''}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1,4 +1,14 @@
-import { typed, reqLine, urlPart, RE_PATH_REL, RE_QUERY, tlsName, tlsVersion, csvFixed, numericReplace } from './shared';
+import {
+  typed,
+  reqLine,
+  urlPart,
+  RE_PATH_REL,
+  RE_QUERY,
+  tlsName,
+  tlsVersion,
+  csvFixed,
+  numericReplace,
+} from './shared';
 import { type FormatDef } from './types';
 
 // ---- S3 server access logs: space separated; the bracketed time is split in two tokens ----

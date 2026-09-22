@@ -5,7 +5,14 @@ import { findField, quoteIdent } from './fields';
 import { describeError } from './errors';
 import { searchToSql } from './search';
 import { VIEW, bucketExpr, buildWhere, fieldCompareExpr, nextBucketStart, type Interval } from './sql';
-import { MAX_BREAKDOWN_VALUES, MAX_TERM_VALUES, type MetricDef, type SearchState, type SortDir, type VisState } from './state';
+import {
+  MAX_BREAKDOWN_VALUES,
+  MAX_TERM_VALUES,
+  type MetricDef,
+  type SearchState,
+  type SortDir,
+  type VisState,
+} from './state';
 import { t } from './i18n';
 import { supportsComparison } from './comparison';
 
@@ -22,7 +29,12 @@ export interface Compiled {
   error: string | null;
 }
 
-export function compileSearch(search: SearchState, fields: Field[], timeExpr: string | null, context = timeContext()): Compiled {
+export function compileSearch(
+  search: SearchState,
+  fields: Field[],
+  timeExpr: string | null,
+  context = timeContext(),
+): Compiled {
   try {
     const querySql = searchToSql(search.query, fields, context);
     const w = buildWhere({ timeExpr, range: search.range, querySql, filters: search.filters, fields }, context);
@@ -74,7 +86,12 @@ export function buildDocsQuery(
 }
 
 /** ORDER BY of the document table: the chosen sorts, else by time (newest first unless `timeDir` says asc; '' without a time field). */
-export function docsOrder(sort: { field: string; dir: SortDir }[], fields: Field[], timeExpr: string | null, timeDir: SortDir = 'desc'): string {
+export function docsOrder(
+  sort: { field: string; dir: SortDir }[],
+  fields: Field[],
+  timeExpr: string | null,
+  timeDir: SortDir = 'desc',
+): string {
   const order: string[] = [];
   for (const s of sort) {
     const f = findField(fields, s.field);
@@ -89,12 +106,21 @@ export function docsOrder(sort: { field: string; dir: SortDir }[], fields: Field
  * under their field names, or every column of the source when none is selected; sorted like
  * the table and cut at `limit` rows.
  */
-export function exportDocsSql(where: string, timeField: Field | null, timeExpr: string | null, fields: Field[], sort: { field: string; dir: SortDir }[], columns: string[], limit: number): string {
+export function exportDocsSql(
+  where: string,
+  timeField: Field | null,
+  timeExpr: string | null,
+  fields: Field[],
+  sort: { field: string; dir: SortDir }[],
+  columns: string[],
+  limit: number,
+): string {
   const colFields = columns.map((c) => findField(fields, c)).filter((f): f is Field => !!f);
   const sel: string[] = [];
   if (!colFields.length) sel.push('*');
   else {
-    if (timeField && timeExpr && !colFields.includes(timeField)) sel.push(`${timeExpr} AS ${quoteIdent(timeField.name)}`);
+    if (timeField && timeExpr && !colFields.includes(timeField))
+      sel.push(`${timeExpr} AS ${quoteIdent(timeField.name)}`);
     for (const f of colFields) sel.push(`${f.expr} AS ${quoteIdent(f.name)}`);
   }
   return `SELECT ${sel.join(', ')} FROM ${VIEW} t WHERE ${where}${docsOrder(sort, fields, timeExpr)} LIMIT ${Math.max(1, Math.floor(limit))}`;
@@ -106,7 +132,11 @@ export function exportDocsSql(where: string, timeField: Field | null, timeExpr: 
  * How a metric is computed: the column expression it reads (null for count) and the aggregate over
  * that column. `secs` is the length of one bucket (or of the whole range) for the rate per second.
  */
-export function metricPlan(m: MetricDef, fields: Field[], secs = 1): { input: string | null; agg: (col: string) => string } {
+export function metricPlan(
+  m: MetricDef,
+  fields: Field[],
+  secs = 1,
+): { input: string | null; agg: (col: string) => string } {
   if (m.agg === 'count') return { input: null, agg: () => 'count(*)::DOUBLE' };
   if (m.agg === 'rate') return { input: null, agg: () => `(count(*)::DOUBLE / ${secs > 0 ? secs : 1})` };
   const f = m.field ? findField(fields, m.field) : undefined;
@@ -128,7 +158,10 @@ export function metricPlan(m: MetricDef, fields: Field[], secs = 1): { input: st
     case 'p99':
       return { input: num, agg: (c) => `quantile_cont(${c}, 0.99)::DOUBLE` };
     case 'percentile':
-      return { input: num, agg: (c) => `quantile_cont(${c}, ${Math.min(100, Math.max(0, m.param ?? 90)) / 100})::DOUBLE` };
+      return {
+        input: num,
+        agg: (c) => `quantile_cont(${c}, ${Math.min(100, Math.max(0, m.param ?? 90)) / 100})::DOUBLE`,
+      };
     case 'unique':
       return { input: f.expr, agg: (c) => `count(DISTINCT ${c})::DOUBLE` };
   }
@@ -162,17 +195,29 @@ export interface VisResult {
 }
 
 /** The same search constraints over the preceding period; dashboard tiles add their saved search. */
-export function previousPeriodWhere(vis: VisState, compiled: Compiled, searches: SearchState[], fields: Field[], timeExpr: string | null): string | null {
+export function previousPeriodWhere(
+  vis: VisState,
+  compiled: Compiled,
+  searches: SearchState[],
+  fields: Field[],
+  timeExpr: string | null,
+): string | null {
   const span = compiled.from && compiled.to ? compiled.to.getTime() - compiled.from.getTime() : 0;
   if (!supportsComparison(vis) || span <= 0 || !compiled.from || !compiled.to) return null;
   const range = { from: new Date(compiled.from.getTime() - span).toISOString(), to: compiled.from.toISOString() };
-  return searches.map((search) => `(${compileSearch({ ...search, range }, fields, timeExpr, compiled.context).where})`).join(' AND ');
+  return searches
+    .map((search) => `(${compileSearch({ ...search, range }, fields, timeExpr, compiled.context).where})`)
+    .join(' AND ');
 }
 
 /** Move the preceding period's buckets onto the current chart without changing its result. */
 export function shiftVisResult(result: VisResult | null, ms: number): VisResult | null {
   return result
-    ? { ...result, rows: result.rows.map((row) => ({ ...row, x: typeof row.x === 'number' ? row.x + ms : row.x })), xOrder: result.xOrder.map((x) => (typeof x === 'number' ? x + ms : x)) }
+    ? {
+        ...result,
+        rows: result.rows.map((row) => ({ ...row, x: typeof row.x === 'number' ? row.x + ms : row.x })),
+        xOrder: result.xOrder.map((x) => (typeof x === 'number' ? x + ms : x)),
+      }
     : null;
 }
 
@@ -243,7 +288,9 @@ export function buildVisQuery(
   const gExpr = gf ? `(${gf.expr})::VARCHAR` : null;
 
   const inputs = plans.map((p, i) => (p.input ? `, ${p.input} AS v${i}` : '')).join('');
-  const ctes: string[] = [`base AS MATERIALIZED (SELECT ${xExpr ?? 'NULL'} AS x, ${gExpr ?? 'NULL'} AS g${inputs} FROM ${VIEW} WHERE ${where})`];
+  const ctes: string[] = [
+    `base AS MATERIALIZED (SELECT ${xExpr ?? 'NULL'} AS x, ${gExpr ?? 'NULL'} AS g${inputs} FROM ${VIEW} WHERE ${where})`,
+  ];
   let gSel = 'g';
   let otherSel = '';
   let groupBy = '1, 2';
@@ -253,10 +300,15 @@ export function buildVisQuery(
   if (topX) {
     const ord = vis.x.orderBy === 'alpha' ? `x ${dir}` : `${ms[0]} ${dir} NULLS LAST`;
     const limit = Math.min(MAX_TERM_VALUES, Math.max(1, Number.isFinite(vis.x.size) ? Math.floor(vis.x.size) : 1));
-    ctes.push(`topx AS (SELECT x, row_number() OVER (ORDER BY ${ord}) AS rk FROM base GROUP BY x ORDER BY rk LIMIT ${limit})`);
+    ctes.push(
+      `topx AS (SELECT x, row_number() OVER (ORDER BY ${ord}) AS rk FROM base GROUP BY x ORDER BY rk LIMIT ${limit})`,
+    );
   }
   if (gExpr) {
-    const limit = Math.min(MAX_BREAKDOWN_VALUES, Math.max(1, Number.isFinite(vis.breakdown.size) ? Math.floor(vis.breakdown.size) : 1));
+    const limit = Math.min(
+      MAX_BREAKDOWN_VALUES,
+      Math.max(1, Number.isFinite(vis.breakdown.size) ? Math.floor(vis.breakdown.size) : 1),
+    );
     ctes.push(`topg AS (SELECT g, ${ms[0]} AS m0 FROM base GROUP BY g ORDER BY m0 DESC NULLS LAST LIMIT ${limit})`);
     const inTopG = `EXISTS (SELECT 1 FROM topg WHERE topg.g IS NOT DISTINCT FROM base.g)`;
     if (vis.breakdown.other) {
@@ -271,7 +323,8 @@ export function buildVisQuery(
     sql,
     read(rawRows: Row[]): VisResult {
       const rows: VisRow[] = rawRows.map((row: Row) => {
-        const x = xKind === 'terms' ? encodeVisValue(row.x) : row.x === null || row.x === undefined ? null : Number(row.x);
+        const x =
+          xKind === 'terms' ? encodeVisValue(row.x) : row.x === null || row.x === undefined ? null : Number(row.x);
         return {
           x,
           g: gExpr ? (row.__other ? OTHER : encodeVisValue(row.g)) : null,
@@ -299,7 +352,8 @@ export function buildVisQuery(
       let groups: string[] = [];
       if (gExpr) {
         const totals = new Map<string, number>();
-        for (const row of rows) totals.set(row.g!, (totals.get(row.g!) ?? 0) + (Number.isFinite(row.m[0]) ? row.m[0] : 0));
+        for (const row of rows)
+          totals.set(row.g!, (totals.get(row.g!) ?? 0) + (Number.isFinite(row.m[0]) ? row.m[0] : 0));
         groups = Array.from(totals.entries())
           .sort((a, b) => b[1] - a[1])
           .map((e) => e[0]);

@@ -13,7 +13,9 @@ for (const day of [21, 22, 23]) {
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'logs.csv'), `ts,value\n2026-09-${day}T12:00:00Z,${day}\n`);
 }
-const server = spawn(process.execPath, [new URL('./range-server.mjs', import.meta.url).pathname, fixtures, '0'], { stdio: ['ignore', 'pipe', 'inherit'] });
+const server = spawn(process.execPath, [new URL('./range-server.mjs', import.meta.url).pathname, fixtures, '0'], {
+  stdio: ['ignore', 'pipe', 'inherit'],
+});
 let context;
 try {
   // range-server's startup line includes the actual port when 0 asks for an unused one.
@@ -36,9 +38,28 @@ try {
     ({ port, state }) => {
       localStorage.setItem(
         'ddv.source',
-        JSON.stringify({ kind: 'url', name: 'daily CSV', urls: `http://localhost:${port}/{yyyy}/{MM}/{dd}/logs.csv`, authMode: 'none', format: 'csv', timeField: 'ts' }),
+        JSON.stringify({
+          kind: 'url',
+          name: 'daily CSV',
+          urls: `http://localhost:${port}/{yyyy}/{MM}/{dd}/logs.csv`,
+          authMode: 'none',
+          format: 'csv',
+          timeField: 'ts',
+        }),
       );
-      localStorage.setItem('ddv.savedVis', JSON.stringify([{ id: 'previous-day', title: 'Previous day', savedAt: '', search: state.search, vis: { ...state.vis, compare: true }, pinned: false }]));
+      localStorage.setItem(
+        'ddv.savedVis',
+        JSON.stringify([
+          {
+            id: 'previous-day',
+            title: 'Previous day',
+            savedAt: '',
+            search: state.search,
+            vis: { ...state.vis, compare: true },
+            pinned: false,
+          },
+        ]),
+      );
     },
     { port, state },
   );
@@ -48,14 +69,20 @@ try {
   await page.goto(`${appUrl}?comparison=1#/visualize?s=${Buffer.from(JSON.stringify(state)).toString('base64url')}`);
   const files = async (n) => {
     console.log(`waiting for ${n} files`);
-    await page.waitForFunction((n) => window.__ddv?.attached?.files.length === n && !window.__ddv.attaching && !window.__ddv.resolvePending, n, { timeout: 30000 });
+    await page.waitForFunction(
+      (n) => window.__ddv?.attached?.files.length === n && !window.__ddv.attaching && !window.__ddv.resolvePending,
+      n,
+      { timeout: 30000 },
+    );
     await settled(page);
     console.log(`ok ${n} files`);
   };
   await files(2);
   await page.getByLabel('Compare with the previous period').check();
   await files(3);
-  const previous = await page.evaluate(() => window.__ddv.query("SELECT value FROM src WHERE ts < TIMESTAMP '2026-09-22'"));
+  const previous = await page.evaluate(() =>
+    window.__ddv.query("SELECT value FROM src WHERE ts < TIMESTAMP '2026-09-22'"),
+  );
   assert.equal(previous.rows[0]?.value, 21);
   await page.getByLabel('Compare with the previous period').uncheck();
   await files(2);

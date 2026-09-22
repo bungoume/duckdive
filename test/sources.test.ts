@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SOURCE, describeSource, shareableSource, sourceForKnownLink, sourceFromLink, type SourceConfig } from '../src/sources';
+import {
+  DEFAULT_SOURCE,
+  describeSource,
+  shareableSource,
+  sourceForKnownLink,
+  sourceFromLink,
+  type SourceConfig,
+} from '../src/sources';
 import { readLinkSource, shareLink } from '../src/urlState';
 import { type UrlState } from '../src/state';
 import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS } from '../src/state';
@@ -10,7 +17,14 @@ const url: SourceConfig = {
   name: 'alb',
   urls: 's3://b/p/{yyyy}/{MM}/{dd}/*.log.gz\n# a comment\ns3://b/q/*.gz',
   format: 'alb',
-  s3: { region: 'ap-northeast-1', accessKeyId: 'AKIA', secretAccessKey: 'shh', sessionToken: 'tok', endpoint: 'http://minio:9000', urlStyle: 'path' },
+  s3: {
+    region: 'ap-northeast-1',
+    accessKeyId: 'AKIA',
+    secretAccessKey: 'shh',
+    sessionToken: 'tok',
+    endpoint: 'http://minio:9000',
+    urlStyle: 'path',
+  },
   authMode: 'static',
   tokenValues: { alb: ['a', 'b'] },
   timeField: { mode: 'field', name: 'time' },
@@ -34,9 +48,21 @@ describe('shareableSource', () => {
 
 describe('sourceFromLink', () => {
   it('takes only the fields a source needs, with secrets always empty', () => {
-    const s = sourceFromLink({ ...shareableSource(url), s3: { ...url.s3, accessKeyId: 'AKIA', secretAccessKey: 'leak' }, oidc: { clientId: 'c', roleArn: 'arn' }, extra: 1 })!;
+    const s = sourceFromLink({
+      ...shareableSource(url),
+      s3: { ...url.s3, accessKeyId: 'AKIA', secretAccessKey: 'leak' },
+      oidc: { clientId: 'c', roleArn: 'arn' },
+      extra: 1,
+    })!;
     expect(s.kind).toBe('url');
-    expect(s.s3).toEqual({ region: 'ap-northeast-1', accessKeyId: '', secretAccessKey: '', sessionToken: '', endpoint: 'http://minio:9000', urlStyle: 'path' });
+    expect(s.s3).toEqual({
+      region: 'ap-northeast-1',
+      accessKeyId: '',
+      secretAccessKey: '',
+      sessionToken: '',
+      endpoint: 'http://minio:9000',
+      urlStyle: 'path',
+    });
     expect(s.oidc.clientId).toBe('c');
     expect(s.oidc.roleArn).toBe('arn');
     expect(s.oidc.authUrl).toBe(DEFAULT_SOURCE.oidc.authUrl);
@@ -47,7 +73,16 @@ describe('sourceFromLink', () => {
   });
 
   it('falls back on malformed values and refuses what is not a source', () => {
-    expect(sourceFromLink({ kind: 'url', urls: 's3://b/*', format: 'nope', authMode: 'root', s3: 'x', tokenValues: { a: [1, 'b'] } })).toMatchObject({
+    expect(
+      sourceFromLink({
+        kind: 'url',
+        urls: 's3://b/*',
+        format: 'nope',
+        authMode: 'root',
+        s3: 'x',
+        tokenValues: { a: [1, 'b'] },
+      }),
+    ).toMatchObject({
       format: 'auto',
       authMode: 'static',
       tokenValues: { a: ['b'] },
@@ -69,15 +104,20 @@ describe('sourceFromLink', () => {
 });
 
 describe('sourceFromLink, sign-in settings', () => {
-  const link = (oidc: Record<string, unknown>) => sourceFromLink({ kind: 'url', urls: 's3://b/*', authMode: 'oidc', oidc })!.oidc;
+  const link = (oidc: Record<string, unknown>) =>
+    sourceFromLink({ kind: 'url', urls: 's3://b/*', authMode: 'oidc', oidc })!.oidc;
 
   it('refuses an STS endpoint outside AWS, so a link cannot collect the id_token', () => {
     expect(link({ stsEndpoint: 'https://attacker.example/' }).stsEndpoint).toBe('');
     expect(link({ stsEndpoint: 'http://sts.amazonaws.com/' }).stsEndpoint).toBe('');
     expect(link({ stsEndpoint: 'https://evil.example/sts.amazonaws.com' }).stsEndpoint).toBe('');
-    expect(link({ stsEndpoint: 'https://sts.ap-northeast-1.amazonaws.com/' }).stsEndpoint).toBe('https://sts.ap-northeast-1.amazonaws.com/');
+    expect(link({ stsEndpoint: 'https://sts.ap-northeast-1.amazonaws.com/' }).stsEndpoint).toBe(
+      'https://sts.ap-northeast-1.amazonaws.com/',
+    );
     expect(link({ stsEndpoint: 'https://sts.amazonaws.com/' }).stsEndpoint).toBe('https://sts.amazonaws.com/');
-    expect(link({ stsEndpoint: 'https://sts-fips.us-east-1.amazonaws.com/' }).stsEndpoint).toBe('https://sts-fips.us-east-1.amazonaws.com/');
+    expect(link({ stsEndpoint: 'https://sts-fips.us-east-1.amazonaws.com/' }).stsEndpoint).toBe(
+      'https://sts-fips.us-east-1.amazonaws.com/',
+    );
   });
 
   // "somewhere on amazonaws.com" is not the same as "AWS answers there": the manifest grants
@@ -106,13 +146,29 @@ describe('describeSource', () => {
   });
 
   it('names the identity provider, the STS endpoint and the role of a sign-in source', () => {
-    const oidc: SourceConfig = { ...url, authMode: 'oidc', oidc: { ...DEFAULT_SOURCE.oidc, authUrl: 'https://idp.example/auth', region: 'us-east-1', roleArn: 'arn:aws:iam::1:role/r' } };
-    expect(describeSource(oidc)).toBe('s3://b/p/{yyyy}/{MM}/{dd}/*.log.gz, s3://b/q/*.gz · http://minio:9000 · oidc · idp.example · sts.us-east-1.amazonaws.com · arn:aws:iam::1:role/r');
+    const oidc: SourceConfig = {
+      ...url,
+      authMode: 'oidc',
+      oidc: {
+        ...DEFAULT_SOURCE.oidc,
+        authUrl: 'https://idp.example/auth',
+        region: 'us-east-1',
+        roleArn: 'arn:aws:iam::1:role/r',
+      },
+    };
+    expect(describeSource(oidc)).toBe(
+      's3://b/p/{yyyy}/{MM}/{dd}/*.log.gz, s3://b/q/*.gz · http://minio:9000 · oidc · idp.example · sts.us-east-1.amazonaws.com · arn:aws:iam::1:role/r',
+    );
   });
 });
 
 describe('shareLink', () => {
-  const state: UrlState = { page: 'visualize', search: { ...DEFAULT_SEARCH, query: 'level:error' }, discover: DEFAULT_DISCOVER, vis: DEFAULT_VIS };
+  const state: UrlState = {
+    page: 'visualize',
+    search: { ...DEFAULT_SEARCH, query: 'level:error' },
+    discover: DEFAULT_DISCOVER,
+    vis: DEFAULT_VIS,
+  };
 
   it('carries the view and the source without secrets, and reads back', () => {
     const link = shareLink(state, url);

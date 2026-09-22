@@ -1,4 +1,19 @@
-import { typed, reqLine, addrOf, portOf, urlPart, RE_SCHEME, RE_DOMAIN, RE_PORT, RE_PATH_ABS, RE_QUERY, tlsName, tlsVersion, csvFixed, numericReplace } from './shared';
+import {
+  typed,
+  reqLine,
+  addrOf,
+  portOf,
+  urlPart,
+  RE_SCHEME,
+  RE_DOMAIN,
+  RE_PORT,
+  RE_PATH_ABS,
+  RE_QUERY,
+  tlsName,
+  tlsVersion,
+  csvFixed,
+  numericReplace,
+} from './shared';
 import { type FormatDef } from './types';
 
 // ---- AWS ALB access logs: 34 fields as of 2026 (older files have fewer, new ones may append) ----
@@ -99,7 +114,8 @@ const ALB_OTEL: [string, string][] = [
 
 export const albFormat: FormatDef = {
   id: 'alb',
-  reader: (l, f) => csvFixed(l, f, ALB_COLUMNS, `delim = ' ', quote = '"', escape = '"', timestampformat = '%Y-%m-%dT%H:%M:%S.%fZ'`),
+  reader: (l, f) =>
+    csvFixed(l, f, ALB_COLUMNS, `delim = ' ', quote = '"', escape = '"', timestampformat = '%Y-%m-%dT%H:%M:%S.%fZ'`),
   replace: numericReplace(ALB_COLUMNS),
   timeField: 'time',
   otel: { columns: ALB_OTEL },

@@ -40,7 +40,10 @@ interface Index {
   config: { enabled: boolean; chunkSize: number; maxBytes?: number };
 }
 
-export function createCacheStorage(stats: Pick<CacheStats, 'evictions' | 'corruptions'>, log: (entry: Omit<CacheLogEntry, 't'>) => CacheLogEntry) {
+export function createCacheStorage(
+  stats: Pick<CacheStats, 'evictions' | 'corruptions'>,
+  log: (entry: Omit<CacheLogEntry, 't'>) => CacheLogEntry,
+) {
   const INDEX_VERSION = 2;
   let slab: FileSystemSyncAccessHandle | null = null;
   let slabSize = 0;
@@ -124,7 +127,8 @@ export function createCacheStorage(stats: Pick<CacheStats, 'evictions' | 'corrup
           // entries left by the gzip re-packing of older builds hold bytes the origin never served
           if ((meta as { norm?: unknown }).norm) continue;
           const entry = newEntry(meta);
-          for (const [i, off, len, sum] of meta.chunks ?? []) if (off + len <= slabSize) entry.chunks.set(i, { off, len, sum: sum ?? 0 });
+          for (const [i, off, len, sum] of meta.chunks ?? [])
+            if (off + len <= slabSize) entry.chunks.set(i, { off, len, sum: sum ?? 0 });
           if (entry.chunks.size) files.set(meta.key, entry);
         }
         for (const [url, e] of Object.entries(index.ext ?? {})) {
@@ -146,8 +150,13 @@ export function createCacheStorage(stats: Pick<CacheStats, 'evictions' | 'corrup
   }
 
   /** A sync access handle in the given mode (the mode option is a Chrome 121+ addition that lib.dom does not declare). */
-  function openSync(fh: FileSystemFileHandle, mode: 'readwrite' | 'readwrite-unsafe'): Promise<FileSystemSyncAccessHandle> {
-    return (fh as unknown as { createSyncAccessHandle(o?: { mode: string }): Promise<FileSystemSyncAccessHandle> }).createSyncAccessHandle({ mode });
+  function openSync(
+    fh: FileSystemFileHandle,
+    mode: 'readwrite' | 'readwrite-unsafe',
+  ): Promise<FileSystemSyncAccessHandle> {
+    return (
+      fh as unknown as { createSyncAccessHandle(o?: { mode: string }): Promise<FileSystemSyncAccessHandle> }
+    ).createSyncAccessHandle({ mode });
   }
 
   /** The owner's handle: shareable with other tabs' readers where the browser allows it, exclusive otherwise. */
@@ -217,7 +226,8 @@ export function createCacheStorage(stats: Pick<CacheStats, 'evictions' | 'corrup
       listed.add(meta.key);
       const entry = files.get(meta.key) ?? newEntry(meta);
       entry.chunks = new Map();
-      for (const [i, off, len, sum] of meta.chunks ?? []) if (off + len <= slabSize) entry.chunks.set(i, { off, len, sum: sum ?? 0 });
+      for (const [i, off, len, sum] of meta.chunks ?? [])
+        if (off + len <= slabSize) entry.chunks.set(i, { off, len, sum: sum ?? 0 });
       entry.size = meta.size;
       entry.etag = meta.etag;
       // the owner may use a different chunk size; keeping ours would read every chunk as wrong-length
@@ -228,7 +238,11 @@ export function createCacheStorage(stats: Pick<CacheStats, 'evictions' | 'corrup
   }
 
   function newEntry(meta: FileMeta): CacheEntry {
-    return { ...meta, chunks: new Map(), stat: { hits: 0, misses: 0, bytesFromCache: 0, bytesFromNetwork: 0, bytesDownloaded: 0 } };
+    return {
+      ...meta,
+      chunks: new Map(),
+      stat: { hits: 0, misses: 0, bytesFromCache: 0, bytesFromNetwork: 0, bytesDownloaded: 0 },
+    };
   }
 
   async function openExt(rec: ExtEntry): Promise<void> {
@@ -273,7 +287,16 @@ export function createCacheStorage(stats: Pick<CacheStats, 'evictions' | 'corrup
       if (!e.chunks.size) continue;
       const chunks: [number, number, number, number?][] = [];
       for (const [i, r] of e.chunks) chunks.push([i, r.off, r.len, r.sum ?? 0]);
-      index.files[k] = { key: e.key, size: e.size, etag: e.etag, chunkSize: e.chunkSize, seenAt: e.seenAt, usedAt: e.usedAt, lastModified: e.lastModified, chunks };
+      index.files[k] = {
+        key: e.key,
+        size: e.size,
+        etag: e.etag,
+        chunkSize: e.chunkSize,
+        seenAt: e.seenAt,
+        usedAt: e.usedAt,
+        lastModified: e.lastModified,
+        chunks,
+      };
     }
     for (const [url, e] of extFiles) index.ext[url] = { name: e.name, size: e.size };
     try {
@@ -302,7 +325,9 @@ export function createCacheStorage(stats: Pick<CacheStats, 'evictions' | 'corrup
    */
   function enforceLimit(keep: CacheEntry | null, incoming = 0) {
     if (!config.maxBytes || liveBytes() + incoming <= config.maxBytes) return;
-    const candidates = [...files.values()].filter((e) => e !== keep && e.chunks.size).map((e) => ({ entry: e, seenAt: e.seenAt, usedAt: e.usedAt, bytes: cachedBytesOf(e) }));
+    const candidates = [...files.values()]
+      .filter((e) => e !== keep && e.chunks.size)
+      .map((e) => ({ entry: e, seenAt: e.seenAt, usedAt: e.usedAt, bytes: cachedBytesOf(e) }));
     for (const c of evictionPlan(candidates, liveBytes() + incoming, config.maxBytes * 0.8)) {
       dropChunks(c.entry);
       stats.evictions++;
@@ -363,7 +388,14 @@ export function createCacheStorage(stats: Pick<CacheStats, 'evictions' | 'corrup
     if (!ref || !slab) return null;
     const buf = new Uint8Array(ref.len);
     const n = slab.read(buf, { at: ref.off });
-    const bad = n !== ref.len ? 'short-read' : ref.len !== expectedChunkLen(entry, idx) ? 'wrong-length' : ref.sum && checksum(buf) !== ref.sum ? 'checksum' : null;
+    const bad =
+      n !== ref.len
+        ? 'short-read'
+        : ref.len !== expectedChunkLen(entry, idx)
+          ? 'wrong-length'
+          : ref.sum && checksum(buf) !== ref.sum
+            ? 'checksum'
+            : null;
     if (bad) {
       // whatever happened to this chunk, do not serve it: drop it and let the caller refetch
       stats.corruptions++;

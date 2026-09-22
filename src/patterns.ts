@@ -22,7 +22,9 @@ export function templateExpr(expr: string): string {
 /** An anchored RE2 expression matching every line of a template: text escaped, tags put back as their masks. */
 export function templateRegex(tpl: string): string {
   const parts = tpl.split(/(<uuid>|<ip>|<hex>|<n>)/);
-  const body = parts.map((p) => MASKS.find((m) => m.tag === p)?.re ?? p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('');
+  const body = parts
+    .map((p) => MASKS.find((m) => m.tag === p)?.re ?? p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('');
   return `^${body}$`;
 }
 

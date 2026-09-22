@@ -21,7 +21,9 @@ describe('inflateGzipMembers', () => {
   it('rejects damaged input', () => {
     const one = new Uint8Array(gzipSync('abc'));
     expect(() => inflateGzipMembers(one.subarray(0, one.length - 3))).toThrow(/truncated|member 1/);
-    expect(() => inflateGzipMembers(new Uint8Array(Buffer.concat([gzipSync('a'), Buffer.from('junk')])))).toThrow(/trailing data after member 1/);
+    expect(() => inflateGzipMembers(new Uint8Array(Buffer.concat([gzipSync('a'), Buffer.from('junk')])))).toThrow(
+      /trailing data after member 1/,
+    );
     expect(() => inflateGzipMembers(new TextEncoder().encode('not gzip at all'))).toThrow(/not a gzip stream/);
     const bad = new Uint8Array(gzipSync('abc'));
     bad[2] = 9;

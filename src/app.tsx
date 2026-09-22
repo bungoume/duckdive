@@ -58,7 +58,10 @@ export function App() {
         const r = resolveRange(url.search.range);
         if (!r) return;
         const shift = (e.key === '[' ? -1 : 1) * (r.to.getTime() - r.from.getTime());
-        const range = { from: new Date(r.from.getTime() + shift).toISOString(), to: new Date(r.to.getTime() + shift).toISOString() };
+        const range = {
+          from: new Date(r.from.getTime() + shift).toISOString(),
+          to: new Date(r.to.getTime() + shift).toISOString(),
+        };
         setUrl((u) => ({ ...u, search: { ...u.search, range } }));
       }
     };
@@ -76,7 +79,11 @@ export function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  const refreshTick = useAutoRefresh(settings.autoRefreshMs, url.page === 'discover' || url.page === 'visualize' || url.page === 'dashboard', refreshBusyRef);
+  const refreshTick = useAutoRefresh(
+    settings.autoRefreshMs,
+    url.page === 'discover' || url.page === 'visualize' || url.page === 'dashboard',
+    refreshBusyRef,
+  );
   // Capture the clock once per search or refresh; unrelated renders keep the same instant.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const evaluation = useMemo(() => timeContext(), [url.search, refreshTick, settings.timeZone, settings.dayOfWeek]);
@@ -108,7 +115,8 @@ export function App() {
   const { refreshError } = useCredentialRefresh(source, attached, setCreds, connectionGeneration, attaching);
   const paused = attaching || gate.status !== 'ok';
   // A source from a link that was never connected here is offered, not connected: the banner shows where it reads from.
-  const linkOffer = linkSource && !linkIgnored && !history.some((h) => h.key === sourceKey(linkSource)) ? linkSource : null;
+  const linkOffer =
+    linkSource && !linkIgnored && !history.some((h) => h.key === sourceKey(linkSource)) ? linkSource : null;
   expose({ gate, switchSeq, attaching, shareLink: () => shareLink(url, source) });
 
   const fields: Field[] = attached?.fields ?? [];
@@ -178,7 +186,9 @@ export function App() {
               if (entry && key !== (attached ? sourceKey(source) : null)) void switchSource(entry.config);
             }}
           >
-            {(!attached || !history.some((h) => h.key === sourceKey(source))) && <option value="">{attached ? source.name : t('app.status.noSource')}</option>}
+            {(!attached || !history.some((h) => h.key === sourceKey(source))) && (
+              <option value="">{attached ? source.name : t('app.status.noSource')}</option>
+            )}
             {history.map((h) => (
               <option key={h.key} value={h.key} title={h.config.kind === 'demo' ? '' : h.config.urls}>
                 {h.config.name || h.config.kind}
@@ -194,8 +204,14 @@ export function App() {
               ? t('app.status.connecting', { message: attachProgress.message })
               : attached
                 ? attached.rowCount !== null
-                  ? t('app.status.rows', { name: source.name || t('app.status.sourceFallback'), n: attached.rowCount.toLocaleString() })
-                  : t('app.status.files', { name: source.name || t('app.status.sourceFallback'), n: attached.files.length })
+                  ? t('app.status.rows', {
+                      name: source.name || t('app.status.sourceFallback'),
+                      n: attached.rowCount.toLocaleString(),
+                    })
+                  : t('app.status.files', {
+                      name: source.name || t('app.status.sourceFallback'),
+                      n: attached.files.length,
+                    })
                 : t('app.status.noSource')}
         </span>
       </header>
@@ -210,7 +226,12 @@ export function App() {
       )}
       {linkOffer && ready && !attaching && (
         <div class="alert warn banner link-source">
-          <span class="text">{tx('app.link.text', { name: <b>{linkOffer.name || linkOffer.kind}</b>, detail: describeSource(linkOffer) })}</span>
+          <span class="text">
+            {tx('app.link.text', {
+              name: <b>{linkOffer.name || linkOffer.kind}</b>,
+              detail: describeSource(linkOffer),
+            })}
+          </span>
           <button class="btn small primary" onClick={() => void switchSource(linkOffer)}>
             {t('app.link.connect')}
           </button>
@@ -243,7 +264,9 @@ export function App() {
               files: <b>{t('app.gate.files', { n: gate.estimate.files.toLocaleString() })}</b>,
               threshold: gate.estimate.threshold.toLocaleString(),
               bytes: <b>{fmtBytes(gate.estimate.bytes)}</b>,
-              unknown: gate.estimate.unknownSizes ? t('app.gate.unknown', { n: gate.estimate.unknownSizes.toLocaleString() }) : '',
+              unknown: gate.estimate.unknownSizes
+                ? t('app.gate.unknown', { n: gate.estimate.unknownSizes.toLocaleString() })
+                : '',
             })}
           </span>
           <button class="btn small primary" onClick={runAnyway}>
@@ -311,13 +334,29 @@ export function App() {
           evaluation={evaluation}
           search={url.search}
           onSearch={(search) => setUrl((u) => ({ ...u, search }))}
-          onOpen={(s) => setUrl((u) => ({ ...u, page: 'visualize', vis: s.vis, search: { ...u.search, query: s.search.query, filters: s.search.filters } }))}
+          onOpen={(s) =>
+            setUrl((u) => ({
+              ...u,
+              page: 'visualize',
+              vis: s.vis,
+              search: { ...u.search, query: s.search.query, filters: s.search.filters },
+            }))
+          }
           onBusy={setBusy}
           paused={paused}
           refreshTick={refreshTick}
         />
       )}
-      {page === 'sql' && attached && <SqlPage evaluation={evaluation} fields={fields} timeExpr={timeExpr} search={url.search} onBusy={setBusy} paused={paused} />}
+      {page === 'sql' && attached && (
+        <SqlPage
+          evaluation={evaluation}
+          fields={fields}
+          timeExpr={timeExpr}
+          search={url.search}
+          onBusy={setBusy}
+          paused={paused}
+        />
+      )}
       {!ready && !initError && (
         <div class="overlay">
           <div>

@@ -13,11 +13,17 @@ export function ConnectedCard(props: { attached: AttachedSource; onTimeField: (n
       <h2>{t('ds.connected.title')}</h2>
       <div class="alert ok">
         {a.description}
-        {a.rowCount !== null ? t('ds.connected.rows', { n: a.rowCount.toLocaleString() }) : t('ds.connected.rowsPerRange')}
+        {a.rowCount !== null
+          ? t('ds.connected.rows', { n: a.rowCount.toLocaleString() })
+          : t('ds.connected.rowsPerRange')}
         {t('ds.connected.fields', { n: a.fields.length })}
       </div>
       <FormField label={t('ds.timeField.label')} style="max-width:420px">
-        <select class="input" value={a.timeField?.name ?? ''} onChange={(e) => props.onTimeField(e.currentTarget.value || null)}>
+        <select
+          class="input"
+          value={a.timeField?.name ?? ''}
+          onChange={(e) => props.onTimeField(e.currentTarget.value || null)}
+        >
           <option value="">{t('ds.timeField.none')}</option>
           {a.fields
             .filter((f) => f.kind === 'date' || isTimeCandidate(f))

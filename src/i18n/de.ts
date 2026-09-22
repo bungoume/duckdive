@@ -31,7 +31,8 @@ export const de: Messages = {
   'app.error.timeout': '{what} hat innerhalb von {seconds} s nicht geantwortet',
   'app.crashed': 'Etwas ist schiefgelaufen: {error}',
   'app.reload': 'Neu laden',
-  'app.creds.refreshFailed': 'Die temporären AWS-Anmeldedaten konnten nicht erneuert werden: {error}. Nach ihrem Ablauf schlagen Abfragen fehl; melden Sie sich auf der Seite Datenquelle erneut an.',
+  'app.creds.refreshFailed':
+    'Die temporären AWS-Anmeldedaten konnten nicht erneuert werden: {error}. Nach ihrem Ablauf schlagen Abfragen fehl; melden Sie sich auf der Seite Datenquelle erneut an.',
   'app.large.files': '{n} Dateien',
   'app.large.text':
     '{files}{bytes} entsprechen diesem Muster und Zeitraum (Schwellenwert {threshold}). Es wurde noch nichts gelesen. Beim Fortfahren wird die Sicht über alle Dateien erstellt; die erste Abfrage lädt dann, was sie braucht. Grenzen Sie den Zeitraum ein, ergänzen Sie ein Namenspräfix oder einen Filter auf eine erfasste Spalte, oder fahren Sie fort.',
@@ -45,16 +46,19 @@ export const de: Messages = {
   // ---- settings page ----
   'settings.title': 'Einstellungen',
   'settings.lang': 'Sprache',
-  'settings.lang.hint': 'Gilt sofort für die gesamte Oberfläche. Die Auswahl wird in diesem Browser gespeichert; bei einer neuen Installation gilt die Browsersprache.',
+  'settings.lang.hint':
+    'Gilt sofort für die gesamte Oberfläche. Die Auswahl wird in diesem Browser gespeichert; bei einer neuen Installation gilt die Browsersprache.',
   'settings.theme': 'Darstellung',
   'settings.theme.system': 'Wie das System',
   'settings.theme.light': 'Hell',
   'settings.theme.dark': 'Dunkel',
   'settings.formatByName': 'Größen und Dauern nach Feldname formatieren',
-  'settings.formatByName.hint': 'In der Dokumenttabelle zeigen Felder namens …bytes oder …size 1,2 MB und Felder auf _ms 1,23 s; der Rohwert steht im Tooltip.',
+  'settings.formatByName.hint':
+    'In der Dokumenttabelle zeigen Felder namens …bytes oder …size 1,2 MB und Felder auf _ms 1,23 s; der Rohwert steht im Tooltip.',
   'settings.section.time': 'Datum und Uhrzeit',
   'settings.dateFormat': 'Datumsformat',
-  'settings.dateFormat.hint': 'Muster für jedes angezeigte Datum: YYYY MM DD HH mm ss SSS, ddd / dddd (Wochentag), MMM / MMMM (Monatsname), A (AM/PM), Z (Zeitversatz), [Text] für Literale.',
+  'settings.dateFormat.hint':
+    'Muster für jedes angezeigte Datum: YYYY MM DD HH mm ss SSS, ddd / dddd (Wochentag), MMM / MMMM (Monatsname), A (AM/PM), Z (Zeitversatz), [Text] für Literale.',
   'settings.preview': 'Vorschau: {value}',
   'settings.timeZone': 'Zeitzone',
   'settings.timeZone.hint':
@@ -65,7 +69,8 @@ export const de: Messages = {
   'settings.dow': 'Wochentag',
   'settings.dow.hint': 'Erster Tag der Woche für "now/w"-Bereiche und wöchentliche Buckets.',
   'settings.quickRanges': 'Schnellauswahl des Zeitfilters',
-  'settings.quickRanges.hint': 'JSON-Liste aus {"from", "to", "display"} in Date-Math-Syntax. Ohne "display" wird die Beschriftung in der Oberflächensprache erzeugt.',
+  'settings.quickRanges.hint':
+    'JSON-Liste aus {"from", "to", "display"} in Date-Math-Syntax. Ohne "display" wird die Beschriftung in der Oberflächensprache erzeugt.',
   'settings.reset': 'Auf Standard zurücksetzen',
   'settings.saved': 'Gespeichert.',
   'settings.backup': 'Sicherung',
@@ -98,7 +103,8 @@ export const de: Messages = {
 
   // ---- Data source page ----
   'ds.title': 'Datenquelle',
-  'ds.intro': 'Dateien werden direkt aus dem Speicher gelesen, in dem sie liegen, und nur die Teile, die eine Abfrage braucht. Nichts wird anderswohin gesendet.',
+  'ds.intro':
+    'Dateien werden direkt aus dem Speicher gelesen, in dem sie liegen, und nur die Teile, die eine Abfrage braucht. Nichts wird anderswohin gesendet.',
   'ds.kind.url': 'S3 / HTTPS-URL',
   'ds.kind.url.sub': 's3://bucket/prefix/*.parquet oder https://…',
   'ds.kind.local': 'Lokale Dateien',
@@ -186,14 +192,16 @@ export const de: Messages = {
   'ds.connected.fields': ' · {n} Felder',
   'ds.timeField.label': 'Zeitfeld (für Zeitauswahl und Histogramm)',
   'ds.timeField.none': '(keins – keine Zeitfilterung)',
-  'ds.connected.rangeDependent': 'Diese Quelle verwendet Datums-Tokens: die Dateiliste wird bei jeder Änderung des Zeitraums neu aufgelöst. ',
+  'ds.connected.rangeDependent':
+    'Diese Quelle verwendet Datums-Tokens: die Dateiliste wird bei jeder Änderung des Zeitraums neu aufgelöst. ',
   'ds.connected.captures': 'Aus Dateinamen erfasste Spalten: {names} (Filter darauf verkleinern auch die Dateiliste).',
   'ds.connected.large':
     'Die passenden Dateien umfassen insgesamt {mb} MB. Text-/gzip-Dateien werden vollständig und nacheinander geladen, daher wird die erste Abfrage über diesen Zeitraum langsam sein. Grenzen Sie den Zeitraum ein oder wandeln Sie große Zeiträume in stündliches Parquet um (scripts/alb-to-parquet.sh).',
   'ds.connected.files': 'Dateien ({n})',
   'ds.connected.fieldsTitle': 'Felder',
   'ds.hosts.title': 'Freigegebene Hosts',
-  'ds.hosts.hint': 'Hosts, von denen diese Erweiterung lesen darf. AWS-Endpunkte sind standardmäßig erlaubt; jeder andere Host wird beim Verbinden angefragt.',
+  'ds.hosts.hint':
+    'Hosts, von denen diese Erweiterung lesen darf. AWS-Endpunkte sind standardmäßig erlaubt; jeder andere Host wird beim Verbinden angefragt.',
   'ds.hosts.revoke': 'Widerrufen',
   'ds.history.title': 'Zuletzt verwendete Quellen',
   'ds.history.hint':
@@ -207,7 +215,8 @@ export const de: Messages = {
   'cache.intro':
     'Einmal gelesene Daten bleiben auf diesem Rechner, sodass wiederholte Abfragen sie nicht erneut herunterladen. Nur nie gelesene Teile werden abgerufen. Die Kopie wird verworfen, wenn sich die Datei im Speicher ändert.',
   'cache.opfsDisabled': '{error} – Caching ist deaktiviert, jeder Lesezugriff geht an den Ursprung.',
-  'cache.readOnly': 'Ein anderer Duckdive-Tab hält den Cache: dieser Tab liest, was dort liegt, und lädt den Rest herunter, ohne ihn zu behalten. Cache-Einstellungen und Leeren gehören in jenen Tab.',
+  'cache.readOnly':
+    'Ein anderer Duckdive-Tab hält den Cache: dieser Tab liest, was dort liegt, und lädt den Rest herunter, ohne ihn zu behalten. Cache-Einstellungen und Leeren gehören in jenen Tab.',
   'cache.enable': 'Range-Cache aktivieren',
   'cache.chunkSize': 'Chunk-Größe (neue Dateien)',
   'cache.maxBytes': 'Höchstens behalten',
@@ -261,7 +270,8 @@ export const de: Messages = {
   'exp.format.parquet': 'Parquet',
   'exp.rows': 'Zeilen (höchstens)',
   'exp.hint.columns': 'Die Zeitspalte und die ausgewählten Spalten, sortiert wie die Tabelle.',
-  'exp.hint.all': 'Alle Spalten der Quelle, sortiert wie die Tabelle. Fügen Sie Spalten hinzu, um nur diese zu exportieren.',
+  'exp.hint.all':
+    'Alle Spalten der Quelle, sortiert wie die Tabelle. Fügen Sie Spalten hinzu, um nur diese zu exportieren.',
   'exp.download': 'Herunterladen',
   'exp.running': 'Wird exportiert…',
 
@@ -270,7 +280,8 @@ export const de: Messages = {
   'share.title': 'Link zu dieser Ansicht',
   'share.copied': 'Link kopiert',
   'share.copiedNoSource': 'Kopiert (ohne die lokalen Dateien)',
-  'share.hint': 'Der Link enthält Abfrage, Filter, Zeitbereich, Diagramm und die Datenquelle ohne Geheimnisse. Eigene SQL-Filter kommen beim Empfänger deaktiviert an.',
+  'share.hint':
+    'Der Link enthält Abfrage, Filter, Zeitbereich, Diagramm und die Datenquelle ohne Geheimnisse. Eigene SQL-Filter kommen beim Empfänger deaktiviert an.',
   'share.hintNoSource': 'Lokale Dateien passen nicht in einen Link; der Empfänger muss sie selbst auswählen.',
 
   // ---- SQL page ----
@@ -279,12 +290,14 @@ export const de: Messages = {
   'sql.currentSearch': 'Aktuelle Suche',
   'sql.history': 'Verlauf',
   'sql.noHistory': 'Noch nichts ausgeführt.',
-  'sql.hint': 'Eine Anweisung über die Sicht {view}, die die verbundene Quelle enthält; das Ergebnis bleibt auf diesem Rechner. {key} führt sie aus.',
+  'sql.hint':
+    'Eine Anweisung über die Sicht {view}, die die verbundene Quelle enthält; das Ergebnis bleibt auf diesem Rechner. {key} führt sie aus.',
   'sql.rows': '{n} Zeilen · {ms} ms',
   'sql.showAll': 'Alle {n} Zeilen anzeigen',
 
   // ---- dashboard ----
-  'dash.hint': 'Gespeicherte Visualisierungen über der Suche und dem Zeitbereich oben; ein Klick auf ein Diagramm filtert oder zoomt alle.',
+  'dash.hint':
+    'Gespeicherte Visualisierungen über der Suche und dem Zeitbereich oben; ein Klick auf ein Diagramm filtert oder zoomt alle.',
   'dash.add': 'Visualisierung hinzufügen',
   'dash.allAdded': 'Jede gespeicherte Visualisierung ist auf dem Dashboard.',
   'dash.noneSaved': 'Noch nichts gespeichert: speichern Sie zuerst eine Visualisierung auf der Seite Visualisieren.',
@@ -327,7 +340,8 @@ export const de: Messages = {
   'vis.hideSql': 'SQL ausblenden',
   'vis.chooseAxis.title': 'Wählen Sie eine horizontale Achse',
   'vis.chooseAxis.text': 'Ziehen Sie ein Feld auf "{axis}" oder wählen Sie eines im rechten Bereich.',
-  'vis.breakdownNote': 'Mit einer Aufschlüsselung zeigt das Diagramm nur die erste Kennzahl. Wechseln Sie zu Tabelle, um alle Kennzahlen zu sehen.',
+  'vis.breakdownNote':
+    'Mit einer Aufschlüsselung zeigt das Diagramm nur die erste Kennzahl. Wechseln Sie zu Tabelle, um alle Kennzahlen zu sehen.',
   'vis.type': 'Visualisierungstyp',
   'vis.xAxis': 'Horizontale Achse',
   'vis.clear': 'leeren',
@@ -387,7 +401,8 @@ export const de: Messages = {
   // ---- diagnose panel ----
   'diag.find': 'Fehlerhafte Datei finden',
   'diag.finding': 'Fehlerhafte Datei wird gesucht…',
-  'diag.hint': 'Halbiert die angehängten Dateien mit count(*)-Abfragen und untersucht die Bytes jedes Verursachers (etwa zwei vollständige Scans pro Verursacher).',
+  'diag.hint':
+    'Halbiert die angehängten Dateien mit count(*)-Abfragen und untersucht die Bytes jedes Verursachers (etwa zwei vollständige Scans pro Verursacher).',
   'diag.cancelled': 'Abgebrochen (die Quelle wurde neu verbunden)',
   'diag.allOk':
     'Alle {n} Datei(en) ließen sich soeben mit count(*) fehlerfrei lesen. Der Fehler ist entweder vorübergehend (eine fehlerhafte Antwort aus dem Netzwerk oder dem Cache: siehe Anfrageprotokoll unter Datenquelle → Lokaler Range-Cache) oder spezifisch für die fehlgeschlagene Abfrage.',
@@ -397,7 +412,8 @@ export const de: Messages = {
   'diag.sizeText': 'aufgelistet {listed} / gelesen {read}',
   'diag.mismatch': ' (ABWEICHUNG: das Objekt hat sich seit dem Auflisten geändert)',
   'diag.firstBytes': 'erste Bytes',
-  'diag.gzipText': 'Magic {magic}, Methode {method}, Flags 0x{flags}, Trailer ISIZE {isize}, im Browser entpackt {inflated}, Member {members}',
+  'diag.gzipText':
+    'Magic {magic}, Methode {method}, Flags 0x{flags}, Trailer ISIZE {isize}, im Browser entpackt {inflated}, Member {members}',
   'diag.ok': 'ok',
   'diag.bad': 'FEHLERHAFT',
   'diag.inflateFailed': 'fehlgeschlagen ({error})',
@@ -416,7 +432,8 @@ export const de: Messages = {
   'doc.copyJson': 'JSON kopieren',
   'doc.copied': 'Kopiert',
   'doc.context': 'Kontext',
-  'doc.context.hint': 'Die Datensätze zeitlich vor und nach diesem, unabhängig von Abfrage und Filtern; die zur selben Zeit sind hervorgehoben.',
+  'doc.context.hint':
+    'Die Datensätze zeitlich vor und nach diesem, unabhängig von Abfrage und Filtern; die zur selben Zeit sind hervorgehoben.',
   'doc.context.more': '{n} weitere',
   'doc.filterFor': 'Nach Wert filtern',
   'doc.filterOut': 'Wert ausschließen',
@@ -489,11 +506,15 @@ export const de: Messages = {
   'q.help.bracket': 'Klammerbereich ({..} für exklusiv, * für offen)',
   'q.help.exists': 'Feld existiert (auch _exists_:extra.user_id)',
   'q.help.not': 'Negation. +term: erforderlich',
-  'q.help.bool': 'Boolesche Operatoren AND, OR, NOT (Großschreibung), &&, ||, !. Benachbarte Terme werden mit OR verknüpft.',
+  'q.help.bool':
+    'Boolesche Operatoren AND, OR, NOT (Großschreibung), &&, ||, !. Benachbarte Terme werden mit OR verknüpft.',
   'q.help.datemath': 'Datumsarithmetik in Bereichen eines Datumsfelds: now, now-1h, now/d (Tagesbeginn), now-1d/d',
-  'q.helpNote': 'Verschachtelte Struct-/JSON-Felder verwenden Punktpfade (geo.country, extra.user_id). Sonderzeichen mit \\ maskieren (path:\\/api\\/v1). {enter} drücken, um auszuführen.',
-  'q.completeNote': 'Beim Tippen werden Feldnamen vorgeschlagen; {tab} fügt den markierten ein. Ein leeres Feld zeigt die letzten Abfragen.',
-  'q.shortcuts': 'Tastenkürzel: {slash} springt von überall in die Suche, {prev} und {next} verschieben den Zeitbereich um seine eigene Länge.',
+  'q.helpNote':
+    'Verschachtelte Struct-/JSON-Felder verwenden Punktpfade (geo.country, extra.user_id). Sonderzeichen mit \\ maskieren (path:\\/api\\/v1). {enter} drücken, um auszuführen.',
+  'q.completeNote':
+    'Beim Tippen werden Feldnamen vorgeschlagen; {tab} fügt den markierten ein. Ein leeres Feld zeigt die letzten Abfragen.',
+  'q.shortcuts':
+    'Tastenkürzel: {slash} springt von überall in die Suche, {prev} und {next} verschieben den Zeitbereich um seine eigene Länge.',
   'q.running': 'Läuft…',
   'q.refresh': 'Aktualisieren',
   'q.autoRefresh': 'Automatisch aktualisieren',
@@ -572,26 +593,32 @@ export const de: Messages = {
 
   // ---- data source templates ----
   'tpl.alb.label': 'ALB-Zugriffsprotokolle',
-  'tpl.alb.note': 'account / region / alb werden zu Spalten; filtern Sie auf alb, um nur einen Load Balancer zu lesen. Stellen Sie Ihr Bucket-Präfix vor AWSLogs, falls Sie eines konfiguriert haben.',
+  'tpl.alb.note':
+    'account / region / alb werden zu Spalten; filtern Sie auf alb, um nur einen Load Balancer zu lesen. Stellen Sie Ihr Bucket-Präfix vor AWSLogs, falls Sie eines konfiguriert haben.',
   'tpl.alb-parquet.label': 'ALB-Zugriffsprotokolle konvertiert nach Parquet (scripts/alb-to-parquet.sh)',
   'tpl.alb-parquet.note':
     'Stündliches Parquet, geschrieben von scripts/alb-to-parquet.sh: <prefix>/<alb>/dt=YYYY-MM-DD/hour=HH/data.parquet. dt und hour werden zu Partitionsspalten; entfernen Sie "{alb}/", wenn das Ziel bereits einen Load Balancer benennt.',
   'tpl.nlb.label': 'NLB-Zugriffsprotokolle',
-  'tpl.nlb.note': 'Nur TLS-Listener-Protokolle (leerzeichengetrennt, automatisch erkannt). Wählen Sie das Zeitfeld bei Bedarf manuell.',
+  'tpl.nlb.note':
+    'Nur TLS-Listener-Protokolle (leerzeichengetrennt, automatisch erkannt). Wählen Sie das Zeitfeld bei Bedarf manuell.',
   'tpl.cloudfront.label': 'CloudFront-Protokolle',
   'tpl.cloudfront.note':
     'Ältere Standardprotokolle (TSV mit #Fields-Kopfzeile). Entfernen Sie "<prefix>/", wenn die Protokolle im Bucket-Root liegen. Eine Spalte "timestamp" wird aus date + time abgeleitet.',
   'tpl.cloudtrail.label': 'CloudTrail',
-  'tpl.cloudtrail.note': 'Eine Zeile pro Record (eventTime, eventSource, eventName, userIdentity, requestParameters, …). Für Organisations-Trails die Org-ID ergänzen: AWSLogs/o-xxxx/{account}/…',
+  'tpl.cloudtrail.note':
+    'Eine Zeile pro Record (eventTime, eventSource, eventName, userIdentity, requestParameters, …). Für Organisations-Trails die Org-ID ergänzen: AWSLogs/o-xxxx/{account}/…',
   'tpl.flowlogs.label': 'VPC Flow Logs',
-  'tpl.flowlogs.note': 'Text mit Kopfzeile (eigene Formate funktionieren ebenfalls). "start" (Epoch-Sekunden) dient als Zeitfeld.',
+  'tpl.flowlogs.note':
+    'Text mit Kopfzeile (eigene Formate funktionieren ebenfalls). "start" (Epoch-Sekunden) dient als Zeitfeld.',
   'tpl.flowlogs-parquet.label': 'VPC Flow Logs (Parquet, Hive-kompatible Präfixe)',
   'tpl.flowlogs-parquet.note':
     'Flow Logs, die als Parquet mit "Hive-kompatiblen S3-Präfixen" und stündlichen Partitionen zugestellt werden. Ohne die Hive-Option lautet das Layout AWSLogs/{account}/vpcflowlogs/{region}/{yyyy}/{MM}/{dd}/{HH}/*.log.parquet. "start" (Epoch-Sekunden) ist das Zeitfeld.',
   'tpl.waf.label': 'WAF-Protokolle (S3-Zustellung)',
-  'tpl.waf.note': 'JSON-Zeilen, eine pro Anfrage; "timestamp" (Epoch-Millisekunden) ist das Zeitfeld. Web ACLs vor CloudFront verwenden "cloudfront" als Region.',
+  'tpl.waf.note':
+    'JSON-Zeilen, eine pro Anfrage; "timestamp" (Epoch-Millisekunden) ist das Zeitfeld. Web ACLs vor CloudFront verwenden "cloudfront" als Region.',
   'tpl.netfw.label': 'Network Firewall-Protokolle',
-  'tpl.netfw.note': 'log_type ist "alert" oder "flow" (darauf filtern oder den Namen anstelle von {log_type} schreiben). JSON-Zeilen; "event_timestamp" (Epoch-Sekunden) ist das Zeitfeld.',
+  'tpl.netfw.note':
+    'log_type ist "alert" oder "flow" (darauf filtern oder den Namen anstelle von {log_type} schreiben). JSON-Zeilen; "event_timestamp" (Epoch-Sekunden) ist das Zeitfeld.',
   'tpl.r53resolver.label': 'Route 53 Resolver-Abfrageprotokolle',
   'tpl.r53resolver.note': 'JSON-Zeilen, eine pro DNS-Abfrage; "query_timestamp" ist das Zeitfeld.',
   'tpl.s3access.label': 'S3-Server-Zugriffsprotokolle',
@@ -610,7 +637,8 @@ export const de: Messages = {
   'tpl.cwlexport.note':
     'Dateien aus "Export data to Amazon S3" (create-export-task): ein Ordner pro Log-Stream, Zeilen der Form "Zeitstempel Nachricht". Der führende Zeitstempel wird zum Zeitfeld, der Rest zu "message".',
   'tpl.ssm.label': 'SSM-Sitzungs-/Befehlsprotokolle',
-  'tpl.ssm.note': 'Session Manager-Mitschriften und Run Command-stdout/stderr sind unstrukturiert: jede Zeile wird zu einem Datensatz mit dem Dateinamen in _file. Kein Zeitfeld.',
+  'tpl.ssm.note':
+    'Session Manager-Mitschriften und Run Command-stdout/stderr sind unstrukturiert: jede Zeile wird zu einem Datensatz mit dem Dateinamen in _file. Kein Zeitfeld.',
 
   // ---- connect / listing (datasource.ts, s3list.ts) ----
   'src.listingValues': 'Werte werden aufgelistet… {done} / {total}',
@@ -618,7 +646,8 @@ export const de: Messages = {
   'src.listingPrefixes': 'Dateien werden aufgelistet… {done} / {total} Präfixe',
   'src.applyFailed': 'S3-Einstellung {key} konnte nicht angewendet werden: {error}',
   'src.placeholder': 'Die URL enthält noch den Platzhalter {placeholder}; ersetzen Sie jedes <…> durch den echten Wert',
-  'src.placeholderLong': 'Die URL enthält noch den Platzhalter {placeholder}; ersetzen Sie jedes <…> durch den echten Wert (Konto-ID, Region, Name des Load Balancers)',
+  'src.placeholderLong':
+    'Die URL enthält noch den Platzhalter {placeholder}; ersetzen Sie jedes <…> durch den echten Wert (Konto-ID, Region, Name des Load Balancers)',
   'src.dateNeedsRange': 'Die URL verwendet Datums-Tokens; ein Zeitraum ist erforderlich',
   'src.wildcardS3Only': 'Platzhalter werden nur für s3://-URLs unterstützt (keine Listing-API für {url})',
   'src.demo.progress': 'Demodaten werden erzeugt…',
@@ -641,7 +670,8 @@ export const de: Messages = {
   'src.description.urls': '{n} URL(s): {first}{more}',
   'src.readingSchema': 'Schema wird gelesen…',
   'src.counting': 'Zeilen werden gezählt…',
-  'src.tooManyObjects': 'Mehr als {max} Objekte unter {bucket}/{prefix}; ergänzen Sie ein wörtliches Präfix vor dem Platzhalter (z. B. den Namen des Load Balancers) oder grenzen Sie den Zeitraum ein',
+  'src.tooManyObjects':
+    'Mehr als {max} Objekte unter {bucket}/{prefix}; ergänzen Sie ein wörtliches Präfix vor dem Platzhalter (z. B. den Namen des Load Balancers) oder grenzen Sie den Zeitraum ein',
   'src.tooManyPrefixes': 'Der Zeitraum ergibt zu viele Präfixe',
   'src.warning.many':
     '{files} Dateien ({mb} MB) passen zu diesem Zeitraum, mehr als der Warnschwellenwert von {max}. Das Verbinden liest nichts, aber Text-/gzip-Dateien werden vollständig und nacheinander geladen, daher wird die erste Abfrage über diesen Zeitraum langsam sein. Grenzen Sie den Zeitraum ein (Stunden statt Tage) oder wandeln Sie große Zeiträume mit scripts/alb-to-parquet.sh in stündliches Parquet um.',

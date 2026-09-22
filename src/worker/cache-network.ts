@@ -21,7 +21,13 @@ export class RequestFailed extends Error {
 }
 
 export function createNativeRequest(NativeXHR: typeof XMLHttpRequest) {
-  return function nativeSync(method: string, url: string, headers: HeaderMap, wantBody: boolean, timeoutMs = method === 'HEAD' ? HEAD_TIMEOUT_MS : CHUNK_TIMEOUT_MS): NativeResult {
+  return function nativeSync(
+    method: string,
+    url: string,
+    headers: HeaderMap,
+    wantBody: boolean,
+    timeoutMs = method === 'HEAD' ? HEAD_TIMEOUT_MS : CHUNK_TIMEOUT_MS,
+  ): NativeResult {
     const x = new NativeXHR();
     x.open(method, url, false);
     x.timeout = timeoutMs;
@@ -39,6 +45,12 @@ export function createNativeRequest(NativeXHR: typeof XMLHttpRequest) {
       throw new RequestFailed(e);
     }
     const raw = x.getAllResponseHeaders();
-    return { status: x.status, statusText: x.statusText, headers: parseHeaders(raw), rawHeaders: raw, body: wantBody ? (x.response as ArrayBuffer) : null };
+    return {
+      status: x.status,
+      statusText: x.statusText,
+      headers: parseHeaders(raw),
+      rawHeaders: raw,
+      body: wantBody ? (x.response as ArrayBuffer) : null,
+    };
   };
 }

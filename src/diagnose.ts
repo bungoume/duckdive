@@ -33,7 +33,9 @@ export const FILE_ERROR = /gzip|zstd|magic|corrupt|Parquet file|invalid|not a va
 
 /** Such errors get a pointer to the diagnosis button and the cache controls. */
 export function withCacheHint(msg: string): string {
-  return FILE_ERROR.test(msg) ? t('disc.cacheHint', { error: msg, button: t('diag.find'), clear: t('cache.clear'), enable: t('cache.enable') }) : msg;
+  return FILE_ERROR.test(msg)
+    ? t('disc.cacheHint', { error: msg, button: t('diag.find'), clear: t('cache.clear'), enable: t('cache.enable') })
+    : msg;
 }
 
 export interface FileReport {
@@ -104,9 +106,17 @@ export async function inspectGzip(buf: Uint8Array): Promise<NonNullable<FileRepo
   const magicOk = buf.length >= 10 && buf[0] === 0x1f && buf[1] === 0x8b;
   const method = buf.length > 2 ? buf[2] : -1;
   const flags = buf.length > 3 ? buf[3] : -1;
-  const isize = buf.length >= 8 ? (buf[buf.length - 4] | (buf[buf.length - 3] << 8) | (buf[buf.length - 2] << 16) | (buf[buf.length - 1] << 24)) >>> 0 : 0;
+  const isize =
+    buf.length >= 8
+      ? (buf[buf.length - 4] |
+          (buf[buf.length - 3] << 8) |
+          (buf[buf.length - 2] << 16) |
+          (buf[buf.length - 1] << 24)) >>>
+        0
+      : 0;
   let headerSignatures = 0;
-  for (let i = 0; i + 2 < buf.length; i++) if (buf[i] === 0x1f && buf[i + 1] === 0x8b && buf[i + 2] === 0x08) headerSignatures++;
+  for (let i = 0; i + 2 < buf.length; i++)
+    if (buf[i] === 0x1f && buf[i + 1] === 0x8b && buf[i + 2] === 0x08) headerSignatures++;
   const { inflated, error } = await inflateGzip(buf);
   let members = 0;
   let membersError: string | null = null;
@@ -119,15 +129,30 @@ export async function inspectGzip(buf: Uint8Array): Promise<NonNullable<FileRepo
   }
   let verdict: string;
   if (buf.length === 0) verdict = 'empty object (0 bytes): not a gzip stream';
-  else if (!magicOk) verdict = 'does not start with the gzip magic (1f 8b): the bytes DuckDB received are not this .gz file, or the object is not gzip';
-  else if (method !== 8) verdict = `gzip header says compression method ${method} (only 8 = deflate is valid): header is damaged or the object is not a standard gzip`;
+  else if (!magicOk)
+    verdict =
+      'does not start with the gzip magic (1f 8b): the bytes DuckDB received are not this .gz file, or the object is not gzip';
+  else if (method !== 8)
+    verdict = `gzip header says compression method ${method} (only 8 = deflate is valid): header is damaged or the object is not a standard gzip`;
   else if (members > 1)
     verdict = `concatenated (multi-member) gzip with ${members} members. DuckDB may mis-read member boundaries (rows go missing or the header check fails mid-file); convert these files to Parquet (scripts/alb-to-parquet.sh) if the counts look wrong`;
   else if (membersError) verdict = `damaged gzip: ${membersError}`;
   else if (error) verdict = `single member, but the browser cannot inflate it: ${error}`;
-  else if (inflated !== null && inflated !== isize) verdict = `inflates to ${inflated} bytes but the trailer says ${isize}`;
+  else if (inflated !== null && inflated !== isize)
+    verdict = `inflates to ${inflated} bytes but the trailer says ${isize}`;
   else verdict = 'looks like a normal single-member gzip; DuckDB fails on it anyway (see its message)';
-  return { magicOk, method, flags, isize, inflated, inflateError: error, headerSignatures, members, membersError, verdict };
+  return {
+    magicOk,
+    method,
+    flags,
+    isize,
+    inflated,
+    inflateError: error,
+    headerSignatures,
+    members,
+    membersError,
+    verdict,
+  };
 }
 
 /** Message of DuckDB's error when `files` are read as a whole, or null when they read fine. */
@@ -172,7 +197,15 @@ async function inspectFile(file: string, listedSize: number | null, error: strin
 export async function diagnoseFiles(onProgress: (msg: string) => void, maxFailing = 3): Promise<DiagnoseReport> {
   if (!ctx) throw new Error(t('diag.noSource'));
   const { files, fileSizes, format } = ctx;
-  const report: DiagnoseReport = { startedAt: new Date().toISOString(), totalFiles: files.length, queries: 0, allReadable: false, failing: [], truncated: false, requestLog: [] };
+  const report: DiagnoseReport = {
+    startedAt: new Date().toISOString(),
+    totalFiles: files.length,
+    queries: 0,
+    allReadable: false,
+    failing: [],
+    truncated: false,
+    requestLog: [],
+  };
   const found: { file: string; error: string }[] = [];
   const search = async (idx: number[]): Promise<void> => {
     if (found.length >= maxFailing) {
@@ -202,7 +235,11 @@ export async function diagnoseFiles(onProgress: (msg: string) => void, maxFailin
   }
   try {
     const names = report.failing.map((f) => f.file.split('/').pop() ?? '');
-    report.requestLog = (await cacheStats()).stats.log.filter((l) => names.some((n) => n && l.url.includes(n)) || /net:|corrupt|short-body|passthrough:|handler-error|range-ignored/.test(l.outcome));
+    report.requestLog = (await cacheStats()).stats.log.filter(
+      (l) =>
+        names.some((n) => n && l.url.includes(n)) ||
+        /net:|corrupt|short-body|passthrough:|handler-error|range-ignored/.test(l.outcome),
+    );
   } catch {
     /* worker unavailable */
   }

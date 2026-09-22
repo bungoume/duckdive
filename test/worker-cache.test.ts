@@ -25,7 +25,16 @@ async function bootCache(status: number, body: string, etag: string, readOnly = 
     version: 2,
     slabSize: 4,
     wasted: 0,
-    files: { [url]: { key: url, size: 8, etag: 'old', chunkSize: 4, seenAt: Date.now(), chunks: [[0, 0, 4, checksum(disk.subarray(0, 4))]] } },
+    files: {
+      [url]: {
+        key: url,
+        size: 8,
+        etag: 'old',
+        chunkSize: 4,
+        seenAt: Date.now(),
+        chunks: [[0, 0, 4, checksum(disk.subarray(0, 4))]],
+      },
+    },
     ext: {},
     config: { enabled: true },
   };
@@ -33,7 +42,10 @@ async function bootCache(status: number, body: string, etag: string, readOnly = 
     removeEntry: async () => undefined,
     getFileHandle: async (name: string) =>
       name === 'index.json'
-        ? { getFile: async () => ({ text: async () => JSON.stringify(index) }), createWritable: async () => ({ write: async () => undefined, close: async () => undefined }) }
+        ? {
+            getFile: async () => ({ text: async () => JSON.stringify(index) }),
+            createWritable: async () => ({ write: async () => undefined, close: async () => undefined }),
+          }
         : { createSyncAccessHandle: async () => slab },
   };
   class OriginXHR {
@@ -49,7 +61,11 @@ async function bootCache(status: number, body: string, etag: string, readOnly = 
     send() {
       const [, start, end] = /bytes=(\d+)-(\d+)/.exec(this.range)!;
       this.response = (status === 206 ? bytes.slice(+start, +end + 1) : bytes).buffer;
-      this.headers = { etag, 'content-length': String(this.response.byteLength), ...(status === 206 ? { 'content-range': `bytes ${start}-${end}/${bytes.length}` } : {}) };
+      this.headers = {
+        etag,
+        'content-length': String(this.response.byteLength),
+        ...(status === 206 ? { 'content-range': `bytes ${start}-${end}/${bytes.length}` } : {}),
+      };
     }
     getAllResponseHeaders() {
       return rawHeaders(this.headers);
@@ -62,7 +78,10 @@ async function bootCache(status: number, body: string, etag: string, readOnly = 
   };
   vi.stubGlobal('self', worker);
   vi.stubGlobal('navigator', {
-    locks: { request: (_name: string, _options: unknown, callback: (lock: object) => Promise<void>) => (readOnly ? Promise.reject(new Error('held by another tab')) : callback({})) },
+    locks: {
+      request: (_name: string, _options: unknown, callback: (lock: object) => Promise<void>) =>
+        readOnly ? Promise.reject(new Error('held by another tab')) : callback({}),
+    },
     storage: { getDirectory: async () => ({ getDirectoryHandle: async () => dir }) },
   });
   const booted = vi.fn();
@@ -116,7 +135,12 @@ describe('range cache object replacement', () => {
 it('refuses cache mutations in a read-only tab, including a lower size limit', async () => {
   const { control, slab } = await bootCache(206, 'AAAABBBB', 'old', true);
   const before = await control({ type: 'files' });
-  for (const command of [{ type: 'config', config: { maxBytes: 1 } }, { type: 'compact' }, { type: 'clear' }, { type: 'purge', url: 'https://logs.example.com/data' }]) {
+  for (const command of [
+    { type: 'config', config: { maxBytes: 1 } },
+    { type: 'compact' },
+    { type: 'clear' },
+    { type: 'purge', url: 'https://logs.example.com/data' },
+  ]) {
     expect(await control(command)).toMatchObject({ ok: false, error: expect.stringContaining('read-only') });
   }
   await vi.advanceTimersByTimeAsync(20_000);
@@ -125,21 +149,27 @@ it('refuses cache mutations in a read-only tab, including a lower size limit', a
 });
 
 describe('single-file cache budget', () => {
-  it.each([4, 6, 8, 0])('serves complete responses within a %i-byte cache budget (0 is unlimited)', async (maxBytes) => {
-    const { worker, control } = await bootCache(206, 'AAAABBBB', 'old');
-    await control({ type: 'config', config: { maxBytes } });
-    const read = () => {
-      const xhr = new worker.XMLHttpRequest();
-      xhr.open('GET', 'https://logs.example.com/data', false);
-      xhr.responseType = 'arraybuffer';
-      xhr.setRequestHeader('Range', 'bytes=0-7');
-      xhr.send();
-      expect(xhr.status).toBe(206);
-      expect(new TextDecoder().decode(xhr.response)).toBe('AAAABBBB');
-    };
-    read();
-    read(); // an uncached tail remains readable on subsequent requests
-    const result = await control({ type: 'files' });
-    expect(result.summary).toMatchObject({ cachedBytes: maxBytes && maxBytes < 8 ? 4 : 8, slabSize: maxBytes && maxBytes < 8 ? 4 : 8 });
-  });
+  it.each([4, 6, 8, 0])(
+    'serves complete responses within a %i-byte cache budget (0 is unlimited)',
+    async (maxBytes) => {
+      const { worker, control } = await bootCache(206, 'AAAABBBB', 'old');
+      await control({ type: 'config', config: { maxBytes } });
+      const read = () => {
+        const xhr = new worker.XMLHttpRequest();
+        xhr.open('GET', 'https://logs.example.com/data', false);
+        xhr.responseType = 'arraybuffer';
+        xhr.setRequestHeader('Range', 'bytes=0-7');
+        xhr.send();
+        expect(xhr.status).toBe(206);
+        expect(new TextDecoder().decode(xhr.response)).toBe('AAAABBBB');
+      };
+      read();
+      read(); // an uncached tail remains readable on subsequent requests
+      const result = await control({ type: 'files' });
+      expect(result.summary).toMatchObject({
+        cachedBytes: maxBytes && maxBytes < 8 ? 4 : 8,
+        slabSize: maxBytes && maxBytes < 8 ? 4 : 8,
+      });
+    },
+  );
 });

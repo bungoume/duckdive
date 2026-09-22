@@ -24,7 +24,9 @@ export function TokenValues(props: {
           </span>
         )}
       </div>
-      {!vars && <div class="hint mt6">{t('ds.vars.hint', { button: t('ds.listAndConnect'), names: tokens.join(', ') })}</div>}
+      {!vars && (
+        <div class="hint mt6">{t('ds.vars.hint', { button: t('ds.listAndConnect'), names: tokens.join(', ') })}</div>
+      )}
       {vars &&
         tokens.map((n) => {
           const opts = vars.values[n] ?? [];
@@ -54,7 +56,16 @@ export function TokenValues(props: {
               <div class="var-list">
                 {opts.map((v) => (
                   <label key={v.value} class="var-item">
-                    <input type="checkbox" checked={sel.includes(v.value)} onChange={(e) => props.onSelect(n, e.currentTarget.checked ? [...sel, v.value] : sel.filter((x) => x !== v.value))} />
+                    <input
+                      type="checkbox"
+                      checked={sel.includes(v.value)}
+                      onChange={(e) =>
+                        props.onSelect(
+                          n,
+                          e.currentTarget.checked ? [...sel, v.value] : sel.filter((x) => x !== v.value),
+                        )
+                      }
+                    />
                     <span class="mono">{v.value || t('common.empty')}</span>
                     <span class="hint">{t('common.files', { n: v.files.toLocaleString() })}</span>
                   </label>
@@ -64,7 +75,9 @@ export function TokenValues(props: {
             </div>
           );
         })}
-      {vars && props.missing.length > 0 && <div class="alert warn mt8">{t('ds.vars.missing', { names: props.missing.join(', ') })}</div>}
+      {vars && props.missing.length > 0 && (
+        <div class="alert warn mt8">{t('ds.vars.missing', { names: props.missing.join(', ') })}</div>
+      )}
     </div>
   );
 }

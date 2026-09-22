@@ -21,17 +21,31 @@ describe('formatDate', () => {
 describe('zoned conversions', () => {
   it('splits an instant into wall-clock parts', () => {
     const p = zonedParts(d, 'Asia/Tokyo');
-    expect([p.year, p.month, p.day, p.hour, p.minute, p.second, p.ms, p.weekday, p.offset]).toEqual([2026, 9, 16, 10, 2, 3, 456, 3, 540]);
+    expect([p.year, p.month, p.day, p.hour, p.minute, p.second, p.ms, p.weekday, p.offset]).toEqual([
+      2026, 9, 16, 10, 2, 3, 456, 3, 540,
+    ]);
   });
 
   it('inverts the split, normalising out-of-range fields', () => {
-    expect(zonedToUtc({ year: 2026, month: 9, day: 16, hour: 10, minute: 2, second: 3, ms: 456 }, 'Asia/Tokyo').toISOString()).toBe(d.toISOString());
-    expect(zonedToUtc({ year: 2026, month: 13, day: 1, hour: 0, minute: 0, second: 0, ms: 0 }, 'UTC').toISOString()).toBe('2027-01-01T00:00:00.000Z');
+    expect(
+      zonedToUtc(
+        { year: 2026, month: 9, day: 16, hour: 10, minute: 2, second: 3, ms: 456 },
+        'Asia/Tokyo',
+      ).toISOString(),
+    ).toBe(d.toISOString());
+    expect(
+      zonedToUtc({ year: 2026, month: 13, day: 1, hour: 0, minute: 0, second: 0, ms: 0 }, 'UTC').toISOString(),
+    ).toBe('2027-01-01T00:00:00.000Z');
   });
 
   it('maps a wall time inside a DST gap to the instant after the gap', () => {
     // New York springs forward on 2026-03-08 at 02:00: 02:30 does not exist
-    expect(zonedToUtc({ year: 2026, month: 3, day: 8, hour: 2, minute: 30, second: 0, ms: 0 }, 'America/New_York').toISOString()).toBe('2026-03-08T07:30:00.000Z');
+    expect(
+      zonedToUtc(
+        { year: 2026, month: 3, day: 8, hour: 2, minute: 30, second: 0, ms: 0 },
+        'America/New_York',
+      ).toISOString(),
+    ).toBe('2026-03-08T07:30:00.000Z');
   });
 });
 

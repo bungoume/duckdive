@@ -31,7 +31,8 @@ export const es: Messages = {
   'app.error.timeout': '{what} no respondió en {seconds} s',
   'app.crashed': 'Algo salió mal: {error}',
   'app.reload': 'Recargar',
-  'app.creds.refreshFailed': 'No se pudieron renovar las credenciales temporales de AWS: {error}. Las consultas fallarán cuando caduquen; vuelva a iniciar sesión en la página Origen de datos.',
+  'app.creds.refreshFailed':
+    'No se pudieron renovar las credenciales temporales de AWS: {error}. Las consultas fallarán cuando caduquen; vuelva a iniciar sesión en la página Origen de datos.',
   'app.large.files': '{n} archivos',
   'app.large.text':
     '{files}{bytes} coinciden con este patrón y rango de tiempo (umbral {threshold}). Todavía no se ha leído nada. Al continuar se crea la vista sobre todos ellos; la primera consulta descargará entonces lo que necesite. Reduzca el rango de tiempo, añada un prefijo de nombre o un filtro sobre una columna capturada, o continúe.',
@@ -45,7 +46,8 @@ export const es: Messages = {
   // ---- settings page ----
   'settings.title': 'Ajustes',
   'settings.lang': 'Idioma',
-  'settings.lang.hint': 'Se aplica de inmediato a toda la interfaz. La elección se guarda en este navegador; una instalación nueva sigue el idioma del navegador.',
+  'settings.lang.hint':
+    'Se aplica de inmediato a toda la interfaz. La elección se guarda en este navegador; una instalación nueva sigue el idioma del navegador.',
   'settings.theme': 'Apariencia',
   'settings.theme.system': 'Seguir al sistema',
   'settings.theme.light': 'Claro',
@@ -67,7 +69,8 @@ export const es: Messages = {
   'settings.dow': 'Día de la semana',
   'settings.dow.hint': 'Primer día de la semana para los rangos "now/w" y los intervalos semanales.',
   'settings.quickRanges': 'Rangos rápidos del filtro de tiempo',
-  'settings.quickRanges.hint': 'Lista JSON de {"from", "to", "display"} en sintaxis date-math. Sin "display", la etiqueta se genera en el idioma de la interfaz.',
+  'settings.quickRanges.hint':
+    'Lista JSON de {"from", "to", "display"} en sintaxis date-math. Sin "display", la etiqueta se genera en el idioma de la interfaz.',
   'settings.reset': 'Restablecer valores predeterminados',
   'settings.saved': 'Guardado.',
   'settings.backup': 'Copia de seguridad',
@@ -100,7 +103,8 @@ export const es: Messages = {
 
   // ---- Data source page ----
   'ds.title': 'Origen de datos',
-  'ds.intro': 'Los archivos se leen directamente desde el almacenamiento que los aloja, y solo las partes que necesita una consulta. No se envía nada a ningún otro sitio.',
+  'ds.intro':
+    'Los archivos se leen directamente desde el almacenamiento que los aloja, y solo las partes que necesita una consulta. No se envía nada a ningún otro sitio.',
   'ds.kind.url': 'URL S3 / HTTPS',
   'ds.kind.url.sub': 's3://bucket/prefix/*.parquet o https://…',
   'ds.kind.local': 'Archivos locales',
@@ -188,14 +192,17 @@ export const es: Messages = {
   'ds.connected.fields': ' · {n} campos',
   'ds.timeField.label': 'Campo de tiempo (usado por el selector de tiempo y el histograma)',
   'ds.timeField.none': '(ninguno – sin filtro de tiempo)',
-  'ds.connected.rangeDependent': 'Este origen usa tokens de fecha: la lista de archivos se vuelve a resolver cada vez que cambia el rango de tiempo. ',
-  'ds.connected.captures': 'Columnas capturadas de los nombres de archivo: {names} (filtrar por ellas también recorta la lista de archivos).',
+  'ds.connected.rangeDependent':
+    'Este origen usa tokens de fecha: la lista de archivos se vuelve a resolver cada vez que cambia el rango de tiempo. ',
+  'ds.connected.captures':
+    'Columnas capturadas de los nombres de archivo: {names} (filtrar por ellas también recorta la lista de archivos).',
   'ds.connected.large':
     'Los archivos coincidentes suman {mb} MB. Los archivos de texto / gzip se descargan completos y uno tras otro, así que la primera consulta sobre este rango será lenta. Reduzca el rango de tiempo o convierta los rangos amplios a Parquet por horas (scripts/alb-to-parquet.sh).',
   'ds.connected.files': 'Archivos ({n})',
   'ds.connected.fieldsTitle': 'Campos',
   'ds.hosts.title': 'Hosts autorizados',
-  'ds.hosts.hint': 'Hosts desde los que esta extensión puede leer. Los endpoints de AWS están permitidos por defecto; cualquier otro host se solicita al conectar.',
+  'ds.hosts.hint':
+    'Hosts desde los que esta extensión puede leer. Los endpoints de AWS están permitidos por defecto; cualquier otro host se solicita al conectar.',
   'ds.hosts.revoke': 'Revocar',
   'ds.history.title': 'Orígenes recientes',
   'ds.history.hint':
@@ -273,7 +280,8 @@ export const es: Messages = {
   'share.title': 'Enlace a esta vista',
   'share.copied': 'Enlace copiado',
   'share.copiedNoSource': 'Copiado (sin los archivos locales)',
-  'share.hint': 'El enlace lleva la consulta, los filtros, el rango de tiempo, el gráfico y el origen de datos sin ningún secreto. Los filtros SQL personalizados llegan desactivados al destinatario.',
+  'share.hint':
+    'El enlace lleva la consulta, los filtros, el rango de tiempo, el gráfico y el origen de datos sin ningún secreto. Los filtros SQL personalizados llegan desactivados al destinatario.',
   'share.hintNoSource': 'Los archivos locales no pueden viajar en un enlace; el destinatario debe elegirlos.',
 
   // ---- SQL page ----
@@ -282,12 +290,14 @@ export const es: Messages = {
   'sql.currentSearch': 'Búsqueda actual',
   'sql.history': 'Historial',
   'sql.noHistory': 'Aún no se ha ejecutado nada.',
-  'sql.hint': 'Una sentencia sobre la vista {view}, que contiene el origen conectado; el resultado se queda en este equipo. {key} la ejecuta.',
+  'sql.hint':
+    'Una sentencia sobre la vista {view}, que contiene el origen conectado; el resultado se queda en este equipo. {key} la ejecuta.',
   'sql.rows': '{n} filas · {ms} ms',
   'sql.showAll': 'Mostrar las {n} filas',
 
   // ---- dashboard ----
-  'dash.hint': 'Las visualizaciones guardadas sobre la búsqueda y el rango de tiempo de arriba; un clic en un gráfico filtra o amplía todas.',
+  'dash.hint':
+    'Las visualizaciones guardadas sobre la búsqueda y el rango de tiempo de arriba; un clic en un gráfico filtra o amplía todas.',
   'dash.add': 'Añadir visualización',
   'dash.allAdded': 'Todas las visualizaciones guardadas están en el panel.',
   'dash.noneSaved': 'Aún no hay nada guardado: guarde primero una visualización en la página Visualizar.',
@@ -330,7 +340,8 @@ export const es: Messages = {
   'vis.hideSql': 'Ocultar SQL',
   'vis.chooseAxis.title': 'Elija un eje horizontal',
   'vis.chooseAxis.text': 'Arrastre un campo sobre "{axis}" o elija uno en el panel de la derecha.',
-  'vis.breakdownNote': 'Con un desglose, el gráfico muestra solo la primera métrica. Cambie a Tabla para ver todas las métricas.',
+  'vis.breakdownNote':
+    'Con un desglose, el gráfico muestra solo la primera métrica. Cambie a Tabla para ver todas las métricas.',
   'vis.type': 'Tipo de visualización',
   'vis.xAxis': 'Eje horizontal',
   'vis.clear': 'limpiar',
@@ -390,7 +401,8 @@ export const es: Messages = {
   // ---- diagnose panel ----
   'diag.find': 'Buscar el archivo que falla',
   'diag.finding': 'Buscando el archivo que falla…',
-  'diag.hint': 'Divide los archivos conectados con consultas count(*) e inspecciona los bytes de cada culpable (unas dos lecturas completas por culpable).',
+  'diag.hint':
+    'Divide los archivos conectados con consultas count(*) e inspecciona los bytes de cada culpable (unas dos lecturas completas por culpable).',
   'diag.cancelled': 'Cancelado (el origen se volvió a conectar)',
   'diag.allOk':
     'Los {n} archivo(s) se leyeron bien con count(*) ahora mismo. El fallo es transitorio (una mala respuesta de la red o de la caché: vea el registro de peticiones en Origen de datos → Caché local de rangos) o específico de la consulta que falla.',
@@ -400,7 +412,8 @@ export const es: Messages = {
   'diag.sizeText': 'listado {listed} / leído {read}',
   'diag.mismatch': ' (DISCREPANCIA: el objeto cambió desde que se listó)',
   'diag.firstBytes': 'primeros bytes',
-  'diag.gzipText': 'magic {magic}, método {method}, flags 0x{flags}, ISIZE del trailer {isize}, descomprimido por el navegador {inflated}, miembros {members}',
+  'diag.gzipText':
+    'magic {magic}, método {method}, flags 0x{flags}, ISIZE del trailer {isize}, descomprimido por el navegador {inflated}, miembros {members}',
   'diag.ok': 'ok',
   'diag.bad': 'INCORRECTO',
   'diag.inflateFailed': 'falló ({error})',
@@ -419,7 +432,8 @@ export const es: Messages = {
   'doc.copyJson': 'Copiar JSON',
   'doc.copied': 'Copiado',
   'doc.context': 'Contexto',
-  'doc.context.hint': 'Los registros anteriores y posteriores a este en el tiempo, sin importar la consulta ni los filtros; los del mismo instante se resaltan.',
+  'doc.context.hint':
+    'Los registros anteriores y posteriores a este en el tiempo, sin importar la consulta ni los filtros; los del mismo instante se resaltan.',
   'doc.context.more': '{n} más',
   'doc.filterFor': 'Filtrar por este valor',
   'doc.filterOut': 'Excluir este valor',
@@ -492,11 +506,16 @@ export const es: Messages = {
   'q.help.bracket': 'Rango con corchetes (use {..} para exclusivo, * para abierto)',
   'q.help.exists': 'El campo existe (también _exists_:extra.user_id)',
   'q.help.not': 'Negación. +término: obligatorio',
-  'q.help.bool': 'Operadores booleanos AND, OR, NOT (en mayúsculas), &&, ||, !. Los términos adyacentes se combinan con OR.',
-  'q.help.datemath': 'Aritmética de fechas en rangos de un campo de fecha: now, now-1h, now/d (inicio del día), now-1d/d',
-  'q.helpNote': 'Los campos struct / JSON anidados usan rutas con puntos (geo.country, extra.user_id). Escape los caracteres especiales con \\ (path:\\/api\\/v1). Pulse {enter} para ejecutar.',
-  'q.completeNote': 'Se sugieren nombres de campo mientras escribe; {tab} inserta el resaltado. Una caja vacía lista las consultas recientes.',
-  'q.shortcuts': 'Atajos: {slash} lleva el foco a la búsqueda desde cualquier sitio, {prev} y {next} desplazan el rango de tiempo su propia duración.',
+  'q.help.bool':
+    'Operadores booleanos AND, OR, NOT (en mayúsculas), &&, ||, !. Los términos adyacentes se combinan con OR.',
+  'q.help.datemath':
+    'Aritmética de fechas en rangos de un campo de fecha: now, now-1h, now/d (inicio del día), now-1d/d',
+  'q.helpNote':
+    'Los campos struct / JSON anidados usan rutas con puntos (geo.country, extra.user_id). Escape los caracteres especiales con \\ (path:\\/api\\/v1). Pulse {enter} para ejecutar.',
+  'q.completeNote':
+    'Se sugieren nombres de campo mientras escribe; {tab} inserta el resaltado. Una caja vacía lista las consultas recientes.',
+  'q.shortcuts':
+    'Atajos: {slash} lleva el foco a la búsqueda desde cualquier sitio, {prev} y {next} desplazan el rango de tiempo su propia duración.',
   'q.running': 'Ejecutando…',
   'q.refresh': 'Actualizar',
   'q.autoRefresh': 'Actualización automática',
@@ -575,26 +594,32 @@ export const es: Messages = {
 
   // ---- data source templates ----
   'tpl.alb.label': 'Logs de acceso de ALB',
-  'tpl.alb.note': 'account / region / alb se convierten en columnas; filtre por alb para leer un solo balanceador. Añada el prefijo de su bucket antes de AWSLogs si configuró uno.',
+  'tpl.alb.note':
+    'account / region / alb se convierten en columnas; filtre por alb para leer un solo balanceador. Añada el prefijo de su bucket antes de AWSLogs si configuró uno.',
   'tpl.alb-parquet.label': 'Logs de acceso de ALB convertidos a Parquet (scripts/alb-to-parquet.sh)',
   'tpl.alb-parquet.note':
     'Parquet por horas escrito por scripts/alb-to-parquet.sh: <prefix>/<alb>/dt=YYYY-MM-DD/hour=HH/data.parquet. dt y hour se convierten en columnas de partición; elimine "{alb}/" si el destino ya nombra un solo balanceador.',
   'tpl.nlb.label': 'Logs de acceso de NLB',
-  'tpl.nlb.note': 'Solo logs de listeners TLS (separados por espacios, detección automática). Elija el campo de tiempo manualmente si hace falta.',
+  'tpl.nlb.note':
+    'Solo logs de listeners TLS (separados por espacios, detección automática). Elija el campo de tiempo manualmente si hace falta.',
   'tpl.cloudfront.label': 'Logs de CloudFront',
-  'tpl.cloudfront.note': 'Logs estándar antiguos (TSV con cabecera #Fields). Elimine "<prefix>/" si los logs están en la raíz del bucket. Se deriva una columna "timestamp" a partir de date + time.',
+  'tpl.cloudfront.note':
+    'Logs estándar antiguos (TSV con cabecera #Fields). Elimine "<prefix>/" si los logs están en la raíz del bucket. Se deriva una columna "timestamp" a partir de date + time.',
   'tpl.cloudtrail.label': 'CloudTrail',
   'tpl.cloudtrail.note':
     'Una fila por Record (eventTime, eventSource, eventName, userIdentity, requestParameters, …). Para trails de organización añada el id de la organización: AWSLogs/o-xxxx/{account}/…',
   'tpl.flowlogs.label': 'VPC Flow Logs',
-  'tpl.flowlogs.note': 'Texto con cabecera (los formatos personalizados también funcionan). "start" (segundos epoch) se usa como campo de tiempo.',
+  'tpl.flowlogs.note':
+    'Texto con cabecera (los formatos personalizados también funcionan). "start" (segundos epoch) se usa como campo de tiempo.',
   'tpl.flowlogs-parquet.label': 'VPC Flow Logs (Parquet, prefijos compatibles con Hive)',
   'tpl.flowlogs-parquet.note':
     'Flow logs entregados como Parquet con "prefijos S3 compatibles con Hive" y particiones por horas. Sin la opción Hive la estructura es AWSLogs/{account}/vpcflowlogs/{region}/{yyyy}/{MM}/{dd}/{HH}/*.log.parquet. "start" (segundos epoch) es el campo de tiempo.',
   'tpl.waf.label': 'Logs de WAF (entrega a S3)',
-  'tpl.waf.note': 'Líneas JSON, una por petición; "timestamp" (milisegundos epoch) es el campo de tiempo. Las Web ACL delante de CloudFront usan "cloudfront" como región.',
+  'tpl.waf.note':
+    'Líneas JSON, una por petición; "timestamp" (milisegundos epoch) es el campo de tiempo. Las Web ACL delante de CloudFront usan "cloudfront" como región.',
   'tpl.netfw.label': 'Logs de Network Firewall',
-  'tpl.netfw.note': 'log_type es "alert" o "flow" (filtre por él, o escriba el nombre en lugar de {log_type}). Líneas JSON; "event_timestamp" (segundos epoch) es el campo de tiempo.',
+  'tpl.netfw.note':
+    'log_type es "alert" o "flow" (filtre por él, o escriba el nombre en lugar de {log_type}). Líneas JSON; "event_timestamp" (segundos epoch) es el campo de tiempo.',
   'tpl.r53resolver.label': 'Logs de consultas de Route 53 Resolver',
   'tpl.r53resolver.note': 'Líneas JSON, una por consulta DNS; "query_timestamp" es el campo de tiempo.',
   'tpl.s3access.label': 'Logs de acceso al servidor S3',
@@ -622,11 +647,13 @@ export const es: Messages = {
   'src.listingPrefixes': 'Listando archivos… {done} / {total} prefijos',
   'src.applyFailed': 'Error al aplicar el ajuste de S3 {key}: {error}',
   'src.placeholder': 'La URL todavía contiene el marcador {placeholder}; sustituya cada <…> por el valor real',
-  'src.placeholderLong': 'La URL todavía contiene el marcador {placeholder}; sustituya cada <…> por el valor real (ID de cuenta, región, nombre del balanceador)',
+  'src.placeholderLong':
+    'La URL todavía contiene el marcador {placeholder}; sustituya cada <…> por el valor real (ID de cuenta, región, nombre del balanceador)',
   'src.dateNeedsRange': 'La URL usa tokens de fecha; se requiere un rango de tiempo',
   'src.wildcardS3Only': 'Los comodines solo se admiten en URLs s3:// (no hay API de listado para {url})',
   'src.demo.progress': 'Generando datos de demostración…',
-  'src.demo.description': 'Conjunto de datos de demostración (logs de acceso web sintéticos, generados en el navegador)',
+  'src.demo.description':
+    'Conjunto de datos de demostración (logs de acceso web sintéticos, generados en el navegador)',
   'src.local.none': 'No se ha seleccionado ningún archivo local',
   'src.local.emptyFolder': 'La carpeta no contiene archivos Parquet, CSV ni JSON',
   'src.local.forgotten': 'El navegador ya no conoce los archivos de este origen; elíjalos de nuevo.',
@@ -645,7 +672,8 @@ export const es: Messages = {
   'src.description.urls': '{n} URL(s): {first}{more}',
   'src.readingSchema': 'Leyendo el esquema…',
   'src.counting': 'Contando filas…',
-  'src.tooManyObjects': 'Más de {max} objetos bajo {bucket}/{prefix}; añada un prefijo literal antes del comodín (p. ej. el nombre del balanceador) o reduzca el rango de tiempo',
+  'src.tooManyObjects':
+    'Más de {max} objetos bajo {bucket}/{prefix}; añada un prefijo literal antes del comodín (p. ej. el nombre del balanceador) o reduzca el rango de tiempo',
   'src.tooManyPrefixes': 'El rango de tiempo se expande a demasiados prefijos',
   'src.warning.many':
     '{files} archivos ({mb} MB) coinciden con este rango de tiempo, por encima del umbral de aviso de {max}. Conectar no lee nada, pero los archivos de texto / gzip se descargan completos y uno tras otro, así que la primera consulta sobre este rango será lenta. Reduzca el rango de tiempo (horas en lugar de días) o convierta los rangos amplios a Parquet por horas con scripts/alb-to-parquet.sh.',

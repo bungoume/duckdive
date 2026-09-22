@@ -33,7 +33,10 @@ function Tile(props: TileProps) {
   const { item, fields, timeExpr, compiled, paused, refreshTick } = props;
   const vis = item.vis;
   // the tile's own query and filters, over the page's time range
-  const own = useMemo(() => compileSearch({ ...item.search, range: props.search.range }, fields, timeExpr, compiled.context), [item.search, props.search.range, fields, timeExpr, compiled.context]);
+  const own = useMemo(
+    () => compileSearch({ ...item.search, range: props.search.range }, fields, timeExpr, compiled.context),
+    [item.search, props.search.range, fields, timeExpr, compiled.context],
+  );
   const { result, previous, error, interval, compare } = useVisQuery({
     vis,
     compiled: { ...compiled, where: `(${compiled.where}) AND (${own.where})`, error: compiled.error ?? own.error },
@@ -58,12 +61,24 @@ function Tile(props: TileProps) {
         <button class="btn ghost small" onClick={props.onOpen} title={t('dash.open')}>
           {t('dash.open')}
         </button>
-        <button class="btn ghost small danger" onClick={props.onRemove} title={t('dash.remove')} aria-label={t('dash.remove')}>
+        <button
+          class="btn ghost small danger"
+          onClick={props.onRemove}
+          title={t('dash.remove')}
+          aria-label={t('dash.remove')}
+        >
           ✕
         </button>
       </div>
       {err && <div class="alert error">{err}</div>}
-      {result && chart === 'table' && <DataTable result={result} metrics={vis.metrics} xLabel={xAxisLabel(vis, interval, props.timeField?.name ?? null, result.step)} gLabel={breakdownLabel(vis)} />}
+      {result && chart === 'table' && (
+        <DataTable
+          result={result}
+          metrics={vis.metrics}
+          xLabel={xAxisLabel(vis, interval, props.timeField?.name ?? null, result.step)}
+          gLabel={breakdownLabel(vis)}
+        />
+      )}
       {result && chart === 'metric' && <MetricTiles result={result} metrics={vis.metrics} />}
       {result && (chart === 'area' || chart === 'line' || chart === 'bar') && result.xKind !== 'none' && (
         <Chart
@@ -74,7 +89,9 @@ function Tile(props: TileProps) {
           percent={vis.percent}
           log={vis.log}
           compare={compare ? previous : null}
-          onBrush={(from, to) => props.onSearch({ ...props.search, range: { from: from.toISOString(), to: to.toISOString() } })}
+          onBrush={(from, to) =>
+            props.onSearch({ ...props.search, range: { from: from.toISOString(), to: to.toISOString() } })
+          }
           onPick={(pick) => {
             const next = searchAfterPick(vis, result.groups, pick, props.search);
             if (next) props.onSearch(next);
@@ -104,7 +121,10 @@ export function Dashboard(props: {
   const [saved, setSaved] = useState<SavedVis[]>(() => loadSavedVis());
   const [adding, setAdding] = useState(false);
   const [running, setRunning] = useState(0);
-  const compiled = useMemo(() => compileSearch(search, fields, timeExpr, props.evaluation), [search, fields, timeExpr, props.evaluation]);
+  const compiled = useMemo(
+    () => compileSearch(search, fields, timeExpr, props.evaluation),
+    [search, fields, timeExpr, props.evaluation],
+  );
   const pinned = saved.filter((s) => s.pinned);
   const others = saved.filter((s) => !s.pinned);
 
@@ -124,8 +144,19 @@ export function Dashboard(props: {
   return (
     <div class="page">
       <div class="topbar">
-        <QueryBar query={search.query} range={search.range} error={compiled.error} busy={running > 0} fields={fields} onSubmit={(query, range) => props.onSearch({ ...search, query, range })} />
-        <FilterBar filters={search.filters} fields={fields} onChange={(filters) => props.onSearch({ ...search, filters })} />
+        <QueryBar
+          query={search.query}
+          range={search.range}
+          error={compiled.error}
+          busy={running > 0}
+          fields={fields}
+          onSubmit={(query, range) => props.onSearch({ ...search, query, range })}
+        />
+        <FilterBar
+          filters={search.filters}
+          fields={fields}
+          onChange={(filters) => props.onSearch({ ...search, filters })}
+        />
       </div>
       {running > 0 && <div class="loading-bar" />}
       <div class="dashboard">

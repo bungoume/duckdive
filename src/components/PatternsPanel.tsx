@@ -15,7 +15,14 @@ export function defaultPatternField(fields: Field[]): Field | null {
 }
 
 /** Discover's "Patterns": the templates of a text field in the current search, most frequent first. */
-export function PatternsPanel(props: { fields: Field[]; where: string; field: Field | null; onField: (name: string) => void; onFilter: (f: Filter) => void; refreshTick?: number }) {
+export function PatternsPanel(props: {
+  fields: Field[];
+  where: string;
+  field: Field | null;
+  onField: (name: string) => void;
+  onFilter: (f: Filter) => void;
+  refreshTick?: number;
+}) {
   const { field, where, refreshTick } = props;
   const [result, setResult] = useState<{ patterns: LogPattern[]; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +54,12 @@ export function PatternsPanel(props: { fields: Field[]; where: string; field: Fi
     <div class="patterns">
       <div class="row mb8">
         <b>{t('pat.title')}</b>
-        <select class="input chart-select" value={field?.name ?? ''} onChange={(e) => props.onField(e.currentTarget.value)} aria-label={t('common.field')}>
+        <select
+          class="input chart-select"
+          value={field?.name ?? ''}
+          onChange={(e) => props.onField(e.currentTarget.value)}
+          aria-label={t('common.field')}
+        >
           {props.fields
             .filter((f) => f.kind === 'string')
             .map((f) => (
@@ -56,7 +68,13 @@ export function PatternsPanel(props: { fields: Field[]; where: string; field: Fi
               </option>
             ))}
         </select>
-        <span class="hint">{result ? t('pat.showing', { n: result.patterns.length, total: result.total.toLocaleString() }) : loading ? t('common.loading') : ''}</span>
+        <span class="hint">
+          {result
+            ? t('pat.showing', { n: result.patterns.length, total: result.total.toLocaleString() })
+            : loading
+              ? t('common.loading')
+              : ''}
+        </span>
       </div>
       <p class="hint">{t('pat.hint')}</p>
       {!field && <div class="hint">{t('pat.none')}</div>}

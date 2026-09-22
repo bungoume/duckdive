@@ -6,7 +6,16 @@ import { DataProtocol, exec, execAll, getDB, query } from './duck';
 import { describeError } from './errors';
 import { CancelledError, throwIfAborted } from './net';
 import { originPattern } from './permissions';
-import { detectFormat, otelRename, otelSelect, readerFor, resolveFormat, timeFieldFor, type FormatDef, type Naming } from './formats';
+import {
+  detectFormat,
+  otelRename,
+  otelSelect,
+  readerFor,
+  resolveFormat,
+  timeFieldFor,
+  type FormatDef,
+  type Naming,
+} from './formats';
 import {
   DEFAULT_MAX_FILES,
   HAS_DATE_TOKEN,
@@ -224,7 +233,8 @@ export async function resolveFiles(
       valueFilters,
       {
         signal: opts.signal,
-        onProgress: (done, total) => opts.onProgress?.(total > 1 ? t('src.listingPrefixes', { done, total }) : t('src.listingFiles'), 'list'),
+        onProgress: (done, total) =>
+          opts.onProgress?.(total > 1 ? t('src.listingPrefixes', { done, total }) : t('src.listingFiles'), 'list'),
       },
       cfg.tokenValues ?? {},
     );
@@ -234,11 +244,20 @@ export async function resolveFiles(
     skippedByFilter = r.skippedByFilter;
     files.push(...r.files);
     // Preserve the listing's byte total even when the source also contains plain HTTPS URLs.
-    totalBytes = r.files.every((f) => f.metadata !== null) ? r.files.reduce((sum, f) => sum + f.metadata!.size, 0) : null;
+    totalBytes = r.files.every((f) => f.metadata !== null)
+      ? r.files.reduce((sum, f) => sum + f.metadata!.size, 0)
+      : null;
     for (const { url, metadata } of r.files) {
       if (!metadata) continue;
       const https = s3HttpsUrl(url, cfg.s3);
-      if (https) seeds.push({ url: https, size: metadata.size, etag: metadata.etag, lastModified: metadata.lastModified, s3: parseS3Url(url) ?? undefined });
+      if (https)
+        seeds.push({
+          url: https,
+          size: metadata.size,
+          etag: metadata.etag,
+          lastModified: metadata.lastModified,
+          s3: parseS3Url(url) ?? undefined,
+        });
     }
     warning = r.warning;
   }
@@ -250,11 +269,19 @@ export async function resolveFiles(
  * `captures` (extra SELECT expressions over `filename`) requires filename = true.
  * Under the `otel` naming a fixed layout is projected onto the semantic-convention names.
  */
-export function viewSelect(fmt: FormatDef, files: string[], captures: string | null, withFilename = true, naming: Naming = 'native'): string {
+export function viewSelect(
+  fmt: FormatDef,
+  files: string[],
+  captures: string | null,
+  withFilename = true,
+  naming: Naming = 'native',
+): string {
   const list = '[' + files.map(lit).join(', ') + ']';
   // The OTel projection names every column of the layout itself, so it replaces both the star and
   // the format's derived columns; captures and _file are added to it the same way.
-  const cols = (naming === 'otel' ? otelSelect(fmt) : null) ?? `*${withFilename ? ' EXCLUDE (filename)' : ''}${fmt.replace ?? ''}${fmt.select ?? ''}`;
+  const cols =
+    (naming === 'otel' ? otelSelect(fmt) : null) ??
+    `*${withFilename ? ' EXCLUDE (filename)' : ''}${fmt.replace ?? ''}${fmt.select ?? ''}`;
   const { reader, wrap } = readerFor(fmt, naming);
   let sql = `SELECT ${cols}${captures ?? ''}${withFilename ? ', filename AS _file' : ''} FROM ${reader(list, withFilename)}`;
   if (wrap) sql = wrap(sql);
@@ -266,18 +293,28 @@ export function viewSelect(fmt: FormatDef, files: string[], captures: string | n
  * second statement: the first one binds the reader, the column names are then read from the
  * catalog (which costs nothing), and the mapping is applied to the ones that are actually there.
  */
-async function createView(cfg: SourceConfig, fmt: FormatDef, files: string[], captures: string | null, withFilename = true): Promise<void> {
+async function createView(
+  cfg: SourceConfig,
+  fmt: FormatDef,
+  files: string[],
+  captures: string | null,
+  withFilename = true,
+): Promise<void> {
   const inner = viewSelect(fmt, files, captures, withFilename, cfg.naming);
   await exec(`CREATE OR REPLACE VIEW ${VIEW} AS ${inner}`);
   const byName = cfg.naming === 'otel' ? fmt.otelByName : undefined;
   if (!byName) return;
   const keep = new Set<string>([...capturedColumns(cfg), '_file']);
-  await exec(`CREATE OR REPLACE VIEW ${VIEW} AS SELECT ${otelRename(byName, await viewColumns(VIEW), keep)} FROM (${inner})`);
+  await exec(
+    `CREATE OR REPLACE VIEW ${VIEW} AS SELECT ${otelRename(byName, await viewColumns(VIEW), keep)} FROM (${inner})`,
+  );
 }
 
 /** Column names of a view, in order, from the catalog: no bind, no reads (see introspectFields). */
 async function viewColumns(view: string): Promise<string[]> {
-  const r = await query(`SELECT column_name FROM duckdb_columns() WHERE table_name = ${lit(view)} AND schema_name = current_schema() ORDER BY column_index`);
+  const r = await query(
+    `SELECT column_name FROM duckdb_columns() WHERE table_name = ${lit(view)} AND schema_name = current_schema() ORDER BY column_index`,
+  );
   return r.rows.map((row) => String(row.column_name));
 }
 
@@ -295,7 +332,10 @@ export function captureSelect(cfg: SourceConfig): string {
   const cols = [...byName].map(([name, cases]) => {
     // Each pattern can put this token in a different capture group. Pick the first matching
     // pattern, including a legitimately empty capture; a non-matching file still yields ''.
-    const expr = cases.length === 1 ? cases[0].extract : `CASE ${cases.map((c) => `WHEN regexp_matches(filename, ${c.pattern}) THEN ${c.extract}`).join(' ')} ELSE '' END`;
+    const expr =
+      cases.length === 1
+        ? cases[0].extract
+        : `CASE ${cases.map((c) => `WHEN regexp_matches(filename, ${c.pattern}) THEN ${c.extract}`).join(' ')} ELSE '' END`;
     return `${expr} AS ${quoteIdent(name)}`;
   });
   return cols.length ? ', ' + cols.join(', ') : '';
@@ -303,7 +343,12 @@ export function captureSelect(cfg: SourceConfig): string {
 
 function staticCreds(cfg: SourceConfig): AwsCredentials | null {
   if (cfg.authMode !== 'static' || !cfg.s3.accessKeyId) return null;
-  return { accessKeyId: cfg.s3.accessKeyId, secretAccessKey: cfg.s3.secretAccessKey, sessionToken: cfg.s3.sessionToken, expiration: '' };
+  return {
+    accessKeyId: cfg.s3.accessKeyId,
+    secretAccessKey: cfg.s3.secretAccessKey,
+    sessionToken: cfg.s3.sessionToken,
+    expiration: '',
+  };
 }
 
 type Progress = (message: string, phase: 'list' | 'db') => void;
@@ -323,7 +368,14 @@ async function attachDemo(progress: Progress): Promise<ViewInfo> {
   progress(t('src.demo.progress'), 'db');
   await createDemoTable();
   await exec(`CREATE OR REPLACE VIEW ${VIEW} AS SELECT * FROM demo_logs`);
-  return { description: t('src.demo.description'), files: [], fileSizes: [], totalBytes: null, warning: null, rangeDependent: false };
+  return {
+    description: t('src.demo.description'),
+    files: [],
+    fileSizes: [],
+    totalBytes: null,
+    warning: null,
+    rangeDependent: false,
+  };
 }
 
 async function attachLocal(cfg: SourceConfig, localFiles: File[], progress: Progress): Promise<ViewInfo> {
@@ -335,12 +387,23 @@ async function attachLocal(cfg: SourceConfig, localFiles: File[], progress: Prog
     await db.registerFileHandle(names[i], f, DataProtocol.BROWSER_FILEREADER, true);
   }
   await createView(cfg, resolveFormat(cfg.format, names), names, null);
-  const description = t('src.local.description', { n: names.length, names: names.slice(0, 3).join(', '), more: names.length > 3 ? '…' : '' });
+  const description = t('src.local.description', {
+    n: names.length,
+    names: names.slice(0, 3).join(', '),
+    more: names.length > 3 ? '…' : '',
+  });
   return { description, files: names, fileSizes: [], totalBytes: null, warning: null, rangeDependent: false };
 }
 
 /** Resolve the URL lines to files (cancellable), confirm large sets, prime the cache, create the view. */
-async function attachRemote(cfg: SourceConfig, creds: AwsCredentials | null, range: TimeWindow | null, valueFilters: ValueFilters, opts: AttachOptions, progress: Progress): Promise<ViewInfo> {
+async function attachRemote(
+  cfg: SourceConfig,
+  creds: AwsCredentials | null,
+  range: TimeWindow | null,
+  valueFilters: ValueFilters,
+  opts: AttachOptions,
+  progress: Progress,
+): Promise<ViewInfo> {
   const lines = sourceUrls(cfg);
   if (!lines.length) throw new Error(t('src.noUrls'));
   // List first: it runs on the page and can be cancelled; DuckDB is only touched afterwards.
@@ -351,7 +414,10 @@ async function attachRemote(cfg: SourceConfig, creds: AwsCredentials | null, ran
     throw new Error(
       isRangeDependent(cfg) && !range
         ? t('src.dateNeedsRange')
-        : t('src.noMatch', { patterns: lines.join(', '), range: range ? t('src.noMatch.range', { from: range.from.toISOString(), to: range.to.toISOString() }) : '' }),
+        : t('src.noMatch', {
+            patterns: lines.join(', '),
+            range: range ? t('src.noMatch.range', { from: range.from.toISOString(), to: range.to.toISOString() }) : '',
+          }),
     );
   }
   const files = resolved.files.map((f) => f.url);
@@ -381,19 +447,38 @@ async function attachRemote(cfg: SourceConfig, creds: AwsCredentials | null, ran
   progress(t('src.creatingView', { n: files.length }), 'db');
   if (lines.some((u) => u.startsWith('s3://'))) await applyS3(cfg, creds);
   await createView(cfg, resolveFormat(cfg.format, files), files, captures.length ? captureSelect(cfg) : null);
-  const expanded = resolved.patterns > 1 || files.length !== lines.length || resolved.skippedByTime > 0 || resolved.skippedByFilter > 0;
+  const expanded =
+    resolved.patterns > 1 ||
+    files.length !== lines.length ||
+    resolved.skippedByTime > 0 ||
+    resolved.skippedByFilter > 0;
   if (resolved.skippedByTime) notes.push(t('src.skippedByTime', { n: resolved.skippedByTime }));
-  if (resolved.skippedByFilter) notes.push(t('src.skippedByFilter', { n: resolved.skippedByFilter, names: captures.join(', ') }));
+  if (resolved.skippedByFilter)
+    notes.push(t('src.skippedByFilter', { n: resolved.skippedByFilter, names: captures.join(', ') }));
   const skipped = notes.length ? ` (${notes.join('; ')})` : '';
   const size = totalBytes !== null ? `, ${(totalBytes / 1048576).toFixed(totalBytes < 10 * 1048576 ? 1 : 0)} MB` : '';
   const more = files.length > 1 ? ' …' : '';
   const description = expanded
-    ? t('src.description.matched', { n: files.length, size, patterns: lines.length, notes: skipped, first: files[0], more })
+    ? t('src.description.matched', {
+        n: files.length,
+        size,
+        patterns: lines.length,
+        notes: skipped,
+        first: files[0],
+        more,
+      })
     : t('src.description.urls', { n: files.length, first: files[0], more });
   // Date tokens are not the only way the range decides which files there are: a key whose name
   // carries a timestamp is dropped when it falls outside the range, so such a source has to
   // re-list when the range moves, or it keeps showing the files the first range asked for.
-  return { description, files, fileSizes: resolved.files.map((f) => f.metadata?.size ?? null), totalBytes, warning, rangeDependent: isRangeDependent(cfg) || resolved.timePruned };
+  return {
+    description,
+    files,
+    fileSizes: resolved.files.map((f) => f.metadata?.size ?? null),
+    totalBytes,
+    warning,
+    rangeDependent: isRangeDependent(cfg) || resolved.timePruned,
+  };
 }
 
 /** The remembered choice if it still looks like a time column, else the format's preference, else the best-named date column. */
@@ -405,11 +490,19 @@ function pickTimeField(cfg: SourceConfig, fields: Field[], files: string[]): Fie
   }
   if (cfg.kind !== 'demo') {
     const pref = timeFieldFor(resolveFormat(cfg.format, files), cfg.naming);
-    const f = (pref && findField(fields, pref)) || (cfg.format === 'ltsv' ? (findField(fields, 'log.time') ?? findField(fields, 'log.timestamp')) : null);
+    const f =
+      (pref && findField(fields, pref)) ||
+      (cfg.format === 'ltsv' ? (findField(fields, 'log.time') ?? findField(fields, 'log.timestamp')) : null);
     if (f) return f;
   }
   const cands = fields.filter((f) => f.kind === 'date');
-  return cands.find((f) => f.name === '@timestamp') ?? cands.find((f) => /timestamp|time|ts|date/i.test(f.name)) ?? cands[0] ?? fields.find(isTimeCandidate) ?? null;
+  return (
+    cands.find((f) => f.name === '@timestamp') ??
+    cands.find((f) => /timestamp|time|ts|date/i.test(f.name)) ??
+    cands[0] ??
+    fields.find(isTimeCandidate) ??
+    null
+  );
 }
 
 export async function attachSource(
@@ -425,7 +518,11 @@ export async function attachSource(
     opts.onProgress?.(m, phase);
   };
   const view =
-    cfg.kind === 'demo' ? await attachDemo(progress) : cfg.kind === 'local' ? await attachLocal(cfg, localFiles, progress) : await attachRemote(cfg, creds, range, valueFilters, opts, progress);
+    cfg.kind === 'demo'
+      ? await attachDemo(progress)
+      : cfg.kind === 'local'
+        ? await attachLocal(cfg, localFiles, progress)
+        : await attachRemote(cfg, creds, range, valueFilters, opts, progress);
   progress(t('src.readingSchema'), 'db');
   const fields = await introspectFields(VIEW);
   const timeField = pickTimeField(cfg, fields, view.files);
@@ -445,7 +542,9 @@ export async function attachSource(
 }
 
 export async function createDemoTable() {
-  const exists = await query(`SELECT count(*)::DOUBLE AS n FROM information_schema.tables WHERE table_name = 'demo_logs'`);
+  const exists = await query(
+    `SELECT count(*)::DOUBLE AS n FROM information_schema.tables WHERE table_name = 'demo_logs'`,
+  );
   if (Number(exists.rows[0]?.n) > 0) return;
   await exec(`
 CREATE TABLE demo_logs AS

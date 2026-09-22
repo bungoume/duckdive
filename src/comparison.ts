@@ -7,11 +7,17 @@ export function supportsComparison(vis: VisState): boolean {
 }
 
 export function needsComparison(url: UrlState, saved: SavedVis[]): boolean {
-  return url.page === 'visualize' ? supportsComparison(url.vis) : url.page === 'dashboard' && saved.some((s) => s.pinned && supportsComparison(s.vis));
+  return url.page === 'visualize'
+    ? supportsComparison(url.vis)
+    : url.page === 'dashboard' && saved.some((s) => s.pinned && supportsComparison(s.vis));
 }
 
 /** The source must contain the preceding period before a comparison query can see its rows. */
-export function fileWindow(range: TimeRange, compare: boolean, context = timeContext()): { from: Date; to: Date } | null {
+export function fileWindow(
+  range: TimeRange,
+  compare: boolean,
+  context = timeContext(),
+): { from: Date; to: Date } | null {
   const r = resolveRange(range, context);
   if (!r) return null;
   const span = r.to.getTime() - r.from.getTime();

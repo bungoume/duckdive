@@ -43,12 +43,24 @@ export function DataSource(props: {
   const selectLocal = (sel: LocalSelection) => {
     setLocal(sel);
     const names = selectionNames(sel);
-    setCfg({ ...cfg, localId: undefined, urls: names.join('\n'), name: selectionTitle(names), timeField: { mode: 'auto' } });
+    setCfg({
+      ...cfg,
+      localId: undefined,
+      urls: names.join('\n'),
+      name: selectionTitle(names),
+      timeField: { mode: 'auto' },
+    });
   };
   const [templateId, setTemplateId] = useState<string>('');
   const [pendingTemplate, setPendingTemplate] = useState<(typeof TEMPLATES)[number] | null>(null);
   const applyTemplate = (tp: (typeof TEMPLATES)[number]) => {
-    set({ urls: tp.urls, format: tp.format, timeField: { mode: 'auto' }, tokenValues: {}, name: cfg.name === 'demo-logs' || !cfg.name ? tp.id : cfg.name });
+    set({
+      urls: tp.urls,
+      format: tp.format,
+      timeField: { mode: 'auto' },
+      tokenValues: {},
+      name: cfg.name === 'demo-logs' || !cfg.name ? tp.id : cfg.name,
+    });
     setTemplateId(tp.id);
     setPendingTemplate(null);
   };
@@ -68,8 +80,13 @@ export function DataSource(props: {
   const otelAvailable = cfg.format === 'auto' || hasOtel(FORMATS[cfg.format]);
   const vars = props.variables && props.variables.pattern === cfg.urls ? props.variables : null;
   const missing = unselectedTokens(cfg);
-  const setTokenValues = (name: string, values: string[]) => set({ tokenValues: { ...(cfg.tokenValues ?? {}), [name]: values } });
-  const connectLabel = props.busy ? t('ds.connecting') : tokens.length && !vars ? t('ds.listAndConnect') : t('ds.connect');
+  const setTokenValues = (name: string, values: string[]) =>
+    set({ tokenValues: { ...(cfg.tokenValues ?? {}), [name]: values } });
+  const connectLabel = props.busy
+    ? t('ds.connecting')
+    : tokens.length && !vars
+      ? t('ds.listAndConnect')
+      : t('ds.connect');
   const origins = useMemo(() => (cfg.kind === 'url' ? requiredOrigins(cfg) : []), [cfg]);
   // signed requests and log data would travel in clear; localhost (MinIO on this machine) is the usual exception
   const plainHttp = origins.filter((o) => o.startsWith('http://') && !/^http:\/\/(localhost|127\.0\.0\.1)[:/]/.test(o));
@@ -85,15 +102,27 @@ export function DataSource(props: {
         <h2>{t('ds.title')}</h2>
         <p class="hint">{t('ds.intro')}</p>
         <div class="kinds">
-          <button class={cfg.kind === 'url' ? 'active' : ''} aria-pressed={cfg.kind === 'url'} onClick={() => set({ kind: 'url' })}>
+          <button
+            class={cfg.kind === 'url' ? 'active' : ''}
+            aria-pressed={cfg.kind === 'url'}
+            onClick={() => set({ kind: 'url' })}
+          >
             <b>{t('ds.kind.url')}</b>
             <span>{t('ds.kind.url.sub')}</span>
           </button>
-          <button class={cfg.kind === 'local' ? 'active' : ''} aria-pressed={cfg.kind === 'local'} onClick={() => set({ kind: 'local' })}>
+          <button
+            class={cfg.kind === 'local' ? 'active' : ''}
+            aria-pressed={cfg.kind === 'local'}
+            onClick={() => set({ kind: 'local' })}
+          >
             <b>{t('ds.kind.local')}</b>
             <span>{t('ds.kind.local.sub')}</span>
           </button>
-          <button class={cfg.kind === 'demo' ? 'active' : ''} aria-pressed={cfg.kind === 'demo'} onClick={() => set({ kind: 'demo' })}>
+          <button
+            class={cfg.kind === 'demo' ? 'active' : ''}
+            aria-pressed={cfg.kind === 'demo'}
+            onClick={() => set({ kind: 'demo' })}
+          >
             <b>{t('ds.kind.demo')}</b>
             <span>{t('ds.kind.demo.sub')}</span>
           </button>
@@ -104,7 +133,12 @@ export function DataSource(props: {
             <div class="template-box">
               <div class="row" style="gap:10px;align-items:center">
                 <span class="template-title">{t('ds.template')}</span>
-                <select class="input" style="max-width:320px" value={pendingTemplate?.id ?? templateId} onChange={(e) => chooseTemplate(e.currentTarget.value)}>
+                <select
+                  class="input"
+                  style="max-width:320px"
+                  value={pendingTemplate?.id ?? templateId}
+                  onChange={(e) => chooseTemplate(e.currentTarget.value)}
+                >
                   <option value="">{t('ds.template.choose')}</option>
                   {TEMPLATES.map((tp) => (
                     <option value={tp.id}>{templateLabel(tp)}</option>
@@ -125,7 +159,9 @@ export function DataSource(props: {
                   </span>
                 </div>
               )}
-              {!pendingTemplate && templateId && TEMPLATES.find((x) => x.id === templateId) && <div class="hint mt6">{templateNote(TEMPLATES.find((x) => x.id === templateId)!)}</div>}
+              {!pendingTemplate && templateId && TEMPLATES.find((x) => x.id === templateId) && (
+                <div class="hint mt6">{templateNote(TEMPLATES.find((x) => x.id === templateId)!)}</div>
+              )}
             </div>
             <FormField label={t('ds.urls.label')}>
               <textarea
@@ -155,19 +191,36 @@ export function DataSource(props: {
                 selected={cfg.tokenValues ?? {}}
                 missing={missing}
                 onSelect={setTokenValues}
-                onSelectAll={() => set({ tokenValues: Object.fromEntries(tokens.map((n) => [n, (vars?.values[n] ?? []).map((v) => v.value)])) })}
+                onSelectAll={() =>
+                  set({
+                    tokenValues: Object.fromEntries(
+                      tokens.map((n) => [n, (vars?.values[n] ?? []).map((v) => v.value)]),
+                    ),
+                  })
+                }
               />
             )}
             <div class="grid2">
               <FormField label={t('common.format')}>
-                <select class="input" value={cfg.format} onChange={(e) => set({ format: e.currentTarget.value as SourceConfig['format'] })}>
+                <select
+                  class="input"
+                  value={cfg.format}
+                  onChange={(e) => set({ format: e.currentTarget.value as SourceConfig['format'] })}
+                >
                   {FORMAT_IDS.map((id) => (
                     <option value={id}>{formatLabel(id)}</option>
                   ))}
                 </select>
               </FormField>
               <FormField label={t('ds.naming')}>
-                <select class="input" value={cfg.naming} disabled={!otelAvailable} onChange={(e) => set({ naming: e.currentTarget.value as SourceConfig['naming'], timeField: { mode: 'auto' } })}>
+                <select
+                  class="input"
+                  value={cfg.naming}
+                  disabled={!otelAvailable}
+                  onChange={(e) =>
+                    set({ naming: e.currentTarget.value as SourceConfig['naming'], timeField: { mode: 'auto' } })
+                  }
+                >
                   {NAMING_IDS.map((id) => (
                     <option value={id}>{namingLabel(id)}</option>
                   ))}
@@ -177,14 +230,30 @@ export function DataSource(props: {
                 <input class="input" value={cfg.name} onInput={(e) => set({ name: e.currentTarget.value })} />
               </FormField>
               <FormField label={t('ds.maxFiles')}>
-                <input class="input" type="number" min={1} value={cfg.maxFiles || ''} placeholder="1000" onInput={(e) => set({ maxFiles: Number(e.currentTarget.value) || 0 })} />
+                <input
+                  class="input"
+                  type="number"
+                  min={1}
+                  value={cfg.maxFiles || ''}
+                  placeholder="1000"
+                  onInput={(e) => set({ maxFiles: Number(e.currentTarget.value) || 0 })}
+                />
               </FormField>
             </div>
             <span class="hint">
               {cfg.naming === 'otel' ? t('ds.naming.hint') + ' ' : ''}
               {t('ds.listingHint')}
             </span>
-            {usesS3 && <S3Section cfg={cfg} creds={props.creds} onChange={set} onS3={setS3} onOidc={setOidc} onCreds={props.onCreds} />}
+            {usesS3 && (
+              <S3Section
+                cfg={cfg}
+                creds={props.creds}
+                onChange={set}
+                onS3={setS3}
+                onOidc={setOidc}
+                onCreds={props.onCreds}
+              />
+            )}
             {isExtension && origins.length > 0 && (
               <div class={'alert mt8 ' + (needPerm ? 'info' : 'ok')}>
                 {needPerm ? t('ds.perm.ask') : t('ds.perm.granted')}
@@ -211,7 +280,11 @@ export function DataSource(props: {
               {t('common.cancel')}
             </button>
           )}
-          <button class="btn primary connect" disabled={props.busy || (!!vars && missing.length > 0)} onClick={() => props.onConnect(cfg, local)}>
+          <button
+            class="btn primary connect"
+            disabled={props.busy || (!!vars && missing.length > 0)}
+            onClick={() => props.onConnect(cfg, local)}
+          >
             {connectLabel}
           </button>
         </div>
@@ -221,12 +294,21 @@ export function DataSource(props: {
         <ConnectedCard
           attached={props.attached}
           onTimeField={(name) => {
-            if (cfg === props.config || (props.currentKey && sourceKey(cfg) === props.currentKey)) setCfg({ ...cfg, timeField: name ? { mode: 'field', name } : { mode: 'none' } });
+            if (cfg === props.config || (props.currentKey && sourceKey(cfg) === props.currentKey))
+              setCfg({ ...cfg, timeField: name ? { mode: 'field', name } : { mode: 'none' } });
             props.onTimeField(name);
           }}
         />
       )}
-      {props.history.length > 0 && <HistoryCard history={props.history} currentKey={props.currentKey} busy={props.busy} onUse={props.onUseHistory} onForget={props.onForgetHistory} />}
+      {props.history.length > 0 && (
+        <HistoryCard
+          history={props.history}
+          currentKey={props.currentKey}
+          busy={props.busy}
+          onUse={props.onUseHistory}
+          onForget={props.onForgetHistory}
+        />
+      )}
       <HostsCard refreshKey={props.attached} />
       <CachePanel />
     </div>

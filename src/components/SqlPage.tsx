@@ -34,7 +34,14 @@ interface Result {
 }
 
 /** The SQL page: one statement over the source view, its rows as a table, downloads of the result. */
-export function SqlPage(props: { evaluation?: TimeContext; fields: Field[]; timeExpr: string | null; search: SearchState; onBusy: (b: boolean) => void; paused?: boolean }) {
+export function SqlPage(props: {
+  evaluation?: TimeContext;
+  fields: Field[];
+  timeExpr: string | null;
+  search: SearchState;
+  onBusy: (b: boolean) => void;
+  paused?: boolean;
+}) {
   const [text, setText] = useState(loadText);
   const [history, setHistory] = useState(() => loadHistory(LS_SQL_HISTORY));
   const [result, setResult] = useState<Result | null>(null);
@@ -82,7 +89,9 @@ export function SqlPage(props: { evaluation?: TimeContext; fields: Field[]; time
   /** The Discover / Visualize search (query, filters, time range) as a statement to start from. */
   const insertSearch = () => {
     const c = compileSearch(props.search, props.fields, props.timeExpr, props.evaluation);
-    setText(`SELECT *\nFROM ${VIEW}\nWHERE ${c.where}\n${props.timeExpr ? `ORDER BY ${props.timeExpr} DESC\n` : ''}LIMIT 100`);
+    setText(
+      `SELECT *\nFROM ${VIEW}\nWHERE ${c.where}\n${props.timeExpr ? `ORDER BY ${props.timeExpr} DESC\n` : ''}LIMIT 100`,
+    );
   };
 
   const download = async (format: ExportFormat) => {
@@ -159,7 +168,9 @@ export function SqlPage(props: { evaluation?: TimeContext; fields: Field[]; time
         {result && (
           <>
             <div class="row mb8">
-              <span class="hint">{t('sql.rows', { n: result.rows.length.toLocaleString(), ms: Math.round(result.ms) })}</span>
+              <span class="hint">
+                {t('sql.rows', { n: result.rows.length.toLocaleString(), ms: Math.round(result.ms) })}
+              </span>
               <span class="grow" />
               {EXPORT_FORMATS.map((f) => (
                 <button key={f} class="btn small" disabled={busy || props.paused} onClick={() => void download(f)}>

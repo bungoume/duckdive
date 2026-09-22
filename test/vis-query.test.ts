@@ -3,7 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SEARCH, DEFAULT_VIS } from '../src/state';
 import type { VisResult } from '../src/queryPlans';
 
-const hook = vi.hoisted(() => ({ slots: [] as unknown[], cursor: 0, cleanup: undefined as (() => void) | undefined, deps: undefined as unknown[] | undefined }));
+const hook = vi.hoisted(() => ({
+  slots: [] as unknown[],
+  cursor: 0,
+  cleanup: undefined as (() => void) | undefined,
+  deps: undefined as unknown[] | undefined,
+}));
 vi.mock('preact/hooks', () => ({
   useState: <T>(initial: T) => {
     const i = hook.cursor++;
@@ -43,7 +48,16 @@ function TestQuery(patch: Partial<Input> = {}) {
   hook.cursor = 0;
   return useVisQuery(input);
 }
-const result = (x: number): VisResult => ({ rows: [{ x, g: null, m: [1] }], xKind: 'date_histogram', xOrder: [x], groups: [], interval: null, tzOffset: 0, step: null, sql: '' });
+const result = (x: number): VisResult => ({
+  rows: [{ x, g: null, m: [1] }],
+  xKind: 'date_histogram',
+  xOrder: [x],
+  groups: [],
+  interval: null,
+  tzOffset: 0,
+  step: null,
+  sql: '',
+});
 const drain = async () => {
   for (let i = 0; i < 8; i++) await Promise.resolve();
 };
@@ -55,7 +69,13 @@ beforeEach(() => {
   fetch.mockReset();
   input = {
     vis: DEFAULT_VIS,
-    compiled: { context: timeContext(), where: 'TRUE', error: null, from: new Date('2026-09-22T01:00:00Z'), to: new Date('2026-09-22T02:00:00Z') },
+    compiled: {
+      context: timeContext(),
+      where: 'TRUE',
+      error: null,
+      from: new Date('2026-09-22T01:00:00Z'),
+      to: new Date('2026-09-22T02:00:00Z'),
+    },
     searches: [DEFAULT_SEARCH],
     fields: [],
     timeExpr: 'ts',
@@ -107,7 +127,15 @@ describe('shared visualization queries', () => {
     fetch.mockResolvedValue(result(1));
     TestQuery();
     await drain();
-    TestQuery({ vis: { ...DEFAULT_VIS, title: 'Renamed', chart: 'area', metrics: [{ ...DEFAULT_VIS.metrics[0], label: 'Records' }] }, onBusy: vi.fn() });
+    TestQuery({
+      vis: {
+        ...DEFAULT_VIS,
+        title: 'Renamed',
+        chart: 'area',
+        metrics: [{ ...DEFAULT_VIS.metrics[0], label: 'Records' }],
+      },
+      onBusy: vi.fn(),
+    });
     expect(fetch).toHaveBeenCalledOnce();
     TestQuery({ refreshTick: 1 });
     await drain();

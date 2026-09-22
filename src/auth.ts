@@ -75,7 +75,8 @@ export function buildAuthUrl(cfg: OidcConfig, interactive: boolean): { url: stri
   u.searchParams.set('nonce', nonce);
   if (!interactive) u.searchParams.set('prompt', 'none');
   if (cfg.extraParams) {
-    for (const [k, v] of new URLSearchParams(cfg.extraParams)) if (!u.searchParams.has(k) || k === 'prompt') u.searchParams.set(k, v);
+    for (const [k, v] of new URLSearchParams(cfg.extraParams))
+      if (!u.searchParams.has(k) || k === 'prompt') u.searchParams.set(k, v);
   }
   return { url: u.toString(), state, nonce };
 }
@@ -93,7 +94,8 @@ function parseJwt(token: string): Record<string, unknown> {
 
 /** Run the OIDC flow and return the id_token. */
 export async function loginOidc(cfg: OidcConfig, interactive: boolean): Promise<string> {
-  if (!isExtension || !webext.identity?.launchWebAuthFlow) throw new Error('The browser identity API is only available inside the extension');
+  if (!isExtension || !webext.identity?.launchWebAuthFlow)
+    throw new Error('The browser identity API is only available inside the extension');
   if (!cfg.clientId) throw new Error('OIDC client ID is not configured');
   const { url, state, nonce } = buildAuthUrl(cfg, interactive);
   const resp = await webext.identity.launchWebAuthFlow({ url, interactive });
@@ -113,7 +115,9 @@ export async function loginOidc(cfg: OidcConfig, interactive: boolean): Promise<
 export function stsEndpointFor(cfg: OidcConfig): string {
   if (cfg.stsEndpoint) return cfg.stsEndpoint;
   // the region becomes part of the host name, so only a region-shaped one may build it
-  return /^[a-z0-9-]{1,32}$/.test(cfg.region) ? `https://sts.${cfg.region}.amazonaws.com/` : 'https://sts.amazonaws.com/';
+  return /^[a-z0-9-]{1,32}$/.test(cfg.region)
+    ? `https://sts.${cfg.region}.amazonaws.com/`
+    : 'https://sts.amazonaws.com/';
 }
 
 /** Exchange an OIDC id_token for temporary credentials. No AWS signature is needed for this call. */
@@ -151,11 +155,21 @@ export async function assumeRoleWithWebIdentity(cfg: OidcConfig, idToken: string
     expiration: get('Expiration'),
     subject: get('SubjectFromWebIdentityToken') || undefined,
   };
-  if (!creds.accessKeyId || !creds.secretAccessKey || !creds.sessionToken || !Number.isFinite(Date.parse(creds.expiration))) throw new Error('STS response did not contain valid credentials');
+  if (
+    !creds.accessKeyId ||
+    !creds.secretAccessKey ||
+    !creds.sessionToken ||
+    !Number.isFinite(Date.parse(creds.expiration))
+  )
+    throw new Error('STS response did not contain valid credentials');
   return creds;
 }
 
-export async function signIn(cfg: OidcConfig, interactive: boolean, isCurrent: () => boolean = () => true): Promise<AwsCredentials> {
+export async function signIn(
+  cfg: OidcConfig,
+  interactive: boolean,
+  isCurrent: () => boolean = () => true,
+): Promise<AwsCredentials> {
   const sessionCurrent = credentialSessionGuard(isCurrent);
   const token = await loginOidc(cfg, interactive);
   if (!sessionCurrent()) throw new CancelledError();
@@ -180,7 +194,10 @@ function oidcKey(cfg: OidcConfig): string {
 
 export const storeCredentials = (c: AwsCredentials | null, cfg?: OidcConfig): Promise<void> => {
   if (!c) credentialGeneration++;
-  return writeSession(SESSION_KEY, c && cfg ? ({ credentials: c, oidcKey: oidcKey(cfg) } satisfies StoredCredentials) : c);
+  return writeSession(
+    SESSION_KEY,
+    c && cfg ? ({ credentials: c, oidcKey: oidcKey(cfg) } satisfies StoredCredentials) : c,
+  );
 };
 
 function isCredentials(value: unknown): value is AwsCredentials {
@@ -202,7 +219,11 @@ export async function loadCredentials(cfg?: OidcConfig): Promise<AwsCredentials 
   if (!stored || typeof stored !== 'object') return null;
   if ('credentials' in stored && 'oidcKey' in stored) {
     const scoped = stored as Partial<StoredCredentials>;
-    return typeof scoped.oidcKey === 'string' && isCredentials(scoped.credentials) && (!cfg || scoped.oidcKey === oidcKey(cfg)) ? scoped.credentials : null;
+    return typeof scoped.oidcKey === 'string' &&
+      isCredentials(scoped.credentials) &&
+      (!cfg || scoped.oidcKey === oidcKey(cfg))
+      ? scoped.credentials
+      : null;
   }
   // Credentials written by an older build have no provenance. They may still be displayed or
   // explicitly cleared, but must not be used for a configured role.
@@ -223,7 +244,12 @@ export function isUsable(c: AwsCredentials | null, minSeconds = 60): boolean {
  * Return credentials that stay valid for at least `minSeconds`, refreshing silently otherwise.
  * Falls back to an interactive login only when `allowInteractive` is set.
  */
-export async function getCredentials(cfg: OidcConfig, allowInteractive: boolean, minSeconds = 300, isCurrent: () => boolean = () => true): Promise<AwsCredentials> {
+export async function getCredentials(
+  cfg: OidcConfig,
+  allowInteractive: boolean,
+  minSeconds = 300,
+  isCurrent: () => boolean = () => true,
+): Promise<AwsCredentials> {
   isCurrent = credentialSessionGuard(isCurrent);
   const cached = await loadCredentials(cfg);
   if (!isCurrent()) throw new CancelledError();

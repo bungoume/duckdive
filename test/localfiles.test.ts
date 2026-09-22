@@ -6,14 +6,31 @@ const handle = (kind: 'file' | 'directory', name: string) => ({ kind, name }) as
 
 describe('local registration names', () => {
   it('preserves unique paths and avoids collisions with names already in the selection', () => {
-    const files = ['same.csv.gz', 'same.csv.gz', 'same (2).csv.gz', 'dir/same.csv', 'dir/same.csv', 'plain', 'plain'].map((name) => ({ name }));
-    expect(uniqueLocalNames(files)).toEqual(['same.csv.gz', 'same (3).csv.gz', 'same (2).csv.gz', 'dir/same.csv', 'dir/same (2).csv', 'plain', 'plain (2)']);
+    const files = [
+      'same.csv.gz',
+      'same.csv.gz',
+      'same (2).csv.gz',
+      'dir/same.csv',
+      'dir/same.csv',
+      'plain',
+      'plain',
+    ].map((name) => ({ name }));
+    expect(uniqueLocalNames(files)).toEqual([
+      'same.csv.gz',
+      'same (3).csv.gz',
+      'same (2).csv.gz',
+      'dir/same.csv',
+      'dir/same (2).csv',
+      'plain',
+      'plain (2)',
+    ]);
   });
 });
 
 describe('isLogFile', () => {
   it('accepts the readable formats, compressed or not, and skips hidden files', () => {
-    for (const n of ['a.parquet', 'b.csv.gz', 'c.jsonl', 'd.log.zst', 'e.ltsv', 'x.gz']) expect(isLogFile(n)).toBe(true);
+    for (const n of ['a.parquet', 'b.csv.gz', 'c.jsonl', 'd.log.zst', 'e.ltsv', 'x.gz'])
+      expect(isLogFile(n)).toBe(true);
     for (const n of ['.DS_Store', 'notes.md', 'image.png', 'archive.zip']) expect(isLogFile(n)).toBe(false);
   });
 });

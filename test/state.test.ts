@@ -28,7 +28,12 @@ describe('readUrlState', () => {
   });
 
   it('restores ordinary filters and drops malformed ones', () => {
-    setHash('visualize', { search: { query: 'x', filters: [{ id: 'a', field: 'host', op: 'is', value: '1' }, { field: 'host' }, 'junk', null] } });
+    setHash('visualize', {
+      search: {
+        query: 'x',
+        filters: [{ id: 'a', field: 'host', op: 'is', value: '1' }, { field: 'host' }, 'junk', null],
+      },
+    });
     const u = readUrlState();
     expect(u.page).toBe('visualize');
     expect(u.search.query).toBe('x');
@@ -36,7 +41,9 @@ describe('readUrlState', () => {
   });
 
   it('quarantines custom SQL that was not written in this browser', () => {
-    setHash('discover', { search: { filters: [{ id: 'q', field: '', op: 'query', sql: `current_setting('s3_secret_access_key') = ''` }] } });
+    setHash('discover', {
+      search: { filters: [{ id: 'q', field: '', op: 'query', sql: `current_setting('s3_secret_access_key') = ''` }] },
+    });
     const f = readUrlState().search.filters[0];
     expect(f.disabled).toBe(true);
     expect(f.untrusted).toBe(true);
@@ -57,7 +64,15 @@ describe('readUrlState', () => {
 
   it('quarantines the custom SQL of a saved visualization too (localStorage is restorable)', () => {
     const sql = `current_setting('s3_secret_access_key') = ''`;
-    storeSavedVis([{ id: 'v', title: 'v', savedAt: '', vis: DEFAULT_VIS, search: { ...DEFAULT_SEARCH, filters: [{ id: 'q', field: '', op: 'query', sql, label: 'errors' }] } }]);
+    storeSavedVis([
+      {
+        id: 'v',
+        title: 'v',
+        savedAt: '',
+        vis: DEFAULT_VIS,
+        search: { ...DEFAULT_SEARCH, filters: [{ id: 'q', field: '', op: 'query', sql, label: 'errors' }] },
+      },
+    ]);
     const f = loadSavedVis()[0].search.filters[0];
     expect(f.untrusted).toBe(true);
     expect(f.disabled).toBe(true);
@@ -76,10 +91,17 @@ describe('readUrlState', () => {
 
 describe('sources', () => {
   beforeEach(() => localStorage.clear());
-  const cfg = { ...DEFAULT_SOURCE, kind: 'url' as const, urls: 's3://b/x\n# comment\n', s3: { ...DEFAULT_SOURCE.s3, accessKeyId: 'AKIA', secretAccessKey: 'shh', sessionToken: 'tok' } };
+  const cfg = {
+    ...DEFAULT_SOURCE,
+    kind: 'url' as const,
+    urls: 's3://b/x\n# comment\n',
+    s3: { ...DEFAULT_SOURCE.s3, accessKeyId: 'AKIA', secretAccessKey: 'shh', sessionToken: 'tok' },
+  };
 
   it('identifies a source by its destination, not by its name or keys', () => {
-    expect(sourceKey({ ...cfg, name: 'a' })).toBe(sourceKey({ ...cfg, name: 'b', s3: { ...cfg.s3, accessKeyId: 'other' } }));
+    expect(sourceKey({ ...cfg, name: 'a' })).toBe(
+      sourceKey({ ...cfg, name: 'b', s3: { ...cfg.s3, accessKeyId: 'other' } }),
+    );
     expect(sourceKey({ ...cfg, urls: 's3://b/y' })).not.toBe(sourceKey(cfg));
     expect(sourceKey({ ...cfg, kind: 'local' })).toBeNull();
     expect(sourceKey({ ...cfg, kind: 'demo' })).toBe('demo');
@@ -107,8 +129,18 @@ describe('malformed URL state', () => {
   it('falls back field by field instead of throwing', () => {
     setHash('visualize', {
       search: { query: 42, range: { from: 'now-1h' } },
-      discover: { columns: 'nope', sort: [{ field: 'a', dir: 'sideways' }, { field: 'b', dir: 'asc' }, 'junk'], interval: 7 },
-      vis: { chart: 'pie', x: { kind: 'bogus', size: -3 }, metrics: 'none', breakdown: { size: 'x', other: 'maybe' }, title: ['t'] },
+      discover: {
+        columns: 'nope',
+        sort: [{ field: 'a', dir: 'sideways' }, { field: 'b', dir: 'asc' }, 'junk'],
+        interval: 7,
+      },
+      vis: {
+        chart: 'pie',
+        x: { kind: 'bogus', size: -3 },
+        metrics: 'none',
+        breakdown: { size: 'x', other: 'maybe' },
+        title: ['t'],
+      },
     });
     const u = readUrlState();
     expect(u.search.query).toBe('');
@@ -149,10 +181,19 @@ describe('malformed URL state', () => {
       breakdown: { field: 'g', size: 3, other: false },
       title: 'T',
     };
-    setHash('visualize', { search: { query: 'q', range: { from: 'now-1d', to: 'now' }, filters: [] }, discover: { columns: ['a'], sort: [{ field: 'a', dir: 'desc' }], interval: '1h' }, vis });
+    setHash('visualize', {
+      search: { query: 'q', range: { from: 'now-1d', to: 'now' }, filters: [] },
+      discover: { columns: ['a'], sort: [{ field: 'a', dir: 'desc' }], interval: '1h' },
+      vis,
+    });
     const u = readUrlState();
     expect(u.vis).toEqual(vis);
-    expect(u.discover).toEqual({ columns: ['a'], sort: [{ field: 'a', dir: 'desc' }], interval: '1h', breakdown: null });
+    expect(u.discover).toEqual({
+      columns: ['a'],
+      sort: [{ field: 'a', dir: 'desc' }],
+      interval: '1h',
+      breakdown: null,
+    });
     expect(u.search.range).toEqual({ from: 'now-1d', to: 'now' });
   });
 });
@@ -201,7 +242,13 @@ describe('saved searches and visualizations', () => {
     ]);
     localStorage.setItem('ddv.savedSearches', JSON.stringify([{ id: 1, discover: { columns: 'x' } }, 'junk']));
     expect(loadSavedSearches()).toEqual([
-      { id: 'search0', title: '', savedAt: '', search: { query: '', range: { from: 'now-6h', to: 'now' }, filters: [] }, discover: { columns: [], sort: [], interval: 'auto', breakdown: null } },
+      {
+        id: 'search0',
+        title: '',
+        savedAt: '',
+        search: { query: '', range: { from: 'now-6h', to: 'now' }, filters: [] },
+        discover: { columns: [], sort: [], interval: 'auto', breakdown: null },
+      },
     ]);
     storeSavedVis([
       {

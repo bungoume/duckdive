@@ -25,14 +25,26 @@ describe('timeAxis', () => {
   });
 
   it('uses day ticks at the zone midnight for multi-day ranges and drops the year within one year', () => {
-    const axis = timeAxis(new Date('2026-09-01T00:00:00Z'), new Date('2026-09-20T00:00:00Z'), 700, 3600000, 'Asia/Tokyo');
+    const axis = timeAxis(
+      new Date('2026-09-01T00:00:00Z'),
+      new Date('2026-09-20T00:00:00Z'),
+      700,
+      3600000,
+      'Asia/Tokyo',
+    );
     expect(axis.pattern).toBe('MM-DD');
     expect(axis.ticks.length).toBeGreaterThan(2);
     for (const t of axis.ticks) expect(t.toISOString()).toMatch(/T15:00:00\.000Z$/); // JST midnight
   });
 
   it('never ticks finer than the bucket and shows the year across years', () => {
-    const axis = timeAxis(new Date('2024-01-01T00:00:00Z'), new Date('2026-01-01T00:00:00Z'), 900, 30 * 86400000, 'UTC');
+    const axis = timeAxis(
+      new Date('2024-01-01T00:00:00Z'),
+      new Date('2026-01-01T00:00:00Z'),
+      900,
+      30 * 86400000,
+      'UTC',
+    );
     expect(['YYYY-MM', 'YYYY']).toContain(axis.pattern);
     for (const t of axis.ticks) expect(t.getUTCDate()).toBe(1);
   });

@@ -4,7 +4,9 @@ import { templateExpr, templateFilterSql, templateRegex } from '../src/patterns'
 describe('log patterns', () => {
   it('nests one regexp_replace per mask, ids before numbers', () => {
     const e = templateExpr('"message"');
-    expect(e.startsWith('regexp_replace(regexp_replace(regexp_replace(regexp_replace("message", \'[0-9a-fA-F]{8}-')).toBe(true);
+    expect(
+      e.startsWith('regexp_replace(regexp_replace(regexp_replace(regexp_replace("message", \'[0-9a-fA-F]{8}-'),
+    ).toBe(true);
     expect(e.endsWith("'<n>', 'g')")).toBe(true);
   });
 

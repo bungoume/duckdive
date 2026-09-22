@@ -32,7 +32,9 @@ const step = async (name, fn) => {
 await step('load', async () => {
   await page.goto(base);
   await page.waitForSelector('.hits .n', { timeout: 120000 });
-  await page.waitForFunction(() => !document.querySelector('.hits .n')?.textContent?.includes('…'), null, { timeout: 120000 });
+  await page.waitForFunction(() => !document.querySelector('.hits .n')?.textContent?.includes('…'), null, {
+    timeout: 120000,
+  });
 });
 await step('discover-initial', async () => {
   const hits = await page.textContent('.hits .n');
@@ -70,12 +72,27 @@ await step('sql-numeric-values', async () => {
       "SELECT 42::HUGEINT AS huge, 1.25::DECIMAL(10,2) AS dec, -0.01::DECIMAL(10,2) AS neg, 9007199254740993::HUGEINT AS large, sum(i) AS total, {'values': [1.25::DECIMAL(10,2), -0.01::DECIMAL(10,2)]} AS nested FROM range(100) t(i)",
     ),
   );
-  assert.deepEqual(rows, [{ huge: 42, dec: '1.25', neg: '-0.01', large: '9007199254740993', total: 4950, nested: { values: ['1.25', '-0.01'] } }]);
+  assert.deepEqual(rows, [
+    {
+      huge: 42,
+      dec: '1.25',
+      neg: '-0.01',
+      large: '9007199254740993',
+      total: 4950,
+      nested: { values: ['1.25', '-0.01'] },
+    },
+  ]);
 });
 
 await step('json-literal-keys', async () => {
   const result = await page.evaluate(async () => {
-    const data = { 'http.status_code': 500, http: { status_code: 200 }, 'a/b~c': 'literal', '': true, 'q\'"[0]': 'quoted' };
+    const data = {
+      'http.status_code': 500,
+      http: { status_code: 200 },
+      'a/b~c': 'literal',
+      '': true,
+      'q\'"[0]': 'quoted',
+    };
     const json = JSON.stringify(data).replace(/'/g, "''");
     await window.__ddv.query(`CREATE TEMP TABLE json_keys_regression AS SELECT '${json}'::JSON AS payload`);
     try {
@@ -87,16 +104,29 @@ await step('json-literal-keys', async () => {
       await window.__ddv.query('DROP TABLE json_keys_regression');
     }
   });
-  if (JSON.stringify(result) !== JSON.stringify({ v0: 500, v1: 'literal', v2: true, v3: 'quoted' })) throw new Error('literal JSON keys: ' + JSON.stringify(result));
+  if (JSON.stringify(result) !== JSON.stringify({ v0: 500, v1: 'literal', v2: true, v3: 'quoted' }))
+    throw new Error('literal JSON keys: ' + JSON.stringify(result));
 });
 await step('formats', async () => {
   // sizes and milliseconds are formatted by field name in the table, with the raw value in the tooltip
-  const cell = page.locator('table.docs tbody tr').first().locator('.source-summary .sv', { hasText: 'http.bytes' }).locator('.v');
+  const cell = page
+    .locator('table.docs tbody tr')
+    .first()
+    .locator('.source-summary .sv', { hasText: 'http.bytes' })
+    .locator('.v');
   const text = (await cell.textContent()).trim();
   const raw = await cell.getAttribute('title');
-  const ms = (await page.locator('table.docs tbody tr').first().locator('.source-summary .sv', { hasText: 'latency_ms' }).locator('.v').textContent()).trim();
+  const ms = (
+    await page
+      .locator('table.docs tbody tr')
+      .first()
+      .locator('.source-summary .sv', { hasText: 'latency_ms' })
+      .locator('.v')
+      .textContent()
+  ).trim();
   console.log(`     http.bytes=${text} (raw ${raw}) latency=${ms}`);
-  if (!/ (B|KB|MB)$/.test(text) || !/^\d+$/.test(raw ?? '') || !/ (ms|s)$/.test(ms)) throw new Error('values not formatted');
+  if (!/ (B|KB|MB)$/.test(text) || !/^\d+$/.test(raw ?? '') || !/ (ms|s)$/.test(ms))
+    throw new Error('values not formatted');
 });
 await step('summary-filter', async () => {
   // hovering a value of a collapsed row reveals +/−: "+" filters by it
@@ -217,7 +247,9 @@ await step('search-matrix', async () => {
     await page.press('.qinput input', 'Enter');
     await settled(page);
     const err = await page.locator('.qerror').count();
-    console.log(`     ${err ? 'ok  ' : 'MISS'} (expect error) ${q.padEnd(40)} ${err ? (await page.textContent('.qerror')).slice(0, 60) : ''}`);
+    console.log(
+      `     ${err ? 'ok  ' : 'MISS'} (expect error) ${q.padEnd(40)} ${err ? (await page.textContent('.qerror')).slice(0, 60) : ''}`,
+    );
     if (!err) throw new Error(`expected error for ${q}`);
   }
   await page.fill('.qinput input', '"connection failure" OR extra.ab_test:variant-a');
@@ -238,7 +270,9 @@ await step('expand-doc', async () => {
   const ctx1 = await page.locator('.context-view tbody tr').count();
   // the first row is the newest of the range: only "more before" can grow the list
   await page.locator('.context-view button').first().click();
-  await page.waitForFunction((n) => document.querySelectorAll('.context-view tbody tr').length > n, ctx1, { timeout: 30000 });
+  await page.waitForFunction((n) => document.querySelectorAll('.context-view tbody tr').length > n, ctx1, {
+    timeout: 30000,
+  });
   const ctx2 = await page.locator('.context-view tbody tr').count();
   const same = await page.locator('.context-view tr.same').count();
   console.log(`     context rows ${ctx1} -> ${ctx2}, same time=${same}`);
@@ -331,7 +365,8 @@ await step('saved-search', async () => {
   const q = await page.inputValue('.qinput input');
   const th = await page.locator('table.docs th').allTextContents();
   console.log(`     loaded: query=${q} columns=${th.join('|')}`);
-  if (!q.includes('connection failure') || !th.some((h) => h.includes('http.method'))) throw new Error('saved search not restored');
+  if (!q.includes('connection failure') || !th.some((h) => h.includes('http.method')))
+    throw new Error('saved search not restored');
 });
 await step('export', async () => {
   // the table has the http.method column from the previous step: CSV carries Time + that column
@@ -339,7 +374,10 @@ await step('export', async () => {
     await page.click('.hits button:has-text("Export")');
     await page.selectOption('.export-menu select', format);
     await page.fill('.export-menu input[type="number"]', String(rows));
-    const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 60000 }), page.click('.export-menu .btn.primary')]);
+    const [dl] = await Promise.all([
+      page.waitForEvent('download', { timeout: 60000 }),
+      page.click('.export-menu .btn.primary'),
+    ]);
     return { name: dl.suggestedFilename(), bytes: readFileSync(await dl.path()) };
   };
   const csv = await download('csv', 50);
@@ -363,7 +401,9 @@ await step('auto-refresh', async () => {
   // every 10 s: the relative range is resolved again on its own (the hit bar shows the new bounds), then it is switched off
   const before = await page.textContent('.hits .meta');
   await page.selectOption('.querybar .auto-refresh', '10000');
-  await page.waitForFunction((prev) => document.querySelector('.hits .meta')?.textContent !== prev, before, { timeout: 20000 });
+  await page.waitForFunction((prev) => document.querySelector('.hits .meta')?.textContent !== prev, before, {
+    timeout: 20000,
+  });
   await settled(page);
   await page.selectOption('.querybar .auto-refresh', '0');
   console.log(`     refreshed: ${before.trim()} -> ${(await page.textContent('.hits .meta')).trim()}`);
@@ -392,7 +432,9 @@ await step('visualize', async () => {
   await settled(page);
   const paths = await page.locator('.vis-panel svg path').count();
   const cerr = await page.locator('.chart-error').count();
-  console.log(`     svg paths=${paths} chartErrors=${cerr}` + (cerr ? ' ' + (await page.textContent('.chart-error')) : ''));
+  console.log(
+    `     svg paths=${paths} chartErrors=${cerr}` + (cerr ? ' ' + (await page.textContent('.chart-error')) : ''),
+  );
   if (cerr) throw new Error(`the chart failed to load: ${await page.textContent('.chart-error')}`);
   if (!paths) throw new Error('the chart drew nothing');
   await page.screenshot({ path: `${out}/05-visualize.png` });
@@ -439,7 +481,8 @@ await step('visualize', async () => {
   await settled(page);
   const rangeBack = await page.textContent('.timepicker .btn');
   console.log(`     history: ${rangeBefore.trim()} -> ${rangeAfter.trim()} -> back: ${rangeBack.trim()}`);
-  if (rangeAfter === rangeBefore || rangeBack !== rangeBefore) throw new Error('Back did not restore the previous time range');
+  if (rangeAfter === rangeBefore || rangeBack !== rangeBefore)
+    throw new Error('Back did not restore the previous time range');
   // add avg latency metric
   await page.click('.cfg-section:has-text("Vertical axis") .head button');
   await settled(page);
@@ -466,8 +509,14 @@ await step('visualize', async () => {
   await settled(page);
   await page.screenshot({ path: `${out}/08-terms-bar.png` });
   // a numeric histogram picks its bucket width from the data
-  await page.selectOption('.cfg-section:has-text("Horizontal axis") .field-row:has-text("Function") select', 'histogram');
-  await page.selectOption('.cfg-section:has-text("Horizontal axis") .field-row:has-text("Field") select', 'http.latency_ms');
+  await page.selectOption(
+    '.cfg-section:has-text("Horizontal axis") .field-row:has-text("Function") select',
+    'histogram',
+  );
+  await page.selectOption(
+    '.cfg-section:has-text("Horizontal axis") .field-row:has-text("Field") select',
+    'http.latency_ms',
+  );
   await settled(page);
   const histLabel = (await page.locator('.cfg-section:has-text("Horizontal axis") .dim .lbl').textContent()).trim();
   console.log(`     histogram: ${histLabel.slice(0, 50)}`);
@@ -480,7 +529,10 @@ await step('visualize', async () => {
   // options: 100 % stacking with a breakdown, log axis, the previous period as dashed lines, a percentile and a rate metric
   await page.click('.chart-types button[title="Bar"]');
   await settled(page);
-  await page.selectOption('.cfg-section:has-text("Horizontal axis") .field-row:has-text("Function") select', 'date_histogram');
+  await page.selectOption(
+    '.cfg-section:has-text("Horizontal axis") .field-row:has-text("Function") select',
+    'date_histogram',
+  );
   await settled(page);
   await page.selectOption('.cfg-section:has-text("Break down by") select', 'http.method');
   await settled(page);
@@ -516,14 +568,18 @@ await step('visualize', async () => {
   await settled(page);
   if (await page.locator('.qerror').count()) throw new Error('rate metric: ' + (await page.textContent('.qerror')));
   // the chart as an SVG file
-  const [svg] = await Promise.all([page.waitForEvent('download', { timeout: 30000 }), page.click('.vis-panel button[title*="SVG"]')]);
+  const [svg] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.click('.vis-panel button[title*="SVG"]'),
+  ]);
   const svgText = readFileSync(await svg.path(), 'utf8');
   console.log(`     ${svg.suggestedFilename()}: ${svgText.length} chars`);
   if (!svgText.startsWith('<svg')) throw new Error('not an SVG file');
   // These options must survive saving and opening the same chart on the Dashboard.
   await page.fill('.vis-panel input[placeholder]', 'options regression');
   await page.click('.vis-panel button:has-text("Save")');
-  for (const l of ['100 %', 'Logarithmic', 'previous period']) await page.uncheck(`.cfg-section:has-text("Options") label:has-text("${l}") input`);
+  for (const l of ['100 %', 'Logarithmic', 'previous period'])
+    await page.uncheck(`.cfg-section:has-text("Options") label:has-text("${l}") input`);
   await sections.first().locator('select').first().selectOption('count');
   await page.selectOption('.cfg-section:has-text("Break down by") select', '');
   await page.selectOption('.cfg-section:has-text("Horizontal axis") .field-row:has-text("Function") select', 'terms');
@@ -580,7 +636,8 @@ await step('dashboard', async () => {
     };
   });
   console.log(`     saved options: ${JSON.stringify(options)}`);
-  if (options.scale !== 'symlog' || !options.percent || !options.dashed || !options.note) throw new Error('saved chart options lost on the Dashboard');
+  if (options.scale !== 'symlog' || !options.percent || !options.dashed || !options.note)
+    throw new Error('saved chart options lost on the Dashboard');
   await page.click('.tile button[title="Remove from dashboard"]');
 });
 await step('sql-page', async () => {
@@ -594,7 +651,11 @@ await step('sql-page', async () => {
   console.log(`     heads=${heads.join('|')} rows=${rows}`);
   if (heads.join('|') !== 'level|n' || !rows) throw new Error('no result table');
   // Export accepts the same terminated SELECT as the editor, including Unicode and comments.
-  for (const sql of ["SELECT '日本;語' AS value; -- done", 'SELECT $$日本;語$$ AS value /* ; nested /* ; */ */;', "SELECT '日本;語' AS value -- trailing comment"]) {
+  for (const sql of [
+    "SELECT '日本;語' AS value; -- done",
+    'SELECT $$日本;語$$ AS value /* ; nested /* ; */ */;',
+    "SELECT '日本;語' AS value -- trailing comment",
+  ]) {
     await page.fill('.sql-text', sql);
     await page.press('.sql-text', 'Control+Enter');
     await settled(page);
@@ -648,7 +709,8 @@ await step('local-same-name', async () => {
   await page.click('.source-page button.connect');
   await settled(page);
   const result = await page.evaluate(() => window.__ddv.query('SELECT value, _file FROM src ORDER BY value'));
-  if (result.rows.map((r) => r.value).join(',') !== '1,2' || new Set(result.rows.map((r) => r._file)).size !== 2) throw new Error('same-name files lost: ' + JSON.stringify(result.rows));
+  if (result.rows.map((r) => r.value).join(',') !== '1,2' || new Set(result.rows.map((r) => r._file)).size !== 2)
+    throw new Error('same-name files lost: ' + JSON.stringify(result.rows));
 });
 await step('local-source', async () => {
   // A Parquet file written into OPFS stands in for a picked file: its handle can be stored and
@@ -744,29 +806,42 @@ await step('theme', async () => {
   const box = await page.locator('.chart-panel .chart-box').boundingBox();
   await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.7);
   await page.waitForSelector('.chart-panel svg g[aria-label="tip"] path', { timeout: 10000 });
-  const tipFill = await page.evaluate(() => getComputedStyle(document.querySelector('.chart-panel svg g[aria-label="tip"] path')).fill);
-  const panel = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--k-panel').trim());
+  const tipFill = await page.evaluate(
+    () => getComputedStyle(document.querySelector('.chart-panel svg g[aria-label="tip"] path')).fill,
+  );
+  const panel = await page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--k-panel').trim(),
+  );
   await page.click('.field-item:has-text("level")');
   await page.locator('.topval .pm button').first().click();
   await settled(page);
-  const pillBg = await page.evaluate(() => getComputedStyle(document.querySelector('.filterbar .pill')).backgroundColor);
+  const pillBg = await page.evaluate(
+    () => getComputedStyle(document.querySelector('.filterbar .pill')).backgroundColor,
+  );
   await page.screenshot({ path: `${out}/16-dark-discover.png` });
   await page.click('.filterbar .pill button[title="Remove"]');
   await settled(page);
   await page.click('.header nav button:has-text("Settings")');
   await page.selectOption('.theme-select', 'system');
-  console.log(`     body background light=${light} dark=${dark} data-theme=${attr} · tip fill=${tipFill} panel=${panel} pill=${pillBg}`);
+  console.log(
+    `     body background light=${light} dark=${dark} data-theme=${attr} · tip fill=${tipFill} panel=${panel} pill=${pillBg}`,
+  );
   if (light === dark || attr !== 'dark') throw new Error('dark theme not applied');
-  if (tipFill.includes('255, 255, 255') || pillBg.includes('255, 255, 255')) throw new Error('white boxes in the dark theme');
+  if (tipFill.includes('255, 255, 255') || pillBg.includes('255, 255, 255'))
+    throw new Error('white boxes in the dark theme');
 });
 await step('backup', async () => {
   // the backup file holds the ddv.* entries; restoring it reloads the app
-  const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 30000 }), page.click('.backup button:has-text("Download backup")')]);
+  const [dl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.click('.backup button:has-text("Download backup")'),
+  ]);
   const path = await dl.path();
   const backup = JSON.parse(readFileSync(path, 'utf8'));
   const keys = Object.keys(backup.items);
   console.log(`     ${dl.suggestedFilename()}: ${keys.length} entries (${keys.slice(0, 4).join(', ')} …)`);
-  if (backup.app !== 'duckdive' || !keys.includes('ddv.settings') || !keys.includes('ddv.savedVis')) throw new Error('backup lacks entries');
+  if (backup.app !== 'duckdive' || !keys.includes('ddv.settings') || !keys.includes('ddv.savedVis'))
+    throw new Error('backup lacks entries');
   await page.setInputFiles('.backup-file', path);
   await page.waitForSelector('.alert.ok', { timeout: 10000 });
   await page.waitForFunction(() => !document.querySelector('.backup .alert.ok'), null, { timeout: 30000 }); // the reload

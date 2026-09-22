@@ -3,7 +3,14 @@ import type { Field } from '../src/fields';
 import { metricLabel, metricPlan } from '../src/queryPlans';
 import type { MetricDef } from '../src/state';
 
-const f = (name: string, kind: Field['kind']): Field => ({ name, expr: `"${name}"`, kind, duckType: kind.toUpperCase(), column: name, searchable: kind === 'string' });
+const f = (name: string, kind: Field['kind']): Field => ({
+  name,
+  expr: `"${name}"`,
+  kind,
+  duckType: kind.toUpperCase(),
+  column: name,
+  searchable: kind === 'string',
+});
 const fields = [f('ms', 'number'), f('host', 'string')];
 const m = (patch: Partial<MetricDef>): MetricDef => ({ id: 'm0', agg: 'count', field: null, ...patch });
 
@@ -27,9 +34,15 @@ describe('metricPlan', () => {
   });
 
   it('keeps a percentile inside 0–100 and expresses it as a fraction', () => {
-    expect(metricPlan(m({ agg: 'percentile', field: 'ms', param: 95 }), fields).agg('v0')).toBe('quantile_cont(v0, 0.95)::DOUBLE');
-    expect(metricPlan(m({ agg: 'percentile', field: 'ms', param: 150 }), fields).agg('v0')).toBe('quantile_cont(v0, 1)::DOUBLE');
-    expect(metricPlan(m({ agg: 'percentile', field: 'ms', param: -5 }), fields).agg('v0')).toBe('quantile_cont(v0, 0)::DOUBLE');
+    expect(metricPlan(m({ agg: 'percentile', field: 'ms', param: 95 }), fields).agg('v0')).toBe(
+      'quantile_cont(v0, 0.95)::DOUBLE',
+    );
+    expect(metricPlan(m({ agg: 'percentile', field: 'ms', param: 150 }), fields).agg('v0')).toBe(
+      'quantile_cont(v0, 1)::DOUBLE',
+    );
+    expect(metricPlan(m({ agg: 'percentile', field: 'ms', param: -5 }), fields).agg('v0')).toBe(
+      'quantile_cont(v0, 0)::DOUBLE',
+    );
     expect(metricPlan(m({ agg: 'percentile', field: 'ms' }), fields).agg('v0')).toBe('quantile_cont(v0, 0.9)::DOUBLE');
   });
 

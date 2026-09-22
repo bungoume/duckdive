@@ -8,8 +8,21 @@ beforeEach(() => {
   updateSettings({ timeZone: 'UTC' });
 });
 
-const f = (name: string, kind: Field['kind'], duckType = kind.toUpperCase()): Field => ({ name, expr: `"${name}"`, kind, duckType, column: name, searchable: kind === 'string' });
-const fields: Field[] = [f('status', 'number', 'INTEGER'), f('message', 'string', 'VARCHAR'), f('host', 'string', 'VARCHAR'), f('ts', 'date', 'TIMESTAMP'), f('ok', 'boolean', 'BOOLEAN')];
+const f = (name: string, kind: Field['kind'], duckType = kind.toUpperCase()): Field => ({
+  name,
+  expr: `"${name}"`,
+  kind,
+  duckType,
+  column: name,
+  searchable: kind === 'string',
+});
+const fields: Field[] = [
+  f('status', 'number', 'INTEGER'),
+  f('message', 'string', 'VARCHAR'),
+  f('host', 'string', 'VARCHAR'),
+  f('ts', 'date', 'TIMESTAMP'),
+  f('ok', 'boolean', 'BOOLEAN'),
+];
 
 describe('parseQuery', () => {
   it('returns null for an empty query', () => {
@@ -32,12 +45,25 @@ describe('parseQuery', () => {
   });
 
   it('a required clause makes the optional ones irrelevant, as in Lucene', () => {
-    expect(parseQuery('+status:500 message:x')).toEqual({ t: 'term', field: 'status', value: '500', phrase: false, prox: false });
+    expect(parseQuery('+status:500 message:x')).toEqual({
+      t: 'term',
+      field: 'status',
+      value: '500',
+      phrase: false,
+      prox: false,
+    });
   });
 
   it('parses field syntax: ranges, brackets, exists, regex, lists', () => {
     expect(parseQuery('status:>=500')).toEqual({ t: 'range', field: 'status', op: '>=', value: '500' });
-    expect(parseQuery('status:[100 TO 200}')).toEqual({ t: 'between', field: 'status', lo: '100', hi: '200', incLo: true, incHi: false });
+    expect(parseQuery('status:[100 TO 200}')).toEqual({
+      t: 'between',
+      field: 'status',
+      lo: '100',
+      hi: '200',
+      incLo: true,
+      incHi: false,
+    });
     expect(parseQuery('status:[* TO 5]')).toMatchObject({ t: 'between', lo: null, hi: '5' });
     expect(parseQuery('host:*')).toEqual({ t: 'exists', field: 'host' });
     expect(parseQuery('_exists_:host')).toEqual({ t: 'exists', field: 'host' });
@@ -52,7 +78,8 @@ describe('parseQuery', () => {
   });
 
   it('rejects malformed queries with a SearchQueryError', () => {
-    for (const q of ['status:', 'level:(error', '"unterminated', 'AND x', '()', 'a ^ b']) expect(() => parseQuery(q), q).toThrow(SearchQueryError);
+    for (const q of ['status:', 'level:(error', '"unterminated', 'AND x', '()', 'a ^ b'])
+      expect(() => parseQuery(q), q).toThrow(SearchQueryError);
   });
 });
 
@@ -74,7 +101,9 @@ describe('searchToSql', () => {
     // no offset: the wall clock of the zone the table shows
     expect(searchToSql('ts:>="2026-01-01T09:00:00"', fields)).toBe(`("ts" >= TIMESTAMP '2026-01-01 00:00:00.000')`);
     // an offset names an instant, wherever the display zone is
-    expect(searchToSql('ts:>="2026-01-01T00:00:00+09:00"', fields)).toBe(`("ts" >= TIMESTAMP '2025-12-31 15:00:00.000')`);
+    expect(searchToSql('ts:>="2026-01-01T00:00:00+09:00"', fields)).toBe(
+      `("ts" >= TIMESTAMP '2025-12-31 15:00:00.000')`,
+    );
     expect(searchToSql('ts:>="2026-01-01T00:00:00Z"', fields)).toBe(`("ts" >= TIMESTAMP '2026-01-01 00:00:00.000')`);
     expect(() => searchToSql('ts:>"the first"', fields)).toThrow(/not a date/);
   });
@@ -86,7 +115,9 @@ describe('searchToSql', () => {
   });
 
   it('matches strings token-wise, phrases with ILIKE and wildcards with a regex', () => {
-    expect(searchToSql('message:error', fields)).toBe(`(regexp_matches("message", '(^|[^A-Za-z0-9_])error([^A-Za-z0-9_]|$)', 'i'))`);
+    expect(searchToSql('message:error', fields)).toBe(
+      `(regexp_matches("message", '(^|[^A-Za-z0-9_])error([^A-Za-z0-9_]|$)', 'i'))`,
+    );
     expect(searchToSql('message:"read timeout"', fields)).toBe(`("message" ILIKE '%read timeout%' ESCAPE '\\')`);
     expect(searchToSql('host:web-*', fields)).toContain(`web-[^\\s]*`);
     expect(searchToSql('message:/a.b/', fields)).toBe(`regexp_matches("message", 'a.b')`);
@@ -94,8 +125,12 @@ describe('searchToSql', () => {
 
   it('a backslash makes * and ? plain characters again', () => {
     // without the escape these would be "any characters" and "field exists"
-    expect(searchToSql('message:a\\*b', fields)).toBe(`(regexp_matches("message", '(^|[^A-Za-z0-9_])a\\*b([^A-Za-z0-9_]|$)', 'i'))`);
-    expect(searchToSql('message:\\*', fields)).toBe(`(regexp_matches("message", '(^|[^A-Za-z0-9_])\\*([^A-Za-z0-9_]|$)', 'i'))`);
+    expect(searchToSql('message:a\\*b', fields)).toBe(
+      `(regexp_matches("message", '(^|[^A-Za-z0-9_])a\\*b([^A-Za-z0-9_]|$)', 'i'))`,
+    );
+    expect(searchToSql('message:\\*', fields)).toBe(
+      `(regexp_matches("message", '(^|[^A-Za-z0-9_])\\*([^A-Za-z0-9_]|$)', 'i'))`,
+    );
     expect(searchToSql('message:"a\\?b"', fields)).toBe(`("message" ILIKE '%a?b%' ESCAPE '\\')`);
     expect(parseQuery('message:\\*')).toMatchObject({ t: 'term', value: '\\*' });
     // an unescaped one still is a wildcard
@@ -104,7 +139,9 @@ describe('searchToSql', () => {
 
   it('spreads free text over the searchable fields and combines with AND / OR / NOT', () => {
     const sql = searchToSql('timeout AND NOT status:200', fields);
-    expect(sql).toMatch(/^\(\(regexp_matches\("message".* OR regexp_matches\("host".*\) AND NOT coalesce\(\("status" = 200\), FALSE\)\)$/);
+    expect(sql).toMatch(
+      /^\(\(regexp_matches\("message".* OR regexp_matches\("host".*\) AND NOT coalesce\(\("status" = 200\), FALSE\)\)$/,
+    );
   });
 
   it('escapes quotes in literals', () => {
@@ -128,7 +165,9 @@ describe('date math in ranges', () => {
   it('resolves now-based bounds to timestamp literals, rounding an inclusive upper bound up', () => {
     expect(searchToSql('ts:>now-1h', fields)).toMatch(/^\("ts" > TIMESTAMP '\d{4}-\d\d-\d\d \d\d:\d\d:\d\d\.\d{3}'\)$/);
     const sql = searchToSql('ts:[now/d TO now/d]', fields);
-    expect(sql).toMatch(/"ts" >= TIMESTAMP '\d{4}-\d\d-\d\d \d\d:00:00\.000' AND "ts" <= TIMESTAMP '\d{4}-\d\d-\d\d \d\d:59:59\.999'/);
+    expect(sql).toMatch(
+      /"ts" >= TIMESTAMP '\d{4}-\d\d-\d\d \d\d:00:00\.000' AND "ts" <= TIMESTAMP '\d{4}-\d\d-\d\d \d\d:59:59\.999'/,
+    );
     expect(searchToSql('ts:>="2026-01-01"', fields)).toBe(`("ts" >= TIMESTAMP '2026-01-01 00:00:00.000')`);
     expect(() => searchToSql('ts:>now-1x', fields)).toThrow(/not a date/);
   });

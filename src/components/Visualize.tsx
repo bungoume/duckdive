@@ -7,7 +7,16 @@ import { findField } from '../fields';
 import { compileSearch, metricLabel } from '../queryPlans';
 import { INTERVALS, intervalLabel, newId, type Filter } from '../sql';
 import { t } from '../i18n';
-import { MAX_BREAKDOWN_VALUES, MAX_TERM_VALUES, type ChartType, type MetricAgg, type MetricDef, type SavedVis, type SearchState, type VisState } from '../state';
+import {
+  MAX_BREAKDOWN_VALUES,
+  MAX_TERM_VALUES,
+  type ChartType,
+  type MetricAgg,
+  type MetricDef,
+  type SavedVis,
+  type SearchState,
+  type VisState,
+} from '../state';
 import { loadSavedVis, storeSavedVis } from '../savedViews';
 import { Chart, type ChartPick } from './Chart';
 import { DataTable, MetricTiles } from './VisTable';
@@ -67,9 +76,21 @@ function DropZone(props: { onDrop: (name: string) => void; children: preact.Comp
   );
 }
 
-function FieldSelect(props: { id?: string; fields: Field[]; value: string | null; onChange: (v: string | null) => void; allow?: (f: Field) => boolean; placeholder?: string }) {
+function FieldSelect(props: {
+  id?: string;
+  fields: Field[];
+  value: string | null;
+  onChange: (v: string | null) => void;
+  allow?: (f: Field) => boolean;
+  placeholder?: string;
+}) {
   return (
-    <select id={props.id} class="input" value={props.value ?? ''} onChange={(e) => props.onChange(e.currentTarget.value || null)}>
+    <select
+      id={props.id}
+      class="input"
+      value={props.value ?? ''}
+      onChange={(e) => props.onChange(e.currentTarget.value || null)}
+    >
       <option value="">{props.placeholder ?? t('vis.selectField')}</option>
       {props.fields
         .filter((f) => f.kind !== 'object' && (!props.allow || props.allow(f)))
@@ -96,41 +117,70 @@ export function Visualize(props: {
   refreshTick?: number;
 }) {
   const { fields, timeExpr, search, vis, onBusy, paused, refreshTick } = props;
-  const compiled = useMemo(() => compileSearch(search, fields, timeExpr, props.evaluation), [search, fields, timeExpr, props.evaluation]);
-  const { result, previous, busy, error: queryError, interval, compare } = useVisQuery({ vis, compiled, searches: [search], fields, timeExpr, targetBuckets: 50, onBusy, paused, refreshTick });
+  const compiled = useMemo(
+    () => compileSearch(search, fields, timeExpr, props.evaluation),
+    [search, fields, timeExpr, props.evaluation],
+  );
+  const {
+    result,
+    previous,
+    busy,
+    error: queryError,
+    interval,
+    compare,
+  } = useVisQuery({
+    vis,
+    compiled,
+    searches: [search],
+    fields,
+    timeExpr,
+    targetBuckets: 50,
+    onBusy,
+    paused,
+    refreshTick,
+  });
   const error = queryError ? withCacheHint(queryError) : null;
   const [showSql, setShowSql] = useState(false);
   const [saved, setSaved] = useState<SavedVis[]>(() => loadSavedVis());
 
   const setVis = (patch: Partial<VisState>) => props.onVis({ ...vis, ...patch });
   const setX = (patch: Partial<VisState['x']>) => setVis({ x: { ...vis.x, ...patch } });
-  const setMetric = (id: string, patch: Partial<MetricDef>) => setVis({ metrics: vis.metrics.map((m) => (m.id === id ? { ...m, ...patch } : m)) });
-  const addMetric = (m?: Partial<MetricDef>) => setVis({ metrics: [...vis.metrics, { id: newId(), agg: 'count', field: null, ...m }] });
-  const removeMetric = (id: string) => vis.metrics.length > 1 && setVis({ metrics: vis.metrics.filter((m) => m.id !== id) });
+  const setMetric = (id: string, patch: Partial<MetricDef>) =>
+    setVis({ metrics: vis.metrics.map((m) => (m.id === id ? { ...m, ...patch } : m)) });
+  const addMetric = (m?: Partial<MetricDef>) =>
+    setVis({ metrics: [...vis.metrics, { id: newId(), agg: 'count', field: null, ...m }] });
+  const removeMetric = (id: string) =>
+    vis.metrics.length > 1 && setVis({ metrics: vis.metrics.filter((m) => m.id !== id) });
   const setBreakdown = (patch: Partial<VisState['breakdown']>) => setVis({ breakdown: { ...vis.breakdown, ...patch } });
 
   const dropX = (name: string) => {
     const f = findField(fields, name);
     if (!f) return;
     if (f.kind === 'date') setX({ kind: 'date_histogram', field: f.name });
-    else if (f.kind === 'number') setX({ kind: 'histogram', field: f.name, interval: vis.x.kind === 'histogram' ? vis.x.interval : 'auto' });
+    else if (f.kind === 'number')
+      setX({ kind: 'histogram', field: f.name, interval: vis.x.kind === 'histogram' ? vis.x.interval : 'auto' });
     else setX({ kind: 'terms', field: f.name });
   };
   const dropY = (name: string, id?: string) => {
     const f = findField(fields, name);
     if (!f) return;
-    const def: Partial<MetricDef> = f.kind === 'number' ? { agg: 'avg', field: f.name } : { agg: 'unique', field: f.name };
+    const def: Partial<MetricDef> =
+      f.kind === 'number' ? { agg: 'avg', field: f.name } : { agg: 'unique', field: f.name };
     if (id) setMetric(id, def);
     else addMetric(def);
   };
   const dropG = (name: string) => setBreakdown({ field: name });
 
   const addFilter = (field: string, value: string | null, negate: boolean) => {
-    const fl: Filter = value === null ? { id: newId(), field, op: 'does_not_exist', negate } : { id: newId(), field, op: 'is', value, negate };
+    const fl: Filter =
+      value === null
+        ? { id: newId(), field, op: 'does_not_exist', negate }
+        : { id: newId(), field, op: 'is', value, negate };
     props.onSearch({ ...search, filters: [...search.filters, fl] });
   };
   const submit = (query: string, range: TimeRange) => props.onSearch({ ...search, query, range });
-  const onBrush = (from: Date, to: Date) => props.onSearch({ ...search, range: { from: from.toISOString(), to: to.toISOString() } });
+  const onBrush = (from: Date, to: Date) =>
+    props.onSearch({ ...search, range: { from: from.toISOString(), to: to.toISOString() } });
   /** Click on the chart: breakdown value → filter, terms bucket → filter, time bucket → zoom. */
   const onPick = (pick: ChartPick) => {
     const next = searchAfterPick(vis, result?.groups ?? [], pick, search);
@@ -140,7 +190,13 @@ export function Visualize(props: {
   const save = () => {
     const title = vis.title.trim() || t('vis.visualizationN', { n: saved.length + 1 });
     const existing = saved.find((s) => s.title === title);
-    const item: SavedVis = { id: existing?.id ?? newId(), title, savedAt: new Date().toISOString(), vis: { ...vis, title }, search };
+    const item: SavedVis = {
+      id: existing?.id ?? newId(),
+      title,
+      savedAt: new Date().toISOString(),
+      vis: { ...vis, title },
+      search,
+    };
     const list = existing ? saved.map((s) => (s.id === existing.id ? item : s)) : [...saved, item];
     setSaved(list);
     storeSavedVis(list);
@@ -162,19 +218,34 @@ export function Visualize(props: {
   /** The chart's own <svg> (Plot renders small legend swatches before it) as a file. */
   const downloadSvg = () => {
     let best: SVGSVGElement | null = null;
-    for (const el of document.querySelectorAll<SVGSVGElement>('.vis-panel .chart-box svg')) if (!best || el.clientWidth > best.clientWidth) best = el;
+    for (const el of document.querySelectorAll<SVGSVGElement>('.vis-panel .chart-box svg'))
+      if (!best || el.clientWidth > best.clientWidth) best = el;
     if (!best) return;
     const clone = best.cloneNode(true) as SVGSVGElement;
     clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-    downloadBlob(new Blob([new XMLSerializer().serializeToString(clone)], { type: 'image/svg+xml' }), `duckdive-${vis.title.trim() || 'chart'}.svg`);
+    downloadBlob(
+      new Blob([new XMLSerializer().serializeToString(clone)], { type: 'image/svg+xml' }),
+      `duckdive-${vis.title.trim() || 'chart'}.svg`,
+    );
   };
 
   return (
     <div class="page">
       <div class="topbar">
-        <QueryBar query={search.query} range={search.range} error={compiled.error ?? error} busy={busy} fields={fields} onSubmit={submit} />
+        <QueryBar
+          query={search.query}
+          range={search.range}
+          error={compiled.error ?? error}
+          busy={busy}
+          fields={fields}
+          onSubmit={submit}
+        />
         <DiagnosePanel error={error} />
-        <FilterBar filters={search.filters} fields={fields} onChange={(filters) => props.onSearch({ ...search, filters })} />
+        <FilterBar
+          filters={search.filters}
+          fields={fields}
+          onChange={(filters) => props.onSearch({ ...search, filters })}
+        />
       </div>
       {busy && <div class="loading-bar" />}
       <div class="visualize">
@@ -183,21 +254,31 @@ export function Visualize(props: {
           <div class="canvas">
             <div class="vis-panel">
               <div class="row mb8">
-                <input class="input" style="font-weight:600;flex:1" placeholder={t('vis.untitled')} value={vis.title} onInput={(e) => setVis({ title: e.currentTarget.value })} />
+                <input
+                  class="input"
+                  style="font-weight:600;flex:1"
+                  placeholder={t('vis.untitled')}
+                  value={vis.title}
+                  onInput={(e) => setVis({ title: e.currentTarget.value })}
+                />
                 <button class="btn small" onClick={() => setShowSql(!showSql)}>
                   {showSql ? t('vis.hideSql') : t('vis.showSql')}
                 </button>
-                {result && (vis.chart === 'area' || vis.chart === 'line' || vis.chart === 'bar') && result.xKind !== 'none' && (
-                  <button class="btn small" onClick={downloadSvg} title={t('vis.downloadSvg.title')}>
-                    {t('vis.downloadSvg')}
-                  </button>
-                )}
+                {result &&
+                  (vis.chart === 'area' || vis.chart === 'line' || vis.chart === 'bar') &&
+                  result.xKind !== 'none' && (
+                    <button class="btn small" onClick={downloadSvg} title={t('vis.downloadSvg.title')}>
+                      {t('vis.downloadSvg')}
+                    </button>
+                  )}
                 <button class="btn primary small" onClick={save}>
                   {t('common.save')}
                 </button>
               </div>
               {showSql && result && <div class="sql-box mb8">{result.sql}</div>}
-              {result && vis.chart === 'table' && <DataTable result={result} metrics={vis.metrics} xLabel={xLabel} gLabel={gLabel} />}
+              {result && vis.chart === 'table' && (
+                <DataTable result={result} metrics={vis.metrics} xLabel={xLabel} gLabel={gLabel} />
+              )}
               {result && vis.chart === 'metric' && <MetricTiles result={result} metrics={vis.metrics} />}
               {result && (vis.chart === 'area' || vis.chart === 'line' || vis.chart === 'bar') && (
                 <>
@@ -219,7 +300,9 @@ export function Visualize(props: {
                       compare={compare ? previous : null}
                     />
                   )}
-                  {result.groups.length > 0 && vis.metrics.length > 1 && <div class="legend-note">{t('vis.breakdownNote')}</div>}
+                  {result.groups.length > 0 && vis.metrics.length > 1 && (
+                    <div class="legend-note">{t('vis.breakdownNote')}</div>
+                  )}
                   {compare && previous && <div class="legend-note">{t('vis.previousNote')}</div>}
                 </>
               )}
@@ -233,7 +316,13 @@ export function Visualize(props: {
             <div class="body">
               <div class="chart-types">
                 {CHARTS.map((c) => (
-                  <button key={c.id} class={vis.chart === c.id ? 'active' : ''} aria-pressed={vis.chart === c.id} onClick={() => setVis({ chart: c.id })} title={chartLabel(c.id)}>
+                  <button
+                    key={c.id}
+                    class={vis.chart === c.id ? 'active' : ''}
+                    aria-pressed={vis.chart === c.id}
+                    onClick={() => setVis({ chart: c.id })}
+                    title={chartLabel(c.id)}
+                  >
                     <span class="ic">{c.icon}</span>
                     {chartLabel(c.id)}
                   </button>
@@ -267,7 +356,13 @@ export function Visualize(props: {
                       // a field that does not fit the new function (a path on a date histogram) is dropped
                       const kind = e.currentTarget.value as VisState['x']['kind'];
                       const f = vis.x.field ? findField(fields, vis.x.field) : undefined;
-                      const fits = !f || (kind === 'date_histogram' ? f.kind === 'date' : kind === 'histogram' ? f.kind === 'number' : true);
+                      const fits =
+                        !f ||
+                        (kind === 'date_histogram'
+                          ? f.kind === 'date'
+                          : kind === 'histogram'
+                            ? f.kind === 'number'
+                            : true);
                       setX({ kind, field: fits ? vis.x.field : null });
                     }}
                   >
@@ -289,7 +384,11 @@ export function Visualize(props: {
                       />
                     </FormField>
                     <FormField label={t('vis.minInterval')}>
-                      <select class="input" value={vis.x.interval} onChange={(e) => setX({ interval: e.currentTarget.value })}>
+                      <select
+                        class="input"
+                        value={vis.x.interval}
+                        onChange={(e) => setX({ interval: e.currentTarget.value })}
+                      >
                         <option value="auto">{t('common.auto')}</option>
                         {INTERVALS.map((iv) => (
                           <option key={iv.key} value={iv.key}>
@@ -313,17 +412,27 @@ export function Visualize(props: {
                           min={1}
                           max={MAX_TERM_VALUES}
                           value={vis.x.size}
-                          onInput={(e) => setX({ size: Math.min(MAX_TERM_VALUES, Math.max(1, Number(e.currentTarget.value) || 10)) })}
+                          onInput={(e) =>
+                            setX({ size: Math.min(MAX_TERM_VALUES, Math.max(1, Number(e.currentTarget.value) || 10)) })
+                          }
                         />
                       </FormField>
                       <FormField label={t('vis.rankBy')} class="grow">
-                        <select class="input" value={vis.x.orderBy} onChange={(e) => setX({ orderBy: e.currentTarget.value as 'metric' | 'alpha' })}>
+                        <select
+                          class="input"
+                          value={vis.x.orderBy}
+                          onChange={(e) => setX({ orderBy: e.currentTarget.value as 'metric' | 'alpha' })}
+                        >
                           <option value="metric">{metricLabel(vis.metrics[0])}</option>
                           <option value="alpha">{t('vis.alphabetical')}</option>
                         </select>
                       </FormField>
                       <FormField label={t('vis.direction')} style="width:90px">
-                        <select class="input" value={vis.x.orderDir} onChange={(e) => setX({ orderDir: e.currentTarget.value as 'asc' | 'desc' })}>
+                        <select
+                          class="input"
+                          value={vis.x.orderDir}
+                          onChange={(e) => setX({ orderDir: e.currentTarget.value as 'asc' | 'desc' })}
+                        >
                           <option value="desc">{t('vis.desc')}</option>
                           <option value="asc">{t('vis.asc')}</option>
                         </select>
@@ -334,7 +443,12 @@ export function Visualize(props: {
                 {vis.x.kind === 'histogram' && (
                   <>
                     <FormField label={t('common.field')}>
-                      <FieldSelect fields={fields} value={vis.x.field} onChange={(v) => setX({ field: v })} allow={(f) => f.kind === 'number'} />
+                      <FieldSelect
+                        fields={fields}
+                        value={vis.x.field}
+                        onChange={(v) => setX({ field: v })}
+                        allow={(f) => f.kind === 'number'}
+                      />
                     </FormField>
                     <FormField label={t('vis.bucketSize')}>
                       <input
@@ -372,19 +486,33 @@ export function Visualize(props: {
                           <span class="sub">{t('vis.dropToChange')}</span>
                         </span>
                         {vis.metrics.length > 1 && (
-                          <button class="x" onClick={() => removeMetric(m.id)} title={t('common.remove')} aria-label={t('common.remove')}>
+                          <button
+                            class="x"
+                            onClick={() => removeMetric(m.id)}
+                            title={t('common.remove')}
+                            aria-label={t('common.remove')}
+                          >
                             ✕
                           </button>
                         )}
                       </DropZone>
                       <div class="row">
-                        <select class="input" value={m.agg} onChange={(e) => setMetric(m.id, { agg: e.currentTarget.value as MetricAgg })}>
+                        <select
+                          class="input"
+                          value={m.agg}
+                          onChange={(e) => setMetric(m.id, { agg: e.currentTarget.value as MetricAgg })}
+                        >
                           {AGGS.map((a) => (
                             <option value={a.id}>{aggLabel(a.id)}</option>
                           ))}
                         </select>
                         {agg.needsField && (
-                          <FieldSelect fields={fields} value={m.field} onChange={(v) => setMetric(m.id, { field: v })} allow={(f) => (m.agg === 'unique' ? true : f.kind === 'number')} />
+                          <FieldSelect
+                            fields={fields}
+                            value={m.field}
+                            onChange={(v) => setMetric(m.id, { field: v })}
+                            allow={(f) => (m.agg === 'unique' ? true : f.kind === 'number')}
+                          />
                         )}
                         {m.agg === 'percentile' && (
                           <input
@@ -396,11 +524,18 @@ export function Visualize(props: {
                             title={t('vis.percentile')}
                             aria-label={t('vis.percentile')}
                             value={m.param ?? 90}
-                            onInput={(e) => setMetric(m.id, { param: Math.min(100, Math.max(0, Number(e.currentTarget.value) || 0)) })}
+                            onInput={(e) =>
+                              setMetric(m.id, { param: Math.min(100, Math.max(0, Number(e.currentTarget.value) || 0)) })
+                            }
                           />
                         )}
                       </div>
-                      <input class="input" placeholder={t('vis.customLabel')} value={m.label ?? ''} onInput={(e) => setMetric(m.id, { label: e.currentTarget.value || undefined })} />
+                      <input
+                        class="input"
+                        placeholder={t('vis.customLabel')}
+                        value={m.label ?? ''}
+                        onInput={(e) => setMetric(m.id, { label: e.currentTarget.value || undefined })}
+                      />
                     </div>
                   </div>
                 );
@@ -434,11 +569,20 @@ export function Visualize(props: {
                       min={1}
                       max={MAX_BREAKDOWN_VALUES}
                       value={vis.breakdown.size}
-                      onInput={(e) => setBreakdown({ size: Math.min(MAX_BREAKDOWN_VALUES, Math.max(1, Number(e.currentTarget.value) || 5)) })}
+                      onInput={(e) =>
+                        setBreakdown({
+                          size: Math.min(MAX_BREAKDOWN_VALUES, Math.max(1, Number(e.currentTarget.value) || 5)),
+                        })
+                      }
                     />
                   </FormField>
                   <label class="row" style="margin-top:14px">
-                    <input type="checkbox" checked={vis.breakdown.other} onChange={(e) => setBreakdown({ other: e.currentTarget.checked })} /> {t('vis.groupOther')}
+                    <input
+                      type="checkbox"
+                      checked={vis.breakdown.other}
+                      onChange={(e) => setBreakdown({ other: e.currentTarget.checked })}
+                    />{' '}
+                    {t('vis.groupOther')}
                   </label>
                 </div>
               )}
@@ -451,15 +595,30 @@ export function Visualize(props: {
               <div class="body">
                 {vis.chart !== 'line' && (
                   <label class="row">
-                    <input type="checkbox" checked={!!vis.percent} onChange={(e) => setVis({ percent: e.currentTarget.checked || undefined })} /> {t('vis.opt.percent')}
+                    <input
+                      type="checkbox"
+                      checked={!!vis.percent}
+                      onChange={(e) => setVis({ percent: e.currentTarget.checked || undefined })}
+                    />{' '}
+                    {t('vis.opt.percent')}
                   </label>
                 )}
                 <label class="row">
-                  <input type="checkbox" checked={!!vis.log} onChange={(e) => setVis({ log: e.currentTarget.checked || undefined })} /> {t('vis.opt.log')}
+                  <input
+                    type="checkbox"
+                    checked={!!vis.log}
+                    onChange={(e) => setVis({ log: e.currentTarget.checked || undefined })}
+                  />{' '}
+                  {t('vis.opt.log')}
                 </label>
                 {vis.x.kind === 'date_histogram' && (
                   <label class="row">
-                    <input type="checkbox" checked={!!vis.compare} onChange={(e) => setVis({ compare: e.currentTarget.checked || undefined })} /> {t('vis.opt.compare')}
+                    <input
+                      type="checkbox"
+                      checked={!!vis.compare}
+                      onChange={(e) => setVis({ compare: e.currentTarget.checked || undefined })}
+                    />{' '}
+                    {t('vis.opt.compare')}
                   </label>
                 )}
               </div>
@@ -473,10 +632,22 @@ export function Visualize(props: {
               <div class="saved-list">
                 {saved.map((s) => (
                   <div key={s.id} class="item">
-                    <span class="t" role="button" tabIndex={0} onClick={() => load(s)} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && load(s)} title={formatDate(new Date(s.savedAt))}>
+                    <span
+                      class="t"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => load(s)}
+                      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && load(s)}
+                      title={formatDate(new Date(s.savedAt))}
+                    >
                       {s.title}
                     </span>
-                    <button class="btn ghost small danger" onClick={() => del(s.id)} title={t('common.delete')} aria-label={t('common.delete')}>
+                    <button
+                      class="btn ghost small danger"
+                      onClick={() => del(s.id)}
+                      title={t('common.delete')}
+                      aria-label={t('common.delete')}
+                    >
                       ✕
                     </button>
                   </div>

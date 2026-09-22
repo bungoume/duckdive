@@ -42,7 +42,8 @@ export const tlsName = (c: string) => `nullif(regexp_extract(lower(${c}), '^(tls
 export const tlsVersion = (c: string) => `nullif(regexp_extract(${c}, '^[A-Za-z]+v?([0-9][0-9.]*)$', 1), '')`;
 
 /** Request line "GET <target> HTTP/1.1": 1 = method, 2 = target, 3 = protocol name, 4 = version. A malformed line ("- - -") gives NULL. */
-export const reqLine = (c: string, g: 1 | 2 | 3 | 4) => `nullif(regexp_extract(${c}, '^([A-Z]+) (\\S+) ([A-Za-z]+)/([0-9.]+)$', ${g}), '')`;
+export const reqLine = (c: string, g: 1 | 2 | 3 | 4) =>
+  `nullif(regexp_extract(${c}, '^([A-Z]+) (\\S+) ([A-Za-z]+)/([0-9.]+)$', ${g}), '')`;
 
 /** One part of the URL in `u`, NULL when the URL has no such part. */
 export const urlPart = (u: string, re: string) => `nullif(regexp_extract(${u}, '${re}', 1), '')`;
@@ -79,10 +80,12 @@ export const jcast = (path: string, type: string) => `TRY_CAST(${j(path)} AS ${t
 export const jraw = (path: string) => `json_extract(${REC}, '$.${path}')`;
 
 /** One record per line, as written (WAF, Route 53 Resolver, Cloud Logging, Logpush). */
-export const ndjson = (l: string, f: boolean) => `(SELECT "json" AS rec${f ? ', filename' : ''} FROM read_json_objects(${l}${fn(f)}))`;
+export const ndjson = (l: string, f: boolean) =>
+  `(SELECT "json" AS rec${f ? ', filename' : ''} FROM read_json_objects(${l}${fn(f)}))`;
 
 /** CloudTrail delivers {"Records":[ … ]}: one row per element, without inferring their shape. */
-export const ctjson = (l: string, f: boolean) => `(SELECT unnest(json_extract("json", '$.Records')::JSON[]) AS rec${f ? ', filename' : ''} FROM read_json_objects(${l}${fn(f)}))`;
+export const ctjson = (l: string, f: boolean) =>
+  `(SELECT unnest(json_extract("json", '$.Records')::JSON[]) AS rec${f ? ', filename' : ''} FROM read_json_objects(${l}${fn(f)}))`;
 
 /** "HTTP/2.0" → "http" / "2.0", for the layouts that log the protocol that way. */
 export const protoName = (e: string) => `nullif(regexp_extract(lower(${e}), '^([a-z]+)/', 1), '')`;

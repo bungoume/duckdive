@@ -1,7 +1,17 @@
 import { useCallback, useEffect, useState } from 'preact/hooks';
 import { describeError } from '../errors';
 import { t } from '../i18n';
-import { cacheClear, cacheCompact, cacheFiles, cachePurge, cacheSetConfig, cacheStats, fmtBytes, requestPersist, storageEstimate } from '../cache';
+import {
+  cacheClear,
+  cacheCompact,
+  cacheFiles,
+  cachePurge,
+  cacheSetConfig,
+  cacheStats,
+  fmtBytes,
+  requestPersist,
+  storageEstimate,
+} from '../cache';
 import { type CacheConfig, type CacheStats, type CacheSummary, type CachedFile } from '../cacheProtocol';
 
 const CHUNK_SIZES = [
@@ -74,12 +84,21 @@ export function CachePanel() {
         <>
           <fieldset class="grid2 mb8" disabled={readOnly} style="border:0;padding:0;margin-inline:0">
             <label class="row">
-              <input type="checkbox" checked={config.enabled} onChange={(e) => run(cacheSetConfig({ enabled: e.currentTarget.checked }))} />
+              <input
+                type="checkbox"
+                checked={config.enabled}
+                onChange={(e) => run(cacheSetConfig({ enabled: e.currentTarget.checked }))}
+              />
               {t('cache.enable')}
             </label>
             <div class="row">
               <span class="hint">{t('cache.chunkSize')}</span>
-              <select class="input" style="width:120px" value={config.chunkSize} onChange={(e) => run(cacheSetConfig({ chunkSize: Number(e.currentTarget.value) }))}>
+              <select
+                class="input"
+                style="width:120px"
+                value={config.chunkSize}
+                onChange={(e) => run(cacheSetConfig({ chunkSize: Number(e.currentTarget.value) }))}
+              >
                 {CHUNK_SIZES.map((c) => (
                   <option value={c.v}>{c.l}</option>
                 ))}
@@ -87,7 +106,12 @@ export function CachePanel() {
             </div>
             <div class="row">
               <span class="hint">{t('cache.maxBytes')}</span>
-              <select class="input" style="width:120px" value={config.maxBytes} onChange={(e) => run(cacheSetConfig({ maxBytes: Number(e.currentTarget.value) }))}>
+              <select
+                class="input"
+                style="width:120px"
+                value={config.maxBytes}
+                onChange={(e) => run(cacheSetConfig({ maxBytes: Number(e.currentTarget.value) }))}
+              >
                 {(MAX_BYTES.includes(config.maxBytes) ? MAX_BYTES : [config.maxBytes, ...MAX_BYTES]).map((v) => (
                   <option key={v} value={v}>
                     {v ? fmtBytes(v) : t('cache.unlimited')}
@@ -115,7 +139,13 @@ export function CachePanel() {
               <tr>
                 <td class="k">{t('cache.storage')}</td>
                 <td class="v">
-                  {est ? t('cache.storage.text', { used: fmtBytes(est.usage), quota: fmtBytes(est.quota), mode: est.persisted ? t('cache.storage.persistent') : t('cache.storage.bestEffort') }) : '–'}
+                  {est
+                    ? t('cache.storage.text', {
+                        used: fmtBytes(est.usage),
+                        quota: fmtBytes(est.quota),
+                        mode: est.persisted ? t('cache.storage.persistent') : t('cache.storage.bestEffort'),
+                      })
+                    : '–'}
                   {est && !est.persisted && (
                     <button class="btn small ml8" onClick={() => run(requestPersist())}>
                       {t('cache.requestPersist')}
@@ -131,7 +161,11 @@ export function CachePanel() {
                 <tr>
                   <td class="k">{t('cache.onDisk')}</td>
                   <td class="v">
-                    {t('cache.onDisk.text', { files: summary.cachedFiles.toLocaleString(), bytes: fmtBytes(summary.cachedBytes), known: summary.known.toLocaleString() })}
+                    {t('cache.onDisk.text', {
+                      files: summary.cachedFiles.toLocaleString(),
+                      bytes: fmtBytes(summary.cachedBytes),
+                      known: summary.known.toLocaleString(),
+                    })}
                     {summary.wasted > 0 ? t('cache.reclaimable', { bytes: fmtBytes(summary.wasted) }) : ''}
                     {stats && stats.evictions > 0 ? t('cache.evicted', { n: stats.evictions.toLocaleString() }) : ''}
                     {summary.wasted > 16 * 1024 * 1024 && (
@@ -160,7 +194,8 @@ export function CachePanel() {
                     <td class="mono break-all">{f.url}</td>
                     <td class="num">{fmtBytes(f.size)}</td>
                     <td class="num">
-                      {fmtBytes(f.cachedBytes)} ({f.size ? Math.min(100, Math.round((f.cachedBytes / f.size) * 100)) : 0}%)
+                      {fmtBytes(f.cachedBytes)} (
+                      {f.size ? Math.min(100, Math.round((f.cachedBytes / f.size) * 100)) : 0}%)
                     </td>
                     <td>
                       <button class="btn small" disabled={readOnly} onClick={() => run(cachePurge(f.url))}>
@@ -183,7 +218,12 @@ export function CachePanel() {
           {stats && stats.log.length > 0 && (
             <details class="cache-log-box mb8">
               <summary>
-                {t('cache.log.summary', { n: stats.log.length, anomalies: stats.log.filter((l) => /corrupt|short-body|passthrough:|handler-error|range-ignored/.test(l.outcome)).length })}
+                {t('cache.log.summary', {
+                  n: stats.log.length,
+                  anomalies: stats.log.filter((l) =>
+                    /corrupt|short-body|passthrough:|handler-error|range-ignored/.test(l.outcome),
+                  ).length,
+                })}
               </summary>
               <div class="row end" style="margin:4px 0">
                 <button
@@ -199,7 +239,11 @@ export function CachePanel() {
                 <table class="kv">
                   <tbody>
                     {[...stats.log].reverse().map((l) => (
-                      <tr class={/corrupt|short-body|passthrough:|handler-error|range-ignored/.test(l.outcome) ? 'warn' : ''}>
+                      <tr
+                        class={
+                          /corrupt|short-body|passthrough:|handler-error|range-ignored/.test(l.outcome) ? 'warn' : ''
+                        }
+                      >
                         <td>{new Date(l.t).toLocaleTimeString()}</td>
                         <td>{l.method}</td>
                         <td class="mono url" title={l.url}>

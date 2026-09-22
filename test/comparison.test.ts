@@ -5,13 +5,22 @@ import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS, type SavedVis, type UrlS
 import { savedVisRevision, storeSavedVis } from '../src/savedViews';
 
 const range = { from: '2026-09-22T00:00:00Z', to: '2026-09-23T00:00:00Z' };
-const url: UrlState = { page: 'visualize', search: { ...DEFAULT_SEARCH, range }, discover: DEFAULT_DISCOVER, vis: { ...DEFAULT_VIS, compare: true } };
+const url: UrlState = {
+  page: 'visualize',
+  search: { ...DEFAULT_SEARCH, range },
+  discover: DEFAULT_DISCOVER,
+  vis: { ...DEFAULT_VIS, compare: true },
+};
 const tile: SavedVis = { id: 'comparison', title: '', savedAt: '', search: url.search, vis: url.vis, pinned: true };
 
 describe('comparison file coverage', () => {
   it('includes yesterday when today is compared, retaining delivery lag after today', () => {
     const pattern = 's3://logs/{yyyy}/{MM}/{dd}/*.parquet';
-    expect(concretePatterns(pattern, fileWindow(range, needsComparison(url, [])))).toEqual(['s3://logs/2026/09/21/*.parquet', 's3://logs/2026/09/22/*.parquet', 's3://logs/2026/09/23/*.parquet']);
+    expect(concretePatterns(pattern, fileWindow(range, needsComparison(url, [])))).toEqual([
+      's3://logs/2026/09/21/*.parquet',
+      's3://logs/2026/09/22/*.parquet',
+      's3://logs/2026/09/23/*.parquet',
+    ]);
     expect(concretePatterns(pattern, fileWindow(range, false))).not.toContain('s3://logs/2026/09/21/*.parquet');
   });
 

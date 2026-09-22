@@ -5,7 +5,15 @@ import { downloadBlob } from '../export';
 import { LANGS, setLang, t, useLang, type Lang } from '../i18n';
 import { parseDateMath } from '../datemath';
 import { browserZone, formatDate, isValidTimeZone, parseIsoDuration } from '../datefmt';
-import { DEFAULT_SETTINGS, getSettings, resetSettings, updateSettings, useSettings, type AppSettings, type QuickRange } from '../settings';
+import {
+  DEFAULT_SETTINGS,
+  getSettings,
+  resetSettings,
+  updateSettings,
+  useSettings,
+  type AppSettings,
+  type QuickRange,
+} from '../settings';
 import { FormField } from './ui';
 
 const zoneNames = (): string[] => {
@@ -53,7 +61,15 @@ function parseDraft(d: Draft): { ok: true; value: Partial<AppSettings> } | { ok:
     const good =
       Array.isArray(arr) &&
       arr.length > 0 &&
-      arr.every((e) => Array.isArray(e) && e.length === 2 && typeof e[0] === 'string' && typeof e[1] === 'string' && parseIsoDuration(e[0]) !== null && e[1].trim());
+      arr.every(
+        (e) =>
+          Array.isArray(e) &&
+          e.length === 2 &&
+          typeof e[0] === 'string' &&
+          typeof e[1] === 'string' &&
+          parseIsoDuration(e[0]) !== null &&
+          e[1].trim(),
+      );
     if (!good) errors.scaled = t('settings.error.scaled');
     else value.scaledDateFormat = arr as [string, string][];
   } catch (e) {
@@ -65,7 +81,12 @@ function parseDraft(d: Draft): { ok: true; value: Partial<AppSettings> } | { ok:
     else {
       const out: QuickRange[] = [];
       for (const q of arr) {
-        const okShape = q && typeof q === 'object' && typeof q.from === 'string' && typeof q.to === 'string' && (q.display === undefined || typeof q.display === 'string');
+        const okShape =
+          q &&
+          typeof q === 'object' &&
+          typeof q.from === 'string' &&
+          typeof q.to === 'string' &&
+          (q.display === undefined || typeof q.display === 'string');
         if (!okShape || !parseDateMath(q.from) || !parseDateMath(q.to, true)) {
           errors.quick = t('settings.error.range', { value: JSON.stringify(q) });
           break;
@@ -99,7 +120,8 @@ export function Settings() {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
-  const previewZone = draft.timeZone.trim() && isValidTimeZone(draft.timeZone.trim()) ? draft.timeZone.trim() : browserZone();
+  const previewZone =
+    draft.timeZone.trim() && isValidTimeZone(draft.timeZone.trim()) ? draft.timeZone.trim() : browserZone();
   const preview = draft.dateFormat.trim() ? formatDate(now, draft.dateFormat, previewZone) : '';
   const dirty = JSON.stringify(draft) !== JSON.stringify(draftOf(settings));
 
@@ -129,7 +151,10 @@ export function Settings() {
   const [restoreMsg, setRestoreMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const download = () => {
     const b = makeBackup();
-    downloadBlob(new Blob([JSON.stringify(b, null, 2)], { type: 'application/json' }), `duckdive-backup-${b.exportedAt.slice(0, 10)}.json`);
+    downloadBlob(
+      new Blob([JSON.stringify(b, null, 2)], { type: 'application/json' }),
+      `duckdive-backup-${b.exportedAt.slice(0, 10)}.json`,
+    );
   };
   const restore = async (file: File | undefined) => {
     if (!file) return;
@@ -156,14 +181,23 @@ export function Settings() {
           <span class="hint">{t('settings.lang.hint')}</span>
         </FormField>
         <FormField label={t('settings.theme')} style="max-width:320px">
-          <select class="input theme-select" value={settings.theme} onChange={(e) => updateSettings({ theme: e.currentTarget.value as AppSettings['theme'] })}>
+          <select
+            class="input theme-select"
+            value={settings.theme}
+            onChange={(e) => updateSettings({ theme: e.currentTarget.value as AppSettings['theme'] })}
+          >
             <option value="system">{t('settings.theme.system')}</option>
             <option value="light">{t('settings.theme.light')}</option>
             <option value="dark">{t('settings.theme.dark')}</option>
           </select>
         </FormField>
         <label class="row">
-          <input type="checkbox" checked={settings.formatByName} onChange={(e) => updateSettings({ formatByName: e.currentTarget.checked })} /> {t('settings.formatByName')}
+          <input
+            type="checkbox"
+            checked={settings.formatByName}
+            onChange={(e) => updateSettings({ formatByName: e.currentTarget.checked })}
+          />{' '}
+          {t('settings.formatByName')}
         </label>
         <span class="hint">{t('settings.formatByName.hint')}</span>
       </div>
@@ -172,13 +206,24 @@ export function Settings() {
         <h2>{t('settings.section.time')}</h2>
         <div class="grid2">
           <FormField label={t('settings.dateFormat')}>
-            <input class="input mono" value={draft.dateFormat} onInput={(e) => set({ dateFormat: e.currentTarget.value })} placeholder={DEFAULT_SETTINGS.dateFormat} />
+            <input
+              class="input mono"
+              value={draft.dateFormat}
+              onInput={(e) => set({ dateFormat: e.currentTarget.value })}
+              placeholder={DEFAULT_SETTINGS.dateFormat}
+            />
             {errors.dateFormat && <span class="hint error-text">{errors.dateFormat}</span>}
             <span class="hint">{t('settings.dateFormat.hint')}</span>
             {preview && <span class="hint mono">{t('settings.preview', { value: preview })}</span>}
           </FormField>
           <FormField label={t('settings.timeZone')}>
-            <input class="input mono" list="ddv-timezones" value={draft.timeZone} onInput={(e) => set({ timeZone: e.currentTarget.value })} placeholder={browserZone()} />
+            <input
+              class="input mono"
+              list="ddv-timezones"
+              value={draft.timeZone}
+              onInput={(e) => set({ timeZone: e.currentTarget.value })}
+              placeholder={browserZone()}
+            />
             <datalist id="ddv-timezones">
               {zones.map((z) => (
                 <option value={z} />
@@ -188,7 +233,11 @@ export function Settings() {
             <span class="hint">{t('settings.timeZone.hint', { browser: browserZone() })}</span>
           </FormField>
           <FormField label={t('settings.dow')}>
-            <select class="input" value={settings.dayOfWeek} onChange={(e) => updateSettings({ dayOfWeek: Number(e.currentTarget.value) })}>
+            <select
+              class="input"
+              value={settings.dayOfWeek}
+              onChange={(e) => updateSettings({ dayOfWeek: Number(e.currentTarget.value) })}
+            >
               {days.map((name, i) => (
                 <option value={i}>{name}</option>
               ))}
@@ -197,12 +246,22 @@ export function Settings() {
           </FormField>
         </div>
         <FormField label={t('settings.scaled')}>
-          <textarea class="input mono settings-json" value={draft.scaled} onInput={(e) => set({ scaled: e.currentTarget.value })} spellcheck={false} />
+          <textarea
+            class="input mono settings-json"
+            value={draft.scaled}
+            onInput={(e) => set({ scaled: e.currentTarget.value })}
+            spellcheck={false}
+          />
           {errors.scaled && <span class="hint error-text">{errors.scaled}</span>}
           <span class="hint">{t('settings.scaled.hint')}</span>
         </FormField>
         <FormField label={t('settings.quickRanges')}>
-          <textarea class="input mono settings-json" value={draft.quick} onInput={(e) => set({ quick: e.currentTarget.value })} spellcheck={false} />
+          <textarea
+            class="input mono settings-json"
+            value={draft.quick}
+            onInput={(e) => set({ quick: e.currentTarget.value })}
+            spellcheck={false}
+          />
           {errors.quick && <span class="hint error-text">{errors.quick}</span>}
           <span class="hint">{t('settings.quickRanges.hint')}</span>
         </FormField>
@@ -228,7 +287,13 @@ export function Settings() {
           <button class="btn" onClick={() => fileRef.current?.click()}>
             {t('settings.backup.restore')}
           </button>
-          <input ref={fileRef} type="file" accept=".json,application/json" class="backup-file" onChange={(e) => void restore(e.currentTarget.files?.[0])} />
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".json,application/json"
+            class="backup-file"
+            onChange={(e) => void restore(e.currentTarget.files?.[0])}
+          />
         </div>
       </div>
     </div>

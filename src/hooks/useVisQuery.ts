@@ -32,17 +32,27 @@ export function useVisQuery({
   refreshTick?: number;
 }) {
   const effective: VisState = vis.chart === 'metric' ? { ...vis, x: { ...vis.x, kind: 'none' } } : vis;
-  const interval = compiled.from && compiled.to ? (intervalByKey(vis.x.interval) ?? autoInterval(compiled.from, compiled.to, targetBuckets)) : null;
+  const interval =
+    compiled.from && compiled.to
+      ? (intervalByKey(vis.x.interval) ?? autoInterval(compiled.from, compiled.to, targetBuckets))
+      : null;
   const tzOffset = bucketOffsetMinutes(compiled.to ?? compiled.context.now, compiled.context.timeZone);
   const spanMs = compiled.from && compiled.to ? Math.max(0, compiled.to.getTime() - compiled.from.getTime()) : 0;
   const compare = supportsComparison(vis);
   const searchKey = JSON.stringify(searches);
   const { from, to } = compiled;
   // Relative dates inside queries/filters must not advance on a busy-state render.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const previousWhere = useMemo(() => previousPeriodWhere(vis, compiled, searches, fields, timeExpr), [compare, from, to, searchKey, fields, timeExpr, refreshTick, compiled.context]);
+  const previousWhere = useMemo(
+    () => previousPeriodWhere(vis, compiled, searches, fields, timeExpr),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [compare, from, to, searchKey, fields, timeExpr, refreshTick, compiled.context],
+  );
   // Presentation changes (title, labels, line/area style) do not change the aggregation.
-  const queryKey = JSON.stringify([effective.x, effective.metrics.map((m) => [m.agg, m.field, m.param]), effective.breakdown]);
+  const queryKey = JSON.stringify([
+    effective.x,
+    effective.metrics.map((m) => [m.agg, m.field, m.param]),
+    effective.breakdown,
+  ]);
   const [result, setResult] = useState<VisResult | null>(null);
   const [previous, setPrevious] = useState<VisResult | null>(null);
   const [busy, setBusy] = useState(false);
@@ -60,8 +70,30 @@ export function useVisQuery({
     setBusy(true);
     setError(null);
     Promise.all([
-      fetchVis(effective, compiled.where, timeExpr, fields, interval, tzOffset, spanMs / 1000, run.signal, compiled.context),
-      previousWhere ? fetchVis(effective, previousWhere, timeExpr, fields, interval, tzOffset, spanMs / 1000, run.signal, compiled.context) : Promise.resolve(null),
+      fetchVis(
+        effective,
+        compiled.where,
+        timeExpr,
+        fields,
+        interval,
+        tzOffset,
+        spanMs / 1000,
+        run.signal,
+        compiled.context,
+      ),
+      previousWhere
+        ? fetchVis(
+            effective,
+            previousWhere,
+            timeExpr,
+            fields,
+            interval,
+            tzOffset,
+            spanMs / 1000,
+            run.signal,
+            compiled.context,
+          )
+        : Promise.resolve(null),
     ])
       .then(([current, prior]) => {
         if (!run.isCurrent()) return;
@@ -78,7 +110,19 @@ export function useVisQuery({
     return () => scope.cancel();
     // Definitions are compared by queryKey; refreshTick also refreshes an absolute range.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compiled.where, compiled.error, previousWhere, queryKey, interval?.key, tzOffset, timeExpr, fields, spanMs, paused, refreshTick]);
+  }, [
+    compiled.where,
+    compiled.error,
+    previousWhere,
+    queryKey,
+    interval?.key,
+    tzOffset,
+    timeExpr,
+    fields,
+    spanMs,
+    paused,
+    refreshTick,
+  ]);
 
   return { result, previous, busy, error, interval, compare: previousWhere !== null };
 }

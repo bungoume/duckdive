@@ -41,11 +41,23 @@ for (const d of [today, yesterday, old]) {
   mkdirSync(dir, { recursive: true });
   copyFileSync(parquet, join(dir, `part-${dayPath(d).replace(/\//g, '')}.parquet`));
   // ALB access log lines (space separated, quoted request / user agent), gzipped
-  const albDir = join(dataDir, 'bucket', 'AWSLogs', '123456789012', 'elasticloadbalancing', 'ap-northeast-1', dayPath(d));
+  const albDir = join(
+    dataDir,
+    'bucket',
+    'AWSLogs',
+    '123456789012',
+    'elasticloadbalancing',
+    'ap-northeast-1',
+    dayPath(d),
+  );
   mkdirSync(albDir, { recursive: true });
   const lines = [];
   for (let i = 0; i < 500; i++) {
-    const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), i % 24, (i * 7) % 60, i % 60, i % 1000)).toISOString().replace('Z', String(i % 1000).padStart(3, '0') + 'Z');
+    const t = new Date(
+      Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), i % 24, (i * 7) % 60, i % 60, i % 1000),
+    )
+      .toISOString()
+      .replace('Z', String(i % 1000).padStart(3, '0') + 'Z');
     const status = i % 17 === 0 ? 503 : i % 5 === 0 ? 404 : 200;
     const base = `http ${t} app/alb-app-dev/1a2b3c4d5e6f7a8b 203.0.113.${i % 255}:${40000 + i} 10.0.1.${i % 200}:8080 0.001 0.0${i % 9} 0.000 ${status} ${status} 512 ${1000 + i} "GET https://www.example.com:443/api/articles/${i} HTTP/1.1" "Mozilla/5.0 (Macintosh) Chrome/126" ECDHE-RSA-AES128-GCM-SHA256 TLSv1.2 arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/tg/abc "Root=1-${i}" "www.example.com" "arn:aws:acm:ap-northeast-1:123456789012:certificate/xyz" 1 ${t} "forward" "-" "-" "10.0.1.${i % 200}:8080" "${status}" "-" "-" TID_${i}`;
     // today's files use the current 34-field layout, older ones the 30-field layout
@@ -56,14 +68,32 @@ for (const d of [today, yesterday, old]) {
   // a fixed stamp at 00:00 UTC of the day: in the past, and outside a Last-1-hour window
   // unless the test runs before 02:05 UTC (accounted for in the prune check)
   const farHour = '00';
-  writeFileSync(join(albDir, `123456789012_elasticloadbalancing_ap-northeast-1_app.alb-app-dev.1a2b3c4d5e6f7a8b_${day}T${farHour}00Z_198.51.100.23_36sx4l7r.log.gz`), gz);
+  writeFileSync(
+    join(
+      albDir,
+      `123456789012_elasticloadbalancing_ap-northeast-1_app.alb-app-dev.1a2b3c4d5e6f7a8b_${day}T${farHour}00Z_198.51.100.23_36sx4l7r.log.gz`,
+    ),
+    gz,
+  );
   // a second load balancer sharing the day folder (must be excluded by a name prefix)
-  writeFileSync(join(albDir, `123456789012_elasticloadbalancing_ap-northeast-1_app.alb-other.0123456789abcdef_${day}T${farHour}00Z_198.51.100.24_zzzzzzzz.log.gz`), gz);
+  writeFileSync(
+    join(
+      albDir,
+      `123456789012_elasticloadbalancing_ap-northeast-1_app.alb-other.0123456789abcdef_${day}T${farHour}00Z_198.51.100.24_zzzzzzzz.log.gz`,
+    ),
+    gz,
+  );
   if (d === today) {
     // a file whose name timestamp is "now" (rounded to 5 minutes): the only one inside "Last 1 hour"
     const now = new Date(Math.floor(Date.now() / 300000) * 300000);
     const stamp = now.toISOString().replace(/[-:]/g, '').slice(0, 13) + 'Z';
-    writeFileSync(join(albDir, `123456789012_elasticloadbalancing_ap-northeast-1_app.alb-app-dev.1a2b3c4d5e6f7a8b_${stamp}_198.51.100.23_nownownow.log.gz`), gz);
+    writeFileSync(
+      join(
+        albDir,
+        `123456789012_elasticloadbalancing_ap-northeast-1_app.alb-app-dev.1a2b3c4d5e6f7a8b_${stamp}_198.51.100.23_nownownow.log.gz`,
+      ),
+      gz,
+    );
   }
 }
 
@@ -93,7 +123,14 @@ for (const d of [today, yesterday, old]) {
             sourceIPAddress: '203.0.113.9',
             userIdentity: { type: 'IAMUser', userName: 'alice' },
           },
-          { eventVersion: '1.08', eventTime: today.toISOString(), eventSource: 'sts.amazonaws.com', eventName: 'AssumeRole', awsRegion: 'ap-northeast-1', userIdentity: { type: 'AssumedRole' } },
+          {
+            eventVersion: '1.08',
+            eventTime: today.toISOString(),
+            eventSource: 'sts.amazonaws.com',
+            eventName: 'AssumeRole',
+            awsRegion: 'ap-northeast-1',
+            userIdentity: { type: 'AssumedRole' },
+          },
         ],
       }),
     ),
@@ -197,15 +234,24 @@ for (const d of [today, yesterday, old]) {
   }
   // Plain-line gz files, one of them with a damaged gzip header (compression method 9 instead of 8):
   // DuckDB fails with "Unsupported GZIP compression method" and the diagnosis must name the file.
-  w(`badgz/${dp}/aa-good.log.gz`, gzipSync(Array.from({ length: 10 }, (_, i) => `${t.toISOString()} good ${i}`).join('\n') + '\n'));
-  w(`badgz/${dp}/mm-good.log.gz`, gzipSync(Array.from({ length: 10 }, (_, i) => `${t.toISOString()} fine ${i}`).join('\n') + '\n'));
+  w(
+    `badgz/${dp}/aa-good.log.gz`,
+    gzipSync(Array.from({ length: 10 }, (_, i) => `${t.toISOString()} good ${i}`).join('\n') + '\n'),
+  );
+  w(
+    `badgz/${dp}/mm-good.log.gz`,
+    gzipSync(Array.from({ length: 10 }, (_, i) => `${t.toISOString()} fine ${i}`).join('\n') + '\n'),
+  );
   {
     const broken = gzipSync(Array.from({ length: 10 }, (_, i) => `${t.toISOString()} bad ${i}`).join('\n') + '\n');
     broken[2] = 9;
     w(`badgz/${dp}/zz-broken.log.gz`, broken);
   }
   // SSM session transcript
-  w(`ssm/sessions/session-abc123.log`, 'Script started on ' + t.toISOString() + '\nsh-4.2$ ls\nfile1 file2\nsh-4.2$ exit\n');
+  w(
+    `ssm/sessions/session-abc123.log`,
+    'Script started on ' + t.toISOString() + '\nsh-4.2$ ls\nfile1 file2\nsh-4.2$ exit\n',
+  );
   // ALB converted to Parquet (scripts/alb-to-parquet.sh layout) and Flow Logs in Parquet (Hive prefixes)
   const albp = join(dataDir, 'bucket', 'alb-parquet', 'alb-app-dev', `dt=${dash}`, `hour=${hh}`);
   const flowp = join(
@@ -253,7 +299,11 @@ for (const d of [today, yesterday, old]) {
           firewall_name: 'fw-1',
           availability_zone: 'ap-northeast-1a',
           event_timestamp: String(Math.floor(t.getTime() / 1000) - i),
-          event: { src_ip: `10.0.0.${i}`, dest_port: 443, alert: { action: i % 3 ? 'allowed' : 'blocked', signature: 'sig' } },
+          event: {
+            src_ip: `10.0.0.${i}`,
+            dest_port: 443,
+            alert: { action: i % 3 ? 'allowed' : 'blocked', signature: 'sig' },
+          },
         }),
       ).join('\n') + '\n',
     ),
@@ -280,30 +330,58 @@ for (const d of [today, yesterday, old]) {
   // Kinesis Data Firehose default prefix: JSON records concatenated WITHOUT newlines
   w(
     `firehose/${dp}/${hh}/mystream-1-${stamp}-0123-uuid`,
-    Array.from({ length: 10 }, (_, i) => JSON.stringify({ ts: new Date(t.getTime() - i * 1000).toISOString(), level: i % 2 ? 'info' : 'error', msg: `record ${i}` })).join(''),
+    Array.from({ length: 10 }, (_, i) =>
+      JSON.stringify({
+        ts: new Date(t.getTime() - i * 1000).toISOString(),
+        level: i % 2 ? 'info' : 'error',
+        msg: `record ${i}`,
+      }),
+    ).join(''),
   );
   // CloudWatch Logs export task: one folder per log stream, "timestamp message" lines
-  w(`cwl-export/task-1/stream-a/000000.gz`, gzipSync(Array.from({ length: 8 }, (_, i) => `${new Date(t.getTime() - i * 1000).toISOString()} hello ${i}`).join('\n') + '\n'));
-  w(`cwl-export/task-1/2026/09/11/[$LATEST]abc/000000.gz`, gzipSync(Array.from({ length: 3 }, (_, i) => `${new Date(t.getTime() - i * 1000).toISOString()} lambda ${i}`).join('\n') + '\n'));
+  w(
+    `cwl-export/task-1/stream-a/000000.gz`,
+    gzipSync(
+      Array.from({ length: 8 }, (_, i) => `${new Date(t.getTime() - i * 1000).toISOString()} hello ${i}`).join('\n') +
+        '\n',
+    ),
+  );
+  w(
+    `cwl-export/task-1/2026/09/11/[$LATEST]abc/000000.gz`,
+    gzipSync(
+      Array.from({ length: 3 }, (_, i) => `${new Date(t.getTime() - i * 1000).toISOString()} lambda ${i}`).join('\n') +
+        '\n',
+    ),
+  );
 }
 
 // One run per port: the id goes into the server's environment and comes back from /__stats, so a
 // server another run left behind (or a half-second that was not enough) is noticed here instead
 // of showing up later as counters that do not add up.
 const runId = `run-${process.pid}`;
-const server = spawn(process.execPath, [new URL('./range-server.mjs', import.meta.url).pathname, dataDir, String(dataPort)], {
-  stdio: 'inherit',
-  env: { ...process.env, NOCORS: '1', DDV_RUN: runId },
-});
+const server = spawn(
+  process.execPath,
+  [new URL('./range-server.mjs', import.meta.url).pathname, dataDir, String(dataPort)],
+  {
+    stdio: 'inherit',
+    env: { ...process.env, NOCORS: '1', DDV_RUN: runId },
+  },
+);
 let serverExited = null;
 server.on('exit', (code) => (serverExited = code));
 process.on('exit', () => server.kill());
 const serverStats = async () => (await fetch(`http://localhost:${dataPort}/__stats`)).json();
 for (let i = 0; ; i++) {
-  if (serverExited !== null) throw new Error(`range-server exited with ${serverExited}; is port ${dataPort} already taken?`);
+  if (serverExited !== null)
+    throw new Error(`range-server exited with ${serverExited}; is port ${dataPort} already taken?`);
   const seen = await serverStats().catch(() => null);
   if (seen?.run === runId) break;
-  if (i >= 50) throw new Error(seen ? `another range-server is already serving port ${dataPort}` : `range-server did not come up on port ${dataPort}`);
+  if (i >= 50)
+    throw new Error(
+      seen
+        ? `another range-server is already serving port ${dataPort}`
+        : `range-server did not come up on port ${dataPort}`,
+    );
   await new Promise((r) => setTimeout(r, 100));
 }
 
@@ -321,12 +399,14 @@ const check = (name, cond, detail = '') => {
 };
 const swStats = () => page.evaluate(() => window.__ddv.cacheStats().then((r) => r.stats));
 // Connect no longer counts rows for URL sources (it would read every footer); count explicitly.
-const srcRows = () => page.evaluate(() => window.__ddv.query('SELECT count(*)::DOUBLE AS n FROM src').then((r) => Number(r.rows[0].n)));
+const srcRows = () =>
+  page.evaluate(() => window.__ddv.query('SELECT count(*)::DOUBLE AS n FROM src').then((r) => Number(r.rows[0].n)));
 const connectDone = (marker) =>
   page.waitForFunction(
     (m) =>
       (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect' &&
-      ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) || !!document.querySelector('.alert.error')),
+      ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) ||
+        !!document.querySelector('.alert.error')),
     marker,
     { timeout: 60000 },
   );
@@ -343,7 +423,8 @@ const errorAlert = () => textIfPresent('.alert.error');
 /** Press Connect; if the pattern has {name} variables, select every listed value and press again. */
 const pressConnect = async () => {
   await page.click('.source-page button:has-text("connect")');
-  const settled = () => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim().toLowerCase() !== 'connecting…';
+  const settled = () =>
+    (document.querySelector('.source-page button.connect')?.textContent ?? '').trim().toLowerCase() !== 'connecting…';
   await page.waitForFunction(settled, null, { timeout: 120000 });
   const all = page.locator('.variables-box button:has-text("Select all values")');
   if (await all.count()) {
@@ -404,7 +485,8 @@ const connectTemplate = async (label, urlsFix, marker) => {
   await page.waitForFunction(
     (m) =>
       (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect' &&
-      ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) || !!document.querySelector('.alert.error')),
+      ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) ||
+        !!document.querySelector('.alert.error')),
     marker,
     { timeout: 60000 },
   );
@@ -421,7 +503,8 @@ const connectPattern = async (urls, marker) => {
   await page.waitForFunction(
     (m) =>
       (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect' &&
-      ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) || !!document.querySelector('.alert.error')),
+      ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) ||
+        !!document.querySelector('.alert.error')),
     marker,
     { timeout: 60000 },
   );
@@ -440,7 +523,11 @@ await section('duckdb-versions', async () => {
   const engine = String((await q('SELECT version() AS v'))[0]?.v ?? '');
   const cli = execSync('duckdb --version', { encoding: 'utf8' }).trim().split(/\s+/)[0];
   const major = (v) => v.replace(/^v/, '').split('.')[0];
-  check('the duckdb CLI and duckdb-wasm share a major version', !!engine && major(cli) === major(engine), `CLI ${cli} writes, engine ${engine} reads`);
+  check(
+    'the duckdb CLI and duckdb-wasm share a major version',
+    !!engine && major(cli) === major(engine),
+    `CLI ${cli} writes, engine ${engine} reads`,
+  );
 });
 
 await section('opfs-and-http-parquet', async () => {
@@ -473,7 +560,11 @@ await section('opfs-and-http-parquet', async () => {
   const hits2 = await runQuery('status:>=500 AND method:POST');
   const s2 = await swStats();
   const srv2 = await serverStats();
-  check('second query served from cache', s2.bytesFromCache > 0 && s2.bytesFromNetwork === s1.bytesFromNetwork, `network=${s2.bytesFromNetwork} cache=${s2.bytesFromCache} hits=${hits2}`);
+  check(
+    'second query served from cache',
+    s2.bytesFromCache > 0 && s2.bytesFromNetwork === s1.bytesFromNetwork,
+    `network=${s2.bytesFromNetwork} cache=${s2.bytesFromCache} hits=${hits2}`,
+  );
   check('origin bytes unchanged', srv2.bytesSent === srv1.bytesSent, `${srv1.bytesSent} -> ${srv2.bytesSent}`);
 
   // Reload: a fresh DuckDB worker must find the chunks in OPFS and read nothing from the origin.
@@ -482,8 +573,16 @@ await section('opfs-and-http-parquet', async () => {
   const hits3 = await runQuery('status:>=500');
   const s3 = await swStats();
   srv3 = await serverStats();
-  check('after reload: served from disk cache', s3.bytesFromCache > 0 && s3.bytesFromNetwork === 0 && s3.chunkMisses === 0, `network=${s3.bytesFromNetwork} cache=${s3.bytesFromCache} hits=${hits3}`);
-  check('after reload: origin bytes unchanged', srv3.bytesSent === srv2.bytesSent, `${srv2.bytesSent} -> ${srv3.bytesSent}`);
+  check(
+    'after reload: served from disk cache',
+    s3.bytesFromCache > 0 && s3.bytesFromNetwork === 0 && s3.chunkMisses === 0,
+    `network=${s3.bytesFromNetwork} cache=${s3.bytesFromCache} hits=${hits3}`,
+  );
+  check(
+    'after reload: origin bytes unchanged',
+    srv3.bytesSent === srv2.bytesSent,
+    `${srv2.bytesSent} -> ${srv3.bytesSent}`,
+  );
   // the fixture spans exactly the last 7 days, so the sliding window may move by a few rows
   const toN = (t) => Number(String(t).replace(/,/g, ''));
   check('results consistent', Math.abs(toN(hits1) - toN(hits3)) <= 20, `${hits1} vs ${hits3}`);
@@ -515,7 +614,11 @@ await section('second-tab', async () => {
   const ownTotal = (await swStats()).bytesFromCache;
   await tab2.goto(base + '#/source');
   await tab2.waitForSelector('.cache-readonly', { timeout: 30000 });
-  check('second tab says so on the Data source page', true, `index lists ${stored.cachedFiles} file(s); first tab served ${ownTotal} B from cache`);
+  check(
+    'second tab says so on the Data source page',
+    true,
+    `index lists ${stored.cachedFiles} file(s); first tab served ${ownTotal} B from cache`,
+  );
   await tab2.close();
   // the first tab still owns the cache
   const ping1 = await page.evaluate(() => window.__ddv.cachePing());
@@ -542,7 +645,10 @@ await section('cache-limit', async () => {
   await openSource();
   await page.evaluate(() => window.__ddv.cacheClear());
   await page.click('.kinds button:has-text("S3 / HTTPS URL")');
-  await page.fill('.source-page textarea', `http://localhost:${dataPort}/logs.parquet\nhttp://localhost:${dataPort}/bucket/logs.parquet`);
+  await page.fill(
+    '.source-page textarea',
+    `http://localhost:${dataPort}/logs.parquet\nhttp://localhost:${dataPort}/bucket/logs.parquet`,
+  );
   await page.click('.source-page button:has-text("Connect")');
   await connectDone('logs.parquet');
   const measure = async () => {
@@ -586,7 +692,12 @@ await section('s3-static-keys', async () => {
   await connectDone('s3://bucket/logs.parquet');
   const s3err = await errorAlert();
   const s3rows = s3err ? null : await srcRows();
-  check('s3 path-style connect', !s3err && s3rows === 600000, s3err ?? `${(await page.locator('.alert.ok', { hasText: 's3://bucket/logs.parquet' }).textContent()).trim()} rows=${s3rows}`);
+  check(
+    's3 path-style connect',
+    !s3err && s3rows === 600000,
+    s3err ??
+      `${(await page.locator('.alert.ok', { hasText: 's3://bucket/logs.parquet' }).textContent()).trim()} rows=${s3rows}`,
+  );
   await page.click('.header nav button:has-text("Discover")');
   await page.waitForSelector('.hits .n');
   const hitsS3 = await runQuery('status:>=500');
@@ -671,7 +782,10 @@ await section('named-wildcards', async () => {
   await page.click('.quick-grid button:has-text("Last 7 days")');
   await settled(page);
   await openSource();
-  await page.fill('.source-page textarea', 's3://bucket/AWSLogs/{account}/elasticloadbalancing/{region}/{yyyy}/{MM}/{dd}/{account}_elasticloadbalancing_{region}_app.{alb}.*.log.gz');
+  await page.fill(
+    '.source-page textarea',
+    's3://bucket/AWSLogs/{account}/elasticloadbalancing/{region}/{yyyy}/{MM}/{dd}/{account}_elasticloadbalancing_{region}_app.{alb}.*.log.gz',
+  );
   await page.selectOption('.source-page .field-row:has-text("Authentication") select', 'static');
   await page.click('.source-page button:has-text("connect")');
   await page.waitForSelector('.variables-box .var-values', { timeout: 60000 });
@@ -689,10 +803,24 @@ await section('named-wildcards', async () => {
   );
   await page.click('.variables-box button:has-text("Select all values")');
   await page.click('.source-page button:has-text("Connect")');
-  await page.waitForFunction(() => [...document.querySelectorAll('.alert.ok')].some((e) => /matched/.test(e.textContent ?? '')) || document.querySelector('.alert.error'), null, { timeout: 60000 });
+  await page.waitForFunction(
+    () =>
+      [...document.querySelectorAll('.alert.ok')].some((e) => /matched/.test(e.textContent ?? '')) ||
+      document.querySelector('.alert.error'),
+    null,
+    { timeout: 60000 },
+  );
   const nErr = await errorAlert();
   const nOk = nErr ? '' : await page.locator('.alert.ok', { hasText: 'matched' }).textContent();
-  const albs = nErr ? [] : await page.evaluate(() => window.__ddv.query('SELECT alb, account, region, count(*) n, count(DISTINCT _file) files FROM src GROUP BY 1,2,3 ORDER BY 1').then((r) => r.rows));
+  const albs = nErr
+    ? []
+    : await page.evaluate(() =>
+        window.__ddv
+          .query(
+            'SELECT alb, account, region, count(*) n, count(DISTINCT _file) files FROM src GROUP BY 1,2,3 ORDER BY 1',
+          )
+          .then((r) => r.rows),
+      );
   check(
     'named wildcards become columns',
     !nErr &&
@@ -712,12 +840,16 @@ await section('named-wildcards', async () => {
   );
   await page.click('.field-item:has-text("alb")');
   await settled(page);
-  console.log(`     details open: ${await page.locator('.field-details').count()} text=${((await textIfPresent('.field-details')) ?? '').slice(0, 120)}`);
+  console.log(
+    `     details open: ${await page.locator('.field-details').count()} text=${((await textIfPresent('.field-details')) ?? '').slice(0, 120)}`,
+  );
   await page.waitForSelector('.topval', { timeout: 15000 });
   await page.locator('.topval', { hasText: 'alb-other' }).locator('.pm button').first().click();
   await settled(page);
   const prunedStatus = await page.textContent('.header .status');
-  const prunedFiles = await page.evaluate(() => window.__ddv.query('SELECT count(DISTINCT _file) f, count(DISTINCT alb) a FROM src').then((r) => r.rows[0]));
+  const prunedFiles = await page.evaluate(() =>
+    window.__ddv.query('SELECT count(DISTINCT _file) f, count(DISTINCT alb) a FROM src').then((r) => r.rows[0]),
+  );
   check(
     '"is" filter on a captured column prunes the file list',
     /2 file\(s\)/.test(prunedStatus) && Number(prunedFiles.f) === 2 && Number(prunedFiles.a) === 1,
@@ -735,7 +867,10 @@ await section('date-tokens', async () => {
   await page.click('.quick-grid button:has-text("Last 7 days")');
   await settled(page);
   await openSource();
-  await page.fill('.source-page textarea', 's3://bucket/AWSLogs/123456789012/parquet/ap-northeast-1/{yyyy}/{MM}/{dd}/*.parquet');
+  await page.fill(
+    '.source-page textarea',
+    's3://bucket/AWSLogs/123456789012/parquet/ap-northeast-1/{yyyy}/{MM}/{dd}/*.parquet',
+  );
   await page.selectOption('.source-page .field-row:has-text("Authentication") select', 'static');
   await page.selectOption('.source-page .field-row:has-text("Format") select', 'auto');
   await page.click('.source-page button:has-text("Connect")');
@@ -757,7 +892,10 @@ await section('date-tokens', async () => {
   await page.click('.timepicker .btn');
   await page.click('.quick-grid button:has-text("Last 60 minutes")');
   await settled(page);
-  const utcDays = new Set([new Date(Date.now() - 3600_000).toISOString().slice(0, 10), new Date().toISOString().slice(0, 10)]).size;
+  const utcDays = new Set([
+    new Date(Date.now() - 3600_000).toISOString().slice(0, 10),
+    new Date().toISOString().slice(0, 10),
+  ]).size;
   const status = await page.textContent('.header .status');
   const rangeRows = await srcRows();
   check(
@@ -779,7 +917,13 @@ await section('alb-logs', async () => {
   );
   const srvC0 = await serverStats();
   await page.click('.source-page button:has-text("Connect")');
-  await page.waitForFunction(() => [...document.querySelectorAll('.alert.ok')].some((e) => /log\.gz/.test(e.textContent ?? '')) || document.querySelector('.alert.error'), null, { timeout: 60000 });
+  await page.waitForFunction(
+    () =>
+      [...document.querySelectorAll('.alert.ok')].some((e) => /log\.gz/.test(e.textContent ?? '')) ||
+      document.querySelector('.alert.error'),
+    null,
+    { timeout: 60000 },
+  );
   const albErr = await errorAlert();
   const srvC1 = await serverStats();
   check(
@@ -787,14 +931,32 @@ await section('alb-logs', async () => {
     srvC1.bytesSent === srvC0.bytesSent,
     `data bytes during connect: ${srvC1.bytesSent - srvC0.bytesSent}, requests: ${srvC1.requests - srvC0.requests}`,
   );
-  check('connect issues no per-file HEAD (metadata seeded from the listing)', srvC1.headRequests === srvC0.headRequests, `HEAD during connect: ${srvC1.headRequests - srvC0.headRequests}`);
+  check(
+    'connect issues no per-file HEAD (metadata seeded from the listing)',
+    srvC1.headRequests === srvC0.headRequests,
+    `HEAD during connect: ${srvC1.headRequests - srvC0.headRequests}`,
+  );
   const albOk = albErr ? '' : await page.locator('.alert.ok', { hasText: 'log.gz' }).textContent();
-  const albFields = albErr ? [] : await page.evaluate(() => window.__ddv.query('DESCRIBE SELECT * FROM src').then((r) => r.rows.map((x) => x.column_name + ':' + x.column_type)));
+  const albFields = albErr
+    ? []
+    : await page.evaluate(() =>
+        window.__ddv
+          .query('DESCRIBE SELECT * FROM src')
+          .then((r) => r.rows.map((x) => x.column_name + ':' + x.column_type)),
+      );
   const albCount = albErr
     ? null
-    : await page.evaluate(() => window.__ddv.query('SELECT count(*) n, count(*) FILTER (WHERE elb_status_code >= 500) e, min(time)::VARCHAR t, count(ip_address) ips FROM src').then((r) => r.rows[0]));
+    : await page.evaluate(() =>
+        window.__ddv
+          .query(
+            'SELECT count(*) n, count(*) FILTER (WHERE elb_status_code >= 500) e, min(time)::VARCHAR t, count(ip_address) ips FROM src',
+          )
+          .then((r) => r.rows[0]),
+      );
   const srvC2 = await serverStats();
-  console.log(`     first full query read ${srvC2.bytesSent - srvC1.bytesSent} bytes in ${srvC2.requests - srvC1.requests} requests`);
+  console.log(
+    `     first full query read ${srvC2.bytesSent - srvC1.bytesSent} bytes in ${srvC2.requests - srvC1.requests} requests`,
+  );
   const swH = await swStats();
   check(
     'queries answer HEADs locally',
@@ -825,7 +987,11 @@ await section('alb-logs', async () => {
   // the 00:00Z file is kept while now-1h-65min <= 00:00, i.e. before 02:05 UTC
   const nowMin = new Date().getUTCHours() * 60 + new Date().getUTCMinutes();
   const expectPruned = nowMin < 125 ? 2 : 1;
-  check(`ALB logs: name timestamps prune files outside the range (${expectPruned} file)`, Number(albFiles) === 500 * expectPruned, `${albStatus.trim()} rows=${albFiles}`);
+  check(
+    `ALB logs: name timestamps prune files outside the range (${expectPruned} file)`,
+    Number(albFiles) === 500 * expectPruned,
+    `${albStatus.trim()} rows=${albFiles}`,
+  );
 });
 
 await section('large-source-confirmation', async () => {
@@ -838,7 +1004,11 @@ await section('large-source-confirmation', async () => {
   await settled(page);
   await openSource();
   await page.evaluate(() => window.__ddv.cacheClear());
-  await page.waitForFunction(() => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect', null, { timeout: 60000 });
+  await page.waitForFunction(
+    () => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect',
+    null,
+    { timeout: 60000 },
+  );
   await page.fill('.source-page .field-row:has-text("Warn when more files") input', '1');
   const srvL0 = await serverStats();
   await page.click('.source-page button:has-text("Connect")');
@@ -848,12 +1018,21 @@ await section('large-source-confirmation', async () => {
   const confirmText = (await banner.textContent()).replace(/\s+/g, ' ').trim();
   check(
     'large source asks before touching DuckDB',
-    /3 files/.test(confirmText) && /threshold 1/.test(confirmText) && srvL1.headRequests === srvL0.headRequests && srvL1.bytesSent === srvL0.bytesSent,
+    /3 files/.test(confirmText) &&
+      /threshold 1/.test(confirmText) &&
+      srvL1.headRequests === srvL0.headRequests &&
+      srvL1.bytesSent === srvL0.bytesSent,
     `${confirmText.slice(0, 70)}… HEAD=${srvL1.headRequests - srvL0.headRequests} bytes=${srvL1.bytesSent - srvL0.bytesSent}`,
   );
   await banner.locator('button', { hasText: 'Cancel' }).click();
-  await page.waitForFunction(() => /cancelled/i.test(document.querySelector('.alert.error')?.textContent ?? ''), null, { timeout: 15000 });
-  check('cancelling the confirmation aborts the connect', (await banner.count()) === 0, await page.textContent('.alert.error'));
+  await page.waitForFunction(() => /cancelled/i.test(document.querySelector('.alert.error')?.textContent ?? ''), null, {
+    timeout: 15000,
+  });
+  check(
+    'cancelling the confirmation aborts the connect',
+    (await banner.count()) === 0,
+    await page.textContent('.alert.error'),
+  );
   await page.click('.source-page button:has-text("Connect")');
   await banner.waitFor({ timeout: 60000 });
   // the banner unmounts as soon as the click is handled: do not wait for it afterwards
@@ -866,7 +1045,9 @@ await section('large-source-confirmation', async () => {
     { timeout: 60000 },
   );
   await page.click('.header nav button:has-text("Discover")');
-  await page.waitForFunction(() => !(document.querySelector('.hits .n')?.textContent ?? '…').includes('…'), null, { timeout: 60000 });
+  await page.waitForFunction(() => !(document.querySelector('.hits .n')?.textContent ?? '…').includes('…'), null, {
+    timeout: 60000,
+  });
   await page.waitForFunction(() => !document.querySelector('.loading-bar'), null, { timeout: 60000 });
   const gateAfter = await page.evaluate(() => window.__ddv.gate?.status);
   const gateHits = await page.textContent('.hits .n');
@@ -893,12 +1074,24 @@ await section('templates', async () => {
     const warned = await page.locator('.alert.warn').count();
     await page.click('.alert.warn button:has-text("Keep current")');
     const after = await page.inputValue('.source-page textarea');
-    check('template dropdown warns before replacing an existing pattern', warned === 1 && before === after && before.includes('CloudTrail'), `warned=${warned} unchanged=${before === after}`);
+    check(
+      'template dropdown warns before replacing an existing pattern',
+      warned === 1 && before === after && before.includes('CloudTrail'),
+      `warned=${warned} unchanged=${before === after}`,
+    );
   }
-  rows = r.err ? null : await q('SELECT count(*) n, count(DISTINCT eventName) e, min(eventTime)::VARCHAR t, max(userIdentity.userName) u FROM src');
+  rows = r.err
+    ? null
+    : await q(
+        'SELECT count(*) n, count(DISTINCT eventName) e, min(eventTime)::VARCHAR t, max(userIdentity.userName) u FROM src',
+      );
   check(
     'CloudTrail template: Records unnested, eventTime is the time field',
-    !r.err && r.tf === 'eventTime' && Number(rows?.[0]?.n) === 2 && Number(rows?.[0]?.e) === 2 && rows?.[0]?.u === 'alice',
+    !r.err &&
+      r.tf === 'eventTime' &&
+      Number(rows?.[0]?.n) === 2 &&
+      Number(rows?.[0]?.e) === 2 &&
+      rows?.[0]?.u === 'alice',
     r.err ?? `tf=${r.tf} ${JSON.stringify(rows)}`,
   );
   // VPC Flow Logs
@@ -911,24 +1104,42 @@ await section('templates', async () => {
   );
   // CloudFront
   r = await connectTemplate('CloudFront logs', (u) => bucketize(u).replace('<prefix>', 'cf-logs'), 'cf-logs/');
-  rows = r.err ? null : await q('SELECT count(*) n, count(*) FILTER (WHERE sc_status = 503) e, min("timestamp")::VARCHAR t, max(cs_uri_stem) p FROM src');
+  rows = r.err
+    ? null
+    : await q(
+        'SELECT count(*) n, count(*) FILTER (WHERE sc_status = 503) e, min("timestamp")::VARCHAR t, max(cs_uri_stem) p FROM src',
+      );
   check(
     'CloudFront template: TSV with header lines, derived timestamp',
-    !r.err && r.tf === 'timestamp' && Number(rows?.[0]?.n) === 40 && Number(rows?.[0]?.e) === 6 && /^\d{4}-\d{2}-\d{2} \d{2}:00:00/.test(rows?.[0]?.t ?? ''),
+    !r.err &&
+      r.tf === 'timestamp' &&
+      Number(rows?.[0]?.n) === 40 &&
+      Number(rows?.[0]?.e) === 6 &&
+      /^\d{4}-\d{2}-\d{2} \d{2}:00:00/.test(rows?.[0]?.t ?? ''),
     r.err ?? `tf=${r.tf} ${JSON.stringify(rows)}`,
   );
   // S3 server access logs
   r = await connectTemplate('S3 server access logs', (u) => bucketize(u).replace('<prefix>', 's3-logs'), 's3-logs/');
-  rows = r.err ? null : await q('SELECT count(*) n, count(*) FILTER (WHERE http_status = 404) e, min("timestamp")::VARCHAR t, max(operation) o FROM src');
+  rows = r.err
+    ? null
+    : await q(
+        'SELECT count(*) n, count(*) FILTER (WHERE http_status = 404) e, min("timestamp")::VARCHAR t, max(operation) o FROM src',
+      );
   check(
     'S3 access log template: bracketed time reassembled',
-    !r.err && r.tf === 'timestamp' && Number(rows?.[0]?.n) === 30 && Number(rows?.[0]?.e) === 5 && rows?.[0]?.o === 'REST.GET.OBJECT',
+    !r.err &&
+      r.tf === 'timestamp' &&
+      Number(rows?.[0]?.n) === 30 &&
+      Number(rows?.[0]?.e) === 5 &&
+      rows?.[0]?.o === 'REST.GET.OBJECT',
     r.err ?? `tf=${r.tf} ${JSON.stringify(rows)}`,
   );
   // LTSV is a file format, not a delivery layout: no template, the pattern is typed directly
   r = await connectPattern('s3://bucket/ltsv/{yyyy}/{MM}/{dd}/*.ltsv.gz', 'ltsv/');
   const ltsvFields = r.err ? [] : (await q('DESCRIBE SELECT * FROM src')).map((x) => x.column_name);
-  rows = r.err ? null : await q("SELECT count(*) n, count(*) FILTER (WHERE json_extract_string(log, '$.status') = '502') e FROM src");
+  rows = r.err
+    ? null
+    : await q("SELECT count(*) n, count(*) FILTER (WHERE json_extract_string(log, '$.status') = '502') e FROM src");
   check(
     'LTSV template: labels become log.* fields, nginx time parsed',
     !r.err && r.tf === 'log.time' && Number(rows?.[0]?.n) === 25 && Number(rows?.[0]?.e) === 5,
@@ -941,10 +1152,22 @@ await section('templates', async () => {
   // SSM (plain lines)
   r = await connectTemplate('SSM session / command logs', (u) => bucketize(u).replace('<prefix>', 'ssm'), 'ssm/');
   rows = r.err ? null : await q('SELECT count(*) n, max(_file) f FROM src');
-  check('SSM template: plain lines with _file', !r.err && Number(rows?.[0]?.n) === 4 && /session-abc123\.log$/.test(rows?.[0]?.f ?? ''), r.err ?? `${JSON.stringify(rows)}`);
+  check(
+    'SSM template: plain lines with _file',
+    !r.err && Number(rows?.[0]?.n) === 4 && /session-abc123\.log$/.test(rows?.[0]?.f ?? ''),
+    r.err ?? `${JSON.stringify(rows)}`,
+  );
   // ALB converted to Parquet (Hive dt= / hour= partitions, {alb} captured)
-  r = await connectTemplate('ALB access logs converted to Parquet (scripts/alb-to-parquet.sh)', (u) => bucketize(u).replace('<prefix>', 'alb-parquet'), 'alb-parquet/');
-  rows = r.err ? null : await q('SELECT count(*) n, count(*) FILTER (WHERE elb_status_code = 503) e, max(alb) alb, max(dt)::VARCHAR dt, max(hour) h FROM src');
+  r = await connectTemplate(
+    'ALB access logs converted to Parquet (scripts/alb-to-parquet.sh)',
+    (u) => bucketize(u).replace('<prefix>', 'alb-parquet'),
+    'alb-parquet/',
+  );
+  rows = r.err
+    ? null
+    : await q(
+        'SELECT count(*) n, count(*) FILTER (WHERE elb_status_code = 503) e, max(alb) alb, max(dt)::VARCHAR dt, max(hour) h FROM src',
+      );
   check(
     'ALB Parquet template: partition columns and {alb} capture',
     !r.err &&
@@ -958,46 +1181,100 @@ await section('templates', async () => {
   );
   // VPC Flow Logs in Parquet (Hive-compatible prefixes)
   r = await connectTemplate('VPC Flow Logs (Parquet, Hive-compatible prefixes)', bucketize, 'aws-service=vpc');
-  rows = r.err ? null : await q("SELECT count(*) n, count(*) FILTER (WHERE action = 'REJECT') rej, max(account) a, max(region) rg FROM src");
+  rows = r.err
+    ? null
+    : await q(
+        "SELECT count(*) n, count(*) FILTER (WHERE action = 'REJECT') rej, max(account) a, max(region) rg FROM src",
+      );
   check(
     'Flow Logs Parquet template: start is the time field, account / region captured',
-    !r.err && r.tf === 'start' && Number(rows?.[0]?.n) === 30 && Number(rows?.[0]?.rej) === 6 && rows?.[0]?.a === '123456789012' && rows?.[0]?.rg === 'ap-northeast-1',
+    !r.err &&
+      r.tf === 'start' &&
+      Number(rows?.[0]?.n) === 30 &&
+      Number(rows?.[0]?.rej) === 6 &&
+      rows?.[0]?.a === '123456789012' &&
+      rows?.[0]?.rg === 'ap-northeast-1',
     r.err ?? `tf=${r.tf} ${JSON.stringify(rows)}`,
   );
   // WAF
   r = await connectTemplate('WAF logs (S3 delivery)', bucketize, '_waflogs_');
-  rows = r.err ? null : await q("SELECT count(*) n, count(*) FILTER (WHERE action = 'BLOCK') b, max(webacl) w, max(httpRequest.uri) u FROM src");
+  rows = r.err
+    ? null
+    : await q(
+        "SELECT count(*) n, count(*) FILTER (WHERE action = 'BLOCK') b, max(webacl) w, max(httpRequest.uri) u FROM src",
+      );
   check(
     'WAF template: minute folder globbed, timestamp (epoch ms) is the time field',
-    !r.err && r.tf === 'timestamp' && Number(rows?.[0]?.n) === 20 && Number(rows?.[0]?.b) === 5 && rows?.[0]?.w === 'my-acl' && rows?.[0]?.u === '/p/9',
+    !r.err &&
+      r.tf === 'timestamp' &&
+      Number(rows?.[0]?.n) === 20 &&
+      Number(rows?.[0]?.b) === 5 &&
+      rows?.[0]?.w === 'my-acl' &&
+      rows?.[0]?.u === '/p/9',
     r.err ?? `tf=${r.tf} ${JSON.stringify(rows)}`,
   );
   // Network Firewall
   r = await connectTemplate('Network Firewall logs', bucketize, 'network-firewall/');
-  rows = r.err ? null : await q("SELECT count(*) n, max(log_type) lt, max(firewall) fw, count(*) FILTER (WHERE event.alert.action = 'blocked') b FROM src");
+  rows = r.err
+    ? null
+    : await q(
+        "SELECT count(*) n, max(log_type) lt, max(firewall) fw, count(*) FILTER (WHERE event.alert.action = 'blocked') b FROM src",
+      );
   check(
     'Network Firewall template: log_type / firewall captured, event_timestamp is the time field',
-    !r.err && r.tf === 'event_timestamp' && Number(rows?.[0]?.n) === 12 && rows?.[0]?.lt === 'alert' && rows?.[0]?.fw === 'fw-1' && Number(rows?.[0]?.b) === 4,
+    !r.err &&
+      r.tf === 'event_timestamp' &&
+      Number(rows?.[0]?.n) === 12 &&
+      rows?.[0]?.lt === 'alert' &&
+      rows?.[0]?.fw === 'fw-1' &&
+      Number(rows?.[0]?.b) === 4,
     r.err ?? `tf=${r.tf} ${JSON.stringify(rows)}`,
   );
   // Route 53 Resolver
   r = await connectTemplate('Route 53 Resolver query logs', bucketize, 'vpcdnsquerylogs/');
-  rows = r.err ? null : await q("SELECT count(*) n, count(*) FILTER (WHERE rcode = 'NXDOMAIN') nx, max(vpc) v FROM src");
+  rows = r.err
+    ? null
+    : await q("SELECT count(*) n, count(*) FILTER (WHERE rcode = 'NXDOMAIN') nx, max(vpc) v FROM src");
   check(
     'Route 53 Resolver template: query_timestamp is the time field, vpc captured',
-    !r.err && r.tf === 'query_timestamp' && Number(rows?.[0]?.n) === 15 && Number(rows?.[0]?.nx) === 3 && rows?.[0]?.v === 'vpc-0abc',
+    !r.err &&
+      r.tf === 'query_timestamp' &&
+      Number(rows?.[0]?.n) === 15 &&
+      Number(rows?.[0]?.nx) === 3 &&
+      rows?.[0]?.v === 'vpc-0abc',
     r.err ?? `tf=${r.tf} ${JSON.stringify(rows)}`,
   );
   // Kinesis Data Firehose (concatenated JSON without newlines)
-  r = await connectTemplate('Kinesis Data Firehose delivery (default prefix)', (u) => bucketize(u).replace('<prefix>', 'firehose'), 'firehose/');
-  rows = r.err ? null : await q("SELECT count(*) n, count(*) FILTER (WHERE level = 'error') e, min(ts)::VARCHAR t FROM src");
-  check('Firehose template: concatenated JSON records read', !r.err && r.tf === 'ts' && Number(rows?.[0]?.n) === 10 && Number(rows?.[0]?.e) === 5, r.err ?? `tf=${r.tf} ${JSON.stringify(rows)}`);
+  r = await connectTemplate(
+    'Kinesis Data Firehose delivery (default prefix)',
+    (u) => bucketize(u).replace('<prefix>', 'firehose'),
+    'firehose/',
+  );
+  rows = r.err
+    ? null
+    : await q("SELECT count(*) n, count(*) FILTER (WHERE level = 'error') e, min(ts)::VARCHAR t FROM src");
+  check(
+    'Firehose template: concatenated JSON records read',
+    !r.err && r.tf === 'ts' && Number(rows?.[0]?.n) === 10 && Number(rows?.[0]?.e) === 5,
+    r.err ?? `tf=${r.tf} ${JSON.stringify(rows)}`,
+  );
   // CloudWatch Logs export (stream folders, including one with slashes in the stream name)
-  r = await connectTemplate('CloudWatch Logs export to S3', (u) => bucketize(u).replace('<prefix>', 'cwl-export').replace('<task-id>', 'task-1'), 'cwl-export/');
-  rows = r.err ? null : await q('SELECT count(*) n, count(DISTINCT _file) f, max(message) m, count("timestamp") ts FROM src');
+  r = await connectTemplate(
+    'CloudWatch Logs export to S3',
+    (u) => bucketize(u).replace('<prefix>', 'cwl-export').replace('<task-id>', 'task-1'),
+    'cwl-export/',
+  );
+  rows = r.err
+    ? null
+    : await q('SELECT count(*) n, count(DISTINCT _file) f, max(message) m, count("timestamp") ts FROM src');
   check(
     'CloudWatch Logs export template: timestamp split from message, all streams read',
-    !r.err && r.tf === 'timestamp' && Number(rows?.[0]?.n) === 11 && Number(rows?.[0]?.f) === 2 && rows?.[0]?.m === 'lambda 2' && Number(rows?.[0]?.ts) === 11,
+    !r.err &&
+      r.tf === 'timestamp' &&
+      Number(rows?.[0]?.n) === 11 &&
+      Number(rows?.[0]?.f) === 2 &&
+      rows?.[0]?.m === 'lambda 2' &&
+      Number(rows?.[0]?.ts) === 11,
     r.err ?? `tf=${r.tf} ${JSON.stringify(rows)}`,
   );
 });
@@ -1015,7 +1292,11 @@ await section('concatenated-gzip', async () => {
   await page.fill('.source-page textarea', 's3://bucket/multigz/{yyyy}/{MM}/{dd}/*.log.gz');
   await page.selectOption('.source-page .field-row:has-text("Format") select', 'lines');
   await pressConnect();
-  await page.waitForFunction(() => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect', null, { timeout: 120000 });
+  await page.waitForFunction(
+    () => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect',
+    null,
+    { timeout: 120000 },
+  );
   const multiErr = await errorAlert();
   const multiRows = await q('SELECT count(*) n FROM src');
   const got = Number(multiRows?.[0]?.n);
@@ -1024,7 +1305,9 @@ await section('concatenated-gzip', async () => {
     !multiErr && got > 0 && got < TOTAL,
     multiErr ?? `${got} of ${TOTAL} rows (${TOTAL - got} lost); equal to ${TOTAL} means DuckDB fixed it`,
   );
-  const cachedM = (await page.evaluate(() => window.__ddv.cacheFiles({ all: true }))).files.filter((f) => /multigz/.test(f.url));
+  const cachedM = (await page.evaluate(() => window.__ddv.cacheFiles({ all: true }))).files.filter((f) =>
+    /multigz/.test(f.url),
+  );
   check(
     'concatenated gzip: the objects are cached as the origin serves them',
     cachedM.length === 3 && cachedM.every((f) => f.cachedBytes > 0),
@@ -1038,10 +1321,18 @@ await section('damaged-gzip', async () => {
   await page.fill('.source-page textarea', 's3://bucket/badgz/{yyyy}/{MM}/{dd}/*.log.gz');
   await page.selectOption('.source-page .field-row:has-text("Format") select', 'lines');
   await pressConnect();
-  await page.waitForFunction(() => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect', null, { timeout: 60000 });
+  await page.waitForFunction(
+    () => (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect',
+    null,
+    { timeout: 60000 },
+  );
   const badErr = await errorAlert();
   const badCount = await q('SELECT count(*) n FROM src');
-  check('damaged gz: connect succeeds, count(*) reports the GZIP error', !badErr && /GZIP/i.test(badCount?.[0]?.error ?? ''), badErr ?? JSON.stringify(badCount).slice(0, 160));
+  check(
+    'damaged gz: connect succeeds, count(*) reports the GZIP error',
+    !badErr && /GZIP/i.test(badCount?.[0]?.error ?? ''),
+    badErr ?? JSON.stringify(badCount).slice(0, 160),
+  );
   await page.click('.header nav button:has-text("Discover")');
   await page.fill('.qinput input', ''); // an earlier test left a query that no longer compiles
   await page.press('.qinput input', 'Enter');
@@ -1062,7 +1353,11 @@ await section('damaged-gzip', async () => {
     `queries=${diag.queries} failing=${JSON.stringify(diag.failing?.map((f) => [f.file.split('/').pop(), f.head, f.gzip?.verdict]))}`,
   );
   const logRow = (await swStats()).log.find((l) => l.method === 'GET' && /zz-broken/.test(l.url) && l.head);
-  check('request log records status, size and first bytes per request', !!logRow && logRow.status === 206 && logRow.head.startsWith('1f8b09') && logRow.bytes > 0, JSON.stringify(logRow));
+  check(
+    'request log records status, size and first bytes per request',
+    !!logRow && logRow.status === 206 && logRow.head.startsWith('1f8b09') && logRow.bytes > 0,
+    JSON.stringify(logRow),
+  );
   await page.click('.header nav button:has-text("Data source")');
   await page.click('.cache-log-box summary');
   const logText = await page.textContent('.cache-log-box summary');

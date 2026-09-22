@@ -60,7 +60,12 @@ function DocDetail(props: {
         )}
       </div>
       {tab === 'context' && canContext ? (
-        <ContextView ts={props.doc.ts!} fields={props.fields} timeExpr={props.timeExpr!} timeFieldName={props.timeFieldName} />
+        <ContextView
+          ts={props.doc.ts!}
+          fields={props.fields}
+          timeExpr={props.timeExpr!}
+          timeFieldName={props.timeFieldName}
+        />
       ) : tab === 'json' ? (
         <div class="json-view">
           <button class="btn small copy" onClick={copy}>
@@ -77,7 +82,9 @@ function DocDetail(props: {
               const fld = findField(props.fields, k);
               let shown = val;
               if (val !== null && fld?.kind === 'date') {
-                const d = new Date(val.includes('T') || /[zZ]|[+-]\d\d:?\d\d$/.test(val) ? val : val.replace(' ', 'T') + 'Z');
+                const d = new Date(
+                  val.includes('T') || /[zZ]|[+-]\d\d:?\d\d$/.test(val) ? val : val.replace(' ', 'T') + 'Z',
+                );
                 if (!isNaN(d.getTime())) shown = formatLocal(d);
               } else if (val !== null) shown = fmtField(k, v).text;
               return (
@@ -85,16 +92,32 @@ function DocDetail(props: {
                   <td class="a">
                     {filterable && (
                       <>
-                        <button title={t('doc.filterFor')} aria-label={t('doc.filterFor')} onClick={() => props.onFilter(k, val, false)}>
+                        <button
+                          title={t('doc.filterFor')}
+                          aria-label={t('doc.filterFor')}
+                          onClick={() => props.onFilter(k, val, false)}
+                        >
                           +
                         </button>
-                        <button title={t('doc.filterOut')} aria-label={t('doc.filterOut')} onClick={() => props.onFilter(k, val, true)}>
+                        <button
+                          title={t('doc.filterOut')}
+                          aria-label={t('doc.filterOut')}
+                          onClick={() => props.onFilter(k, val, true)}
+                        >
                           −
                         </button>
-                        <button title={t('doc.toggleColumn')} aria-label={t('doc.toggleColumn')} onClick={() => props.onToggleColumn(k)}>
+                        <button
+                          title={t('doc.toggleColumn')}
+                          aria-label={t('doc.toggleColumn')}
+                          onClick={() => props.onToggleColumn(k)}
+                        >
                           ⊞
                         </button>
-                        <button title={t('doc.filterExists')} aria-label={t('doc.filterExists')} onClick={() => props.onExists(k)}>
+                        <button
+                          title={t('doc.filterExists')}
+                          aria-label={t('doc.filterExists')}
+                          onClick={() => props.onExists(k)}
+                        >
                           *
                         </button>
                       </>
@@ -147,7 +170,8 @@ export function DocTable(props: {
   const cols = props.columns;
   const colSpan = 2 + (cols.length || 1);
   const known = new Set(props.fields.map((f) => f.name));
-  const asValue = (v: unknown): string | null => (v === null || v === undefined ? null : typeof v === 'object' ? JSON.stringify(v) : String(v));
+  const asValue = (v: unknown): string | null =>
+    v === null || v === undefined ? null : typeof v === 'object' ? JSON.stringify(v) : String(v);
   return (
     <table class="docs">
       <thead>
@@ -192,7 +216,12 @@ export function DocTable(props: {
           <>
             <tr key={i}>
               <td class="expand">
-                <button onClick={() => toggle(i)} title={t('doc.toggleDetails')} aria-label={t('doc.toggleDetails')} aria-expanded={open.has(i)}>
+                <button
+                  onClick={() => toggle(i)}
+                  title={t('doc.toggleDetails')}
+                  aria-label={t('doc.toggleDetails')}
+                  aria-expanded={open.has(i)}
+                >
                   {open.has(i) ? '▼' : '▶'}
                 </button>
               </td>
@@ -211,10 +240,18 @@ export function DocTable(props: {
                           </span>
                           {known.has(k) && (
                             <span class="pm">
-                              <button title={t('doc.filterFor')} aria-label={t('doc.filterFor')} onClick={() => props.onFilter(k, asValue(v), false)}>
+                              <button
+                                title={t('doc.filterFor')}
+                                aria-label={t('doc.filterFor')}
+                                onClick={() => props.onFilter(k, asValue(v), false)}
+                              >
                                 +
                               </button>
-                              <button title={t('doc.filterOut')} aria-label={t('doc.filterOut')} onClick={() => props.onFilter(k, asValue(v), true)}>
+                              <button
+                                title={t('doc.filterOut')}
+                                aria-label={t('doc.filterOut')}
+                                onClick={() => props.onFilter(k, asValue(v), true)}
+                              >
                                 −
                               </button>
                             </span>

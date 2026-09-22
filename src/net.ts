@@ -36,7 +36,13 @@ export function throwIfAborted(signal?: AbortSignal | null): void {
  * fetch() with a deadline and an optional user cancellation signal. A timeout becomes a
  * TimeoutError naming `what`; a cancellation becomes a CancelledError.
  */
-export async function fetchWithTimeout(url: string, init: RequestInit, what: string, signal?: AbortSignal | null, timeoutMs = REQUEST_TIMEOUT_MS): Promise<Response> {
+export async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  what: string,
+  signal?: AbortSignal | null,
+  timeoutMs = REQUEST_TIMEOUT_MS,
+): Promise<Response> {
   throwIfAborted(signal);
   const timer = AbortSignal.timeout(timeoutMs);
   const combined = signal ? AbortSignal.any([signal, timer]) : timer;
@@ -50,7 +56,11 @@ export async function fetchWithTimeout(url: string, init: RequestInit, what: str
 }
 
 /** map() with at most `limit` calls in flight; results keep the input order. */
-export async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T, index: number) => Promise<R>): Promise<R[]> {
+export async function mapLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
   const out: R[] = new Array(items.length);
   let next = 0;
   let failed: unknown = null;

@@ -15,7 +15,11 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.`;
 
 const root = new URL('..', import.meta.url).pathname;
-const paths = execSync('pnpm ls --prod --depth Infinity --parseable', { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+const paths = execSync('pnpm ls --prod --depth Infinity --parseable', {
+  cwd: root,
+  encoding: 'utf8',
+  stdio: ['ignore', 'pipe', 'ignore'],
+})
   .split('\n')
   .map((s) => s.trim())
   .filter((p) => p && p !== root.replace(/\/$/, '') && p.includes('node_modules'));
@@ -31,7 +35,13 @@ for (const dir of paths) {
   const text = licFile ? readFileSync(join(dir, licFile), 'utf8').trim() : null;
   const license = pkg.license ?? (typeof pkg.licenses === 'object' ? JSON.stringify(pkg.licenses) : 'UNKNOWN');
   const holder = typeof pkg.author === 'string' ? pkg.author : (pkg.author?.name ?? pkg.name);
-  seen.set(key, { name: pkg.name, version: pkg.version, license, homepage: pkg.homepage ?? '', text: text ?? (license === 'MIT' ? mitText(holder) : null) });
+  seen.set(key, {
+    name: pkg.name,
+    version: pkg.version,
+    license,
+    homepage: pkg.homepage ?? '',
+    text: text ?? (license === 'MIT' ? mitText(holder) : null),
+  });
 }
 
 const entries = [...seen.values()].sort((a, b) => a.name.localeCompare(b.name));
@@ -40,9 +50,17 @@ const out = [
   '',
   ...entries.map((e) => `- ${e.name}@${e.version} (${e.license})${e.homepage ? ` ${e.homepage}` : ''}`),
   '',
-  ...entries.flatMap((e) => ['='.repeat(78), `${e.name}@${e.version} — ${e.license}`, '='.repeat(78), e.text ?? '(license text not included in the package; see the package homepage)', '']),
+  ...entries.flatMap((e) => [
+    '='.repeat(78),
+    `${e.name}@${e.version} — ${e.license}`,
+    '='.repeat(78),
+    e.text ?? '(license text not included in the package; see the package homepage)',
+    '',
+  ]),
 ].join('\n');
 mkdirSync(`${root}public`, { recursive: true });
 writeFileSync(`${root}public/THIRD_PARTY_LICENSES.txt`, out);
 const missing = entries.filter((e) => !e.text).map((e) => e.name);
-console.log(`third-party licenses: ${entries.length} packages → public/THIRD_PARTY_LICENSES.txt${missing.length ? ` (no license file: ${missing.join(', ')})` : ''}`);
+console.log(
+  `third-party licenses: ${entries.length} packages → public/THIRD_PARTY_LICENSES.txt${missing.length ? ` (no license file: ${missing.join(', ')})` : ''}`,
+);

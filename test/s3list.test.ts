@@ -1,9 +1,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { captureRegex, concretePatterns, expandDateTokens, keyTimestamp, namedToGlob, namedTokens, parseS3Url, resolveS3Patterns, s3Target, substituteTokens, withinRange } from '../src/s3list';
+import {
+  captureRegex,
+  concretePatterns,
+  expandDateTokens,
+  keyTimestamp,
+  namedToGlob,
+  namedTokens,
+  parseS3Url,
+  resolveS3Patterns,
+  s3Target,
+  substituteTokens,
+  withinRange,
+} from '../src/s3list';
 
 afterEach(() => vi.unstubAllGlobals());
 
-const alb = 's3://logs/AWSLogs/{account}/elasticloadbalancing/{region}/{yyyy}/{MM}/{dd}/{account}_elasticloadbalancing_{region}_app.{alb}.*.log.gz';
+const alb =
+  's3://logs/AWSLogs/{account}/elasticloadbalancing/{region}/{yyyy}/{MM}/{dd}/{account}_elasticloadbalancing_{region}_app.{alb}.*.log.gz';
 
 describe('named tokens', () => {
   it('lists the non-date tokens once, in order', () => {
@@ -22,7 +35,9 @@ describe('named tokens', () => {
       's3://logs/AWSLogs/123456789012/elasticloadbalancing/ap-northeast-1/2026/09/16/123456789012_elasticloadbalancing_ap-northeast-1_app.my-alb.abc_20260916T0105Z_1.2.3.4_xyz.log.gz',
     );
     expect(m?.slice(1)).toEqual(['123456789012', 'ap-northeast-1', 'my-alb']);
-    expect(new RegExp(cap.source).exec('s3://logs/AWSLogs/1/elasticloadbalancing/r/2026/09/16/other.log.gz')).toBeNull();
+    expect(
+      new RegExp(cap.source).exec('s3://logs/AWSLogs/1/elasticloadbalancing/r/2026/09/16/other.log.gz'),
+    ).toBeNull();
   });
 
   it('escapes regex characters and treats ** as any depth', () => {
@@ -49,7 +64,11 @@ describe('named tokens', () => {
           return {
             getElementsByTagName: (tag: string) =>
               tag === 'Contents'
-                ? ['a', 'b', 'c'].map((part) => ({ getElementsByTagName: (name: string) => [{ textContent: name === 'Key' ? `acme/part-${part}.parquet` : name === 'Size' ? '4' : '' }] }))
+                ? ['a', 'b', 'c'].map((part) => ({
+                    getElementsByTagName: (name: string) => [
+                      { textContent: name === 'Key' ? `acme/part-${part}.parquet` : name === 'Size' ? '4' : '' },
+                    ],
+                  }))
                 : [],
           };
         }
@@ -71,45 +90,95 @@ describe('named tokens', () => {
 
   it('substitutes selected values, up to a limit', () => {
     expect(substituteTokens('s3://b/{a}/{c}/x', { a: ['1', '2'], c: ['z'] })).toEqual(['s3://b/1/z/x', 's3://b/2/z/x']);
-    expect(substituteTokens('s3://b/{a}/x', { a: Array.from({ length: 65 }, (_, i) => String(i)) })).toEqual(['s3://b/{a}/x']);
+    expect(substituteTokens('s3://b/{a}/x', { a: Array.from({ length: 65 }, (_, i) => String(i)) })).toEqual([
+      's3://b/{a}/x',
+    ]);
     expect(substituteTokens('s3://b/{a}/x', {})).toEqual(['s3://b/{a}/x']);
   });
 });
 
 describe('date tokens', () => {
   it('expand day by day over the range, UTC', () => {
-    expect(expandDateTokens('s3://b/{yyyy}/{MM}/{dd}/*.gz', new Date('2026-09-15T23:00:00Z'), new Date('2026-09-16T01:00:00Z'))).toEqual(['s3://b/2026/09/15/*.gz', 's3://b/2026/09/16/*.gz']);
+    expect(
+      expandDateTokens(
+        's3://b/{yyyy}/{MM}/{dd}/*.gz',
+        new Date('2026-09-15T23:00:00Z'),
+        new Date('2026-09-16T01:00:00Z'),
+      ),
+    ).toEqual(['s3://b/2026/09/15/*.gz', 's3://b/2026/09/16/*.gz']);
   });
 
   it('expand hourly and monthly patterns', () => {
-    expect(expandDateTokens('s3://b/{yyyy}/{MM}/{dd}/{HH}/*', new Date('2026-09-15T23:10:00Z'), new Date('2026-09-16T01:00:00Z'))).toHaveLength(3);
-    expect(expandDateTokens('s3://b/{yyyy}/{MM}/*', new Date('2026-08-31T00:00:00Z'), new Date('2026-09-01T00:00:00Z'))).toEqual(['s3://b/2026/08/*', 's3://b/2026/09/*']);
-    expect(expandDateTokens('s3://b/{yy}/*', new Date('2026-08-31T00:00:00Z'), new Date('2026-09-01T00:00:00Z'))).toEqual(['s3://b/26/*']);
+    expect(
+      expandDateTokens(
+        's3://b/{yyyy}/{MM}/{dd}/{HH}/*',
+        new Date('2026-09-15T23:10:00Z'),
+        new Date('2026-09-16T01:00:00Z'),
+      ),
+    ).toHaveLength(3);
+    expect(
+      expandDateTokens('s3://b/{yyyy}/{MM}/*', new Date('2026-08-31T00:00:00Z'), new Date('2026-09-01T00:00:00Z')),
+    ).toEqual(['s3://b/2026/08/*', 's3://b/2026/09/*']);
+    expect(
+      expandDateTokens('s3://b/{yy}/*', new Date('2026-08-31T00:00:00Z'), new Date('2026-09-01T00:00:00Z')),
+    ).toEqual(['s3://b/26/*']);
   });
 
   it('reach past the range far enough for a late-delivered file', () => {
     // 23:58 is delivered in a file named 00:00 under tomorrow's prefix, and withinRange accepts it
-    const day = concretePatterns('s3://b/{yyyy}/{MM}/{dd}/*.gz', { from: new Date('2026-09-15T00:00:00Z'), to: new Date('2026-09-15T23:59:59Z') });
+    const day = concretePatterns('s3://b/{yyyy}/{MM}/{dd}/*.gz', {
+      from: new Date('2026-09-15T00:00:00Z'),
+      to: new Date('2026-09-15T23:59:59Z'),
+    });
     expect(day).toEqual(['s3://b/2026/09/15/*.gz', 's3://b/2026/09/16/*.gz']);
     // mid-day there is nothing to reach for
-    expect(concretePatterns('s3://b/{yyyy}/{MM}/{dd}/*.gz', { from: new Date('2026-09-15T00:00:00Z'), to: new Date('2026-09-15T12:00:00Z') })).toEqual(['s3://b/2026/09/15/*.gz']);
-    const hours = concretePatterns('s3://b/{yyyy}/{MM}/{dd}/{HH}/*', { from: new Date('2026-09-15T02:00:00Z'), to: new Date('2026-09-15T03:00:00Z') });
-    expect(hours).toEqual(['s3://b/2026/09/15/02/*', 's3://b/2026/09/15/03/*', 's3://b/2026/09/15/04/*', 's3://b/2026/09/15/05/*', 's3://b/2026/09/15/06/*']);
+    expect(
+      concretePatterns('s3://b/{yyyy}/{MM}/{dd}/*.gz', {
+        from: new Date('2026-09-15T00:00:00Z'),
+        to: new Date('2026-09-15T12:00:00Z'),
+      }),
+    ).toEqual(['s3://b/2026/09/15/*.gz']);
+    const hours = concretePatterns('s3://b/{yyyy}/{MM}/{dd}/{HH}/*', {
+      from: new Date('2026-09-15T02:00:00Z'),
+      to: new Date('2026-09-15T03:00:00Z'),
+    });
+    expect(hours).toEqual([
+      's3://b/2026/09/15/02/*',
+      's3://b/2026/09/15/03/*',
+      's3://b/2026/09/15/04/*',
+      's3://b/2026/09/15/05/*',
+      's3://b/2026/09/15/06/*',
+    ]);
     expect(concretePatterns('s3://b/{yyyy}/{MM}/{dd}/*.gz', null)).toEqual([]);
     expect(concretePatterns('s3://b/plain/*.gz', null)).toEqual(['s3://b/plain/*.gz']);
   });
 
   it('leaves patterns without tokens alone and refuses absurd ranges', () => {
     expect(expandDateTokens('s3://b/x', new Date(0), new Date(1))).toEqual(['s3://b/x']);
-    expect(() => expandDateTokens('s3://b/{yyyy}/{MM}/{dd}/{HH}/*', new Date('2020-01-01T00:00:00Z'), new Date('2026-01-01T00:00:00Z'))).toThrow();
+    expect(() =>
+      expandDateTokens(
+        's3://b/{yyyy}/{MM}/{dd}/{HH}/*',
+        new Date('2020-01-01T00:00:00Z'),
+        new Date('2026-01-01T00:00:00Z'),
+      ),
+    ).toThrow();
   });
 });
 
 describe('file-name timestamps', () => {
   it('reads ALB-style and hourly-style stamps', () => {
-    expect(keyTimestamp('a/b/123_elb_r_app.x.y_20260909T0105Z_1.2.3.4_z.log.gz')).toEqual({ ts: new Date('2026-09-09T01:05:00Z'), kind: 'minute' });
-    expect(keyTimestamp('cf/E123ABC.2026-09-09-01.abcdef12.gz')).toEqual({ ts: new Date('2026-09-09T01:00:00Z'), kind: 'hour' });
-    expect(keyTimestamp('s3-logs/2026-09-09-01-15-30-0123456789ABCDEF')).toEqual({ ts: new Date('2026-09-09T01:15:30Z'), kind: 'hour' });
+    expect(keyTimestamp('a/b/123_elb_r_app.x.y_20260909T0105Z_1.2.3.4_z.log.gz')).toEqual({
+      ts: new Date('2026-09-09T01:05:00Z'),
+      kind: 'minute',
+    });
+    expect(keyTimestamp('cf/E123ABC.2026-09-09-01.abcdef12.gz')).toEqual({
+      ts: new Date('2026-09-09T01:00:00Z'),
+      kind: 'hour',
+    });
+    expect(keyTimestamp('s3-logs/2026-09-09-01-15-30-0123456789ABCDEF')).toEqual({
+      ts: new Date('2026-09-09T01:15:30Z'),
+      kind: 'hour',
+    });
     expect(keyTimestamp('data/part-0001.parquet')).toBeNull();
   });
 
@@ -127,7 +196,14 @@ describe('file-name timestamps', () => {
 });
 
 describe('S3 addressing', () => {
-  const base = { region: 'ap-northeast-1', accessKeyId: '', secretAccessKey: '', sessionToken: '', endpoint: '', urlStyle: 'vhost' as const };
+  const base = {
+    region: 'ap-northeast-1',
+    accessKeyId: '',
+    secretAccessKey: '',
+    sessionToken: '',
+    endpoint: '',
+    urlStyle: 'vhost' as const,
+  };
 
   it('parses s3:// URLs', () => {
     expect(parseS3Url('s3://bucket/a/b.gz')).toEqual({ bucket: 'bucket', key: 'a/b.gz' });
@@ -136,41 +212,72 @@ describe('S3 addressing', () => {
   });
 
   it('builds virtual-hosted and path-style targets', () => {
-    expect(s3Target('b', base)).toEqual({ bucket: 'b', baseUrl: 'https://b.s3.amazonaws.com', canonicalBase: '/', host: 'b.s3.amazonaws.com' });
-    expect(s3Target('b', { ...base, endpoint: 's3.ap-northeast-1.amazonaws.com' }).baseUrl).toBe('https://b.s3.ap-northeast-1.amazonaws.com');
-    expect(s3Target('b', { ...base, endpoint: 'http://localhost:9000/' })).toEqual({ bucket: 'b', baseUrl: 'http://localhost:9000/b', canonicalBase: '/b/', host: 'localhost:9000' });
+    expect(s3Target('b', base)).toEqual({
+      bucket: 'b',
+      baseUrl: 'https://b.s3.amazonaws.com',
+      canonicalBase: '/',
+      host: 'b.s3.amazonaws.com',
+    });
+    expect(s3Target('b', { ...base, endpoint: 's3.ap-northeast-1.amazonaws.com' }).baseUrl).toBe(
+      'https://b.s3.ap-northeast-1.amazonaws.com',
+    );
+    expect(s3Target('b', { ...base, endpoint: 'http://localhost:9000/' })).toEqual({
+      bucket: 'b',
+      baseUrl: 'http://localhost:9000/b',
+      canonicalBase: '/b/',
+      host: 'localhost:9000',
+    });
     expect(s3Target('b', { ...base, urlStyle: 'path' }).baseUrl).toBe('https://s3.ap-northeast-1.amazonaws.com/b');
   });
 });
 
 describe('overlapping source patterns', () => {
-  it.each(['time', 'token'] as const)('keeps an explicit file after %s pruning in another pattern, in either order', async (reason) => {
-    const key = reason === 'time' ? 'old_20260920T0105Z_id.log.gz' : 'acme/data.csv';
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response('<ListBucketResult/>')),
-    );
-    vi.stubGlobal(
-      'DOMParser',
-      class {
-        parseFromString() {
-          return {
-            getElementsByTagName: (tag: string) => (tag === 'Contents' ? [{ getElementsByTagName: (name: string) => [{ textContent: name === 'Key' ? key : name === 'Size' ? '4' : '' }] }] : []),
-          };
-        }
-      },
-    );
-    const wildcard = reason === 'time' ? 's3://logs/*.gz' : 's3://logs/{tenant}/*.csv';
-    const literal = `s3://logs/${key}`;
-    const range = { from: new Date('2026-09-22T00:00:00Z'), to: new Date('2026-09-23T00:00:00Z') };
-    for (const patterns of [
-      [wildcard, literal],
-      [literal, wildcard],
-      [wildcard, literal, literal],
-    ]) {
-      const result = await resolveS3Patterns(patterns, { region: '', endpoint: '', urlStyle: 'path', accessKeyId: '', secretAccessKey: '', sessionToken: '' }, null, range, 100, { tenant: ['beta'] });
-      expect(result.files.map((f) => f.url)).toEqual([literal]);
-      expect(result.files[0].metadata?.key).toBe(key);
-    }
-  });
+  it.each(['time', 'token'] as const)(
+    'keeps an explicit file after %s pruning in another pattern, in either order',
+    async (reason) => {
+      const key = reason === 'time' ? 'old_20260920T0105Z_id.log.gz' : 'acme/data.csv';
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response('<ListBucketResult/>')),
+      );
+      vi.stubGlobal(
+        'DOMParser',
+        class {
+          parseFromString() {
+            return {
+              getElementsByTagName: (tag: string) =>
+                tag === 'Contents'
+                  ? [
+                      {
+                        getElementsByTagName: (name: string) => [
+                          { textContent: name === 'Key' ? key : name === 'Size' ? '4' : '' },
+                        ],
+                      },
+                    ]
+                  : [],
+            };
+          }
+        },
+      );
+      const wildcard = reason === 'time' ? 's3://logs/*.gz' : 's3://logs/{tenant}/*.csv';
+      const literal = `s3://logs/${key}`;
+      const range = { from: new Date('2026-09-22T00:00:00Z'), to: new Date('2026-09-23T00:00:00Z') };
+      for (const patterns of [
+        [wildcard, literal],
+        [literal, wildcard],
+        [wildcard, literal, literal],
+      ]) {
+        const result = await resolveS3Patterns(
+          patterns,
+          { region: '', endpoint: '', urlStyle: 'path', accessKeyId: '', secretAccessKey: '', sessionToken: '' },
+          null,
+          range,
+          100,
+          { tenant: ['beta'] },
+        );
+        expect(result.files.map((f) => f.url)).toEqual([literal]);
+        expect(result.files[0].metadata?.key).toBe(key);
+      }
+    },
+  );
 });

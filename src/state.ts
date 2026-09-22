@@ -13,7 +13,8 @@ export interface DiscoverState {
   breakdown: string | null;
 }
 
-export type MetricAgg = 'count' | 'sum' | 'avg' | 'min' | 'max' | 'median' | 'unique' | 'p95' | 'p99' | 'percentile' | 'rate';
+export type MetricAgg =
+  'count' | 'sum' | 'avg' | 'min' | 'max' | 'median' | 'unique' | 'p95' | 'p99' | 'percentile' | 'rate';
 export type ChartType = 'area' | 'line' | 'bar' | 'table' | 'metric';
 
 export interface MetricDef {

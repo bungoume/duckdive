@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DEFAULT_OIDC, getCredentials, isUsable, loadCredentials, secondsUntilExpiry, storeCredentials, type AwsCredentials } from '../src/auth';
+import {
+  DEFAULT_OIDC,
+  getCredentials,
+  isUsable,
+  loadCredentials,
+  secondsUntilExpiry,
+  storeCredentials,
+  type AwsCredentials,
+} from '../src/auth';
 
 const credentials: AwsCredentials = {
   accessKeyId: 'ROLE_A',

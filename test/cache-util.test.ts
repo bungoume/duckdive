@@ -16,14 +16,28 @@ import {
   type NativeResult,
 } from '../src/worker/cache-util';
 
-const res = (headers: Record<string, string>): NativeResult => ({ status: 200, statusText: 'OK', headers, rawHeaders: '', body: null });
+const res = (headers: Record<string, string>): NativeResult => ({
+  status: 200,
+  statusText: 'OK',
+  headers,
+  rawHeaders: '',
+  body: null,
+});
 
 describe('cacheKey', () => {
   it('strips signatures of the usual presigning schemes and the fragment, keeps the rest', () => {
-    expect(cacheKey('https://b.s3.amazonaws.com/k?X-Amz-Signature=abc&X-Amz-Date=1&x-amz-security-token=t&keep=1#frag')).toBe('https://b.s3.amazonaws.com/k?keep=1');
-    expect(cacheKey('https://b.s3.amazonaws.com/k?AWSAccessKeyId=A&Signature=s&Expires=1')).toBe('https://b.s3.amazonaws.com/k');
-    expect(cacheKey('https://a.blob.core.windows.net/c/k?sv=2024&sig=x&se=2026&sp=r&sr=b&st=2025&skoid=1')).toBe('https://a.blob.core.windows.net/c/k');
-    expect(cacheKey('https://storage.googleapis.com/b/k?X-Goog-Signature=x&X-Goog-Algorithm=y')).toBe('https://storage.googleapis.com/b/k');
+    expect(
+      cacheKey('https://b.s3.amazonaws.com/k?X-Amz-Signature=abc&X-Amz-Date=1&x-amz-security-token=t&keep=1#frag'),
+    ).toBe('https://b.s3.amazonaws.com/k?keep=1');
+    expect(cacheKey('https://b.s3.amazonaws.com/k?AWSAccessKeyId=A&Signature=s&Expires=1')).toBe(
+      'https://b.s3.amazonaws.com/k',
+    );
+    expect(cacheKey('https://a.blob.core.windows.net/c/k?sv=2024&sig=x&se=2026&sp=r&sr=b&st=2025&skoid=1')).toBe(
+      'https://a.blob.core.windows.net/c/k',
+    );
+    expect(cacheKey('https://storage.googleapis.com/b/k?X-Goog-Signature=x&X-Goog-Algorithm=y')).toBe(
+      'https://storage.googleapis.com/b/k',
+    );
   });
 
   it('is stable for the same object signed twice', () => {

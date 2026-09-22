@@ -31,7 +31,8 @@ export const ko: Messages = {
   'app.error.timeout': '{what}이(가) {seconds}초 내에 응답하지 않았습니다',
   'app.crashed': '문제가 발생했습니다: {error}',
   'app.reload': '다시 로드',
-  'app.creds.refreshFailed': '임시 AWS 자격 증명을 갱신하지 못했습니다: {error}. 만료되면 쿼리가 실패합니다. 데이터 소스 페이지에서 다시 로그인하세요.',
+  'app.creds.refreshFailed':
+    '임시 AWS 자격 증명을 갱신하지 못했습니다: {error}. 만료되면 쿼리가 실패합니다. 데이터 소스 페이지에서 다시 로그인하세요.',
   'app.large.files': '{n}개 파일',
   'app.large.text':
     '{files}{bytes}이(가) 이 패턴과 시간 범위에 일치합니다 (임계값 {threshold}). 아직 아무것도 읽지 않았습니다. 계속하면 모든 파일에 대한 뷰가 생성되고, 첫 쿼리가 필요한 부분을 다운로드합니다. 시간 범위를 좁히거나, 이름 접두사 또는 캡처된 열에 대한 필터를 추가하거나, 계속 진행하세요.',
@@ -45,26 +46,31 @@ export const ko: Messages = {
   // ---- settings page ----
   'settings.title': '설정',
   'settings.lang': '언어',
-  'settings.lang.hint': 'UI 전체에 즉시 적용됩니다. 선택은 이 브라우저에 저장되며, 처음에는 브라우저 UI 언어를 따릅니다.',
+  'settings.lang.hint':
+    'UI 전체에 즉시 적용됩니다. 선택은 이 브라우저에 저장되며, 처음에는 브라우저 UI 언어를 따릅니다.',
   'settings.theme': '모양',
   'settings.theme.system': '시스템 설정 따르기',
   'settings.theme.light': '라이트',
   'settings.theme.dark': '다크',
   'settings.formatByName': '필드 이름으로 크기와 시간을 표시',
-  'settings.formatByName.hint': '문서 표에서 …bytes / …size 필드는 1.2 MB, _ms로 끝나는 필드는 1.23 s처럼 표시합니다. 원래 값은 툴팁에 있습니다.',
+  'settings.formatByName.hint':
+    '문서 표에서 …bytes / …size 필드는 1.2 MB, _ms로 끝나는 필드는 1.23 s처럼 표시합니다. 원래 값은 툴팁에 있습니다.',
   'settings.section.time': '날짜 및 시간',
   'settings.dateFormat': '날짜 형식',
-  'settings.dateFormat.hint': '표시되는 모든 날짜의 패턴: YYYY MM DD HH mm ss SSS, ddd / dddd(요일), MMM / MMMM(월 이름), A(AM/PM), Z(오프셋), [text]는 그대로 출력.',
+  'settings.dateFormat.hint':
+    '표시되는 모든 날짜의 패턴: YYYY MM DD HH mm ss SSS, ddd / dddd(요일), MMM / MMMM(월 이름), A(AM/PM), Z(오프셋), [text]는 그대로 출력.',
   'settings.preview': '미리보기: {value}',
   'settings.timeZone': '시간대',
-  'settings.timeZone.hint': 'Asia/Seoul, UTC 같은 IANA 이름. 비워 두면 브라우저 시간대({browser})를 사용합니다. 날짜 표시, 절대 시간 선택기, "now/d" 반올림에 적용됩니다.',
+  'settings.timeZone.hint':
+    'Asia/Seoul, UTC 같은 IANA 이름. 비워 두면 브라우저 시간대({browser})를 사용합니다. 날짜 표시, 절대 시간 선택기, "now/d" 반올림에 적용됩니다.',
   'settings.scaled': '간격별 날짜 형식',
   'settings.scaled.hint':
     '[ISO 8601 기간, 패턴]의 JSON 목록: 날짜 히스토그램의 툴팁과 표에서 버킷 폭이 해당 기간 이상일 때 사용하는 패턴입니다(""는 1초 미만). 축 레이블은 표시 범위에 맞춰 자동으로 선택됩니다.',
   'settings.dow': '주의 시작 요일',
   'settings.dow.hint': '"now/w" 범위와 주 단위 버킷에 사용하는 한 주의 첫 요일.',
   'settings.quickRanges': '시간 필터 빠른 범위',
-  'settings.quickRanges.hint': 'date-math 구문의 {"from", "to", "display"} JSON 목록. "display"를 생략하면 UI 언어로 레이블이 자동 생성됩니다.',
+  'settings.quickRanges.hint':
+    'date-math 구문의 {"from", "to", "display"} JSON 목록. "display"를 생략하면 UI 언어로 레이블이 자동 생성됩니다.',
   'settings.reset': '기본값으로 되돌리기',
   'settings.saved': '저장했습니다.',
   'settings.backup': '백업',
@@ -97,7 +103,8 @@ export const ko: Messages = {
 
   // ---- Data source page ----
   'ds.title': '데이터 소스',
-  'ds.intro': '파일은 호스팅하는 스토리지에서 직접, 쿼리에 필요한 부분만 읽습니다. 다른 곳으로는 아무것도 전송되지 않습니다.',
+  'ds.intro':
+    '파일은 호스팅하는 스토리지에서 직접, 쿼리에 필요한 부분만 읽습니다. 다른 곳으로는 아무것도 전송되지 않습니다.',
   'ds.kind.url': 'S3 / HTTPS URL',
   'ds.kind.url.sub': 's3://bucket/prefix/*.parquet 또는 https://…',
   'ds.kind.local': '로컬 파일',
@@ -172,8 +179,10 @@ export const ko: Messages = {
   'ds.local.selected': '파일 {n}개: {names}',
   'ds.local.clear': '지우기',
   'ds.local.remembered': '기억됨: {names}. 연결하면 브라우저가 읽기 권한을 다시 요청합니다.',
-  'ds.local.hint': '파일은 브라우저 File API로 그 자리에서 읽으며 업로드되지 않습니다. 여기서 선택한 항목은 최근 소스에 기억되며, 재시작 후에는 브라우저가 읽기 권한을 다시 요청합니다.',
-  'ds.demo.hint': '합성 액세스 로그 테이블(host/http/geo 구조체, tags 목록, JSON extra 열)이 DuckDB에서 생성되므로 스토리지 없이 모든 기능을 사용해 볼 수 있습니다.',
+  'ds.local.hint':
+    '파일은 브라우저 File API로 그 자리에서 읽으며 업로드되지 않습니다. 여기서 선택한 항목은 최근 소스에 기억되며, 재시작 후에는 브라우저가 읽기 권한을 다시 요청합니다.',
+  'ds.demo.hint':
+    '합성 액세스 로그 테이블(host/http/geo 구조체, tags 목록, JSON extra 열)이 DuckDB에서 생성되므로 스토리지 없이 모든 기능을 사용해 볼 수 있습니다.',
   'ds.connect': '연결',
   'ds.connecting': '연결 중…',
   'ds.listAndConnect': '값 나열 후 연결',
@@ -183,14 +192,16 @@ export const ko: Messages = {
   'ds.connected.fields': ' · 필드 {n}개',
   'ds.timeField.label': '시간 필드 (시간 선택기와 히스토그램에 사용)',
   'ds.timeField.none': '(없음 – 시간 필터링 안 함)',
-  'ds.connected.rangeDependent': '이 소스는 날짜 토큰을 사용합니다. 시간 범위가 바뀔 때마다 파일 목록을 다시 확인합니다. ',
+  'ds.connected.rangeDependent':
+    '이 소스는 날짜 토큰을 사용합니다. 시간 범위가 바뀔 때마다 파일 목록을 다시 확인합니다. ',
   'ds.connected.captures': '파일 이름에서 캡처한 열: {names} (이 열로 필터링하면 파일 목록도 줄어듭니다).',
   'ds.connected.large':
     '일치한 파일의 총 크기는 {mb} MB입니다. 텍스트 / gzip 파일은 전체를 하나씩 순서대로 가져오므로 이 범위의 첫 쿼리는 느립니다. 시간 범위를 좁히거나 넓은 범위를 시간별 Parquet으로 변환하세요 (scripts/alb-to-parquet.sh).',
   'ds.connected.files': '파일 ({n})',
   'ds.connected.fieldsTitle': '필드',
   'ds.hosts.title': '허용된 호스트',
-  'ds.hosts.hint': '이 확장 프로그램이 읽을 수 있는 호스트입니다. AWS 엔드포인트는 기본적으로 허용되며, 그 외 호스트는 연결 시 요청합니다.',
+  'ds.hosts.hint':
+    '이 확장 프로그램이 읽을 수 있는 호스트입니다. AWS 엔드포인트는 기본적으로 허용되며, 그 외 호스트는 연결 시 요청합니다.',
   'ds.hosts.revoke': '취소',
   'ds.history.title': '최근 소스',
   'ds.history.hint':
@@ -201,15 +212,18 @@ export const ko: Messages = {
 
   // ---- Local range cache panel ----
   'cache.title': '로컬 범위 캐시',
-  'cache.intro': '한 번 읽은 데이터는 이 컴퓨터에 보관되어 반복 쿼리 시 다시 다운로드하지 않습니다. 읽은 적 없는 부분만 가져옵니다. 스토리지에서 파일이 바뀌면 사본은 폐기됩니다.',
+  'cache.intro':
+    '한 번 읽은 데이터는 이 컴퓨터에 보관되어 반복 쿼리 시 다시 다운로드하지 않습니다. 읽은 적 없는 부분만 가져옵니다. 스토리지에서 파일이 바뀌면 사본은 폐기됩니다.',
   'cache.opfsDisabled': '{error} – 캐시가 비활성화되어 모든 읽기가 원본으로 갑니다.',
-  'cache.readOnly': '다른 Duckdive 탭이 캐시를 보유하고 있습니다. 이 탭은 저장된 데이터를 읽고 나머지는 저장하지 않고 다운로드합니다. 캐시 설정과 지우기는 그 탭에서 하세요.',
+  'cache.readOnly':
+    '다른 Duckdive 탭이 캐시를 보유하고 있습니다. 이 탭은 저장된 데이터를 읽고 나머지는 저장하지 않고 다운로드합니다. 캐시 설정과 지우기는 그 탭에서 하세요.',
   'cache.enable': '범위 캐시 사용',
   'cache.chunkSize': '청크 크기 (새 파일)',
   'cache.maxBytes': '최대 보관 용량',
   'cache.unlimited': '제한 없음',
   'cache.session': '이번 세션',
-  'cache.session.text': 'DuckDB 읽기 {total}: 디스크에서 {fromCache} ({ratio}%) · 원본에서 {downloaded} 다운로드 ({misses}개 청크) · 청크 적중 {hits}회 · 패스스루 {passthrough}회',
+  'cache.session.text':
+    'DuckDB 읽기 {total}: 디스크에서 {fromCache} ({ratio}%) · 원본에서 {downloaded} 다운로드 ({misses}개 청크) · 청크 적중 {hits}회 · 패스스루 {passthrough}회',
   'cache.storage': '스토리지',
   'cache.storage.text': '할당량 {quota} 중 {used} 사용 · {mode}',
   'cache.storage.persistent': '영구',
@@ -245,7 +259,8 @@ export const ko: Messages = {
   'disc.saved.placeholder': '이름(비우면 쿼리 문자열)',
   'disc.saved.untitled': '검색 {n}',
   'disc.saved.none': '아직 저장된 항목이 없습니다. 저장된 검색은 이 브라우저(localStorage)에 보관됩니다.',
-  'disc.cacheHint': '{error}\n\n아래의 "{button}"으로 DuckDB가 거부하는 파일을 찾아 검사하세요. 캐시가 의심되면: 데이터 소스 → 로컬 범위 캐시 → "{clear}" 또는 "{enable}" 체크 해제.',
+  'disc.cacheHint':
+    '{error}\n\n아래의 "{button}"으로 DuckDB가 거부하는 파일을 찾아 검사하세요. 캐시가 의심되면: 데이터 소스 → 로컬 범위 캐시 → "{clear}" 또는 "{enable}" 체크 해제.',
 
   // ---- export (Discover) ----
   'exp.button': '내보내기',
@@ -264,7 +279,8 @@ export const ko: Messages = {
   'share.title': '이 보기의 링크',
   'share.copied': '링크를 복사했습니다',
   'share.copiedNoSource': '복사했습니다(로컬 파일 제외)',
-  'share.hint': '링크에는 쿼리, 필터, 시간 범위, 차트와 비밀 정보를 뺀 데이터 소스가 담깁니다. 사용자 지정 SQL 필터는 받는 쪽에서 비활성 상태로 표시됩니다.',
+  'share.hint':
+    '링크에는 쿼리, 필터, 시간 범위, 차트와 비밀 정보를 뺀 데이터 소스가 담깁니다. 사용자 지정 SQL 필터는 받는 쪽에서 비활성 상태로 표시됩니다.',
   'share.hintNoSource': '로컬 파일은 링크에 담을 수 없습니다. 받는 사람이 직접 선택해야 합니다.',
 
   // ---- SQL page ----
@@ -273,12 +289,14 @@ export const ko: Messages = {
   'sql.currentSearch': '현재 검색 조건',
   'sql.history': '기록',
   'sql.noHistory': '아직 실행한 문이 없습니다.',
-  'sql.hint': '연결된 소스를 담은 뷰 {view}에 대해 한 문을 실행합니다. 결과는 이 컴퓨터를 벗어나지 않습니다. {key}로 실행합니다.',
+  'sql.hint':
+    '연결된 소스를 담은 뷰 {view}에 대해 한 문을 실행합니다. 결과는 이 컴퓨터를 벗어나지 않습니다. {key}로 실행합니다.',
   'sql.rows': '{n}행 · {ms} ms',
   'sql.showAll': '전체 {n}행 표시',
 
   // ---- dashboard ----
-  'dash.hint': '위의 검색 조건과 시간 범위로 저장된 시각화를 나란히 표시합니다. 차트를 클릭하면 모두에 필터나 확대가 적용됩니다.',
+  'dash.hint':
+    '위의 검색 조건과 시간 범위로 저장된 시각화를 나란히 표시합니다. 차트를 클릭하면 모두에 필터나 확대가 적용됩니다.',
   'dash.add': '시각화 추가',
   'dash.allAdded': '저장된 시각화가 모두 대시보드에 있습니다.',
   'dash.noneSaved': '아직 저장된 항목이 없습니다. 먼저 시각화 페이지에서 시각화를 저장하세요.',
@@ -290,7 +308,8 @@ export const ko: Messages = {
   // ---- log patterns ----
   'pat.button': '패턴',
   'pat.title': '메시지 패턴',
-  'pat.hint': '숫자, IP 주소, 긴 16진수 ID, UUID를 <n>, <ip>, <hex>, <uuid>로 바꾸고 남은 문자열로 묶습니다. "+"는 그 패턴의 행만 남깁니다(사용자 지정 SQL 필터).',
+  'pat.hint':
+    '숫자, IP 주소, 긴 16진수 ID, UUID를 <n>, <ip>, <hex>, <uuid>로 바꾸고 남은 문자열로 묶습니다. "+"는 그 패턴의 행만 남깁니다(사용자 지정 SQL 필터).',
   'pat.showing': '{total}개 레코드의 패턴 {n}종',
   'pat.count': '건수',
   'pat.pattern': '패턴과 예',
@@ -380,7 +399,8 @@ export const ko: Messages = {
   // ---- diagnose panel ----
   'diag.find': '실패한 파일 찾기',
   'diag.finding': '실패한 파일을 찾는 중…',
-  'diag.hint': '연결된 파일을 count(*) 쿼리로 이분 탐색하고 각 원인 파일의 바이트를 검사합니다 (원인 파일당 약 두 번의 전체 스캔).',
+  'diag.hint':
+    '연결된 파일을 count(*) 쿼리로 이분 탐색하고 각 원인 파일의 바이트를 검사합니다 (원인 파일당 약 두 번의 전체 스캔).',
   'diag.cancelled': '취소됨 (소스가 다시 연결되었습니다)',
   'diag.allOk':
     '방금 {n}개 파일 모두 count(*)로 정상적으로 읽혔습니다. 오류는 일시적이거나 (네트워크나 캐시의 잘못된 응답: 데이터 소스 → 로컬 범위 캐시의 요청 로그 참조) 실패한 쿼리에 한정된 것입니다.',
@@ -390,7 +410,8 @@ export const ko: Messages = {
   'diag.sizeText': '나열됨 {listed} / 읽음 {read}',
   'diag.mismatch': ' (불일치: 나열된 후 객체가 변경됨)',
   'diag.firstBytes': '첫 바이트',
-  'diag.gzipText': 'magic {magic}, method {method}, flags 0x{flags}, trailer ISIZE {isize}, 브라우저 inflate {inflated}, members {members}',
+  'diag.gzipText':
+    'magic {magic}, method {method}, flags 0x{flags}, trailer ISIZE {isize}, 브라우저 inflate {inflated}, members {members}',
   'diag.ok': '정상',
   'diag.bad': '불량',
   'diag.inflateFailed': '실패 ({error})',
@@ -409,7 +430,8 @@ export const ko: Messages = {
   'doc.copyJson': 'JSON 복사',
   'doc.copied': '복사했습니다',
   'doc.context': '앞뒤 기록',
-  'doc.context.hint': '쿼리나 필터와 상관없이 시간순으로 이 레코드 앞뒤에 있는 레코드입니다. 같은 시각의 레코드는 강조됩니다.',
+  'doc.context.hint':
+    '쿼리나 필터와 상관없이 시간순으로 이 레코드 앞뒤에 있는 레코드입니다. 같은 시각의 레코드는 강조됩니다.',
   'doc.context.more': '{n}개 더',
   'doc.filterFor': '이 값으로 필터링',
   'doc.filterOut': '이 값 제외',
@@ -484,9 +506,12 @@ export const ko: Messages = {
   'q.help.not': '부정. +term: 필수',
   'q.help.bool': '불리언 연산자 AND, OR, NOT (대문자), &&, ||, !. 인접한 항은 OR로 결합됩니다.',
   'q.help.datemath': '날짜 필드의 범위에는 날짜 연산을 쓸 수 있습니다: now, now-1h, now/d(그날의 시작), now-1d/d',
-  'q.helpNote': '중첩 구조체 / JSON 필드는 점 경로를 사용합니다 (geo.country, extra.user_id). 특수 문자는 \\로 이스케이프하세요 (path:\\/api\\/v1). {enter}를 눌러 실행합니다.',
-  'q.completeNote': '입력하는 동안 필드 이름이 제안됩니다. {tab}으로 강조된 항목을 넣습니다. 빈 칸에서는 최근 쿼리를 보여 줍니다.',
-  'q.shortcuts': '단축키: {slash}로 어디서든 검색창에 포커스, {prev}와 {next}로 시간 범위를 그 길이만큼 앞뒤로 이동합니다.',
+  'q.helpNote':
+    '중첩 구조체 / JSON 필드는 점 경로를 사용합니다 (geo.country, extra.user_id). 특수 문자는 \\로 이스케이프하세요 (path:\\/api\\/v1). {enter}를 눌러 실행합니다.',
+  'q.completeNote':
+    '입력하는 동안 필드 이름이 제안됩니다. {tab}으로 강조된 항목을 넣습니다. 빈 칸에서는 최근 쿼리를 보여 줍니다.',
+  'q.shortcuts':
+    '단축키: {slash}로 어디서든 검색창에 포커스, {prev}와 {next}로 시간 범위를 그 길이만큼 앞뒤로 이동합니다.',
   'q.running': '실행 중…',
   'q.refresh': '새로 고침',
   'q.autoRefresh': '자동 새로 고침',
@@ -565,25 +590,30 @@ export const ko: Messages = {
 
   // ---- data source templates ----
   'tpl.alb.label': 'ALB 액세스 로그',
-  'tpl.alb.note': 'account / region / alb가 열이 됩니다. alb로 필터링하면 로드 밸런서 하나만 읽습니다. 버킷 접두사를 설정했다면 AWSLogs 앞에 추가하세요.',
+  'tpl.alb.note':
+    'account / region / alb가 열이 됩니다. alb로 필터링하면 로드 밸런서 하나만 읽습니다. 버킷 접두사를 설정했다면 AWSLogs 앞에 추가하세요.',
   'tpl.alb-parquet.label': 'Parquet으로 변환한 ALB 액세스 로그 (scripts/alb-to-parquet.sh)',
   'tpl.alb-parquet.note':
     'scripts/alb-to-parquet.sh가 쓴 시간별 Parquet: <prefix>/<alb>/dt=YYYY-MM-DD/hour=HH/data.parquet. dt와 hour가 파티션 열이 됩니다. 대상이 이미 로드 밸런서 하나를 가리키면 "{alb}/"를 제거하세요.',
   'tpl.nlb.label': 'NLB 액세스 로그',
   'tpl.nlb.note': 'TLS 리스너 로그만 해당 (공백 구분, 자동 감지). 필요하면 시간 필드를 직접 선택하세요.',
   'tpl.cloudfront.label': 'CloudFront 로그',
-  'tpl.cloudfront.note': '레거시 표준 로그 (#Fields 헤더가 있는 TSV). 로그가 버킷 루트에 있으면 "<prefix>/"를 제거하세요. date + time에서 "timestamp" 열이 파생됩니다.',
+  'tpl.cloudfront.note':
+    '레거시 표준 로그 (#Fields 헤더가 있는 TSV). 로그가 버킷 루트에 있으면 "<prefix>/"를 제거하세요. date + time에서 "timestamp" 열이 파생됩니다.',
   'tpl.cloudtrail.label': 'CloudTrail',
-  'tpl.cloudtrail.note': 'Record당 한 행 (eventTime, eventSource, eventName, userIdentity, requestParameters, …). 조직 트레일은 org id를 추가하세요: AWSLogs/o-xxxx/{account}/…',
+  'tpl.cloudtrail.note':
+    'Record당 한 행 (eventTime, eventSource, eventName, userIdentity, requestParameters, …). 조직 트레일은 org id를 추가하세요: AWSLogs/o-xxxx/{account}/…',
   'tpl.flowlogs.label': 'VPC Flow Logs',
   'tpl.flowlogs.note': '헤더가 있는 텍스트 (사용자 지정 형식도 가능). "start"(epoch 초)를 시간 필드로 사용합니다.',
   'tpl.flowlogs-parquet.label': 'VPC Flow Logs (Parquet, Hive 호환 접두사)',
   'tpl.flowlogs-parquet.note':
     '"Hive 호환 S3 접두사"와 시간별 파티션으로 전송된 Parquet 플로우 로그. Hive 옵션이 없으면 레이아웃은 AWSLogs/{account}/vpcflowlogs/{region}/{yyyy}/{MM}/{dd}/{HH}/*.log.parquet입니다. "start"(epoch 초)가 시간 필드입니다.',
   'tpl.waf.label': 'WAF 로그 (S3 전송)',
-  'tpl.waf.note': '요청당 한 줄의 JSON. "timestamp"(epoch 밀리초)가 시간 필드입니다. CloudFront 앞의 웹 ACL은 리전으로 "cloudfront"를 사용합니다.',
+  'tpl.waf.note':
+    '요청당 한 줄의 JSON. "timestamp"(epoch 밀리초)가 시간 필드입니다. CloudFront 앞의 웹 ACL은 리전으로 "cloudfront"를 사용합니다.',
   'tpl.netfw.label': 'Network Firewall 로그',
-  'tpl.netfw.note': 'log_type은 "alert" 또는 "flow"입니다 (필터링하거나 {log_type} 대신 이름을 직접 쓰세요). JSON 줄 형식. "event_timestamp"(epoch 초)가 시간 필드입니다.',
+  'tpl.netfw.note':
+    'log_type은 "alert" 또는 "flow"입니다 (필터링하거나 {log_type} 대신 이름을 직접 쓰세요). JSON 줄 형식. "event_timestamp"(epoch 초)가 시간 필드입니다.',
   'tpl.r53resolver.label': 'Route 53 Resolver 쿼리 로그',
   'tpl.r53resolver.note': 'DNS 쿼리당 한 줄의 JSON. "query_timestamp"가 시간 필드입니다.',
   'tpl.s3access.label': 'S3 서버 액세스 로그',
@@ -602,7 +632,8 @@ export const ko: Messages = {
   'tpl.cwlexport.note':
     '"Amazon S3로 데이터 내보내기"(create-export-task)로 생성된 파일: 로그 스트림당 폴더 하나, "timestamp message" 형식의 줄. 앞의 타임스탬프가 시간 필드가 되고 나머지는 "message"가 됩니다.',
   'tpl.ssm.label': 'SSM 세션 / 명령 로그',
-  'tpl.ssm.note': 'Session Manager 기록과 Run Command의 stdout/stderr는 비구조적입니다. 각 줄이 한 행이 되고 파일 이름은 _file에 들어갑니다. 시간 필드 없음.',
+  'tpl.ssm.note':
+    'Session Manager 기록과 Run Command의 stdout/stderr는 비구조적입니다. 각 줄이 한 행이 되고 파일 이름은 _file에 들어갑니다. 시간 필드 없음.',
 
   // ---- connect / listing (datasource.ts, s3list.ts) ----
   'src.listingValues': '값 나열 중… {done} / {total}',
@@ -610,7 +641,8 @@ export const ko: Messages = {
   'src.listingPrefixes': '파일 나열 중… {done} / {total} 접두사',
   'src.applyFailed': 'S3 설정 {key} 적용 실패: {error}',
   'src.placeholder': 'URL에 자리 표시자 {placeholder}가 남아 있습니다. 모든 <…>를 실제 값으로 바꾸세요',
-  'src.placeholderLong': 'URL에 자리 표시자 {placeholder}가 남아 있습니다. 모든 <…>를 실제 값(계정 ID, 리전, 로드 밸런서 이름)으로 바꾸세요',
+  'src.placeholderLong':
+    'URL에 자리 표시자 {placeholder}가 남아 있습니다. 모든 <…>를 실제 값(계정 ID, 리전, 로드 밸런서 이름)으로 바꾸세요',
   'src.dateNeedsRange': 'URL이 날짜 토큰을 사용합니다. 시간 범위가 필요합니다',
   'src.wildcardS3Only': '와일드카드는 s3:// URL에서만 지원됩니다 ({url}에는 나열 API가 없음)',
   'src.demo.progress': '데모 데이터 생성 중…',
@@ -633,7 +665,8 @@ export const ko: Messages = {
   'src.description.urls': 'URL {n}개: {first}{more}',
   'src.readingSchema': '스키마 읽는 중…',
   'src.counting': '행 수 계산 중…',
-  'src.tooManyObjects': '{bucket}/{prefix} 아래에 {max}개가 넘는 객체가 있습니다. 와일드카드 앞에 리터럴 접두사(예: 로드 밸런서 이름)를 추가하거나 시간 범위를 좁히세요',
+  'src.tooManyObjects':
+    '{bucket}/{prefix} 아래에 {max}개가 넘는 객체가 있습니다. 와일드카드 앞에 리터럴 접두사(예: 로드 밸런서 이름)를 추가하거나 시간 범위를 좁히세요',
   'src.tooManyPrefixes': '시간 범위가 너무 많은 접두사로 확장됩니다',
   'src.warning.many':
     '{files}개 파일({mb} MB)이 이 시간 범위에 일치하며, 경고 임계값 {max}를 초과합니다. 연결 자체는 아무것도 읽지 않지만 텍스트 / gzip 파일은 전체를 하나씩 순서대로 가져오므로 이 범위의 첫 쿼리는 느립니다. 시간 범위를 좁히거나(일 단위보다 시간 단위) 넓은 범위는 scripts/alb-to-parquet.sh로 시간별 Parquet으로 변환하세요.',

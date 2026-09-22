@@ -5,7 +5,11 @@ const LTSV_EXPR = `to_json(map_from_entries(list_transform(string_split(line, ch
 
 export const parquetFormat: FormatDef = { id: 'parquet', reader: (l, f) => `read_parquet(${l}${fn(f)})` };
 
-export const csvFormat: FormatDef = { id: 'csv', reader: (l, f) => `read_csv_auto(${l}${fn(f)})`, detect: /\.(csv|tsv|log|txt)(\.gz|\.zst)?$/ };
+export const csvFormat: FormatDef = {
+  id: 'csv',
+  reader: (l, f) => `read_csv_auto(${l}${fn(f)})`,
+  detect: /\.(csv|tsv|log|txt)(\.gz|\.zst)?$/,
+};
 
 export const jsonFormat: FormatDef = {
   id: 'json',

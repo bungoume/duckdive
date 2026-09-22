@@ -54,7 +54,14 @@ export const DEFAULT_SOURCE: SourceConfig = {
   urls: '',
   format: 'auto',
   naming: 'native',
-  s3: { region: 'ap-northeast-1', accessKeyId: '', secretAccessKey: '', sessionToken: '', endpoint: '', urlStyle: 'vhost' },
+  s3: {
+    region: 'ap-northeast-1',
+    accessKeyId: '',
+    secretAccessKey: '',
+    sessionToken: '',
+    endpoint: '',
+    urlStyle: 'vhost',
+  },
   authMode: 'static',
   oidc: DEFAULT_OIDC,
   maxFiles: 0,
@@ -73,7 +80,13 @@ export function loadSource(): SourceConfig {
     const raw = localStorage.getItem(LS_SOURCE);
     if (raw) {
       const o = JSON.parse(raw);
-      return { ...DEFAULT_SOURCE, ...o, timeField: decodeTimeField(o.timeField), s3: { ...DEFAULT_SOURCE.s3, ...(o.s3 ?? {}) }, oidc: { ...DEFAULT_OIDC, ...(o.oidc ?? {}) } };
+      return {
+        ...DEFAULT_SOURCE,
+        ...o,
+        timeField: decodeTimeField(o.timeField),
+        s3: { ...DEFAULT_SOURCE.s3, ...(o.s3 ?? {}) },
+        oidc: { ...DEFAULT_OIDC, ...(o.oidc ?? {}) },
+      };
     }
   } catch {
     /* ignore */
@@ -126,7 +139,14 @@ export function sourceKey(cfg: SourceConfig): string | null {
   if (cfg.kind === 'demo') return 'demo';
   if (cfg.kind === 'local') return cfg.localId ? JSON.stringify(['local', cfg.localId]) : null;
   if (cfg.kind !== 'url') return null;
-  return JSON.stringify(['url', sourceUrls(cfg).join('\n'), cfg.s3.endpoint, cfg.s3.region, cfg.s3.urlStyle, cfg.authMode]);
+  return JSON.stringify([
+    'url',
+    sourceUrls(cfg).join('\n'),
+    cfg.s3.endpoint,
+    cfg.s3.region,
+    cfg.s3.urlStyle,
+    cfg.authMode,
+  ]);
 }
 
 /** Use the link's data selection with this browser's already known authentication settings. */
@@ -140,7 +160,13 @@ function normalizeEntry(o: unknown): SourceHistoryEntry | null {
   const e = o as { config?: Partial<StoredSource>; lastUsed?: unknown };
   if (!e.config || typeof e.config !== 'object') return null;
   const c = e.config;
-  const config: SourceConfig = { ...DEFAULT_SOURCE, ...c, timeField: decodeTimeField(c.timeField), s3: { ...DEFAULT_SOURCE.s3, ...(c.s3 ?? {}) }, oidc: { ...DEFAULT_OIDC, ...(c.oidc ?? {}) } };
+  const config: SourceConfig = {
+    ...DEFAULT_SOURCE,
+    ...c,
+    timeField: decodeTimeField(c.timeField),
+    s3: { ...DEFAULT_SOURCE.s3, ...(c.s3 ?? {}) },
+    oidc: { ...DEFAULT_OIDC, ...(c.oidc ?? {}) },
+  };
   const key = sourceKey(config);
   if (!key) return null;
   return { key, lastUsed: typeof e.lastUsed === 'string' ? e.lastUsed : '', config };
@@ -165,7 +191,10 @@ export function loadSourceHistory(): SourceHistoryEntry[] {
 
 function storeSourceHistory(list: SourceHistoryEntry[]) {
   try {
-    localStorage.setItem(LS_SOURCES, JSON.stringify(list.map((entry) => ({ ...entry, config: encodeSource(entry.config) }))));
+    localStorage.setItem(
+      LS_SOURCES,
+      JSON.stringify(list.map((entry) => ({ ...entry, config: encodeSource(entry.config) }))),
+    );
   } catch {
     /* ignore */
   }
@@ -176,7 +205,10 @@ export function rememberSource(cfg: SourceConfig, now = new Date()): SourceHisto
   const key = sourceKey(cfg);
   const cur = loadSourceHistory();
   if (!key) return cur;
-  const list = [{ key, lastUsed: now.toISOString(), config: stripSecrets(cfg) }, ...cur.filter((e) => e.key !== key)].slice(0, SOURCE_HISTORY_MAX);
+  const list = [
+    { key, lastUsed: now.toISOString(), config: stripSecrets(cfg) },
+    ...cur.filter((e) => e.key !== key),
+  ].slice(0, SOURCE_HISTORY_MAX);
   storeSourceHistory(list);
   return list;
 }
@@ -195,7 +227,8 @@ const str = (v: unknown, fallback = '') => (typeof v === 'string' ? v : fallback
 /** The source as a link carries it: no secrets, no key ID, and never a local one (its files are on this machine). */
 export function shareableSource(cfg: SourceConfig): StoredSource | null {
   if (cfg.kind === 'local') return null;
-  if (cfg.kind === 'demo') return encodeSource({ ...DEFAULT_SOURCE, kind: 'demo', name: cfg.name || 'demo-logs', timeField: cfg.timeField });
+  if (cfg.kind === 'demo')
+    return encodeSource({ ...DEFAULT_SOURCE, kind: 'demo', name: cfg.name || 'demo-logs', timeField: cfg.timeField });
   return { ...encodeSource(cfg), s3: { ...cfg.s3, accessKeyId: '', secretAccessKey: '', sessionToken: '' } };
 }
 
@@ -271,19 +304,29 @@ const isTokenName = (k: string) => k !== '__proto__' && /^[A-Za-z_][A-Za-z0-9_]*
 /** A source from a link someone sent: every field checked, secrets and key IDs never taken; null when unusable. */
 export function sourceFromLink(raw: unknown): SourceConfig | null {
   if (!isObj(raw)) return null;
-  if (raw.kind === 'demo') return { ...DEFAULT_SOURCE, kind: 'demo', name: 'demo-logs', timeField: decodeTimeField(raw.timeField) };
+  if (raw.kind === 'demo')
+    return { ...DEFAULT_SOURCE, kind: 'demo', name: 'demo-logs', timeField: decodeTimeField(raw.timeField) };
   if (raw.kind !== 'url' || typeof raw.urls !== 'string' || !raw.urls.trim()) return null;
   const s3 = isObj(raw.s3) ? raw.s3 : {};
   const o = isObj(raw.oidc) ? raw.oidc : {};
   const tokenValues: Record<string, string[]> = {};
-  if (isObj(raw.tokenValues)) for (const [k, v] of Object.entries(raw.tokenValues)) if (isTokenName(k) && Array.isArray(v)) tokenValues[k] = v.filter((x): x is string => typeof x === 'string');
+  if (isObj(raw.tokenValues))
+    for (const [k, v] of Object.entries(raw.tokenValues))
+      if (isTokenName(k) && Array.isArray(v)) tokenValues[k] = v.filter((x): x is string => typeof x === 'string');
   return {
     kind: 'url',
     name: str(raw.name),
     urls: raw.urls,
     format: FORMAT_IDS.includes(raw.format as FormatId) ? (raw.format as FormatId) : 'auto',
     naming: NAMING_IDS.includes(raw.naming as Naming) ? (raw.naming as Naming) : 'native',
-    s3: { region: awsRegion(s3.region), accessKeyId: '', secretAccessKey: '', sessionToken: '', endpoint: str(s3.endpoint), urlStyle: s3.urlStyle === 'path' ? 'path' : 'vhost' },
+    s3: {
+      region: awsRegion(s3.region),
+      accessKeyId: '',
+      secretAccessKey: '',
+      sessionToken: '',
+      endpoint: str(s3.endpoint),
+      urlStyle: s3.urlStyle === 'path' ? 'path' : 'vhost',
+    },
     authMode: raw.authMode === 'none' || raw.authMode === 'oidc' ? raw.authMode : 'static',
     oidc: {
       // the region is part of the STS host name, so it is checked as strictly as the endpoint
@@ -317,7 +360,11 @@ export function describeSource(cfg: SourceConfig): string {
   if (cfg.authMode === 'oidc') {
     const idp = hostOf(cfg.oidc.authUrl);
     if (idp) parts.push(idp);
-    const sts = cfg.oidc.stsEndpoint ? hostOf(cfg.oidc.stsEndpoint) : cfg.oidc.region ? `sts.${cfg.oidc.region}.amazonaws.com` : 'sts.amazonaws.com';
+    const sts = cfg.oidc.stsEndpoint
+      ? hostOf(cfg.oidc.stsEndpoint)
+      : cfg.oidc.region
+        ? `sts.${cfg.oidc.region}.amazonaws.com`
+        : 'sts.amazonaws.com';
     if (sts) parts.push(sts);
     if (cfg.oidc.roleArn) parts.push(cfg.oidc.roleArn);
   }

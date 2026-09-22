@@ -33,7 +33,15 @@ const UNIT_MS: Record<string, number> = {
 /** Start of the unit that contains `d` (wall clock of `tz`), and the start of the next one. */
 function bounds(d: Date, unit: string, tz: string, dayOfWeek: number): [Date, Date] | null {
   const p = zonedParts(d, tz);
-  const w: WallTime = { year: p.year, month: p.month, day: p.day, hour: p.hour, minute: p.minute, second: p.second, ms: 0 };
+  const w: WallTime = {
+    year: p.year,
+    month: p.month,
+    day: p.day,
+    hour: p.hour,
+    minute: p.minute,
+    second: p.second,
+    ms: 0,
+  };
   switch (unit) {
     case 's':
     case 'm':
@@ -79,12 +87,21 @@ function roundDate(d: Date, unit: string, roundUp: boolean, tz: string, dayOfWee
 /** Add calendar months / years on the wall clock (so 31 Jan + 1 month → 3 Mar, like Date.setMonth). */
 function addCalendar(d: Date, unit: 'M' | 'y', n: number, tz: string): Date {
   const p = zonedParts(d, tz);
-  const w: WallTime = { year: p.year + (unit === 'y' ? n : 0), month: p.month + (unit === 'M' ? n : 0), day: p.day, hour: p.hour, minute: p.minute, second: p.second, ms: p.ms };
+  const w: WallTime = {
+    year: p.year + (unit === 'y' ? n : 0),
+    month: p.month + (unit === 'M' ? n : 0),
+    day: p.day,
+    hour: p.hour,
+    minute: p.minute,
+    second: p.second,
+    ms: p.ms,
+  };
   return zonedToUtc(w, tz);
 }
 
 // YYYY-MM-DD, optionally with a time, optionally with a trailing Z or ±HH:MM.
-const ABSOLUTE = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3})\d*)?)?)?\s*(Z|[+-]\d{2}:?(?:\d{2})?)?$/i;
+const ABSOLUTE =
+  /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3})\d*)?)?)?\s*(Z|[+-]\d{2}:?(?:\d{2})?)?$/i;
 
 /**
  * An absolute timestamp a person typed. With a trailing Z or offset it names an instant; without
@@ -96,10 +113,22 @@ export function parseAbsolute(s: string, tz = effectiveTimeZone()): Date | null 
   const m = ABSOLUTE.exec(s.trim());
   if (!m) return null;
   const [, y, mo, da, hh, mi, se, frac, zone] = m;
-  const w: WallTime = { year: +y, month: +mo, day: +da, hour: +(hh ?? 0), minute: +(mi ?? 0), second: +(se ?? 0), ms: Number((frac ?? '').padEnd(3, '0')) };
-  if (w.month < 1 || w.month > 12 || w.day < 1 || w.day > 31 || w.hour > 23 || w.minute > 59 || w.second > 59) return null;
+  const w: WallTime = {
+    year: +y,
+    month: +mo,
+    day: +da,
+    hour: +(hh ?? 0),
+    minute: +(mi ?? 0),
+    second: +(se ?? 0),
+    ms: Number((frac ?? '').padEnd(3, '0')),
+  };
+  if (w.month < 1 || w.month > 12 || w.day < 1 || w.day > 31 || w.hour > 23 || w.minute > 59 || w.second > 59)
+    return null;
   if (!zone) return zonedToUtc(w, tz);
-  const offset = zone.toUpperCase() === 'Z' ? 0 : (zone[0] === '-' ? -1 : 1) * (Number(zone.slice(1, 3)) * 60 + Number(zone.slice(3).replace(':', '') || 0));
+  const offset =
+    zone.toUpperCase() === 'Z'
+      ? 0
+      : (zone[0] === '-' ? -1 : 1) * (Number(zone.slice(1, 3)) * 60 + Number(zone.slice(3).replace(':', '') || 0));
   return new Date(Date.UTC(w.year, w.month - 1, w.day, w.hour, w.minute, w.second, w.ms) - offset * 60_000);
 }
 
@@ -166,7 +195,15 @@ export function quickRangeLabel(q: QuickRange): string {
   return autoLabel(q) ?? `${q.from} → ${q.to}`;
 }
 
-const UNIT_KEY: Record<string, MsgKey> = { s: 'tp.unit.s', m: 'tp.unit.m', h: 'tp.unit.h', d: 'tp.unit.d', w: 'tp.unit.w', M: 'tp.unit.M', y: 'tp.unit.y' };
+const UNIT_KEY: Record<string, MsgKey> = {
+  s: 'tp.unit.s',
+  m: 'tp.unit.m',
+  h: 'tp.unit.h',
+  d: 'tp.unit.d',
+  w: 'tp.unit.w',
+  M: 'tp.unit.M',
+  y: 'tp.unit.y',
+};
 
 function autoLabel(r: TimeRange): string | null {
   if (r.from === 'now/d' && r.to === 'now/d') return t('range.today');
@@ -204,5 +241,13 @@ export function toDatetimeLocal(d: Date): string {
 export function fromDatetimeLocal(s: string): Date | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/.exec(s);
   if (!m) return null;
-  return zonedToUtc({ year: Number(m[1]), month: Number(m[2]), day: Number(m[3]), hour: Number(m[4]), minute: Number(m[5]), second: Number(m[6] ?? 0), ms: 0 });
+  return zonedToUtc({
+    year: Number(m[1]),
+    month: Number(m[2]),
+    day: Number(m[3]),
+    hour: Number(m[4]),
+    minute: Number(m[5]),
+    second: Number(m[6] ?? 0),
+    ms: 0,
+  });
 }

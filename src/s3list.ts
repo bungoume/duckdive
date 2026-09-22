@@ -38,7 +38,9 @@ async function sha256(s: string): Promise<string> {
   return toHex(await crypto.subtle.digest('SHA-256', enc.encode(s)));
 }
 async function hmac(key: ArrayBuffer | Uint8Array, msg: string): Promise<ArrayBuffer> {
-  const k = await crypto.subtle.importKey('raw', key as BufferSource, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const k = await crypto.subtle.importKey('raw', key as BufferSource, { name: 'HMAC', hash: 'SHA-256' }, false, [
+    'sign',
+  ]);
   return crypto.subtle.sign('HMAC', k, enc.encode(msg));
 }
 function rfc3986(s: string): string {
@@ -66,7 +68,8 @@ export function endpointStyle(s3: S3Config): { pathStyle: boolean; endpoint: str
 
 export function s3Target(bucket: string, s3: S3Config): S3Target {
   const { pathStyle, endpoint } = endpointStyle(s3);
-  if (pathStyle) return { bucket, baseUrl: `${endpoint}/${bucket}`, canonicalBase: `/${bucket}/`, host: new URL(endpoint).host };
+  if (pathStyle)
+    return { bucket, baseUrl: `${endpoint}/${bucket}`, canonicalBase: `/${bucket}/`, host: new URL(endpoint).host };
   return { bucket, baseUrl: `https://${bucket}.${endpoint}`, canonicalBase: '/', host: `${bucket}.${endpoint}` };
 }
 
@@ -103,13 +106,30 @@ async function signingKey(creds: AwsCredentials, date: string, region: string): 
  * SigV4 (service s3) headers for a GET with an empty body. `canonicalUri` is the encoded path
  * and `qs` the canonical query string (sorted, RFC 3986 encoded; '' when none).
  */
-async function sigv4Get(target: S3Target, canonicalUri: string, qs: string, region: string, creds: AwsCredentials): Promise<Record<string, string>> {
+async function sigv4Get(
+  target: S3Target,
+  canonicalUri: string,
+  qs: string,
+  region: string,
+  creds: AwsCredentials,
+): Promise<Record<string, string>> {
   const { date, datetime } = amzDate();
   const rg = region || 'us-east-1';
-  const headers: Record<string, string> = { host: target.host, 'x-amz-content-sha256': EMPTY_SHA256, 'x-amz-date': datetime };
+  const headers: Record<string, string> = {
+    host: target.host,
+    'x-amz-content-sha256': EMPTY_SHA256,
+    'x-amz-date': datetime,
+  };
   if (creds.sessionToken) headers['x-amz-security-token'] = creds.sessionToken;
   const signedHeaders = Object.keys(headers).sort();
-  const canonical = ['GET', canonicalUri, qs, signedHeaders.map((h) => `${h}:${headers[h]}\n`).join(''), signedHeaders.join(';'), EMPTY_SHA256].join('\n');
+  const canonical = [
+    'GET',
+    canonicalUri,
+    qs,
+    signedHeaders.map((h) => `${h}:${headers[h]}\n`).join(''),
+    signedHeaders.join(';'),
+    EMPTY_SHA256,
+  ].join('\n');
   const scope = `${date}/${rg}/s3/aws4_request`;
   const sts = ['AWS4-HMAC-SHA256', datetime, scope, await sha256(canonical)].join('\n');
   const signature = toHex(await hmac(await signingKey(creds, date, rg), sts));
@@ -120,7 +140,12 @@ async function sigv4Get(target: S3Target, canonicalUri: string, qs: string, regi
 }
 
 /** Sign a GET of the bucket (ListObjectsV2). Returns the URL to fetch and the headers to send. */
-async function signGet(target: S3Target, query: Record<string, string>, region: string, creds: AwsCredentials | null): Promise<{ url: string; headers: Record<string, string> }> {
+async function signGet(
+  target: S3Target,
+  query: Record<string, string>,
+  region: string,
+  creds: AwsCredentials | null,
+): Promise<{ url: string; headers: Record<string, string> }> {
   const qs = Object.keys(query)
     .sort()
     .map((k) => `${rfc3986(k)}=${rfc3986(query[k])}`)
@@ -156,7 +181,9 @@ export async function listObjects(
     const text = await res.text();
     if (!res.ok) {
       const m = /<Code>([^<]+)<\/Code>(?:.*?<Message>([^<]+)<\/Message>)?/s.exec(text);
-      throw new Error(`S3 ListObjectsV2 ${res.status} for ${target.bucket}/${prefix}: ${m ? `${m[1]} ${m[2] ?? ''}` : text.slice(0, 200)}`);
+      throw new Error(
+        `S3 ListObjectsV2 ${res.status} for ${target.bucket}/${prefix}: ${m ? `${m[1]} ${m[2] ?? ''}` : text.slice(0, 200)}`,
+      );
     }
     const doc = new DOMParser().parseFromString(text, 'application/xml');
     for (const c of Array.from(doc.getElementsByTagName('Contents'))) {
@@ -168,7 +195,8 @@ export async function listObjects(
         lastModified: c.getElementsByTagName('LastModified')[0]?.textContent ?? '',
         etag: c.getElementsByTagName('ETag')[0]?.textContent ?? '',
       });
-      if (objects.length >= maxObjects) throw new Error(tr('src.tooManyObjects', { max: maxObjects, bucket: target.bucket, prefix }));
+      if (objects.length >= maxObjects)
+        throw new Error(tr('src.tooManyObjects', { max: maxObjects, bucket: target.bucket, prefix }));
     }
     for (const p of Array.from(doc.getElementsByTagName('CommonPrefixes'))) {
       const pf = p.getElementsByTagName('Prefix')[0]?.textContent;
@@ -352,12 +380,18 @@ export function parseS3Url(url: string): { bucket: string; key: string } | null 
 }
 
 /** Expand one s3:// glob pattern (without date tokens) into object keys. */
-export async function expandS3Glob(url: string, s3: S3Config, creds: AwsCredentials | null, signal?: AbortSignal | null): Promise<S3Object[]> {
+export async function expandS3Glob(
+  url: string,
+  s3: S3Config,
+  creds: AwsCredentials | null,
+  signal?: AbortSignal | null,
+): Promise<S3Object[]> {
   const parsed = parseS3Url(url);
   if (!parsed) throw new Error(`Not an s3:// URL: ${url}`);
   const target = s3Target(parsed.bucket, s3);
   const segments = parsed.key.split('/');
-  const list = (prefix: string, delimiter: '/' | '') => listObjects(target, s3.region, creds, prefix, delimiter, undefined, signal);
+  const list = (prefix: string, delimiter: '/' | '') =>
+    listObjects(target, s3.region, creds, prefix, delimiter, undefined, signal);
   // Each level lists its matching "directories" in parallel; results keep the listing order.
   const walk = async (prefix: string, idx: number): Promise<S3Object[]> => {
     throwIfAborted(signal);
@@ -370,7 +404,9 @@ export async function expandS3Glob(url: string, s3: S3Config, creds: AwsCredenti
     if (seg === '**') {
       const { objects } = await list(p, '');
       const rest = segments.slice(i + 1);
-      const restRe = rest.length ? new RegExp(rest.map((r) => globSegmentToRegex(r).source.slice(1, -1)).join('/') + '$') : null;
+      const restRe = rest.length
+        ? new RegExp(rest.map((r) => globSegmentToRegex(r).source.slice(1, -1)).join('/') + '$')
+        : null;
       return objects.filter((o) => !restRe || restRe.test(o.key.slice(p.length)));
     }
     // S3 prefixes are not directory-bound: the literal text before the first wildcard
@@ -499,7 +535,8 @@ export async function discoverTokenValues(
   let listedFiles = 0;
   opts.onProgress?.(0, jobs.length);
   const listed = await mapLimit(jobs, LIST_CONCURRENCY, async ({ concrete }) => {
-    const found = HAS_WILDCARD.test(concrete) && parseS3Url(concrete) ? await expandS3Glob(concrete, s3, creds, opts.signal) : [];
+    const found =
+      HAS_WILDCARD.test(concrete) && parseS3Url(concrete) ? await expandS3Glob(concrete, s3, creds, opts.signal) : [];
     opts.onProgress?.(++done, jobs.length);
     return found;
   });
@@ -516,7 +553,10 @@ export async function discoverTokenValues(
     }
   });
   const values: Record<string, TokenValue[]> = {};
-  for (const [n, m] of Object.entries(counts)) values[n] = [...m.entries()].map(([value, files]) => ({ value, files })).sort((a, b) => a.value.localeCompare(b.value));
+  for (const [n, m] of Object.entries(counts))
+    values[n] = [...m.entries()]
+      .map(([value, files]) => ({ value, files }))
+      .sort((a, b) => a.value.localeCompare(b.value));
   return { values, listedFiles };
 }
 
@@ -544,7 +584,8 @@ export async function resolveS3Patterns(
   // Selected token values become literals in the listing prefix (fewer, narrower listings);
   // anything not substituted is still enforced by the value filter below.
   const filters: Record<string, string[]> = { ...selections };
-  for (const [n, vals] of Object.entries(valueFilters)) filters[n] = filters[n] ? filters[n].filter((v) => vals.includes(v)) : vals;
+  for (const [n, vals] of Object.entries(valueFilters))
+    filters[n] = filters[n] ? filters[n].filter((v) => vals.includes(v)) : vals;
   for (const original of patterns) {
     const cap = captureRegex(original);
     for (const sub of substituteTokens(original, selections)) {
@@ -607,7 +648,11 @@ export async function resolveS3Patterns(
   let warning: string | null = null;
   if (files.length > maxFiles) {
     const bytes = files.reduce((a, f) => a + (f.metadata?.size ?? 0), 0);
-    warning = tr('src.warning.many', { files: files.length.toLocaleString(), mb: (bytes / 1048576).toFixed(0), max: maxFiles.toLocaleString() });
+    warning = tr('src.warning.many', {
+      files: files.length.toLocaleString(),
+      mb: (bytes / 1048576).toFixed(0),
+      max: maxFiles.toLocaleString(),
+    });
   }
   return { files, patterns: jobs.length, skippedByTime, skippedByFilter, timePruned, warning };
 }

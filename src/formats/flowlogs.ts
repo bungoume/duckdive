@@ -12,12 +12,21 @@ const FLOWLOGS_OTEL: OtelByName = {
     dstport: [['destination.port', `TRY_CAST({} AS INTEGER)`]],
     // the IANA number stays: it names protocols that network.transport has no value for
     protocol: [
-      ['network.transport', `CASE TRY_CAST({} AS INTEGER) WHEN 1 THEN 'icmp' WHEN 6 THEN 'tcp' WHEN 17 THEN 'udp' WHEN 47 THEN 'gre' WHEN 58 THEN 'ipv6-icmp' WHEN 132 THEN 'sctp' END`],
+      [
+        'network.transport',
+        `CASE TRY_CAST({} AS INTEGER) WHEN 1 THEN 'icmp' WHEN 6 THEN 'tcp' WHEN 17 THEN 'udp' WHEN 47 THEN 'gre' WHEN 58 THEN 'ipv6-icmp' WHEN 132 THEN 'sctp' END`,
+      ],
       ['aws.vpc.flow.protocol'],
     ],
     // likewise EFA, which is neither of the two values network.type has
-    type: [['network.type', `CASE lower({}) WHEN 'ipv4' THEN 'ipv4' WHEN 'ipv6' THEN 'ipv6' END`], ['aws.vpc.flow.type']],
-    flow_direction: [['network.io.direction', `CASE lower({}) WHEN 'ingress' THEN 'receive' WHEN 'egress' THEN 'transmit' END`], ['aws.vpc.flow.flow_direction']],
+    type: [
+      ['network.type', `CASE lower({}) WHEN 'ipv4' THEN 'ipv4' WHEN 'ipv6' THEN 'ipv6' END`],
+      ['aws.vpc.flow.type'],
+    ],
+    flow_direction: [
+      ['network.io.direction', `CASE lower({}) WHEN 'ingress' THEN 'receive' WHEN 'egress' THEN 'transmit' END`],
+      ['aws.vpc.flow.flow_direction'],
+    ],
     // an account id is an identifier, not a number, whatever the reader made of the digits
     account_id: [['cloud.account.id', `TRY_CAST({} AS VARCHAR)`]],
     region: [['cloud.region']],

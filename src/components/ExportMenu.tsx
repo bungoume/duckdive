@@ -29,7 +29,15 @@ export function ExportMenu(props: {
     setBusy(true);
     setError(null);
     try {
-      const sql = exportDocsSql(props.where, props.timeField, props.timeExpr, props.fields, props.sort, props.columns, limit);
+      const sql = exportDocsSql(
+        props.where,
+        props.timeField,
+        props.timeExpr,
+        props.fields,
+        props.sort,
+        props.columns,
+        limit,
+      );
       downloadBlob(await exportToBlob(sql, format), exportFileName(format));
       setOpen(false);
     } catch (e) {
@@ -62,7 +70,14 @@ export function ExportMenu(props: {
           </select>
         </FormField>
         <FormField label={t('exp.rows')}>
-          <input class="input" type="number" min={1} max={MAX_ROWS} value={limit} onInput={(e) => setLimit(Math.min(MAX_ROWS, Math.max(1, Number(e.currentTarget.value) || 1)))} />
+          <input
+            class="input"
+            type="number"
+            min={1}
+            max={MAX_ROWS}
+            value={limit}
+            onInput={(e) => setLimit(Math.min(MAX_ROWS, Math.max(1, Number(e.currentTarget.value) || 1)))}
+          />
         </FormField>
         <p class="hint">{props.columns.length ? t('exp.hint.columns') : t('exp.hint.all')}</p>
         {error && <div class="alert error">{error}</div>}

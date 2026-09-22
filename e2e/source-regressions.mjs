@@ -15,7 +15,9 @@ for (const [tenant, n] of [
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'data.csv'), `ts,value\n2026-09-22T12:00:00Z,${n}\n`);
 }
-const server = spawn(process.execPath, [new URL('./range-server.mjs', import.meta.url).pathname, fixtures, '0'], { stdio: ['ignore', 'pipe', 'inherit'] });
+const server = spawn(process.execPath, [new URL('./range-server.mjs', import.meta.url).pathname, fixtures, '0'], {
+  stdio: ['ignore', 'pipe', 'inherit'],
+});
 let context;
 try {
   const port = await new Promise((resolve, reject) => {
@@ -60,7 +62,14 @@ try {
     naming: 'native',
     authMode: 'none',
     timeField: 'ts',
-    s3: { endpoint: `http://localhost:${port}`, region: 'us-east-1', urlStyle: 'path', accessKeyId: '', secretAccessKey: '', sessionToken: '' },
+    s3: {
+      endpoint: `http://localhost:${port}`,
+      region: 'us-east-1',
+      urlStyle: 'path',
+      accessKeyId: '',
+      secretAccessKey: '',
+      sessionToken: '',
+    },
     tokenValues: { tenant: ['acme'] },
     maxFiles: 0,
   };
@@ -69,11 +78,18 @@ try {
     localStorage.setItem('ddv.source', JSON.stringify(cfg));
     localStorage.setItem('ddv.sources', JSON.stringify([{ config: cfg, lastUsed: '2026-09-22' }]));
   }, known);
-  const state = { search: { query: '', range: { from: '2026-09-22T00:00:00Z', to: '2026-09-23T00:00:00Z' }, filters: [] } };
-  await page.goto(`${appUrl}?test=shared#/discover?s=${Buffer.from(JSON.stringify(state)).toString('base64url')}&src=${Buffer.from(JSON.stringify(shared)).toString('base64url')}`);
+  const state = {
+    search: { query: '', range: { from: '2026-09-22T00:00:00Z', to: '2026-09-23T00:00:00Z' }, filters: [] },
+  };
+  await page.goto(
+    `${appUrl}?test=shared#/discover?s=${Buffer.from(JSON.stringify(state)).toString('base64url')}&src=${Buffer.from(JSON.stringify(shared)).toString('base64url')}`,
+  );
   await waitReady(page);
   await settled(page);
-  const actual = await page.evaluate(async () => ({ rows: (await window.__ddv.query('SELECT value FROM src')).rows, saved: JSON.parse(localStorage.getItem('ddv.source')) }));
+  const actual = await page.evaluate(async () => ({
+    rows: (await window.__ddv.query('SELECT value FROM src')).rows,
+    saved: JSON.parse(localStorage.getItem('ddv.source')),
+  }));
   assert.deepEqual(actual.rows, [{ value: 2 }]);
   assert.deepEqual(actual.saved.tokenValues, { tenant: ['beta'] });
   assert.equal(actual.saved.name, 'beta');

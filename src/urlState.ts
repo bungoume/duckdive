@@ -16,7 +16,14 @@ function b64decode(s: string): string {
 export function readUrlState(): UrlState {
   const h = location.hash.replace(/^#\/?/, '');
   const [pageRaw, qs] = h.split('?');
-  const page: AppPage = pageRaw === 'visualize' || pageRaw === 'dashboard' || pageRaw === 'sql' || pageRaw === 'source' || pageRaw === 'settings' ? pageRaw : 'discover';
+  const page: AppPage =
+    pageRaw === 'visualize' ||
+    pageRaw === 'dashboard' ||
+    pageRaw === 'sql' ||
+    pageRaw === 'source' ||
+    pageRaw === 'settings'
+      ? pageRaw
+      : 'discover';
   let st: Record<string, unknown> = {};
   if (qs) {
     const p = new URLSearchParams(qs);

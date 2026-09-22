@@ -1,5 +1,20 @@
 export type FormatId =
-  'auto' | 'parquet' | 'csv' | 'json' | 'alb' | 'cloudfront' | 'cloudtrail' | 'flowlogs' | 's3access' | 'waf' | 'r53resolver' | 'gcplog' | 'cflogpush' | 'ltsv' | 'cwlexport' | 'lines';
+  | 'auto'
+  | 'parquet'
+  | 'csv'
+  | 'json'
+  | 'alb'
+  | 'cloudfront'
+  | 'cloudtrail'
+  | 'flowlogs'
+  | 's3access'
+  | 'waf'
+  | 'r53resolver'
+  | 'gcplog'
+  | 'cflogpush'
+  | 'ltsv'
+  | 'cwlexport'
+  | 'lines';
 
 /**
  * How a format is read under the OpenTelemetry names. `columns` is the whole projection, in

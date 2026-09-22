@@ -54,7 +54,13 @@ export function DiagnosePanel(props: { error: string | null }) {
           {report.allReadable ? (
             <div class="alert ok">{t('diag.allOk', { n: report.totalFiles })}</div>
           ) : (
-            <div class="alert warn">{t('diag.failing', { n: report.failing.length, queries: report.queries, truncated: report.truncated ? t('diag.truncated') : '' })}</div>
+            <div class="alert warn">
+              {t('diag.failing', {
+                n: report.failing.length,
+                queries: report.queries,
+                truncated: report.truncated ? t('diag.truncated') : '',
+              })}
+            </div>
           )}
           {report.failing.map((f) => (
             <div key={f.file} class="diag-file">
@@ -64,8 +70,13 @@ export function DiagnosePanel(props: { error: string | null }) {
                   <tr>
                     <td>{t('diag.size')}</td>
                     <td>
-                      {t('diag.sizeText', { listed: f.listedSize === null ? '?' : fmtBytes(f.listedSize), read: f.readSize === null ? '?' : fmtBytes(f.readSize) })}
-                      {f.listedSize !== null && f.readSize !== null && f.listedSize !== f.readSize ? t('diag.mismatch') : ''}
+                      {t('diag.sizeText', {
+                        listed: f.listedSize === null ? '?' : fmtBytes(f.listedSize),
+                        read: f.readSize === null ? '?' : fmtBytes(f.readSize),
+                      })}
+                      {f.listedSize !== null && f.readSize !== null && f.listedSize !== f.readSize
+                        ? t('diag.mismatch')
+                        : ''}
                     </td>
                   </tr>
                   <tr>
@@ -81,7 +92,10 @@ export function DiagnosePanel(props: { error: string | null }) {
                           method: f.gzip.method,
                           flags: f.gzip.flags.toString(16),
                           isize: f.gzip.isize.toLocaleString(),
-                          inflated: f.gzip.inflated === null ? t('diag.inflateFailed', { error: f.gzip.inflateError }) : t('diag.bytes', { n: f.gzip.inflated.toLocaleString() }),
+                          inflated:
+                            f.gzip.inflated === null
+                              ? t('diag.inflateFailed', { error: f.gzip.inflateError })
+                              : t('diag.bytes', { n: f.gzip.inflated.toLocaleString() }),
                           members: f.gzip.members || `? (${f.gzip.membersError})`,
                         })}
                       </td>

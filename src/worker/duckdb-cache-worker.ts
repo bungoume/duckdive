@@ -12,7 +12,17 @@
  * (src/cache.ts); cacheProtocol.ts defines its requests and replies.
  */
 
-import { cacheKey, etagFrom, hexHead, looksGzip, parseRange, rawHeaders, totalSizeFrom, type HeaderMap, type NativeResult } from './cache-util';
+import {
+  cacheKey,
+  etagFrom,
+  hexHead,
+  looksGzip,
+  parseRange,
+  rawHeaders,
+  totalSizeFrom,
+  type HeaderMap,
+  type NativeResult,
+} from './cache-util';
 
 declare function importScripts(...urls: string[]): void;
 
@@ -68,11 +78,36 @@ function log(entry: Omit<LogEntry, 't'>): LogEntry {
 function logNet(url: string, range: string, res: NativeResult, offset: number) {
   const enc = res.headers['content-encoding'];
   if (res.status === 206 && !enc && offset !== 0) return;
-  log({ method: 'GET', url, range, outcome: `net:${res.status}`, status: res.status, bytes: res.body?.byteLength, enc: enc || undefined, head: offset === 0 ? hexHead(res.body) : undefined });
+  log({
+    method: 'GET',
+    url,
+    range,
+    outcome: `net:${res.status}`,
+    status: res.status,
+    bytes: res.body?.byteLength,
+    enc: enc || undefined,
+    head: offset === 0 ? hexHead(res.body) : undefined,
+  });
 }
 
 const storage = createCacheStorage(stats, log);
-const { config, files, initOpfs, readChunk, writeChunk, resetEntry, recordMeta, dropChunks, cachedBytesOf, enforceLimit, scheduleSaveIndex, saveIndex, purgeEntry, compact, clearAll } = storage;
+const {
+  config,
+  files,
+  initOpfs,
+  readChunk,
+  writeChunk,
+  resetEntry,
+  recordMeta,
+  dropChunks,
+  cachedBytesOf,
+  enforceLimit,
+  scheduleSaveIndex,
+  saveIndex,
+  purgeEntry,
+  compact,
+  clearAll,
+} = storage;
 
 // ---------- cached request handling ----------
 
@@ -114,7 +149,13 @@ function handleHead(url: string, headers: HeaderMap): NativeResult {
   return res;
 }
 
-function handleRangeGet(url: string, headers: HeaderMap, rangeHeader: string, retry = true, retryEtag = true): NativeResult {
+function handleRangeGet(
+  url: string,
+  headers: HeaderMap,
+  rangeHeader: string,
+  retry = true,
+  retryEtag = true,
+): NativeResult {
   const key = cacheKey(url);
   let entry = files.get(key) ?? null;
   if (!entry) {
@@ -171,7 +212,12 @@ function handleRangeGet(url: string, headers: HeaderMap, rangeHeader: string, re
         // a truncated body would leave a hole in the assembled range: answer this request
         // straight from the origin and cache nothing
         stats.passthrough++;
-        log({ method: 'GET', url, range: rangeHeader, outcome: `short-body:${buf.byteLength}/${chunkEnd - chunkStart + 1}` });
+        log({
+          method: 'GET',
+          url,
+          range: rangeHeader,
+          outcome: `short-body:${buf.byteLength}/${chunkEnd - chunkStart + 1}`,
+        });
         return nativeSync('GET', url, headers, true);
       }
       writeChunk(entry, idx, buf);
@@ -226,8 +272,18 @@ function handleExtensionGet(url: string, headers: HeaderMap): NativeResult {
   const cached = storage.readExtension(url);
   if (cached) {
     log({ method: 'GET', url, range: null, outcome: 'extension-cache' });
-    const headers: HeaderMap = { 'content-type': 'application/wasm', 'content-length': String(cached.byteLength), 'x-ddv-cache': 'extension' };
-    return { status: 200, statusText: 'OK', headers, rawHeaders: rawHeaders(headers), body: cached.buffer as ArrayBuffer };
+    const headers: HeaderMap = {
+      'content-type': 'application/wasm',
+      'content-length': String(cached.byteLength),
+      'x-ddv-cache': 'extension',
+    };
+    return {
+      status: 200,
+      statusText: 'OK',
+      headers,
+      rawHeaders: rawHeaders(headers),
+      body: cached.buffer as ArrayBuffer,
+    };
   }
   const response = nativeSync('GET', url, headers, true, WHOLE_FILE_TIMEOUT_MS);
   if (response.status === 200 && response.body) void storage.writeExtension(url, response.body);
@@ -265,7 +321,13 @@ async function handleControl(data: unknown, reply: (payload: CacheReply) => void
           filesStat[k] = e.stat;
           if (++n >= 200) break;
         }
-        reply({ ok: true, stats: { ...stats, files: filesStat }, config: { ...config }, opfsError: storage.opfsError, readOnly: storage.readOnly });
+        reply({
+          ok: true,
+          stats: { ...stats, files: filesStat },
+          config: { ...config },
+          opfsError: storage.opfsError,
+          readOnly: storage.readOnly,
+        });
         break;
       }
       case 'config': {
@@ -282,19 +344,39 @@ async function handleControl(data: unknown, reply: (payload: CacheReply) => void
       case 'files': {
         // only files holding data, largest first; `limit` (default 100) or `all: true`
         const limit = typeof command.limit === 'number' ? command.limit : 100;
-        const list: { url: string; size: number; etag: string; cachedChunks: number; cachedBytes: number; chunkSize: number }[] = [];
+        const list: {
+          url: string;
+          size: number;
+          etag: string;
+          cachedChunks: number;
+          cachedBytes: number;
+          chunkSize: number;
+        }[] = [];
         let cachedBytes = 0;
         for (const e of files.values()) {
           if (!e.chunks.size) continue;
           const bytes = cachedBytesOf(e);
           cachedBytes += bytes;
-          list.push({ url: e.key, size: e.size, etag: e.etag, cachedChunks: e.chunks.size, cachedBytes: bytes, chunkSize: e.chunkSize });
+          list.push({
+            url: e.key,
+            size: e.size,
+            etag: e.etag,
+            cachedChunks: e.chunks.size,
+            cachedBytes: bytes,
+            chunkSize: e.chunkSize,
+          });
         }
         list.sort((a, b) => b.cachedBytes - a.cachedBytes);
         reply({
           ok: true,
           files: command.all === true ? list : list.slice(0, limit),
-          summary: { known: files.size, cachedFiles: list.length, cachedBytes, slabSize: storage.slabSize, wasted: storage.wasted },
+          summary: {
+            known: files.size,
+            cachedFiles: list.length,
+            cachedBytes,
+            slabSize: storage.slabSize,
+            wasted: storage.wasted,
+          },
         });
         break;
       }
@@ -364,7 +446,8 @@ function attachControlPort(port: MessagePort) {
 
 // The page's first message carries the control port; everything else is duckdb-wasm traffic,
 // buffered until the duckdb-wasm worker bundle has installed its own onmessage handler.
-const isPortMessage = (ev: MessageEvent) => (ev.data as { type?: string } | null)?.type === 'ddv-cache-port' && ev.ports.length > 0;
+const isPortMessage = (ev: MessageEvent) =>
+  (ev.data as { type?: string } | null)?.type === 'ddv-cache-port' && ev.ports.length > 0;
 const buffered: MessageEvent[] = [];
 self.onmessage = (ev: MessageEvent) => {
   if (isPortMessage(ev)) attachControlPort(ev.ports[0]);

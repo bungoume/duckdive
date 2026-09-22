@@ -16,8 +16,19 @@ import { type UrlState } from '../state';
 import { useStore } from '../store';
 
 /** What a file resolution depends on: the time range and the captured-column filters of `cfg`, and the auto-refresh tick (new files may have arrived). */
-function rangeKeyFor(cfg: SourceConfig, url: UrlState, tick: number, compare: boolean, evaluation: TimeContext): string {
-  return JSON.stringify([url.search.range, fileWindow(url.search.range, compare, evaluation), valueFiltersFor(cfg, url), tick]);
+function rangeKeyFor(
+  cfg: SourceConfig,
+  url: UrlState,
+  tick: number,
+  compare: boolean,
+  evaluation: TimeContext,
+): string {
+  return JSON.stringify([
+    url.search.range,
+    fileWindow(url.search.range, compare, evaluation),
+    valueFiltersFor(cfg, url),
+    tick,
+  ]);
 }
 
 export function useConnect(
@@ -54,7 +65,12 @@ export function useConnect(
     window,
     valueFilters: valueFiltersFor(cfg, url),
   });
-  const connect = (cfg: SourceConfig, local: LocalSelection = NO_LOCAL, interactive = true, window: TimeWindow | null = currentWindow()) => {
+  const connect = (
+    cfg: SourceConfig,
+    local: LocalSelection = NO_LOCAL,
+    interactive = true,
+    window: TimeWindow | null = currentWindow(),
+  ) => {
     attemptedKey.current = rangeKeyFor(cfg, url, refreshTick, compare, evaluation);
     return connection.connect(cfg, request(cfg, local, interactive, window));
   };
@@ -76,7 +92,11 @@ export function useConnect(
     setUrl((u) => ({
       ...u,
       search: { ...u.search, filters: u.search.filters.filter((f) => f.op === 'query' || has(f.field)) },
-      discover: { ...u.discover, columns: u.discover.columns.filter((c) => has(c)), sort: u.discover.sort.filter((s) => has(s.field)) },
+      discover: {
+        ...u.discover,
+        columns: u.discover.columns.filter((c) => has(c)),
+        sort: u.discover.sort.filter((s) => has(s.field)),
+      },
       vis: {
         ...u.vis,
         x: has(u.vis.x.field) ? u.vis.x : { ...u.vis.x, field: null },
@@ -92,10 +112,18 @@ export function useConnect(
     void (async () => {
       try {
         const known = linkSource ? history.find((h) => h.key === sourceKey(linkSource)) : undefined;
-        const cfg = await withSecrets(known && linkSource ? sourceForKnownLink(linkSource, known.config) : loadSource());
+        const cfg = await withSecrets(
+          known && linkSource ? sourceForKnownLink(linkSource, known.config) : loadSource(),
+        );
         connection.restore(cfg);
         await initDuckDB();
-        expose({ query, cancelAllQueries, queriesRunning, getQueryLog, registerFileURL: (name: string, url: string) => getDB().registerFileURL(name, url, DataProtocol.HTTP, false) });
+        expose({
+          query,
+          cancelAllQueries,
+          queriesRunning,
+          getQueryLog,
+          registerFileURL: (name: string, url: string) => getDB().registerFileURL(name, url, DataProtocol.HTTP, false),
+        });
         setReady(true);
         if (cfg.kind === 'local' && !cfg.localId) {
           setUrl((u) => ({ ...u, page: 'source' }));
@@ -130,7 +158,8 @@ export function useConnect(
   // failing source from reconnecting in a loop.
   const rangeKey = rangeKeyFor(source, url, refreshTick, compare, evaluation);
   if (!attemptedKey.current) attemptedKey.current = rangeKey;
-  const resolutionPending = !!attached && (attached.rangeDependent || attached.captures.length > 0) && attemptedKey.current !== rangeKey;
+  const resolutionPending =
+    !!attached && (attached.rangeDependent || attached.captures.length > 0) && attemptedKey.current !== rangeKey;
   useEffect(() => {
     if (attaching || attemptedKey.current === rangeKey) return;
     const dependent = attached?.rangeDependent || (attached?.captures.length ?? 0) > 0;

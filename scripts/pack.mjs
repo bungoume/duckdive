@@ -15,18 +15,24 @@ mkdirSync(`${root}release`, { recursive: true });
 function verifyBuild(stage, manifest, target) {
   const hosts = manifest.host_permissions ?? [];
   if (hosts.length !== storeHosts.length || hosts.some((host, i) => host !== storeHosts[i])) {
-    throw new Error(`${target} asks for host permissions ${JSON.stringify(hosts)}; a store build asks for ${JSON.stringify(storeHosts)}`);
+    throw new Error(
+      `${target} asks for host permissions ${JSON.stringify(hosts)}; a store build asks for ${JSON.stringify(storeHosts)}`,
+    );
   }
   for (const file of readdirSync(join(stage, 'assets'))) {
-    if (file.endsWith('.js') && readFileSync(join(stage, 'assets', file), 'utf8').includes('__ddv')) throw new Error(`${target} assets/${file} still carries the __ddv test hooks`);
+    if (file.endsWith('.js') && readFileSync(join(stage, 'assets', file), 'utf8').includes('__ddv'))
+      throw new Error(`${target} assets/${file} still carries the __ddv test hooks`);
   }
 
   if (target === 'firefox') {
-    if (!manifest.background?.scripts?.includes('background.js') || manifest.background.service_worker) throw new Error('Firefox must use background.scripts, not background.service_worker');
+    if (!manifest.background?.scripts?.includes('background.js') || manifest.background.service_worker)
+      throw new Error('Firefox must use background.scripts, not background.service_worker');
     if (!manifest.browser_specific_settings?.gecko?.id) throw new Error('Firefox must declare a Gecko add-on ID');
-    if (manifest.key || manifest.minimum_chrome_version) throw new Error('Firefox contains Chromium-only manifest fields');
+    if (manifest.key || manifest.minimum_chrome_version)
+      throw new Error('Firefox contains Chromium-only manifest fields');
   } else {
-    if (manifest.background?.service_worker !== 'background.js' || manifest.background.scripts) throw new Error(`${target} must use background.service_worker`);
+    if (manifest.background?.service_worker !== 'background.js' || manifest.background.scripts)
+      throw new Error(`${target} must use background.service_worker`);
     if (target === 'chrome' && !manifest.key) throw new Error('The unpacked Chrome build must carry its public key');
     if (target === 'edge' && manifest.key) throw new Error("The Edge build must not carry Chrome's public key");
   }
@@ -37,7 +43,8 @@ function verifyLocales(stage) {
   for (const lang of readdirSync(join(stage, '_locales'))) {
     const messages = JSON.parse(readFileSync(join(stage, '_locales', lang, 'messages.json'), 'utf8'));
     const description = messages.appDesc?.message ?? '';
-    if (description.length > 132) throw new Error(`_locales/${lang} appDesc is ${description.length} characters; the package limit is 132`);
+    if (description.length > 132)
+      throw new Error(`_locales/${lang} appDesc is ${description.length} characters; the package limit is 132`);
   }
 }
 

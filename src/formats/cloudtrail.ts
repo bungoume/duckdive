@@ -32,7 +32,8 @@ export const cloudtrailFormat: FormatDef = {
   id: 'cloudtrail',
   reader: (l, f) => `read_json_auto(${l}, union_by_name = true, maximum_object_size = 268435456${fn(f)})`,
   // one row per Record; the filename (if requested) is carried along
-  wrap: (inner) => `SELECT rec.*, * EXCLUDE (rec) FROM (SELECT unnest(Records) AS rec, * EXCLUDE (Records) FROM (${inner}))`,
+  wrap: (inner) =>
+    `SELECT rec.*, * EXCLUDE (rec) FROM (SELECT unnest(Records) AS rec, * EXCLUDE (Records) FROM (${inner}))`,
   timeField: 'eventTime',
   otel: { columns: CLOUDTRAIL_OTEL, reader: ctjson },
   detect: /\/CloudTrail\//,

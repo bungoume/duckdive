@@ -11,8 +11,18 @@ export interface Bucket {
   c: number;
 }
 
-export async function fetchHistogram(where: string, timeExpr: string, iv: Interval, tzOffset: number, signal?: AbortSignal, context = timeContext()): Promise<Bucket[]> {
-  const r = await query(`SELECT ${bucketExpr(timeExpr, iv, tzOffset, context.dayOfWeek)} AS t, count(*)::DOUBLE AS c FROM ${VIEW} WHERE ${where} GROUP BY 1 ORDER BY 1`, signal);
+export async function fetchHistogram(
+  where: string,
+  timeExpr: string,
+  iv: Interval,
+  tzOffset: number,
+  signal?: AbortSignal,
+  context = timeContext(),
+): Promise<Bucket[]> {
+  const r = await query(
+    `SELECT ${bucketExpr(timeExpr, iv, tzOffset, context.dayOfWeek)} AS t, count(*)::DOUBLE AS c FROM ${VIEW} WHERE ${where} GROUP BY 1 ORDER BY 1`,
+    signal,
+  );
   return r.rows.map((x) => ({ t: Number(x.t), c: Number(x.c) }));
 }
 
@@ -65,7 +75,11 @@ export interface TopValue {
   pct: number;
 }
 
-export async function fetchTopValues(where: string, f: Field, size = 5): Promise<{ values: TopValue[]; total: number }> {
+export async function fetchTopValues(
+  where: string,
+  f: Field,
+  size = 5,
+): Promise<{ values: TopValue[]; total: number }> {
   const e = f.kind === 'string' || f.kind === 'number' || f.kind === 'boolean' ? f.expr : `(${f.expr})::VARCHAR`;
   // one pass: the total is a window over the grouped counts, not a second scan of the view
   const r = await query(
@@ -73,7 +87,14 @@ export async function fetchTopValues(where: string, f: Field, size = 5): Promise
      FROM (SELECT ${e} AS v FROM ${VIEW} WHERE ${where}) b GROUP BY v ORDER BY c DESC LIMIT ${size}`,
   );
   const total = Number(r.rows[0]?.n ?? 0);
-  return { total, values: r.rows.map((x) => ({ value: x.v === null ? null : String(x.v), count: Number(x.c), pct: total ? Number(x.c) / total : 0 })) };
+  return {
+    total,
+    values: r.rows.map((x) => ({
+      value: x.v === null ? null : String(x.v),
+      count: Number(x.c),
+      pct: total ? Number(x.c) / total : 0,
+    })),
+  };
 }
 
 export interface NumberStats {
@@ -101,10 +122,21 @@ export async function fetchNumberStats(where: string, f: Field, bins = 10): Prom
   const width = (mx - mn) / bins;
   const counts: number[] = new Array<number>(bins).fill(0);
   if (width > 0) {
-    const h = await query(`SELECT least(${bins - 1}, floor((${x} - (${mn})) / ${width}))::INT AS b, count(*)::DOUBLE AS c FROM ${VIEW} WHERE ${where} AND ${x} IS NOT NULL GROUP BY 1`);
+    const h = await query(
+      `SELECT least(${bins - 1}, floor((${x} - (${mn})) / ${width}))::INT AS b, count(*)::DOUBLE AS c FROM ${VIEW} WHERE ${where} AND ${x} IS NOT NULL GROUP BY 1`,
+    );
     for (const row of h.rows) counts[Number(row.b)] = Number(row.c);
   } else counts[0] = Number(r.n);
-  return { count: Number(r.n), min: mn, max: mx, avg: Number(r.av), p50: Number(r.p50), p95: Number(r.p95), bins: counts, width };
+  return {
+    count: Number(r.n),
+    min: mn,
+    max: mx,
+    avg: Number(r.av),
+    p50: Number(r.p50),
+    p95: Number(r.p95),
+    bins: counts,
+    width,
+  };
 }
 
 export interface LogPattern {
@@ -115,7 +147,11 @@ export interface LogPattern {
 }
 
 /** The templates of a text field's values in the search (see patterns.ts), most frequent first. */
-export async function fetchPatterns(where: string, f: Field, limit = 50): Promise<{ patterns: LogPattern[]; total: number }> {
+export async function fetchPatterns(
+  where: string,
+  f: Field,
+  limit = 50,
+): Promise<{ patterns: LogPattern[]; total: number }> {
   const e = f.kind === 'string' ? f.expr : `(${f.expr})::VARCHAR`;
   const r = await query(
     `SELECT tpl, count(*)::DOUBLE AS c, any_value(v) AS ex, sum(count(*)) OVER ()::DOUBLE AS n
@@ -123,5 +159,13 @@ export async function fetchPatterns(where: string, f: Field, limit = 50): Promis
      GROUP BY tpl ORDER BY c DESC LIMIT ${limit}`,
   );
   const total = Number(r.rows[0]?.n ?? 0);
-  return { total, patterns: r.rows.map((x) => ({ tpl: String(x.tpl), count: Number(x.c), pct: total ? Number(x.c) / total : 0, example: String(x.ex ?? '') })) };
+  return {
+    total,
+    patterns: r.rows.map((x) => ({
+      tpl: String(x.tpl),
+      count: Number(x.c),
+      pct: total ? Number(x.c) / total : 0,
+      example: String(x.ex ?? ''),
+    })),
+  };
 }

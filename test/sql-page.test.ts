@@ -4,7 +4,10 @@ import { DEFAULT_SEARCH } from '../src/state';
 const run = vi.hoisted(() => vi.fn().mockResolvedValue({ rows: [], columns: [], ms: 1 }));
 vi.mock('../src/duck', () => ({ query: run }));
 vi.mock('preact/hooks', () => ({
-  useState: <T>(initial: T | (() => T)) => [typeof initial === 'function' ? (initial as () => T)() : initial, () => undefined],
+  useState: <T>(initial: T | (() => T)) => [
+    typeof initial === 'function' ? (initial as () => T)() : initial,
+    () => undefined,
+  ],
   useRef: <T>(initial: T) => ({ current: initial }),
   useEffect: () => undefined,
 }));

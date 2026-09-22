@@ -9,8 +9,16 @@ export type ExportFormat = 'csv' | 'jsonl' | 'parquet';
 
 export const EXPORT_FORMATS: ExportFormat[] = ['csv', 'jsonl', 'parquet'];
 
-const COPY_OPTIONS: Record<ExportFormat, string> = { csv: 'FORMAT CSV, HEADER true', jsonl: 'FORMAT JSON', parquet: 'FORMAT PARQUET' };
-const MIME: Record<ExportFormat, string> = { csv: 'text/csv', jsonl: 'application/x-ndjson', parquet: 'application/vnd.apache.parquet' };
+const COPY_OPTIONS: Record<ExportFormat, string> = {
+  csv: 'FORMAT CSV, HEADER true',
+  jsonl: 'FORMAT JSON',
+  parquet: 'FORMAT PARQUET',
+};
+const MIME: Record<ExportFormat, string> = {
+  csv: 'text/csv',
+  jsonl: 'application/x-ndjson',
+  parquet: 'application/vnd.apache.parquet',
+};
 
 /** Run `sql` and return its rows as a file of the given format. */
 export async function exportToBlob(sql: string, format: ExportFormat): Promise<Blob> {

@@ -119,7 +119,8 @@ function tokenize(s: string): Tok[] {
       toks.push({ k: 'or' });
       i++;
     } else if (c === '!' && !afterColon()) toks.push({ k: 'not' });
-    else if ((c === '+' || c === '-') && !afterColon() && i + 1 < s.length && !/\s/.test(s[i + 1])) toks.push({ k: c === '+' ? 'plus' : 'minus' });
+    else if ((c === '+' || c === '-') && !afterColon() && i + 1 < s.length && !/\s/.test(s[i + 1]))
+      toks.push({ k: c === '+' ? 'plus' : 'minus' });
     else if (c === '"') {
       let j = i + 1;
       let v = '';
@@ -152,7 +153,13 @@ function tokenize(s: string): Tok[] {
       }
       let j = i;
       let v = '';
-      while (j < s.length && !/\s/.test(s[j]) && !SPECIAL.has(s[j]) && !s.startsWith('&&', j) && !s.startsWith('||', j)) {
+      while (
+        j < s.length &&
+        !/\s/.test(s[j]) &&
+        !SPECIAL.has(s[j]) &&
+        !s.startsWith('&&', j) &&
+        !s.startsWith('||', j)
+      ) {
         if (s[j] === '\\' && j + 1 < s.length) {
           v += keepEscape(s[j + 1]);
           j += 2;
@@ -205,7 +212,16 @@ class Parser {
   }
 
   private startsClause(t: Tok | undefined): boolean {
-    return !!t && (t.k === 'lp' || t.k === 'str' || t.k === 'word' || t.k === 're' || t.k === 'not' || t.k === 'plus' || t.k === 'minus');
+    return (
+      !!t &&
+      (t.k === 'lp' ||
+        t.k === 'str' ||
+        t.k === 'word' ||
+        t.k === 're' ||
+        t.k === 'not' ||
+        t.k === 'plus' ||
+        t.k === 'minus')
+    );
   }
 
   /** clause clause ... (no operator between them: Lucene's default OR, with +/- handled per clause). */
@@ -222,7 +238,10 @@ class Parser {
       items.push(this.parseAnd(field));
     }
     if (items.length === 1) return items[0];
-    return { occur: 'should', node: { t: 'or', a: items.map((c) => (c.occur === 'mustNot' ? { t: 'not', a: c.node } : c.node)) } };
+    return {
+      occur: 'should',
+      node: { t: 'or', a: items.map((c) => (c.occur === 'mustNot' ? { t: 'not', a: c.node } : c.node)) },
+    };
   }
 
   private parseAnd(field: string | null): { occur: Occur; node: Node } {
@@ -232,7 +251,10 @@ class Parser {
       items.push(this.parseUnary(field));
     }
     if (items.length === 1) return items[0];
-    return { occur: 'should', node: { t: 'and', a: items.map((c) => (c.occur === 'mustNot' ? { t: 'not', a: c.node } : c.node)) } };
+    return {
+      occur: 'should',
+      node: { t: 'and', a: items.map((c) => (c.occur === 'mustNot' ? { t: 'not', a: c.node } : c.node)) },
+    };
   }
 
   private parseUnary(field: string | null): { occur: Occur; node: Node } {
@@ -260,7 +282,9 @@ class Parser {
       return n;
     }
     if (t.k === 'str') {
-      return field ? { t: 'term', field, value: t.v, phrase: true, prox: t.prox } : { t: 'text', value: t.v, phrase: true, prox: t.prox };
+      return field
+        ? { t: 'term', field, value: t.v, phrase: true, prox: t.prox }
+        : { t: 'text', value: t.v, phrase: true, prox: t.prox };
     }
     if (t.k === 're') return { t: 'regex', field, value: t.v };
     if (t.k === 'word') {
@@ -297,7 +321,13 @@ class Parser {
       const to = this.next();
       const hi = this.next();
       const close = this.next();
-      if ((lo.k !== 'word' && lo.k !== 'str') || to.k !== 'word' || to.v !== 'TO' || (hi.k !== 'word' && hi.k !== 'str')) throw new SearchQueryError('Expected [lower TO upper]');
+      if (
+        (lo.k !== 'word' && lo.k !== 'str') ||
+        to.k !== 'word' ||
+        to.v !== 'TO' ||
+        (hi.k !== 'word' && hi.k !== 'str')
+      )
+        throw new SearchQueryError('Expected [lower TO upper]');
       if (close.k !== 'rb' && close.k !== 'rc') throw new SearchQueryError('Expected "]" or "}"');
       return {
         t: 'between',

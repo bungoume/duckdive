@@ -11,7 +11,10 @@ export interface CacheStats {
   corruptions: number;
   /** files dropped to stay within the size limit (this session) */
   evictions: number;
-  files: Record<string, { hits: number; misses: number; bytesFromCache: number; bytesFromNetwork: number; bytesDownloaded: number }>;
+  files: Record<
+    string,
+    { hits: number; misses: number; bytesFromCache: number; bytesFromNetwork: number; bytesDownloaded: number }
+  >;
   log: CacheLogEntry[];
 }
 
@@ -84,5 +87,9 @@ export interface CacheResponses {
   purge: { removed: number };
   config: { config: CacheConfig };
 }
-export type CacheRequest = { [K in keyof CacheRequests]: { id: string; type: K } & CacheRequests[K] }[keyof CacheRequests];
-export type CacheReply = { ok: false; error: string } | { [K in keyof CacheResponses]: { ok: true } & CacheResponses[K] }[keyof CacheResponses];
+export type CacheRequest = {
+  [K in keyof CacheRequests]: { id: string; type: K } & CacheRequests[K];
+}[keyof CacheRequests];
+export type CacheReply =
+  | { ok: false; error: string }
+  | { [K in keyof CacheResponses]: { ok: true } & CacheResponses[K] }[keyof CacheResponses];

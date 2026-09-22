@@ -3,7 +3,13 @@ import { t } from '../../i18n';
 import { SOURCE_HISTORY_MAX, type SourceConfig, type SourceHistoryEntry } from '../../sources';
 
 /** Recently connected sources with Connect / Remove. */
-export function HistoryCard(props: { history: SourceHistoryEntry[]; currentKey: string | null; busy: boolean; onUse: (cfg: SourceConfig) => void; onForget: (key: string) => void }) {
+export function HistoryCard(props: {
+  history: SourceHistoryEntry[];
+  currentKey: string | null;
+  busy: boolean;
+  onUse: (cfg: SourceConfig) => void;
+  onForget: (key: string) => void;
+}) {
   return (
     <div class="card source-history">
       <h2>{t('ds.history.title')}</h2>

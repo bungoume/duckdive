@@ -33,7 +33,8 @@ export const en = {
   'app.error.timeout': '{what} did not answer within {seconds} s',
   'app.crashed': 'Something went wrong: {error}',
   'app.reload': 'Reload',
-  'app.creds.refreshFailed': 'The temporary AWS credentials could not be refreshed: {error}. Queries will fail once they expire; sign in again on the Data source page.',
+  'app.creds.refreshFailed':
+    'The temporary AWS credentials could not be refreshed: {error}. Queries will fail once they expire; sign in again on the Data source page.',
   'app.large.files': '{n} files',
   'app.large.text':
     '{files}{bytes} match this pattern and time range (threshold {threshold}). Nothing has been read yet. Continuing creates the view over all of them; the first query then downloads what it needs. Narrow the time range, add a name prefix or a filter on a captured column, or continue.',
@@ -47,26 +48,31 @@ export const en = {
   // ---- settings page ----
   'settings.title': 'Settings',
   'settings.lang': 'Language',
-  'settings.lang.hint': 'Applies to the whole UI right away. The choice is kept in this browser; new installs follow the browser UI language.',
+  'settings.lang.hint':
+    'Applies to the whole UI right away. The choice is kept in this browser; new installs follow the browser UI language.',
   'settings.theme': 'Appearance',
   'settings.theme.system': 'Follow the system',
   'settings.theme.light': 'Light',
   'settings.theme.dark': 'Dark',
   'settings.formatByName': 'Format sizes and durations by field name',
-  'settings.formatByName.hint': 'In the document table, fields named …bytes or …size show 1.2 MB and fields ending in _ms show 1.23 s; the raw value is in the tooltip.',
+  'settings.formatByName.hint':
+    'In the document table, fields named …bytes or …size show 1.2 MB and fields ending in _ms show 1.23 s; the raw value is in the tooltip.',
   'settings.section.time': 'Dates and times',
   'settings.dateFormat': 'Date format',
-  'settings.dateFormat.hint': 'Pattern for every displayed date: YYYY MM DD HH mm ss SSS, ddd / dddd (weekday), MMM / MMMM (month name), A (AM/PM), Z (offset), [text] for literals.',
+  'settings.dateFormat.hint':
+    'Pattern for every displayed date: YYYY MM DD HH mm ss SSS, ddd / dddd (weekday), MMM / MMMM (month name), A (AM/PM), Z (offset), [text] for literals.',
   'settings.preview': 'Preview: {value}',
   'settings.timeZone': 'Time zone',
-  'settings.timeZone.hint': 'IANA name such as Asia/Tokyo or UTC; leave empty for the browser zone ({browser}). Applies to displayed dates, the absolute time picker and "now/d" rounding.',
+  'settings.timeZone.hint':
+    'IANA name such as Asia/Tokyo or UTC; leave empty for the browser zone ({browser}). Applies to displayed dates, the absolute time picker and "now/d" rounding.',
   'settings.scaled': 'Scaled date format',
   'settings.scaled.hint':
     'JSON list of [ISO 8601 duration, pattern]: the pattern used for date-histogram tooltips and tables whose bucket is at least that long ("" = shorter than a second). Axis labels are chosen automatically to fit the visible range.',
   'settings.dow': 'Day of week',
   'settings.dow.hint': 'First day of the week for "now/w" ranges and weekly buckets.',
   'settings.quickRanges': 'Time filter quick ranges',
-  'settings.quickRanges.hint': 'JSON list of {"from", "to", "display"} in date-math syntax. Without "display" the label is generated in the UI language.',
+  'settings.quickRanges.hint':
+    'JSON list of {"from", "to", "display"} in date-math syntax. Without "display" the label is generated in the UI language.',
   'settings.reset': 'Reset to defaults',
   'settings.saved': 'Saved.',
   'settings.backup': 'Backup',
@@ -99,7 +105,8 @@ export const en = {
 
   // ---- Data source page ----
   'ds.title': 'Data source',
-  'ds.intro': 'Files are read straight from the storage that hosts them, and only the parts a query needs. Nothing is sent anywhere else.',
+  'ds.intro':
+    'Files are read straight from the storage that hosts them, and only the parts a query needs. Nothing is sent anywhere else.',
   'ds.kind.url': 'S3 / HTTPS URL',
   'ds.kind.url.sub': 's3://bucket/prefix/*.parquet or https://…',
   'ds.kind.local': 'Local files',
@@ -176,7 +183,8 @@ export const en = {
   'ds.local.remembered': 'Remembered: {names}. Connect asks the browser for permission to read the files again.',
   'ds.local.hint':
     'Files are read in place through the browser File API; they are never uploaded. What you pick here is kept under Recent sources; after a restart the browser asks for permission to read it again.',
-  'ds.demo.hint': 'A synthetic access-log table (host/http/geo structs, tags list, JSON extra column) is generated in DuckDB so you can try every feature without any storage.',
+  'ds.demo.hint':
+    'A synthetic access-log table (host/http/geo structs, tags list, JSON extra column) is generated in DuckDB so you can try every feature without any storage.',
   'ds.connect': 'Connect',
   'ds.connecting': 'Connecting…',
   'ds.listAndConnect': 'List values & connect',
@@ -186,14 +194,16 @@ export const en = {
   'ds.connected.fields': ' · {n} fields',
   'ds.timeField.label': 'Time field (used for the time picker and histogram)',
   'ds.timeField.none': '(none – no time filtering)',
-  'ds.connected.rangeDependent': 'This source uses date tokens: the file list is re-resolved whenever the time range changes. ',
+  'ds.connected.rangeDependent':
+    'This source uses date tokens: the file list is re-resolved whenever the time range changes. ',
   'ds.connected.captures': 'Columns captured from file names: {names} (filtering on them also prunes the file list).',
   'ds.connected.large':
     'The matched files total {mb} MB. Text / gzip files are fetched whole and one after another, so the first query over this range will be slow. Narrow the time range, or convert wide ranges to hourly Parquet (scripts/alb-to-parquet.sh).',
   'ds.connected.files': 'Files ({n})',
   'ds.connected.fieldsTitle': 'Fields',
   'ds.hosts.title': 'Granted hosts',
-  'ds.hosts.hint': 'Hosts this extension is allowed to read from. AWS endpoints are allowed by default; any other host is requested when you connect.',
+  'ds.hosts.hint':
+    'Hosts this extension is allowed to read from. AWS endpoints are allowed by default; any other host is requested when you connect.',
   'ds.hosts.revoke': 'Revoke',
   'ds.history.title': 'Recent sources',
   'ds.history.hint':
@@ -207,13 +217,15 @@ export const en = {
   'cache.intro':
     'Data that has been read once is kept on this machine, so repeated queries do not download it again. Only parts that were never read are fetched. The copy is discarded when the file changes in storage.',
   'cache.opfsDisabled': '{error} – caching is disabled, every read goes to the origin.',
-  'cache.readOnly': 'Another Duckdive tab holds the cache: this tab reads what it has stored and downloads the rest without keeping it. Cache settings and clearing belong to that tab.',
+  'cache.readOnly':
+    'Another Duckdive tab holds the cache: this tab reads what it has stored and downloads the rest without keeping it. Cache settings and clearing belong to that tab.',
   'cache.enable': 'Enable range cache',
   'cache.chunkSize': 'Chunk size (new files)',
   'cache.maxBytes': 'Keep at most',
   'cache.unlimited': 'unlimited',
   'cache.session': 'This session',
-  'cache.session.text': 'DuckDB read {total}: {fromCache} from disk ({ratio}%) · downloaded {downloaded} from origin in {misses} chunks · {hits} chunk hits · {passthrough} passthrough',
+  'cache.session.text':
+    'DuckDB read {total}: {fromCache} from disk ({ratio}%) · downloaded {downloaded} from origin in {misses} chunks · {hits} chunk hits · {passthrough} passthrough',
   'cache.storage': 'Storage',
   'cache.storage.text': '{used} used of {quota} quota · {mode}',
   'cache.storage.persistent': 'persistent',
@@ -249,7 +261,8 @@ export const en = {
   'disc.saved.placeholder': 'Name (the query when empty)',
   'disc.saved.untitled': 'Search {n}',
   'disc.saved.none': 'Nothing saved yet. Saved searches live in this browser (localStorage).',
-  'disc.cacheHint': '{error}\n\nUse "{button}" below to locate and inspect the file DuckDB rejects. If the cache is suspected: Data source → Local range cache → "{clear}" or untick "{enable}".',
+  'disc.cacheHint':
+    '{error}\n\nUse "{button}" below to locate and inspect the file DuckDB rejects. If the cache is suspected: Data source → Local range cache → "{clear}" or untick "{enable}".',
 
   // ---- export (Discover) ----
   'exp.button': 'Export',
@@ -268,7 +281,8 @@ export const en = {
   'share.title': 'Link to this view',
   'share.copied': 'Link copied',
   'share.copiedNoSource': 'Copied (without the local files)',
-  'share.hint': 'The link carries the query, filters, time range, chart and the data source without any secret. Custom SQL filters arrive disabled at the other end.',
+  'share.hint':
+    'The link carries the query, filters, time range, chart and the data source without any secret. Custom SQL filters arrive disabled at the other end.',
   'share.hintNoSource': 'Local files cannot travel in a link; the recipient has to pick them.',
 
   // ---- SQL page ----
@@ -277,12 +291,14 @@ export const en = {
   'sql.currentSearch': 'Current search',
   'sql.history': 'History',
   'sql.noHistory': 'Nothing has been run yet.',
-  'sql.hint': 'One statement over the view {view}, which holds the connected source; the result stays on this machine. {key} runs it.',
+  'sql.hint':
+    'One statement over the view {view}, which holds the connected source; the result stays on this machine. {key} runs it.',
   'sql.rows': '{n} rows · {ms} ms',
   'sql.showAll': 'Show all {n} rows',
 
   // ---- dashboard ----
-  'dash.hint': 'Saved visualizations over the search and time range above; a click on a chart filters or zooms all of them.',
+  'dash.hint':
+    'Saved visualizations over the search and time range above; a click on a chart filters or zooms all of them.',
   'dash.add': 'Add visualization',
   'dash.allAdded': 'Every saved visualization is on the dashboard.',
   'dash.noneSaved': 'Nothing saved yet: save a visualization on the Visualize page first.',
@@ -385,7 +401,8 @@ export const en = {
   // ---- diagnose panel ----
   'diag.find': 'Find the failing file',
   'diag.finding': 'Finding the failing file…',
-  'diag.hint': 'Bisects the attached files with count(*) queries and inspects the bytes of each culprit (about two full scans per culprit).',
+  'diag.hint':
+    'Bisects the attached files with count(*) queries and inspects the bytes of each culprit (about two full scans per culprit).',
   'diag.cancelled': 'Cancelled (the source was reconnected)',
   'diag.allOk':
     'All {n} file(s) read fine with count(*) just now. The failure is either transient (a bad answer from the network or the cache: see the request log under Data source → Local range cache) or specific to the failing query.',
@@ -395,7 +412,8 @@ export const en = {
   'diag.sizeText': 'listed {listed} / read {read}',
   'diag.mismatch': ' (MISMATCH: the object changed since it was listed)',
   'diag.firstBytes': 'first bytes',
-  'diag.gzipText': 'magic {magic}, method {method}, flags 0x{flags}, trailer ISIZE {isize}, browser inflated {inflated}, members {members}',
+  'diag.gzipText':
+    'magic {magic}, method {method}, flags 0x{flags}, trailer ISIZE {isize}, browser inflated {inflated}, members {members}',
   'diag.ok': 'ok',
   'diag.bad': 'BAD',
   'diag.inflateFailed': 'failed ({error})',
@@ -414,7 +432,8 @@ export const en = {
   'doc.copyJson': 'Copy JSON',
   'doc.copied': 'Copied',
   'doc.context': 'Context',
-  'doc.context.hint': 'The records before and after this one in time, whatever the query and filters; those at the same time are highlighted.',
+  'doc.context.hint':
+    'The records before and after this one in time, whatever the query and filters; those at the same time are highlighted.',
   'doc.context.more': '{n} more',
   'doc.filterFor': 'Filter for value',
   'doc.filterOut': 'Filter out value',
@@ -489,9 +508,12 @@ export const en = {
   'q.help.not': 'Negation. +term: required',
   'q.help.bool': 'Boolean operators AND, OR, NOT (upper case), &&, ||, !. Adjacent terms are OR-ed.',
   'q.help.datemath': 'Date math in ranges of a date field: now, now-1h, now/d (start of the day), now-1d/d',
-  'q.helpNote': 'Nested struct / JSON fields use dot paths (geo.country, extra.user_id). Escape special characters with \\ (path:\\/api\\/v1). Press {enter} to run.',
-  'q.completeNote': 'Field names are suggested while you type; {tab} inserts the highlighted one. An empty box lists the recent queries.',
-  'q.shortcuts': 'Shortcuts: {slash} focuses the search from anywhere, {prev} and {next} move the time range by its own length.',
+  'q.helpNote':
+    'Nested struct / JSON fields use dot paths (geo.country, extra.user_id). Escape special characters with \\ (path:\\/api\\/v1). Press {enter} to run.',
+  'q.completeNote':
+    'Field names are suggested while you type; {tab} inserts the highlighted one. An empty box lists the recent queries.',
+  'q.shortcuts':
+    'Shortcuts: {slash} focuses the search from anywhere, {prev} and {next} move the time range by its own length.',
   'q.running': 'Running…',
   'q.refresh': 'Refresh',
   'q.autoRefresh': 'Auto refresh',
@@ -570,25 +592,30 @@ export const en = {
 
   // ---- data source templates ----
   'tpl.alb.label': 'ALB access logs',
-  'tpl.alb.note': 'account / region / alb become columns; filter on alb to read one load balancer only. Add your bucket prefix before AWSLogs if you configured one.',
+  'tpl.alb.note':
+    'account / region / alb become columns; filter on alb to read one load balancer only. Add your bucket prefix before AWSLogs if you configured one.',
   'tpl.alb-parquet.label': 'ALB access logs converted to Parquet (scripts/alb-to-parquet.sh)',
   'tpl.alb-parquet.note':
     'Hourly Parquet written by scripts/alb-to-parquet.sh: <prefix>/<alb>/dt=YYYY-MM-DD/hour=HH/data.parquet. dt and hour become partition columns; drop "{alb}/" if the destination already names one load balancer.',
   'tpl.nlb.label': 'NLB access logs',
   'tpl.nlb.note': 'TLS listener logs only (space separated, auto-detected). Pick the time field manually if needed.',
   'tpl.cloudfront.label': 'CloudFront logs',
-  'tpl.cloudfront.note': 'Legacy standard logs (TSV with #Fields header). Remove "<prefix>/" if logs sit at the bucket root. A "timestamp" column is derived from date + time.',
+  'tpl.cloudfront.note':
+    'Legacy standard logs (TSV with #Fields header). Remove "<prefix>/" if logs sit at the bucket root. A "timestamp" column is derived from date + time.',
   'tpl.cloudtrail.label': 'CloudTrail',
-  'tpl.cloudtrail.note': 'One row per Record (eventTime, eventSource, eventName, userIdentity, requestParameters, …). For organization trails add the org id: AWSLogs/o-xxxx/{account}/…',
+  'tpl.cloudtrail.note':
+    'One row per Record (eventTime, eventSource, eventName, userIdentity, requestParameters, …). For organization trails add the org id: AWSLogs/o-xxxx/{account}/…',
   'tpl.flowlogs.label': 'VPC Flow Logs',
   'tpl.flowlogs.note': 'Text with header (custom formats work too). "start" (epoch seconds) is used as the time field.',
   'tpl.flowlogs-parquet.label': 'VPC Flow Logs (Parquet, Hive-compatible prefixes)',
   'tpl.flowlogs-parquet.note':
     'Flow logs delivered as Parquet with "Hive-compatible S3 prefixes" and hourly partitions. Without the Hive option the layout is AWSLogs/{account}/vpcflowlogs/{region}/{yyyy}/{MM}/{dd}/{HH}/*.log.parquet. "start" (epoch seconds) is the time field.',
   'tpl.waf.label': 'WAF logs (S3 delivery)',
-  'tpl.waf.note': 'JSON lines, one per request; "timestamp" (epoch milliseconds) is the time field. Web ACLs in front of CloudFront use "cloudfront" as the region.',
+  'tpl.waf.note':
+    'JSON lines, one per request; "timestamp" (epoch milliseconds) is the time field. Web ACLs in front of CloudFront use "cloudfront" as the region.',
   'tpl.netfw.label': 'Network Firewall logs',
-  'tpl.netfw.note': 'log_type is "alert" or "flow" (filter on it, or write the name instead of {log_type}). JSON lines; "event_timestamp" (epoch seconds) is the time field.',
+  'tpl.netfw.note':
+    'log_type is "alert" or "flow" (filter on it, or write the name instead of {log_type}). JSON lines; "event_timestamp" (epoch seconds) is the time field.',
   'tpl.r53resolver.label': 'Route 53 Resolver query logs',
   'tpl.r53resolver.note': 'JSON lines, one per DNS query; "query_timestamp" is the time field.',
   'tpl.s3access.label': 'S3 server access logs',
@@ -607,7 +634,8 @@ export const en = {
   'tpl.cwlexport.note':
     'Files written by "Export data to Amazon S3" (create-export-task): one folder per log stream, lines of "timestamp message". The leading timestamp becomes the time field, the rest is "message".',
   'tpl.ssm.label': 'SSM session / command logs',
-  'tpl.ssm.note': 'Session Manager transcripts and Run Command stdout/stderr are unstructured: every line becomes a row with its file name in _file. No time field.',
+  'tpl.ssm.note':
+    'Session Manager transcripts and Run Command stdout/stderr are unstructured: every line becomes a row with its file name in _file. No time field.',
 
   // ---- connect / listing (datasource.ts, s3list.ts) ----
   'src.listingValues': 'Listing values… {done} / {total}',
@@ -615,7 +643,8 @@ export const en = {
   'src.listingPrefixes': 'Listing files… {done} / {total} prefixes',
   'src.applyFailed': 'Failed to apply S3 setting {key}: {error}',
   'src.placeholder': 'The URL still contains the placeholder {placeholder}; replace every <…> with the real value',
-  'src.placeholderLong': 'The URL still contains the placeholder {placeholder}; replace every <…> with the real value (account ID, region, load balancer name)',
+  'src.placeholderLong':
+    'The URL still contains the placeholder {placeholder}; replace every <…> with the real value (account ID, region, load balancer name)',
   'src.dateNeedsRange': 'The URL uses date tokens; a time range is required',
   'src.wildcardS3Only': 'Wildcards are only supported for s3:// URLs (no listing API for {url})',
   'src.demo.progress': 'Generating demo data…',
@@ -638,7 +667,8 @@ export const en = {
   'src.description.urls': '{n} URL(s): {first}{more}',
   'src.readingSchema': 'Reading schema…',
   'src.counting': 'Counting rows…',
-  'src.tooManyObjects': 'More than {max} objects under {bucket}/{prefix}; add a literal prefix before the wildcard (e.g. the load balancer name) or narrow the time range',
+  'src.tooManyObjects':
+    'More than {max} objects under {bucket}/{prefix}; add a literal prefix before the wildcard (e.g. the load balancer name) or narrow the time range',
   'src.tooManyPrefixes': 'Time range expands to too many prefixes',
   'src.warning.many':
     '{files} files ({mb} MB) match this time range, above the warning threshold of {max}. Connecting reads nothing, but text / gzip files are fetched whole and one after another, so the first query over this range will be slow. Narrow the time range (hours rather than days), or convert wide ranges to hourly Parquet with scripts/alb-to-parquet.sh.',

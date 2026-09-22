@@ -1,6 +1,16 @@
 /** Connection state and effects, independent of component rendering. */
 import { getCredentials, type AwsCredentials } from './auth';
-import { attachSource, capturedColumns, discoverVariables, requiredOrigins, unselectedTokens, type AttachedSource, type LargeSourceInfo, type TimeWindow, type ValueFilters } from './datasource';
+import {
+  attachSource,
+  capturedColumns,
+  discoverVariables,
+  requiredOrigins,
+  unselectedTokens,
+  type AttachedSource,
+  type LargeSourceInfo,
+  type TimeWindow,
+  type ValueFilters,
+} from './datasource';
 import { expose } from './debug';
 import { setDiagnoseContext } from './diagnose';
 import { describeError } from './errors';
@@ -12,7 +22,14 @@ import { CancelledError } from './net';
 import { ensureHostPermissions } from './permissions';
 import type { TokenValue } from './s3list';
 import { forgetSecrets, storeSecrets, withSecrets } from './secrets';
-import { forgetSource, loadSourceHistory, rememberSource, saveSource, type SourceConfig, type SourceHistoryEntry } from './sources';
+import {
+  forgetSource,
+  loadSourceHistory,
+  rememberSource,
+  saveSource,
+  type SourceConfig,
+  type SourceHistoryEntry,
+} from './sources';
 import { newId } from './sql';
 import type { UrlState } from './state';
 import { createStore } from './store';
@@ -154,8 +171,12 @@ export function createConnection(initialSource: SourceConfig, onSourcePage: () =
         if (stale()) return null;
         if (!perm.ok) throw new Error(t('app.error.hostPermission', { origins: perm.missing.join(', ') }));
       }
-      if (cfg.kind === 'url' && cfg.authMode === 'oidc') report(interactive ? t('app.progress.signingIn') : t('app.progress.refreshingCreds'), 'auth');
-      const c = cfg.kind === 'url' && cfg.authMode === 'oidc' ? await getCredentials(cfg.oidc, interactive, 300, () => !stale()) : null;
+      if (cfg.kind === 'url' && cfg.authMode === 'oidc')
+        report(interactive ? t('app.progress.signingIn') : t('app.progress.refreshingCreds'), 'auth');
+      const c =
+        cfg.kind === 'url' && cfg.authMode === 'oidc'
+          ? await getCredentials(cfg.oidc, interactive, 300, () => !stale())
+          : null;
       if (stale()) return null;
       // Patterns with {name} tokens: list the values first and let the user choose before any file is read.
       if (cfg.kind === 'url' && unselectedTokens(cfg).length) {
@@ -171,11 +192,22 @@ export function createConnection(initialSource: SourceConfig, onSourcePage: () =
       report(t('app.progress.stopping'), 'list');
       await cancelAllQueries();
       if (stale()) return null;
-      const a = await attachSource(cfg, sel.files, c, window, valueFilters, { signal: ctl.signal, onProgress: report, confirmLarge });
+      const a = await attachSource(cfg, sel.files, c, window, valueFilters, {
+        signal: ctl.signal,
+        onProgress: report,
+        confirmLarge,
+      });
       if (stale()) return null;
       // The user already accepted this file set: do not ask again at query time.
       if (confirmedLarge) ackedFiles.current = a.files.join('\n');
-      const saved: SourceConfig = { ...cfg, timeField: a.timeField ? { mode: 'field', name: a.timeField.name } : cfg.timeField.mode === 'none' ? { mode: 'none' } : { mode: 'auto' } };
+      const saved: SourceConfig = {
+        ...cfg,
+        timeField: a.timeField
+          ? { mode: 'field', name: a.timeField.name }
+          : cfg.timeField.mode === 'none'
+            ? { mode: 'none' }
+            : { mode: 'auto' },
+      };
       if (cfg.kind === 'local' && sel.handles.length) {
         // picked with handles: keep them so the source can be reopened from the history
         saved.localId = cfg.localId ?? newId();
@@ -191,7 +223,9 @@ export function createConnection(initialSource: SourceConfig, onSourcePage: () =
       return a;
     } catch (e) {
       if (stale()) return null;
-      update({ phase: { status: 'failed', error: e instanceof CancelledError ? t('app.error.cancelled') : describeError(e) } });
+      update({
+        phase: { status: 'failed', error: e instanceof CancelledError ? t('app.error.cancelled') : describeError(e) },
+      });
       return null;
     } finally {
       if (!stale()) {
@@ -206,7 +240,11 @@ export function createConnection(initialSource: SourceConfig, onSourcePage: () =
   const select = async (entry: SourceConfig, request: ConnectRequest) => {
     // Loading secrets is also part of this selection: a slower load must not replace a newer choice.
     const selection = begin();
-    update({ pendingSource: entry, switchSeq: store.get().switchSeq + 1, phase: { status: 'connecting', progress: null } });
+    update({
+      pendingSource: entry,
+      switchSeq: store.get().switchSeq + 1,
+      phase: { status: 'connecting', progress: null },
+    });
     try {
       const cfg = await withSecrets(entry);
       if (generation.current !== selection) return null;
@@ -238,7 +276,10 @@ export function createConnection(initialSource: SourceConfig, onSourcePage: () =
     const { attached, source } = store.get();
     if (!attached) return;
     const field = name ? (findField(attached.fields, name) ?? null) : null;
-    const config: SourceConfig = { ...source, timeField: field ? { mode: 'field', name: field.name } : { mode: 'none' } };
+    const config: SourceConfig = {
+      ...source,
+      timeField: field ? { mode: 'field', name: field.name } : { mode: 'none' },
+    };
     saveSource(config);
     update({ source: config, attached: { ...attached, timeField: field }, history: rememberSource(config) });
   };

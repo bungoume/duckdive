@@ -64,14 +64,18 @@
       "customType": "regex",
       "description": "CLI tools pinned in a workflow as an adjacent `<TOOL>_VERSION` / `<TOOL>_SHA256` pair below a `# renovate:` comment (duckdb, gitleaks, actionlint, zizmor): the release tag and the sha256 of the asset are refreshed together.",
       "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
-      "matchStrings": ["# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\s+[A-Z_]+_VERSION: '(?<currentValue>[^']+)'\\s+[A-Z_]+_SHA256: '(?<currentDigest>[0-9a-f]{64})'"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\s+[A-Z_]+_VERSION: '(?<currentValue>[^']+)'\\s+[A-Z_]+_SHA256: '(?<currentDigest>[0-9a-f]{64})'"
+      ],
       "versioningTemplate": "semver-coerced"
     },
     {
       "customType": "regex",
       "description": "The semgrep image, pinned by tag and digest. `docker run` in a step is out of reach of the docker manager.",
       "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
-      "matchStrings": ["# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+SEMGREP_IMAGE: '[^:]+:(?<currentValue>[\\d.]+)@(?<currentDigest>sha256:[0-9a-f]+)'"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+SEMGREP_IMAGE: '[^:]+:(?<currentValue>[\\d.]+)@(?<currentDigest>sha256:[0-9a-f]+)'"
+      ],
       "versioningTemplate": "docker"
     }
   ]

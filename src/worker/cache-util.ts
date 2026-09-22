@@ -27,7 +27,12 @@ export function checksum(buf: Uint8Array): number {
 export function cacheKey(url: string): string {
   const u = new URL(url);
   for (const k of [...u.searchParams.keys()]) {
-    if (/^(x-amz-|awsaccesskeyid$|signature$|expires$|x-goog-|sig$|se$|sv$|sp$|sr$|st$|skoid$|sktid$|skt$|ske$|sks$|skv$)/i.test(k)) u.searchParams.delete(k);
+    if (
+      /^(x-amz-|awsaccesskeyid$|signature$|expires$|x-goog-|sig$|se$|sv$|sp$|sr$|st$|skoid$|sktid$|skt$|ske$|sks$|skv$)/i.test(
+        k,
+      )
+    )
+      u.searchParams.delete(k);
   }
   u.hash = '';
   return u.toString();
@@ -134,7 +139,11 @@ export function hexHead(body: ArrayBuffer | null | undefined, n = 8): string | u
  * stream of writes does not evict on every chunk). `usedAt` falls back to `seenAt` for entries
  * written by older builds.
  */
-export function evictionPlan<T extends { seenAt: number; usedAt?: number; bytes: number }>(entries: T[], liveBytes: number, target: number): T[] {
+export function evictionPlan<T extends { seenAt: number; usedAt?: number; bytes: number }>(
+  entries: T[],
+  liveBytes: number,
+  target: number,
+): T[] {
   const out: T[] = [];
   let live = liveBytes;
   if (live <= target) return out;

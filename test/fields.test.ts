@@ -1,5 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
-import { findField, introspectFields, isTimeCandidate, kindOf, parseStructType, quoteIdent, timeExprFor, type Field } from '../src/fields';
+import {
+  findField,
+  introspectFields,
+  isTimeCandidate,
+  kindOf,
+  parseStructType,
+  quoteIdent,
+  timeExprFor,
+  type Field,
+} from '../src/fields';
 
 const query = vi.hoisted(() => vi.fn());
 vi.mock('../src/duck', () => ({ query }));
@@ -22,7 +31,9 @@ describe('kindOf', () => {
 
 describe('parseStructType', () => {
   it('splits members, keeping nested parentheses and quoted names intact', () => {
-    expect(parseStructType('STRUCT(a INTEGER, "b c" VARCHAR, d STRUCT(e DOUBLE, f MAP(VARCHAR, INTEGER)), "q""x" BOOLEAN)')).toEqual([
+    expect(
+      parseStructType('STRUCT(a INTEGER, "b c" VARCHAR, d STRUCT(e DOUBLE, f MAP(VARCHAR, INTEGER)), "q""x" BOOLEAN)'),
+    ).toEqual([
       ['a', 'INTEGER'],
       ['b c', 'VARCHAR'],
       ['d', 'STRUCT(e DOUBLE, f MAP(VARCHAR, INTEGER))'],
@@ -33,8 +44,20 @@ describe('parseStructType', () => {
 });
 
 describe('field helpers', () => {
-  const f = (name: string, kind: Field['kind'], duckType: string): Field => ({ name, expr: quoteIdent(name), kind, duckType, column: name, searchable: false });
-  const fields = [f('Host', 'string', 'VARCHAR'), f('start', 'number', 'BIGINT'), f('created_at', 'string', 'VARCHAR'), f('ts', 'date', 'TIMESTAMP')];
+  const f = (name: string, kind: Field['kind'], duckType: string): Field => ({
+    name,
+    expr: quoteIdent(name),
+    kind,
+    duckType,
+    column: name,
+    searchable: false,
+  });
+  const fields = [
+    f('Host', 'string', 'VARCHAR'),
+    f('start', 'number', 'BIGINT'),
+    f('created_at', 'string', 'VARCHAR'),
+    f('ts', 'date', 'TIMESTAMP'),
+  ];
 
   it('quotes identifiers', () => {
     expect(quoteIdent('a"b')).toBe('"a""b"');

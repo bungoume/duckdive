@@ -3,7 +3,9 @@ import { isAwsOrigin, originPattern } from '../src/permissions';
 
 describe('originPattern', () => {
   it('keeps the origin of an http(s) URL and refuses anything else', () => {
-    expect(originPattern('https://bucket.s3.ap-northeast-1.amazonaws.com/p/x.gz')).toBe('https://bucket.s3.ap-northeast-1.amazonaws.com/*');
+    expect(originPattern('https://bucket.s3.ap-northeast-1.amazonaws.com/p/x.gz')).toBe(
+      'https://bucket.s3.ap-northeast-1.amazonaws.com/*',
+    );
     expect(originPattern('http://localhost:9000/bucket')).toBe('http://localhost:9000/*');
     expect(originPattern('s3://bucket/p/*.gz')).toBeNull();
     expect(originPattern('not a url')).toBeNull();

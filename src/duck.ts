@@ -103,7 +103,8 @@ export function toPlain(v: unknown, type?: ArrowTypeLike): unknown {
     if (typeof o.toJSON === 'function') return toPlain(o.toJSON(), type);
     if (typeof o.toArray === 'function') return Array.from(o.toArray(), (x) => toPlain(x, type?.children?.[0]?.type));
     const out: Row = {};
-    for (const [k, val] of Object.entries(v as Row)) out[k] = toPlain(val, type?.children?.find((f) => f.name === k)?.type);
+    for (const [k, val] of Object.entries(v as Row))
+      out[k] = toPlain(val, type?.children?.find((f) => f.name === k)?.type);
     return out;
   }
   return v;
@@ -210,7 +211,11 @@ export async function exec(sql: string): Promise<void> {
  * (the three parts of an S3 credential) have to arrive as one step: a query that slipped between
  * two of them would sign with a key id that does not go with the secret and get a 403.
  */
-export async function execAll(sqls: string[], onFail?: (index: number, e: unknown) => Error, shouldRun?: () => boolean): Promise<void> {
+export async function execAll(
+  sqls: string[],
+  onFail?: (index: number, e: unknown) => Error,
+  shouldRun?: () => boolean,
+): Promise<void> {
   await enqueue(async () => {
     // A credential refresh may have become obsolete while waiting behind another query.
     if (shouldRun && !shouldRun()) return;

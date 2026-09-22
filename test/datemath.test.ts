@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { timeContext, describeRange, fromDatetimeLocal, parseAbsolute, parseDateMath, resolveRange, toDatetimeLocal } from '../src/datemath';
+import {
+  timeContext,
+  describeRange,
+  fromDatetimeLocal,
+  parseAbsolute,
+  parseDateMath,
+  resolveRange,
+  toDatetimeLocal,
+} from '../src/datemath';
 import { resetSettings, updateSettings } from '../src/settings';
 
 const now = new Date('2026-09-16T10:30:00.000Z'); // a Wednesday
@@ -35,7 +43,9 @@ describe('parseDateMath', () => {
   it('adds months and years on the calendar', () => {
     expect(parseDateMath('now-1M', false, timeContext(now))?.toISOString()).toBe('2026-08-16T10:30:00.000Z');
     expect(parseDateMath('now+1y', false, timeContext(now))?.toISOString()).toBe('2027-09-16T10:30:00.000Z');
-    expect(parseDateMath('now+1M', false, timeContext(new Date('2026-01-31T00:00:00Z')))?.toISOString()).toBe('2026-03-03T00:00:00.000Z');
+    expect(parseDateMath('now+1M', false, timeContext(new Date('2026-01-31T00:00:00Z')))?.toISOString()).toBe(
+      '2026-03-03T00:00:00.000Z',
+    );
   });
 
   it('rounds in the configured time zone', () => {
@@ -51,14 +61,18 @@ describe('parseDateMath', () => {
     expect(parseDateMath('now/h', true, timeContext(repeated))?.toISOString()).toBe('2026-11-01T06:59:59.999Z');
     expect(parseDateMath('now/m', false, timeContext(repeated))?.toISOString()).toBe('2026-11-01T06:30:00.000Z');
     // the first 01:30, an hour earlier, rounds to its own hour
-    expect(parseDateMath('now/h', false, timeContext(new Date('2026-11-01T05:30:00.000Z')))?.toISOString()).toBe('2026-11-01T05:00:00.000Z');
+    expect(parseDateMath('now/h', false, timeContext(new Date('2026-11-01T05:30:00.000Z')))?.toISOString()).toBe(
+      '2026-11-01T05:00:00.000Z',
+    );
     // and a day is still 25 hours long there
     expect(parseDateMath('now/d', false, timeContext(repeated))?.toISOString()).toBe('2026-11-01T04:00:00.000Z');
   });
 
   it('rounds the hour on the zone offset, half-hour zones included', () => {
     updateSettings({ timeZone: 'Asia/Kolkata' }); // +05:30
-    expect(parseDateMath('now/h', false, timeContext(new Date('2026-09-16T10:31:00.000Z')))?.toISOString()).toBe('2026-09-16T10:30:00.000Z');
+    expect(parseDateMath('now/h', false, timeContext(new Date('2026-09-16T10:31:00.000Z')))?.toISOString()).toBe(
+      '2026-09-16T10:30:00.000Z',
+    );
   });
 
   it('accepts absolute timestamps and rejects garbage', () => {
@@ -91,7 +105,8 @@ describe('parseAbsolute', () => {
   });
 
   it('rejects what is not a timestamp', () => {
-    for (const s of ['', 'now-1h', 'the first', '2026-13-01', '2026-09-16T25:00:00']) expect(parseAbsolute(s), s).toBeNull();
+    for (const s of ['', 'now-1h', 'the first', '2026-13-01', '2026-09-16T25:00:00'])
+      expect(parseAbsolute(s), s).toBeNull();
   });
 });
 

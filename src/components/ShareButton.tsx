@@ -24,7 +24,8 @@ export function ShareButton(props: { link: () => string; withSource: boolean; di
     }
   };
 
-  const label = state === 'copied' ? (props.withSource ? t('share.copied') : t('share.copiedNoSource')) : t('share.button');
+  const label =
+    state === 'copied' ? (props.withSource ? t('share.copied') : t('share.copiedNoSource')) : t('share.button');
   return (
     <Popover
       open={state === 'shown'}

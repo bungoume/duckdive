@@ -42,7 +42,10 @@ export function DataTable(props: { result: VisResult; metrics: MetricDef[]; xLab
   const csv = () => {
     const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const lines = [headers.map(esc).join(',')];
-    for (const row of rows) lines.push(row.map((c, i) => esc(isDateCell(i) && typeof c === 'number' ? new Date(c).toISOString() : c)).join(','));
+    for (const row of rows)
+      lines.push(
+        row.map((c, i) => esc(isDateCell(i) && typeof c === 'number' ? new Date(c).toISOString() : c)).join(','),
+      );
     downloadBlob(new Blob([lines.join(NL)], { type: 'text/csv' }), 'duckdive-table.csv');
   };
   return (
@@ -59,7 +62,12 @@ export function DataTable(props: { result: VisResult; metrics: MetricDef[]; xLab
             <tr>
               {headers.map((h, i) => (
                 <th aria-sort={sort?.col === i ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'}>
-                  <button class="sortbtn" onClick={() => setSort(sort && sort.col === i ? { col: i, dir: sort.dir === 1 ? -1 : 1 } : { col: i, dir: 1 })}>
+                  <button
+                    class="sortbtn"
+                    onClick={() =>
+                      setSort(sort && sort.col === i ? { col: i, dir: sort.dir === 1 ? -1 : 1 } : { col: i, dir: 1 })
+                    }
+                  >
                     {h}
                     {sort?.col === i ? (sort.dir === 1 ? ' ▲' : ' ▼') : ''}
                   </button>
@@ -71,7 +79,8 @@ export function DataTable(props: { result: VisResult; metrics: MetricDef[]; xLab
             {rows.map((row) => (
               <tr>
                 {row.map((c, i) => {
-                  if (isDateCell(i) && typeof c === 'number') return <td>{r.interval ? formatBucket(new Date(c), r.interval.ms) : formatDate(new Date(c))}</td>;
+                  if (isDateCell(i) && typeof c === 'number')
+                    return <td>{r.interval ? formatBucket(new Date(c), r.interval.ms) : formatDate(new Date(c))}</td>;
                   const isNum = typeof c === 'number';
                   return <td class={isNum ? 'num' : ''}>{isNum ? fmtNum(c) : String(c)}</td>;
                 })}

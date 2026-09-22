@@ -76,7 +76,12 @@ export function createCachingXHR(NativeXHR: typeof XMLHttpRequest, origin: strin
 
     send(body: unknown) {
       if (!this.cacheable()) {
-        const entry = cache.log({ method: this.method, url: this.url, range: this.reqHeaders['range'] ?? null, outcome: this.isAsync ? 'async-passthrough' : 'passthrough' });
+        const entry = cache.log({
+          method: this.method,
+          url: this.url,
+          range: this.reqHeaders['range'] ?? null,
+          outcome: this.isAsync ? 'async-passthrough' : 'passthrough',
+        });
         this.passthrough(body, entry);
         return;
       }
@@ -109,7 +114,15 @@ export function createCachingXHR(NativeXHR: typeof XMLHttpRequest, origin: strin
       x.open(this.method, this.url, this.isAsync);
       if (this.responseType) x.responseType = this.responseType;
       // DuckDB never sets a timeout; give synchronous requests a deadline (see nativeSync)
-      x.timeout = this.timeout || (this.isAsync ? 0 : this.method === 'HEAD' ? HEAD_TIMEOUT_MS : this.reqHeaders['range'] ? CHUNK_TIMEOUT_MS : WHOLE_FILE_TIMEOUT_MS);
+      x.timeout =
+        this.timeout ||
+        (this.isAsync
+          ? 0
+          : this.method === 'HEAD'
+            ? HEAD_TIMEOUT_MS
+            : this.reqHeaders['range']
+              ? CHUNK_TIMEOUT_MS
+              : WHOLE_FILE_TIMEOUT_MS);
       x.withCredentials = this.withCredentials;
       for (const [k, v] of Object.entries(this.reqHeaders)) {
         try {
@@ -150,7 +163,8 @@ export function createCachingXHR(NativeXHR: typeof XMLHttpRequest, origin: strin
       if (this.native) return this.native.response;
       if (!this.result) return null;
       if (this.responseType === 'arraybuffer') return this.result.body;
-      if (this.responseType === '' || this.responseType === 'text') return this.result.body ? new TextDecoder().decode(this.result.body) : '';
+      if (this.responseType === '' || this.responseType === 'text')
+        return this.result.body ? new TextDecoder().decode(this.result.body) : '';
       if (this.responseType === 'json') {
         try {
           return this.result.body ? JSON.parse(new TextDecoder().decode(this.result.body)) : null;

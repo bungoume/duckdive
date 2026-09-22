@@ -24,15 +24,38 @@ import { quarantineFilters } from './trust';
 export const isStr = (v: unknown): v is string => typeof v === 'string';
 export const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const strOrNull = (v: unknown): string | null => (isStr(v) ? v : null);
-const oneOf = <T extends string>(v: unknown, allowed: readonly T[], fallback: T): T => (allowed.includes(v as T) ? (v as T) : fallback);
+const oneOf = <T extends string>(v: unknown, allowed: readonly T[], fallback: T): T =>
+  allowed.includes(v as T) ? (v as T) : fallback;
 const strList = (v: unknown): string[] => (Array.isArray(v) ? v.filter(isStr) : []);
 
-const FILTER_OPS: readonly FilterOp[] = ['is', 'is_not', 'is_one_of', 'is_not_one_of', 'exists', 'does_not_exist', 'between', 'query'];
+const FILTER_OPS: readonly FilterOp[] = [
+  'is',
+  'is_not',
+  'is_one_of',
+  'is_not_one_of',
+  'exists',
+  'does_not_exist',
+  'between',
+  'query',
+];
 const CHARTS: readonly ChartType[] = ['area', 'line', 'bar', 'table', 'metric'];
-const AGGS: readonly MetricAgg[] = ['count', 'sum', 'avg', 'min', 'max', 'median', 'unique', 'p95', 'p99', 'percentile', 'rate'];
+const AGGS: readonly MetricAgg[] = [
+  'count',
+  'sum',
+  'avg',
+  'min',
+  'max',
+  'median',
+  'unique',
+  'p95',
+  'p99',
+  'percentile',
+  'rate',
+];
 const X_KINDS: readonly XAxisDef['kind'][] = ['date_histogram', 'terms', 'histogram', 'none'];
 
-const boundedSize = (value: unknown, fallback: number, max: number): number => (typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.min(max, Math.floor(value)) : fallback);
+const boundedSize = (value: unknown, fallback: number, max: number): number =>
+  typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.min(max, Math.floor(value)) : fallback;
 
 /**
  * Validate structure only. Trust decisions are applied separately when restoring external data.
@@ -60,16 +83,29 @@ function sanitizeFilters(raw: unknown): Filter[] {
 
 export function sanitizeSearch(raw: unknown): SearchState {
   const r = isObj(raw) ? raw : {};
-  const range = isObj(r.range) && isStr(r.range.from) && isStr(r.range.to) ? { from: r.range.from, to: r.range.to } : DEFAULT_SEARCH.range;
+  const range =
+    isObj(r.range) && isStr(r.range.from) && isStr(r.range.to)
+      ? { from: r.range.from, to: r.range.to }
+      : DEFAULT_SEARCH.range;
   return { query: isStr(r.query) ? r.query : '', range, filters: sanitizeFilters(r.filters) };
 }
 
 export function sanitizeDiscover(raw: unknown): DiscoverState {
   const r = isObj(raw) ? raw : {};
   const sort = Array.isArray(r.sort)
-    ? r.sort.filter((s): s is { field: string; dir: SortDir } => isObj(s) && isStr(s.field) && (s.dir === 'asc' || s.dir === 'desc')).map((s) => ({ field: s.field, dir: s.dir }))
+    ? r.sort
+        .filter(
+          (s): s is { field: string; dir: SortDir } =>
+            isObj(s) && isStr(s.field) && (s.dir === 'asc' || s.dir === 'desc'),
+        )
+        .map((s) => ({ field: s.field, dir: s.dir }))
     : [];
-  return { columns: strList(r.columns), sort, interval: isStr(r.interval) ? r.interval : DEFAULT_DISCOVER.interval, breakdown: strOrNull(r.breakdown) };
+  return {
+    columns: strList(r.columns),
+    sort,
+    interval: isStr(r.interval) ? r.interval : DEFAULT_DISCOVER.interval,
+    breakdown: strOrNull(r.breakdown),
+  };
 }
 
 export function sanitizeVis(raw: unknown): VisState {
@@ -78,7 +114,11 @@ export function sanitizeVis(raw: unknown): VisState {
   const x = isObj(r.x) ? r.x : {};
   const metrics: MetricDef[] = Array.isArray(r.metrics)
     ? r.metrics.filter(isObj).map((m, i) => {
-        const def: MetricDef = { id: isStr(m.id) ? m.id : `m${i}`, agg: oneOf(m.agg, AGGS, 'count'), field: strOrNull(m.field) };
+        const def: MetricDef = {
+          id: isStr(m.id) ? m.id : `m${i}`,
+          agg: oneOf(m.agg, AGGS, 'count'),
+          field: strOrNull(m.field),
+        };
         if (isStr(m.label)) def.label = m.label;
         if (typeof m.param === 'number' && m.param >= 0 && m.param <= 100) def.param = m.param;
         return def;

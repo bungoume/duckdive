@@ -162,7 +162,8 @@ async function withStore<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) =>
   }
 }
 
-export const storeHandles = (id: string, handles: FileSystemHandle[]) => withStore('readwrite', (s) => s.put(handles, id));
+export const storeHandles = (id: string, handles: FileSystemHandle[]) =>
+  withStore('readwrite', (s) => s.put(handles, id));
 export const loadHandles = (id: string) => withStore<FileSystemHandle[] | undefined>('readonly', (s) => s.get(id));
 export const forgetHandles = (id: string) => withStore('readwrite', (s) => s.delete(id));
 
@@ -177,7 +178,8 @@ export async function openLocal(id: string, interactive: boolean): Promise<Local
     const p = h as FileSystemHandle & PermissionHandle;
     if (!p.queryPermission || (await p.queryPermission({ mode: 'read' })) === 'granted') continue;
     if (!interactive) return null;
-    if (!p.requestPermission || (await p.requestPermission({ mode: 'read' })) !== 'granted') throw new Error(t('src.local.denied'));
+    if (!p.requestPermission || (await p.requestPermission({ mode: 'read' })) !== 'granted')
+      throw new Error(t('src.local.denied'));
   }
   return selectionOf(handles);
 }

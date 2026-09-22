@@ -4,7 +4,14 @@ import { fmtBytes } from '../cache';
 import type { FieldKind } from '../fields';
 import { getSettings } from '../settings';
 
-export function Popover(props: { open: boolean; onClose: () => void; button: ComponentChildren; children: ComponentChildren; align?: 'left' | 'right'; width?: number }) {
+export function Popover(props: {
+  open: boolean;
+  onClose: () => void;
+  button: ComponentChildren;
+  children: ComponentChildren;
+  align?: 'left' | 'right';
+  width?: number;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const { open, onClose } = props;
   useEffect(() => {
@@ -26,7 +33,10 @@ export function Popover(props: { open: boolean; onClose: () => void; button: Com
     <div class="popover-anchor" ref={ref}>
       {props.button}
       {props.open && (
-        <div class={'popover' + (props.align === 'right' ? ' right' : '')} style={props.width ? { width: props.width } : undefined}>
+        <div
+          class={'popover' + (props.align === 'right' ? ' right' : '')}
+          style={props.width ? { width: props.width } : undefined}
+        >
           {props.children}
         </div>
       )}
@@ -51,7 +61,16 @@ export function FormField(props: { label: string; children: ComponentChildren; c
 }
 
 export function FieldIcon({ kind }: { kind: FieldKind }) {
-  const label: Record<FieldKind, string> = { string: 't', number: '#', date: '◷', boolean: '✓', object: '{}', list: '[]', json: 'J', unknown: '?' };
+  const label: Record<FieldKind, string> = {
+    string: 't',
+    number: '#',
+    date: '◷',
+    boolean: '✓',
+    object: '{}',
+    list: '[]',
+    json: 'J',
+    unknown: '?',
+  };
   return (
     <span class={'ficon kind-' + kind} title={kind}>
       {label[kind]}

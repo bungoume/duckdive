@@ -64,7 +64,16 @@ const server = createServer((req, res) => {
     res.writeHead(200, { 'content-type': 'application/json', 'access-control-allow-origin': '*' });
     // `run` identifies this process: the suite polls until it sees its own, so it can never read
     // the counters of a server another run left behind on this port.
-    res.end(JSON.stringify({ run: process.env.DDV_RUN ?? '', requests, bytesSent, signedRequests, tokenRequests, headRequests }));
+    res.end(
+      JSON.stringify({
+        run: process.env.DDV_RUN ?? '',
+        requests,
+        bytesSent,
+        signedRequests,
+        tokenRequests,
+        headRequests,
+      }),
+    );
     return;
   }
   const cors = noCors
@@ -93,7 +102,8 @@ const server = createServer((req, res) => {
       url.searchParams.get('continuation-token') ?? '',
     );
     requests++;
-    if (req.headers.authorization && /^AWS4-HMAC-SHA256/.test(req.headers.authorization) && req.headers['x-amz-date']) signedRequests++;
+    if (req.headers.authorization && /^AWS4-HMAC-SHA256/.test(req.headers.authorization) && req.headers['x-amz-date'])
+      signedRequests++;
     if (!xml) {
       res.writeHead(404, { ...cors, 'content-type': 'application/xml' });
       res.end('<Error><Code>NoSuchBucket</Code><Message>no such bucket</Message></Error>');
@@ -112,7 +122,9 @@ const server = createServer((req, res) => {
       const ok = p.get('Action') === 'AssumeRoleWithWebIdentity' && p.get('RoleArn') && p.get('WebIdentityToken');
       if (!ok) {
         res.writeHead(400, { 'content-type': 'application/xml' });
-        res.end('<ErrorResponse><Error><Code>InvalidParameter</Code><Message>missing parameters</Message></Error></ErrorResponse>');
+        res.end(
+          '<ErrorResponse><Error><Code>InvalidParameter</Code><Message>missing parameters</Message></Error></ErrorResponse>',
+        );
         return;
       }
       const exp = new Date(Date.now() + Number(p.get('DurationSeconds') || 3600) * 1000).toISOString();
@@ -149,7 +161,8 @@ const server = createServer((req, res) => {
         ua: (req.headers['user-agent'] || '').slice(0, 40),
       }),
     );
-  if (req.headers.authorization && /^AWS4-HMAC-SHA256/.test(req.headers.authorization) && req.headers['x-amz-date']) signedRequests++;
+  if (req.headers.authorization && /^AWS4-HMAC-SHA256/.test(req.headers.authorization) && req.headers['x-amz-date'])
+    signedRequests++;
   if (req.headers['x-amz-security-token']) tokenRequests++;
   if (req.method === 'HEAD') headRequests++;
   const etag = `"${st.size}-${Math.floor(st.mtimeMs)}"`;
@@ -174,7 +187,11 @@ const server = createServer((req, res) => {
       res.end();
       return;
     }
-    res.writeHead(206, { ...base, 'content-length': end - start + 1, 'content-range': `bytes ${start}-${end}/${st.size}` });
+    res.writeHead(206, {
+      ...base,
+      'content-length': end - start + 1,
+      'content-range': `bytes ${start}-${end}/${st.size}`,
+    });
     if (req.method === 'HEAD') {
       res.end(); // like S3: HEAD with Range answers 206 without a body
       return;

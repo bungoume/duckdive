@@ -61,7 +61,8 @@ export function otelRename(byName: OtelByName, columns: string[], keep: Set<stri
     }
     const key = fieldKey(col);
     const entry = Object.hasOwn(byName.map, key) ? byName.map[key] : undefined;
-    if (entry) for (const [name, expr] of entry) out.push(`${expr ? expr.replace('{}', quoted) : quoted} AS ${quoteName(name)}`);
+    if (entry)
+      for (const [name, expr] of entry) out.push(`${expr ? expr.replace('{}', quoted) : quoted} AS ${quoteName(name)}`);
     else out.push(`${quoted} AS ${quoteName(byName.prefix + key)}`);
   }
   return out.join(', ');
@@ -101,7 +102,18 @@ export function detectFormat(urls: string[]): Exclude<FormatId, 'auto'> {
   // Parquet wins over path hints: converted ALB logs or Flow Logs in Parquet still carry the
   // service name in their keys.
   if (/\.parquet$/i.test(first)) return 'parquet';
-  for (const id of ['alb', 'cloudtrail', 'flowlogs', 'cloudfront', 's3access', 'waf', 'r53resolver', 'ltsv', 'json', 'csv'] as const) {
+  for (const id of [
+    'alb',
+    'cloudtrail',
+    'flowlogs',
+    'cloudfront',
+    's3access',
+    'waf',
+    'r53resolver',
+    'ltsv',
+    'json',
+    'csv',
+  ] as const) {
     const d = FORMATS[id].detect;
     if (d && d.test(first)) return id;
   }

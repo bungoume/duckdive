@@ -1,4 +1,19 @@
-import { j, jcast, protoName, protoVersion, urlPart, RE_SCHEME, RE_DOMAIN, RE_PORT, RE_PATH_ABS, RE_QUERY, jraw, REC, readJson, ndjson } from './shared';
+import {
+  j,
+  jcast,
+  protoName,
+  protoVersion,
+  urlPart,
+  RE_SCHEME,
+  RE_DOMAIN,
+  RE_PORT,
+  RE_PATH_ABS,
+  RE_QUERY,
+  jraw,
+  REC,
+  readJson,
+  ndjson,
+} from './shared';
 import { type FormatDef } from './types';
 
 // ---- Google Cloud Logging ----

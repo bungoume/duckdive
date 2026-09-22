@@ -93,7 +93,15 @@ export function zonedParts(d: Date, tz: string = effectiveTimeZone()): ZonedPart
 /** Normalise a wall time whose fields may be out of range (day 0, month 13, …) the way Date.UTC does. */
 export function normalizeWall(w: WallTime): WallTime {
   const d = new Date(Date.UTC(w.year, w.month - 1, w.day, w.hour, w.minute, w.second, w.ms));
-  return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate(), hour: d.getUTCHours(), minute: d.getUTCMinutes(), second: d.getUTCSeconds(), ms: d.getUTCMilliseconds() };
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth() + 1,
+    day: d.getUTCDate(),
+    hour: d.getUTCHours(),
+    minute: d.getUTCMinutes(),
+    second: d.getUTCSeconds(),
+    ms: d.getUTCMilliseconds(),
+  };
 }
 
 /** The instant at which the clocks of zone `tz` show `w` (for a skipped DST hour: the instant after the gap). */
@@ -117,7 +125,10 @@ function names(kind: 'month' | 'weekday', style: 'short' | 'long'): string[] {
   let list = nameCache.get(key);
   if (!list) {
     const f = new Intl.DateTimeFormat(locale, { timeZone: 'UTC', [kind]: style });
-    list = kind === 'month' ? Array.from({ length: 12 }, (_, i) => f.format(new Date(Date.UTC(2024, i, 1)))) : Array.from({ length: 7 }, (_, i) => f.format(new Date(Date.UTC(2024, 0, 7 + i))));
+    list =
+      kind === 'month'
+        ? Array.from({ length: 12 }, (_, i) => f.format(new Date(Date.UTC(2024, i, 1))))
+        : Array.from({ length: 7 }, (_, i) => f.format(new Date(Date.UTC(2024, 0, 7 + i))));
     nameCache.set(key, list);
   }
   return list;
@@ -130,7 +141,11 @@ function offsetText(min: number, colon: boolean): string {
 }
 
 /** Render `d` with a moment-style pattern in zone `tz`. */
-export function formatDate(d: Date, pattern: string = getSettings().dateFormat, tz: string = effectiveTimeZone()): string {
+export function formatDate(
+  d: Date,
+  pattern: string = getSettings().dateFormat,
+  tz: string = effectiveTimeZone(),
+): string {
   if (isNaN(d.getTime())) return '–';
   const p = zonedParts(d, tz);
   const h12 = p.hour % 12 || 12;
@@ -202,7 +217,9 @@ export function formatDate(d: Date, pattern: string = getSettings().dateFormat, 
 /** ISO 8601 duration → milliseconds (months = 30 days, years = 365 days); null when malformed. */
 export function parseIsoDuration(s: string): number | null {
   if (s === '') return 0;
-  const m = /^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/i.exec(s.trim());
+  const m = /^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/i.exec(
+    s.trim(),
+  );
   if (!m) return null;
   const [, y, mo, w, d, h, mi, sec] = m;
   return (
