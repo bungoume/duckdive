@@ -2,7 +2,7 @@
 //   OIDC login (identity.launchWebAuthFlow, implicit id_token) →
 //   STS AssumeRoleWithWebIdentity (unsigned call) → temporary S3 credentials.
 
-import { fetchWithTimeout } from './net';
+import { CancelledError, fetchWithTimeout } from './net';
 import { expose } from './debug';
 import { isExtension } from './permissions';
 import { readSession, writeSession } from './sessionStore';
@@ -155,9 +155,11 @@ export async function assumeRoleWithWebIdentity(cfg: OidcConfig, idToken: string
   return creds;
 }
 
-export async function signIn(cfg: OidcConfig, interactive: boolean): Promise<AwsCredentials> {
+export async function signIn(cfg: OidcConfig, interactive: boolean, isCurrent: () => boolean = () => true): Promise<AwsCredentials> {
   const token = await loginOidc(cfg, interactive);
+  if (!isCurrent()) throw new CancelledError();
   const creds = await assumeRoleWithWebIdentity(cfg, token);
+  if (!isCurrent()) throw new CancelledError();
   await storeCredentials(creds, cfg);
   return creds;
 }
@@ -210,14 +212,15 @@ export function isUsable(c: AwsCredentials | null, minSeconds = 60): boolean {
  * Return credentials that stay valid for at least `minSeconds`, refreshing silently otherwise.
  * Falls back to an interactive login only when `allowInteractive` is set.
  */
-export async function getCredentials(cfg: OidcConfig, allowInteractive: boolean, minSeconds = 300): Promise<AwsCredentials> {
+export async function getCredentials(cfg: OidcConfig, allowInteractive: boolean, minSeconds = 300, isCurrent: () => boolean = () => true): Promise<AwsCredentials> {
   const cached = await loadCredentials(cfg);
+  if (!isCurrent()) throw new CancelledError();
   if (isUsable(cached, minSeconds)) return cached!;
   try {
-    return await signIn(cfg, false);
+    return await signIn(cfg, false, isCurrent);
   } catch (e) {
-    if (!allowInteractive) throw e;
-    return signIn(cfg, true);
+    if (!allowInteractive || !isCurrent()) throw e;
+    return signIn(cfg, true, isCurrent);
   }
 }
 

@@ -117,7 +117,7 @@ export function requiredOrigins(cfg: SourceConfig): string[] {
 }
 
 /** Apply S3 settings to DuckDB. `creds` overrides the static keys (OIDC / STS mode). */
-export async function applyS3(cfg: SourceConfig, creds: AwsCredentials | null = null) {
+export async function applyS3(cfg: SourceConfig, creds: AwsCredentials | null = null, shouldRun?: () => boolean) {
   const s = cfg.s3;
   const stmts: [string, string][] = [];
   if (s.region) stmts.push(['s3_region', s.region]);
@@ -130,6 +130,7 @@ export async function applyS3(cfg: SourceConfig, creds: AwsCredentials | null = 
   await execAll(
     stmts.map(([k, v]) => `SET ${k}=${lit(v)}`),
     (i, e) => new Error(t('src.applyFailed', { key: stmts[i][0], error: describeError(e) }), { cause: e }),
+    shouldRun,
   );
 }
 

@@ -91,6 +91,7 @@ export function App() {
     variables,
     creds,
     setCreds,
+    connectionGeneration,
     ackedFiles,
     connect,
     switchSource,
@@ -100,7 +101,7 @@ export function App() {
   } = useConnect(url, setUrl, busyRef, linkSource, refreshTick);
   refreshBusyRef.current = busy || attaching;
   const { gate, runAnyway } = useDownloadGate(source, attached, ackedFiles);
-  const { refreshError } = useCredentialRefresh(source, attached, setCreds);
+  const { refreshError } = useCredentialRefresh(source, attached, setCreds, connectionGeneration, attaching);
   const paused = attaching || gate.status !== 'ok';
   // A source from a link that was never connected here is offered, not connected: the banner shows where it reads from.
   const linkOffer = linkSource && !linkIgnored && !history.some((h) => h.key === sourceKey(linkSource)) ? linkSource : null;

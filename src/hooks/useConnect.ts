@@ -94,10 +94,11 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
   const attemptedKey = useRef('');
 
   /** Credentials for cfg (null for static / none). Interactive login only when `interactive`. */
-  const resolveCreds = async (cfg: SourceConfig, interactive: boolean): Promise<AwsCredentials | null> => {
+  const resolveCreds = async (cfg: SourceConfig, interactive: boolean, isCurrent: () => boolean): Promise<AwsCredentials | null> => {
     setCreds(null);
     if (cfg.kind !== 'url' || cfg.authMode !== 'oidc') return null;
-    const c = await getCredentials(cfg.oidc, interactive);
+    const c = await getCredentials(cfg.oidc, interactive, 300, isCurrent);
+    if (!isCurrent()) throw new CancelledError();
     setCreds(c);
     return c;
   };
@@ -158,7 +159,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
         if (!perm.ok) throw new Error(t('app.error.hostPermission', { origins: perm.missing.join(', ') }));
       }
       if (cfg.kind === 'url' && cfg.authMode === 'oidc') report(interactive ? t('app.progress.signingIn') : t('app.progress.refreshingCreds'), 'auth');
-      const c = await resolveCreds(cfg, interactive);
+      const c = await resolveCreds(cfg, interactive, () => !stale());
       if (stale()) return null;
       // Patterns with {name} tokens: list the values first and let the user choose before any file is read.
       if (cfg.kind === 'url' && unselectedTokens(cfg).length) {
@@ -343,6 +344,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
     variables,
     creds,
     setCreds,
+    connectionGeneration: attemptSeq,
     ackedFiles,
     connect,
     switchSource,

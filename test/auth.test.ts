@@ -11,6 +11,11 @@ const credentials: AwsCredentials = {
 describe('credential cache', () => {
   beforeEach(() => sessionStorage.clear());
 
+  it('abandons credentials when the requesting connection is no longer current', async () => {
+    await storeCredentials(credentials, DEFAULT_OIDC);
+    await expect(getCredentials(DEFAULT_OIDC, true, 300, () => false)).rejects.toThrow('Cancelled');
+  });
+
   it('returns credentials only for the identity provider and role that obtained them', async () => {
     const a = { ...DEFAULT_OIDC, clientId: 'client-a', roleArn: 'arn:aws:iam::1:role/a' };
     const b = { ...a, roleArn: 'arn:aws:iam::1:role/b' };

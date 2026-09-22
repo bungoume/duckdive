@@ -12,27 +12,47 @@ const CHECK_EVERY_MS = 60_000;
 /** Refresh once less than this remains; the README promises ten minutes. */
 const REFRESH_BEFORE_S = 600;
 
-export function useCredentialRefresh(source: SourceConfig, attached: AttachedSource | null, onCreds: (c: AwsCredentials) => void): { refreshError: string | null } {
+export function useCredentialRefresh(
+  source: SourceConfig,
+  attached: AttachedSource | null,
+  onCreds: (c: AwsCredentials) => void,
+  connectionGeneration: { current: number },
+  paused: boolean,
+): { refreshError: string | null } {
   const [refreshError, setRefreshError] = useState<string | null>(null);
   useEffect(() => {
     setRefreshError(null);
-    if (source.kind !== 'url' || source.authMode !== 'oidc' || !attached) return;
+    if (source.kind !== 'url' || source.authMode !== 'oidc' || !attached || paused) return;
+    const generation = connectionGeneration.current;
+    let live = true;
+    let pending = false;
+    const isCurrent = () => live && generation === connectionGeneration.current;
     const timer = setInterval(async () => {
+      if (pending || !isCurrent()) return;
+      pending = true;
       try {
         const cur = await loadCredentials(source.oidc);
         // Empty means the user signed out. A bad/expired entry is non-null and should refresh.
-        if (!cur) return;
+        if (!cur || !isCurrent()) return;
         if (secondsUntilExpiry(cur) > REFRESH_BEFORE_S) return;
-        const c = await getCredentials(source.oidc, false, REFRESH_BEFORE_S);
+        const c = await getCredentials(source.oidc, false, REFRESH_BEFORE_S, isCurrent);
+        if (!isCurrent()) return;
+        await applyS3(source, c, isCurrent);
+        if (!isCurrent()) return;
         onCreds(c);
-        await applyS3(source, c);
         setRefreshError(null);
       } catch (e) {
+        if (!isCurrent()) return;
         console.warn('credential refresh failed', e);
         setRefreshError(describeError(e));
+      } finally {
+        pending = false;
       }
     }, CHECK_EVERY_MS);
-    return () => clearInterval(timer);
-  }, [source, attached, onCreds]);
+    return () => {
+      live = false;
+      clearInterval(timer);
+    };
+  }, [source, attached, onCreds, connectionGeneration, paused]);
   return { refreshError };
 }

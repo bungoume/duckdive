@@ -178,8 +178,10 @@ export async function exec(sql: string): Promise<void> {
  * (the three parts of an S3 credential) have to arrive as one step: a query that slipped between
  * two of them would sign with a key id that does not go with the secret and get a 403.
  */
-export async function execAll(sqls: string[], onFail?: (index: number, e: unknown) => Error): Promise<void> {
+export async function execAll(sqls: string[], onFail?: (index: number, e: unknown) => Error, shouldRun?: () => boolean): Promise<void> {
   await enqueue(async () => {
+    // A credential refresh may have become obsolete while waiting behind another query.
+    if (shouldRun && !shouldRun()) return;
     const c = getConn();
     for (let i = 0; i < sqls.length; i++) {
       try {
