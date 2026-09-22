@@ -398,10 +398,10 @@ const liveBytes = () => slabSize - wasted;
  * down to 80 % of the limit. `keep` is the file being written (it is never dropped under itself).
  * Dropped chunks become waste in the slab; a compaction is scheduled to give the disk back.
  */
-function enforceLimit(keep: CacheEntry | null) {
-  if (!config.maxBytes || liveBytes() <= config.maxBytes) return;
+function enforceLimit(keep: CacheEntry | null, incoming = 0) {
+  if (!config.maxBytes || liveBytes() + incoming <= config.maxBytes) return;
   const candidates = [...files.values()].filter((e) => e !== keep && e.chunks.size).map((e) => ({ entry: e, seenAt: e.seenAt, usedAt: e.usedAt, bytes: cachedBytesOf(e) }));
-  for (const c of evictionPlan(candidates, liveBytes(), config.maxBytes * 0.8)) {
+  for (const c of evictionPlan(candidates, liveBytes() + incoming, config.maxBytes * 0.8)) {
     dropChunks(c.entry);
     stats.evictions++;
     log({ method: 'EVICT', url: c.entry.key, range: null, outcome: `evicted:${c.bytes}` });
@@ -432,6 +432,11 @@ function scheduleCompact() {
 
 function writeChunk(entry: CacheEntry, idx: number, buf: Uint8Array) {
   if (!slab || readOnly) return;
+  // Evict other files before reserving disk space. A single large object can fill the budget
+  // on its own; serve its remaining chunks from the network without retaining them.
+  if (config.maxBytes && buf.byteLength > config.maxBytes) return;
+  enforceLimit(entry, buf.byteLength);
+  if (config.maxBytes && liveBytes() + buf.byteLength > config.maxBytes) return;
   try {
     const off = slabSize;
     slab.write(buf, { at: off });
@@ -442,7 +447,7 @@ function writeChunk(entry: CacheEntry, idx: number, buf: Uint8Array) {
     entry.chunks.set(idx, { off, len: buf.byteLength, sum: checksum(buf) });
     entry.usedAt = Date.now();
     scheduleSaveIndex();
-    enforceLimit(entry);
+    if (needsCompaction()) scheduleCompact();
   } catch (e) {
     console.warn('[ddv-cache] chunk write failed', e);
   }

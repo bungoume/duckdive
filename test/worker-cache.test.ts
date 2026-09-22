@@ -123,3 +123,23 @@ it('refuses cache mutations in a read-only tab, including a lower size limit', a
   expect(await control({ type: 'files' })).toEqual(before);
   expect(slab.write).not.toHaveBeenCalled();
 });
+
+describe('single-file cache budget', () => {
+  it.each([4, 6, 8, 0])('serves complete responses within a %i-byte cache budget (0 is unlimited)', async (maxBytes) => {
+    const { worker, control } = await bootCache(206, 'AAAABBBB', 'old');
+    await control({ type: 'config', config: { maxBytes } });
+    const read = () => {
+      const xhr = new worker.XMLHttpRequest();
+      xhr.open('GET', 'https://logs.example.com/data', false);
+      xhr.responseType = 'arraybuffer';
+      xhr.setRequestHeader('Range', 'bytes=0-7');
+      xhr.send();
+      expect(xhr.status).toBe(206);
+      expect(new TextDecoder().decode(xhr.response)).toBe('AAAABBBB');
+    };
+    read();
+    read(); // an uncached tail remains readable on subsequent requests
+    const result = await control({ type: 'files' });
+    expect(result.summary).toMatchObject({ cachedBytes: maxBytes && maxBytes < 8 ? 4 : 8, slabSize: maxBytes && maxBytes < 8 ? 4 : 8 });
+  });
+});
