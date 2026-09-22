@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest';
-import { findField, isTimeCandidate, kindOf, parseStructType, quoteIdent, timeExprFor, type Field } from '../src/fields';
+import { describe, expect, it, vi } from 'vitest';
+import { findField, introspectFields, isTimeCandidate, kindOf, parseStructType, quoteIdent, timeExprFor, type Field } from '../src/fields';
+
+const query = vi.hoisted(() => vi.fn());
+vi.mock('../src/duck', () => ({ query }));
 
 describe('kindOf', () => {
   it('maps DuckDB types to field kinds', () => {
@@ -55,5 +58,26 @@ describe('field helpers', () => {
     expect(timeExprFor(fields[1])).toContain('epoch_ms');
     expect(timeExprFor(fields[2])).toContain('try_strptime');
     expect(timeExprFor(fields[2])).toContain('AS TIMESTAMPTZ');
+  });
+});
+
+describe('JSON keys', () => {
+  it('builds literal-key pointers without interpreting dots, brackets or quotes', async () => {
+    query.mockResolvedValueOnce({ rows: [{ column_name: 'payload', data_type: 'JSON' }] });
+    query.mockResolvedValueOnce({
+      rows: [
+        { k: 'http.status_code', t: 'UBIGINT' },
+        { k: 'a/b~c', t: 'VARCHAR' },
+        { k: '', t: 'BOOLEAN' },
+        { k: 'q\'"[0]', t: 'VARCHAR' },
+      ],
+    });
+    const fields = await introspectFields('logs');
+    expect(fields.slice(1).map((f) => f.expr)).toEqual([
+      `TRY_CAST(json_extract("payload", '/http.status_code') AS DOUBLE)`,
+      `json_extract_string("payload", '/a~1b~0c')`,
+      `TRY_CAST(json_extract("payload", '/') AS BOOLEAN)`,
+      `json_extract_string("payload", '/q''"[0]')`,
+    ]);
   });
 });

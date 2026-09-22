@@ -1,5 +1,6 @@
 import { query } from './duck';
 import { lit } from './sql';
+import { expose } from './debug';
 
 export type FieldKind = 'string' | 'number' | 'date' | 'boolean' | 'object' | 'list' | 'json' | 'unknown';
 
@@ -123,12 +124,13 @@ async function expandJson(view: string, col: string, out: Field[]) {
     const r = await query(
       `WITH s AS (SELECT ${expr} AS j FROM ${view} WHERE ${expr} IS NOT NULL LIMIT 500),
        k AS (SELECT unnest(json_keys(j)) AS k, j FROM s WHERE json_type(j) = 'OBJECT')
-       SELECT k, mode(json_type(j, '$.' || k)) AS t FROM k GROUP BY k ORDER BY k LIMIT 200`,
+       SELECT k, mode(json_type(j, '/' || replace(replace(k, '~', '~0'), '/', '~1'))) AS t FROM k GROUP BY k ORDER BY k LIMIT 200`,
     );
     for (const row of r.rows) {
       const k = String(row.k);
       const jt = String(row.t ?? '');
-      const path = `'$.${k.replace(/'/g, "''")}'`;
+      // JSON Pointer addresses a literal key, including dots, brackets, quotes and empty keys.
+      const path = lit('/' + k.replace(/~/g, '~0').replace(/\//g, '~1'));
       let kind: FieldKind = 'string';
       let fexpr = `json_extract_string(${expr}, ${path})`;
       let duckType = 'JSON:' + jt;
@@ -176,6 +178,8 @@ export async function introspectFields(view: string): Promise<Field[]> {
 export function findField(fields: Field[], name: string): Field | undefined {
   return fields.find((f) => f.name === name) ?? fields.find((f) => f.name.toLowerCase() === name.toLowerCase());
 }
+
+expose({ introspectFields });
 
 /** SQL expression that turns a field into a naive UTC TIMESTAMP, for use as the time field. */
 export function timeExprFor(f: Field): string {

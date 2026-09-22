@@ -51,6 +51,22 @@ await step('discover-initial', async () => {
   if (repeated.length) throw new Error(`the opening queries ran more than once: ${repeated.join(' | ')}`);
   await page.screenshot({ path: `${out}/01-discover.png` });
 });
+await step('json-literal-keys', async () => {
+  const result = await page.evaluate(async () => {
+    const data = { 'http.status_code': 500, http: { status_code: 200 }, 'a/b~c': 'literal', '': true, 'q\'"[0]': 'quoted' };
+    const json = JSON.stringify(data).replace(/'/g, "''");
+    await window.__ddv.query(`CREATE TEMP TABLE json_keys_regression AS SELECT '${json}'::JSON AS payload`);
+    try {
+      const fields = await window.__ddv.introspectFields('json_keys_regression');
+      const keys = ['http.status_code', 'a/b~c', '', 'q\'"[0]'];
+      const expressions = keys.map((k, i) => `${fields.find((f) => f.name === 'payload.' + k).expr} AS v${i}`);
+      return (await window.__ddv.query(`SELECT ${expressions.join(', ')} FROM json_keys_regression`)).rows[0];
+    } finally {
+      await window.__ddv.query('DROP TABLE json_keys_regression');
+    }
+  });
+  if (JSON.stringify(result) !== JSON.stringify({ v0: 500, v1: 'literal', v2: true, v3: 'quoted' })) throw new Error('literal JSON keys: ' + JSON.stringify(result));
+});
 await step('formats', async () => {
   // sizes and milliseconds are formatted by field name in the table, with the raw value in the tooltip
   const cell = page.locator('table.docs tbody tr').first().locator('.source-summary .sv', { hasText: 'http.bytes' }).locator('.v');
