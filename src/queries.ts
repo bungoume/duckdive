@@ -31,13 +31,13 @@ export interface Bucket {
   c: number;
 }
 
-export async function fetchHistogram(where: string, timeExpr: string, iv: Interval, tzOffset: number): Promise<Bucket[]> {
-  const r = await query(`SELECT ${bucketExpr(timeExpr, iv, tzOffset)} AS t, count(*)::DOUBLE AS c FROM ${VIEW} WHERE ${where} GROUP BY 1 ORDER BY 1`);
+export async function fetchHistogram(where: string, timeExpr: string, iv: Interval, tzOffset: number, signal?: AbortSignal): Promise<Bucket[]> {
+  const r = await query(`SELECT ${bucketExpr(timeExpr, iv, tzOffset)} AS t, count(*)::DOUBLE AS c FROM ${VIEW} WHERE ${where} GROUP BY 1 ORDER BY 1`, signal);
   return r.rows.map((x) => ({ t: Number(x.t), c: Number(x.c) }));
 }
 
-export async function fetchCount(where: string): Promise<number> {
-  const r = await query(`SELECT count(*)::DOUBLE AS n FROM ${VIEW} WHERE ${where}`);
+export async function fetchCount(where: string, signal?: AbortSignal): Promise<number> {
+  const r = await query(`SELECT count(*)::DOUBLE AS n FROM ${VIEW} WHERE ${where}`, signal);
   return Number(r.rows[0]?.n ?? 0);
 }
 
@@ -56,6 +56,7 @@ export async function fetchDocs(
   limit: number,
   offset: number,
   timeDir: SortDir = 'desc',
+  signal?: AbortSignal,
 ): Promise<{ docs: Doc[]; sql: string }> {
   const sel: string[] = [];
   sel.push(timeExpr ? `epoch_ms(${timeExpr})::DOUBLE AS "__ts"` : `NULL AS "__ts"`);
@@ -63,7 +64,7 @@ export async function fetchDocs(
   const colFields = columns.map((c) => findField(fields, c)).filter((f): f is Field => !!f);
   colFields.forEach((f, i) => sel.push(`(${f.expr})::VARCHAR AS "__c${i}"`));
   const sql = `SELECT ${sel.join(', ')} FROM ${VIEW} t WHERE ${where}${docsOrder(sort, fields, timeExpr, timeDir)} LIMIT ${limit} OFFSET ${offset}`;
-  const r = await query(sql);
+  const r = await query(sql, signal);
   const docs = r.rows.map((row) => {
     let source: Record<string, unknown>;
     try {
@@ -276,7 +277,16 @@ export function groupLabel(g: string): string {
  * final aggregation all read that instead of scanning the source view again, which for gzip
  * sources means one decompression instead of three or four.
  */
-export async function fetchVis(vis: VisState, where: string, timeExpr: string | null, fields: Field[], iv: Interval | null, tzOffset: number, spanSec: number): Promise<VisResult> {
+export async function fetchVis(
+  vis: VisState,
+  where: string,
+  timeExpr: string | null,
+  fields: Field[],
+  iv: Interval | null,
+  tzOffset: number,
+  spanSec: number,
+  signal?: AbortSignal,
+): Promise<VisResult> {
   // a rate is per bucket second on a date histogram, per second of the whole range otherwise
   const variableBucket = vis.x.kind === 'date_histogram' && (iv?.calendar === 'month' || iv?.calendar === 'year');
   const secs = variableBucket ? 1 : vis.x.kind === 'date_histogram' && iv ? iv.ms / 1000 : spanSec;
@@ -299,7 +309,7 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
     step = Number.isFinite(requestedStep) && requestedStep > 0 ? requestedStep : null;
     if (step === null) {
       // auto: about 25 buckets between the smallest and the largest value of the search
-      const b = await query(`SELECT min(${num})::DOUBLE AS mn, max(${num})::DOUBLE AS mx FROM ${VIEW} WHERE ${where}`);
+      const b = await query(`SELECT min(${num})::DOUBLE AS mn, max(${num})::DOUBLE AS mx FROM ${VIEW} WHERE ${where}`, signal);
       const mn = Number(b.rows[0]?.mn);
       const mx = Number(b.rows[0]?.mx);
       step = Number.isFinite(mn) && Number.isFinite(mx) && mx > mn ? niceStep((mx - mn) / 25) : 1;
@@ -335,7 +345,7 @@ export async function fetchVis(vis: VisState, where: string, timeExpr: string | 
   }
   const join = topX ? ' JOIN topx ON topx.x IS NOT DISTINCT FROM base.x' : '';
   const sql = `WITH ${ctes.join(',\n')}\nSELECT base.x AS x, ${gSel} AS g${otherSel}, ${mSel}${topX ? ', min(topx.rk) AS xr' : ''} FROM base${join}${conds.length ? ' WHERE ' + conds.join(' AND ') : ''} GROUP BY ${groupBy} ORDER BY 1, 2`;
-  const r = await query(sql);
+  const r = await query(sql, signal);
   const rows: VisRow[] = r.rows.map((row: Row) => {
     const x = xKind === 'terms' ? encodeVisValue(row.x) : row.x === null || row.x === undefined ? null : Number(row.x);
     return {

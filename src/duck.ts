@@ -1,5 +1,5 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
-import { CancelledError } from './net';
+import { CancelledError, throwIfAborted } from './net';
 import { cacheWorkerPort } from './cache';
 import CacheWorker from './worker/duckdb-cache-worker?worker';
 
@@ -151,13 +151,19 @@ function enqueue<T>(fn: () => Promise<T>): Promise<T> {
   return p;
 }
 
-export async function query(sql: string): Promise<QueryResult> {
+export async function query(sql: string, signal?: AbortSignal): Promise<QueryResult> {
   const gen = generation;
   return enqueue(async () => {
     if (gen !== generation) throw new CancelledError();
+    throwIfAborted(signal);
     const c = getConn();
     const t0 = performance.now();
     running++;
+    let cancellation: Promise<unknown> | undefined;
+    const cancel = () => {
+      cancellation = c.cancelSent().catch(() => undefined);
+    };
+    signal?.addEventListener('abort', cancel, { once: true });
     try {
       const reader = await c.send(sql);
       const rows: Row[] = [];
@@ -172,13 +178,14 @@ export async function query(sql: string): Promise<QueryResult> {
       }
       // a cancelled stream ends early with a partial result: never hand that out as complete
       if (gen !== generation) throw new CancelledError();
+      throwIfAborted(signal);
       const ms = performance.now() - t0;
       queryLog.unshift({ sql, ms });
       if (queryLog.length > 50) queryLog.pop();
       return { rows, columns, ms };
     } catch (e) {
       const ms = performance.now() - t0;
-      if (gen !== generation || /cancel|interrupt/i.test(String(e))) {
+      if (gen !== generation || signal?.aborted || /cancel|interrupt/i.test(String(e))) {
         queryLog.unshift({ sql, ms, error: 'cancelled' });
         throw new CancelledError();
       }
@@ -186,6 +193,9 @@ export async function query(sql: string): Promise<QueryResult> {
       if (queryLog.length > 50) queryLog.pop();
       throw e;
     } finally {
+      signal?.removeEventListener('abort', cancel);
+      // A late cancellation must finish before the next queued statement starts.
+      await cancellation;
       running--;
     }
   });

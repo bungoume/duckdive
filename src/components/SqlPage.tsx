@@ -4,6 +4,7 @@ import { describeError } from '../errors';
 import { EXPORT_FORMATS, downloadBlob, exportFileName, exportToBlob, type ExportFormat } from '../export';
 import type { Field } from '../fields';
 import { t, tx } from '../i18n';
+import { createQueryScope } from '../queryScope';
 import { CancelledError } from '../net';
 import { compileSearch } from '../queries';
 import { VIEW } from '../sql';
@@ -40,7 +41,14 @@ export function SqlPage(props: { fields: Field[]; timeExpr: string | null; searc
   const [busy, setBusy] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [histOpen, setHistOpen] = useState(false);
-  const runId = useRef(0);
+  const scope = useRef(createQueryScope()).current;
+  useEffect(() => {
+    if (props.paused) {
+      scope.cancel();
+      setBusy(false);
+    }
+    return () => scope.cancel();
+  }, [scope, props.paused, props.fields]);
 
   useEffect(() => {
     try {
@@ -53,23 +61,20 @@ export function SqlPage(props: { fields: Field[]; timeExpr: string | null; searc
   const run = async () => {
     const sql = text.trim();
     if (!sql || busy || props.paused) return;
-    const id = ++runId.current;
+    const run = scope.start(props.onBusy);
     setBusy(true);
-    props.onBusy(true);
     setError(null);
     setShowAll(false);
     try {
-      const r = await query(sql);
-      if (id !== runId.current) return;
+      const r = await query(sql, run.signal);
+      if (!run.isCurrent()) return;
       setResult({ columns: r.columns, rows: r.rows, ms: r.ms, sql });
       setHistory(rememberHistory(LS_SQL_HISTORY, sql, history));
     } catch (e) {
-      if (id === runId.current && !(e instanceof CancelledError)) setError(describeError(e));
+      if (run.isCurrent() && !(e instanceof CancelledError)) setError(describeError(e));
     } finally {
-      if (id === runId.current) {
-        setBusy(false);
-        props.onBusy(false);
-      }
+      if (run.isCurrent()) setBusy(false);
+      run.finish();
     }
   };
 

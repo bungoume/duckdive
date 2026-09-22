@@ -39,7 +39,7 @@ describe('SQL keyboard execution', () => {
         expect(run).not.toHaveBeenCalled();
         expect(onBusy).not.toHaveBeenCalled();
       } else {
-        expect(run).toHaveBeenCalledExactlyOnceWith('SELECT * FROM src LIMIT 100');
+        expect(run).toHaveBeenCalledExactlyOnceWith('SELECT * FROM src LIMIT 100', expect.any(AbortSignal));
         expect(onBusy).toHaveBeenCalledWith(true);
       }
     }

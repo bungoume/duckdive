@@ -20,6 +20,7 @@ import { PatternsPanel, defaultPatternField } from './PatternsPanel';
 import { SavedSearches } from './SavedSearches';
 import { withCacheHint } from '../diagnose';
 import { describeError } from '../errors';
+import { createQueryScope } from '../queryScope';
 import { CancelledError } from '../net';
 
 const PAGE = 100;
@@ -79,16 +80,18 @@ export function Discover(props: {
   const [showPatterns, setShowPatterns] = useState(false);
   const [patternFieldName, setPatternFieldName] = useState<string | null>(null);
   const patternField = (patternFieldName ? findField(fields, patternFieldName) : undefined) ?? defaultPatternField(fields);
-  const runId = useRef(0);
+  const scope = useRef(createQueryScope()).current;
 
   const sortKey = JSON.stringify(discover.sort);
   const colKey = JSON.stringify(discover.columns);
 
   useEffect(() => {
-    if (compiled.error || paused) return;
-    const id = ++runId.current;
+    if (compiled.error || paused) {
+      setBusy(false);
+      return;
+    }
+    const run = scope.start(onBusy);
     setBusy(true);
-    onBusy(true);
     setError(null);
     const t0 = performance.now();
     void (async () => {
@@ -98,12 +101,12 @@ export function Discover(props: {
         const withHistogram = !!(timeExpr && interval);
         const withSplit = withHistogram && !!breakdownField;
         const [n, b, v, d] = await Promise.all([
-          withHistogram ? Promise.resolve(null) : fetchCount(compiled.where),
-          withHistogram && !withSplit ? fetchHistogram(compiled.where, timeExpr!, interval!, tzOffset) : Promise.resolve([]),
-          withSplit ? fetchVis(histVis, compiled.where, timeExpr, fields, interval, tzOffset, spanSec) : Promise.resolve(null),
-          fetchDocs(compiled.where, timeExpr, fields, discover.sort, discover.columns, PAGE, 0),
+          withHistogram ? Promise.resolve(null) : fetchCount(compiled.where, run.signal),
+          withHistogram && !withSplit ? fetchHistogram(compiled.where, timeExpr!, interval!, tzOffset, run.signal) : Promise.resolve([]),
+          withSplit ? fetchVis(histVis, compiled.where, timeExpr, fields, interval, tzOffset, spanSec, run.signal) : Promise.resolve(null),
+          fetchDocs(compiled.where, timeExpr, fields, discover.sort, discover.columns, PAGE, 0, 'desc', run.signal),
         ]);
-        if (id !== runId.current) return;
+        if (!run.isCurrent()) return;
         setCount(n ?? (v ? v.rows.reduce((a, r) => a + (Number.isFinite(r.m[0]) ? r.m[0] : 0), 0) : b.reduce((a, x) => a + x.c, 0)));
         setBuckets(b);
         setSplit(v);
@@ -112,14 +115,13 @@ export function Discover(props: {
         setResultSeq((s) => s + 1);
         setElapsed(performance.now() - t0);
       } catch (e) {
-        if (id === runId.current && !(e instanceof CancelledError)) setError(withCacheHint(describeError(e)));
+        if (run.isCurrent() && !(e instanceof CancelledError)) setError(withCacheHint(describeError(e)));
       } finally {
-        if (id === runId.current) {
-          setBusy(false);
-          onBusy(false);
-        }
+        if (run.isCurrent()) setBusy(false);
+        run.finish();
       }
     })();
+    return () => scope.cancel();
     // sort, columns and interval are compared by value, so a restored URL with the same content does not re-query;
     // refreshTick re-runs an unchanged search (absolute range) on auto refresh
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -129,20 +131,17 @@ export function Discover(props: {
     // The next page belongs to the search that is on screen. Changing the sort while it is being
     // fetched starts a new search, and appending this page to it afterwards would mix two orders
     // and report the new search as finished.
-    const id = runId.current;
+    const run = scope.start(onBusy);
     setBusy(true);
-    onBusy(true);
     try {
-      const more = await fetchDocs(compiled.where, timeExpr, fields, discover.sort, discover.columns, PAGE, docs.length);
-      if (id !== runId.current) return;
+      const more = await fetchDocs(compiled.where, timeExpr, fields, discover.sort, discover.columns, PAGE, docs.length, 'desc', run.signal);
+      if (!run.isCurrent()) return;
       setDocs((d) => [...d, ...more.docs]);
     } catch (e) {
-      if (id === runId.current && !(e instanceof CancelledError)) setError(withCacheHint(describeError(e)));
+      if (run.isCurrent() && !(e instanceof CancelledError)) setError(withCacheHint(describeError(e)));
     } finally {
-      if (id === runId.current) {
-        setBusy(false);
-        onBusy(false);
-      }
+      if (run.isCurrent()) setBusy(false);
+      run.finish();
     }
   };
 

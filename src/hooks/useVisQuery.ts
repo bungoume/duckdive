@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { supportsComparison } from '../comparison';
 import { describeError } from '../errors';
 import type { Field } from '../fields';
+import { createQueryScope } from '../queryScope';
 import { CancelledError } from '../net';
 import { fetchVis, previousPeriodWhere, shiftVisResult, type Compiled, type VisResult } from '../queries';
 import { autoInterval, bucketOffsetMinutes, intervalByKey } from '../sql';
@@ -45,6 +46,7 @@ export function useVisQuery({
   const [previous, setPrevious] = useState<VisResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const scope = useRef(createQueryScope()).current;
   const busyCallback = useRef(onBusy);
   busyCallback.current = onBusy;
 
@@ -53,38 +55,26 @@ export function useVisQuery({
       setBusy(false);
       return;
     }
-    let live = true;
-    let pending = true;
-    const report = busyCallback.current;
-    // Balance each start exactly once, including removal of an in-flight dashboard tile.
-    const finish = () => {
-      if (!pending) return;
-      pending = false;
-      report(false);
-    };
+    const run = scope.start(busyCallback.current);
     setBusy(true);
-    report(true);
     setError(null);
     Promise.all([
-      fetchVis(effective, compiled.where, timeExpr, fields, interval, tzOffset, spanMs / 1000),
-      previousWhere ? fetchVis(effective, previousWhere, timeExpr, fields, interval, tzOffset, spanMs / 1000) : Promise.resolve(null),
+      fetchVis(effective, compiled.where, timeExpr, fields, interval, tzOffset, spanMs / 1000, run.signal),
+      previousWhere ? fetchVis(effective, previousWhere, timeExpr, fields, interval, tzOffset, spanMs / 1000, run.signal) : Promise.resolve(null),
     ])
       .then(([current, prior]) => {
-        if (!live) return;
+        if (!run.isCurrent()) return;
         setResult(current);
         setPrevious(shiftVisResult(prior, spanMs));
       })
       .catch((e) => {
-        if (live && !(e instanceof CancelledError)) setError(describeError(e));
+        if (run.isCurrent() && !(e instanceof CancelledError)) setError(describeError(e));
       })
       .finally(() => {
-        if (live) setBusy(false);
-        finish();
+        if (run.isCurrent()) setBusy(false);
+        run.finish();
       });
-    return () => {
-      live = false;
-      finish();
-    };
+    return () => scope.cancel();
     // Definitions are compared by queryKey; refreshTick also refreshes an absolute range.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compiled.where, compiled.error, previousWhere, queryKey, interval?.key, tzOffset, timeExpr, fields, spanMs, paused, refreshTick]);
