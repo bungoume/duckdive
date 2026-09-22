@@ -1,7 +1,8 @@
 // Locates the file(s) DuckDB cannot read (e.g. "Unsupported GZIP compression method") by bisecting
 // the attached file list with count(*) queries, then inspects the raw bytes of each culprit through
 // the same read path (read_blob → httpfs → range cache) so the report shows what DuckDB actually saw.
-import { cacheStats, type CacheLogEntry } from './cache';
+import { cacheStats } from './cache';
+import { type CacheLogEntry } from './cacheProtocol';
 import { expose } from './debug';
 import { t } from './i18n';
 import { viewSelect } from './datasource';

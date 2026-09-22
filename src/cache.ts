@@ -1,51 +1,7 @@
 // Page-side client for the range cache living inside the DuckDB worker (src/worker/duckdb-cache-worker.ts).
 import { expose } from './debug';
 
-export interface CacheStats {
-  requests: number;
-  passthrough: number;
-  chunkHits: number;
-  chunkMisses: number;
-  bytesFromCache: number;
-  bytesFromNetwork: number;
-  bytesDownloaded: number;
-  headsSynthesized: number;
-  headsNetwork: number;
-  corruptions: number;
-  /** files dropped to stay within the size limit (this session) */
-  evictions: number;
-  files: Record<string, { hits: number; misses: number; bytesFromCache: number; bytesFromNetwork: number; bytesDownloaded: number }>;
-  log: CacheLogEntry[];
-}
-
-/** One request as seen by the worker (see LogEntry in the worker). */
-export interface CacheLogEntry {
-  t: number;
-  method: string;
-  url: string;
-  range: string | null;
-  outcome: string;
-  status?: number;
-  bytes?: number;
-  enc?: string;
-  head?: string;
-}
-
-export interface CacheConfig {
-  enabled: boolean;
-  chunkSize: number;
-  /** cached data allowed on disk; 0 = no limit. Beyond it whole files are dropped, least recently used first */
-  maxBytes: number;
-}
-
-export interface CachedFile {
-  url: string;
-  size: number;
-  etag: string;
-  cachedChunks: number;
-  cachedBytes: number;
-  chunkSize: number;
-}
+import type { CacheConfig, CacheRequests, CacheResponses, SeedFile } from './cacheProtocol';
 
 /**
  * The control channel is a MessageChannel: this page keeps one port, the other one is handed
@@ -74,46 +30,28 @@ port.onmessage = (ev) => {
   else w.resolve(d);
 };
 
-function send<T>(msg: Record<string, unknown>, timeoutMs = 5000): Promise<T> {
+function send<K extends keyof CacheRequests>(type: K, payload: CacheRequests[K], timeoutMs = 5000): Promise<CacheResponses[K]> {
   const id = Math.random().toString(36).slice(2);
-  return new Promise<T>((resolve, reject) => {
+  return new Promise<CacheResponses[K]>((resolve, reject) => {
     const timer = setTimeout(() => {
       waiting.delete(id);
       reject(new Error('cache worker did not answer'));
     }, timeoutMs);
     waiting.set(id, { resolve: resolve as (v: unknown) => void, reject, timer });
-    port.postMessage({ id, ...msg });
+    port.postMessage({ id, type, ...payload });
   });
 }
 
-export const cachePing = () => send<{ opfsError: string | null; readOnly: boolean }>({ type: 'ping' }, 15000);
-export interface SeedFile {
-  url: string;
-  size: number;
-  etag: string;
-  lastModified?: string;
-  /** bucket / key when the object came from an S3 listing (lets the page fetch it signed) */
-  s3?: { bucket: string; key: string };
-}
-/** Hand listing metadata to the cache worker so DuckDB's per-file HEADs are answered locally. */
-export const cacheSeed = (files: SeedFile[]) => send<{ seeded: number }>({ type: 'seed', files }, 60000);
-/** URLs among `urls` that hold at least one cached chunk (they were downloaded before). */
-export const cacheCached = (urls: string[]) => send<{ cached: string[] }>({ type: 'cached', urls }, 30000);
-/** `readOnly`: another tab owns the cache; this one reads it and keeps nothing. */
-export const cacheStats = () => send<{ stats: CacheStats; config: CacheConfig; opfsError: string | null; readOnly: boolean }>({ type: 'stats' });
-export interface CacheSummary {
-  /** files with known metadata (seeded from listings or HEADs) */
-  known: number;
-  cachedFiles: number;
-  cachedBytes: number;
-  slabSize: number;
-  wasted: number;
-}
-export const cacheFiles = (opts: { limit?: number; all?: boolean } = {}) => send<{ files: CachedFile[]; summary: CacheSummary }>({ type: 'files', ...opts }, 30000);
-export const cacheCompact = () => send<{ slabSize: number; wasted: number }>({ type: 'compact' }, 600000);
-export const cacheClear = () => send({ type: 'clear' }, 30000);
-export const cachePurge = (url: string) => send<{ removed: number }>({ type: 'purge', url });
-export const cacheSetConfig = (config: Partial<CacheConfig>) => send<{ config: CacheConfig }>({ type: 'config', config });
+export const cachePing = () => send('ping', {}, 15000);
+/** Seed metadata from listings to avoid a HEAD request for every file. */
+export const cacheSeed = (files: SeedFile[]) => send('seed', { files }, 60000);
+export const cacheCached = (urls: string[]) => send('cached', { urls }, 30000);
+export const cacheStats = () => send('stats', {});
+export const cacheFiles = (opts: { limit?: number; all?: boolean } = {}) => send('files', opts, 30000);
+export const cacheCompact = () => send('compact', {}, 600000);
+export const cacheClear = () => send('clear', {}, 30000);
+export const cachePurge = (url: string) => send('purge', { url });
+export const cacheSetConfig = (config: Partial<CacheConfig>) => send('config', { config });
 
 export async function storageEstimate(): Promise<{ usage: number; quota: number; persisted: boolean } | null> {
   if (!navigator.storage?.estimate) return null;

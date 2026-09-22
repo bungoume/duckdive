@@ -1,6 +1,7 @@
 import type { AwsCredentials } from './auth';
 import { t } from './i18n';
-import { cacheSeed, type SeedFile } from './cache';
+import { cacheSeed } from './cache';
+import { type SeedFile } from './cacheProtocol';
 import { DataProtocol, exec, execAll, getDB, query } from './duck';
 import { describeError } from './errors';
 import { CancelledError, throwIfAborted } from './net';

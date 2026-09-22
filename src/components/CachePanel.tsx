@@ -1,21 +1,8 @@
 import { useCallback, useEffect, useState } from 'preact/hooks';
 import { describeError } from '../errors';
 import { t } from '../i18n';
-import {
-  cacheClear,
-  cacheCompact,
-  cacheFiles,
-  cachePurge,
-  cacheSetConfig,
-  cacheStats,
-  fmtBytes,
-  requestPersist,
-  storageEstimate,
-  type CacheConfig,
-  type CacheStats,
-  type CacheSummary,
-  type CachedFile,
-} from '../cache';
+import { cacheClear, cacheCompact, cacheFiles, cachePurge, cacheSetConfig, cacheStats, fmtBytes, requestPersist, storageEstimate } from '../cache';
+import { type CacheConfig, type CacheStats, type CacheSummary, type CachedFile } from '../cacheProtocol';
 
 const CHUNK_SIZES = [
   { v: 256 * 1024, l: '256 KB' },
