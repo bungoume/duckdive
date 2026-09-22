@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import { captureRegex, concretePatterns, expandDateTokens, keyTimestamp, namedToGlob, namedTokens, parseS3Url, s3Target, substituteTokens, withinRange } from '../src/s3list';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { captureRegex, concretePatterns, expandDateTokens, keyTimestamp, namedToGlob, namedTokens, parseS3Url, resolveS3Patterns, s3Target, substituteTokens, withinRange } from '../src/s3list';
+
+afterEach(() => vi.unstubAllGlobals());
 
 const alb = 's3://logs/AWSLogs/{account}/elasticloadbalancing/{region}/{yyyy}/{MM}/{dd}/{account}_elasticloadbalancing_{region}_app.{alb}.*.log.gz';
 
@@ -26,6 +28,45 @@ describe('named tokens', () => {
   it('escapes regex characters and treats ** as any depth', () => {
     expect(new RegExp(captureRegex('s3://b/a.b/**/x?.parquet').source).test('s3://b/a.b/1/2/x1.parquet')).toBe(true);
     expect(new RegExp(captureRegex('s3://b/a.b/*.parquet').source).test('s3://b/aXb/y.parquet')).toBe(false);
+  });
+
+  it.each(['[ab]', '[a-b]', '[^c]'])('captures named values alongside %s character classes', (cls) => {
+    const cap = captureRegex(`s3://logs/{account}/part-${cls}.parquet`);
+    expect(new RegExp(cap.source).exec('s3://logs/acme/part-a.parquet')?.slice(1)).toEqual(['acme']);
+    expect(new RegExp(cap.source).test('s3://logs/acme/part-c.parquet')).toBe(false);
+  });
+
+  it('keeps listed class matches when filtering by a selected token', async () => {
+    // One successful ListObjectsV2 page with three keys, before the real glob/token filters.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('<ListBucketResult/>')),
+    );
+    vi.stubGlobal(
+      'DOMParser',
+      class {
+        parseFromString() {
+          return {
+            getElementsByTagName: (tag: string) =>
+              tag === 'Contents'
+                ? ['a', 'b', 'c'].map((part) => ({ getElementsByTagName: (name: string) => [{ textContent: name === 'Key' ? `acme/part-${part}.parquet` : name === 'Size' ? '4' : '' }] }))
+                : [],
+          };
+        }
+      },
+    );
+    const result = await resolveS3Patterns(
+      ['s3://logs/{account}/part-[ab].parquet'],
+      { region: '', endpoint: '', urlStyle: 'path', accessKeyId: '', secretAccessKey: '', sessionToken: '' },
+      null,
+      null,
+      100,
+      { account: ['acme'] },
+      {},
+      { account: ['acme'] },
+    );
+    expect(result.urls).toEqual(['s3://logs/acme/part-a.parquet', 's3://logs/acme/part-b.parquet']);
+    expect(result.skippedByFilter).toBe(0);
   });
 
   it('substitutes selected values, up to a limit', () => {

@@ -200,6 +200,12 @@ export function namedToGlob(pattern: string): string {
   return pattern.replace(NAMED_TOKEN, (all, name) => (DATE_TOKENS.has(name) ? all : '*'));
 }
 
+/** The same bracket-class syntax is used for listing files and extracting their tokens. */
+function bracketClass(pattern: string, start: number): { source: string; end: number } | null {
+  const end = pattern.indexOf(']', start + 1);
+  return end > start + 1 ? { source: '[' + pattern.slice(start + 1, end).replace(/\\/g, '\\\\') + ']', end } : null;
+}
+
 /**
  * Regex (as a string, RE2 / DuckDB compatible) matching the full URL of a file produced by
  * `pattern`, with one capture group per named token in order of first appearance.
@@ -245,6 +251,14 @@ export function captureRegex(pattern: string): { source: string; names: string[]
       i++;
       continue;
     }
+    if (c === '[') {
+      const cls = bracketClass(pattern, i);
+      if (cls) {
+        re += cls.source;
+        i = cls.end + 1;
+        continue;
+      }
+    }
     re += c.replace(/[.+^$(){}|\\[\]]/g, '\\$&');
     i++;
   }
@@ -266,10 +280,10 @@ function globSegmentToRegex(seg: string): RegExp {
     if (c === '*') re += '[^/]*';
     else if (c === '?') re += '[^/]';
     else if (c === '[') {
-      const j = seg.indexOf(']', i);
-      if (j > i) {
-        re += '[' + seg.slice(i + 1, j).replace(/\\/g, '\\\\') + ']';
-        i = j;
+      const cls = bracketClass(seg, i);
+      if (cls) {
+        re += cls.source;
+        i = cls.end;
       } else re += '\\[';
     } else re += c.replace(/[.+^${}()|\\]/g, '\\$&');
   }
