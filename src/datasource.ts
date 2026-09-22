@@ -202,6 +202,7 @@ export async function resolveFiles(
   let skippedByTime = 0;
   let skippedByFilter = 0;
   let timePruned = false;
+  let totalBytes: number | null = null;
   let warning: string | null = null;
   for (const u0 of others) {
     const part = patternPart(u0);
@@ -231,6 +232,8 @@ export async function resolveFiles(
     timePruned = r.timePruned;
     skippedByFilter = r.skippedByFilter;
     files.push(...r.files);
+    // Preserve the listing's byte total even when the source also contains plain HTTPS URLs.
+    totalBytes = r.files.every((f) => f.metadata !== null) ? r.files.reduce((sum, f) => sum + f.metadata!.size, 0) : null;
     for (const { url, metadata } of r.files) {
       if (!metadata) continue;
       const https = s3HttpsUrl(url, cfg.s3);
@@ -238,7 +241,6 @@ export async function resolveFiles(
     }
     warning = r.warning;
   }
-  const totalBytes = files.length && files.every((f) => f.metadata !== null) ? files.reduce((sum, f) => sum + f.metadata!.size, 0) : null;
   return { files, seeds, patterns, skippedByTime, skippedByFilter, timePruned, totalBytes, warning };
 }
 

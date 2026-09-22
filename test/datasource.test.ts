@@ -35,6 +35,7 @@ describe('file metadata', () => {
     ]);
     expect(result.totalBytes).toBeNull();
     expect((await resolveFiles({ ...cfg, urls: 's3://logs/listed.parquet' }, null, null)).totalBytes).toBe(123);
+    expect((await resolveFiles({ ...cfg, urls: 'https://example.com/direct.parquet\ns3://logs/listed.parquet' }, null, null)).totalBytes).toBe(123);
   });
 });
 
