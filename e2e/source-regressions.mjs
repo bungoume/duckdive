@@ -32,6 +32,26 @@ try {
   await page.goto(appUrl);
   await waitReady(page);
   await settled(page);
+  await page.getByRole('button', { name: 'Data source', exact: true }).click();
+  const timeField = page.locator('select:has(option[value="@timestamp"])');
+  await timeField.selectOption('');
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('ddv.source')).timeField), '');
+  await page.locator('.source-page button.connect').click();
+  await settled(page);
+  assert.equal(await timeField.inputValue(), '');
+  await page.reload();
+  await waitReady(page);
+  await settled(page);
+  assert.equal(await timeField.inputValue(), '');
+  assert.equal(await page.evaluate(() => window.__ddv.attached.timeField), null);
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('ddv.sources'))[0].config.timeField), '');
+  await timeField.selectOption('@timestamp');
+  await page.reload();
+  await waitReady(page);
+  await settled(page);
+  assert.equal(await timeField.inputValue(), '@timestamp');
+  console.log('ok   explicit time field choice survives reconnect and reload');
+
   const known = {
     kind: 'url',
     name: 'acme',

@@ -16,6 +16,12 @@ const url: SourceConfig = {
 };
 
 describe('shareableSource', () => {
+  it.each(['demo', 'url'] as const)('preserves explicit time filtering disablement for %s links', (kind) => {
+    const shared = shareableSource({ ...url, kind, timeField: '' })!;
+    expect(sourceFromLink(shared)?.timeField).toBe('');
+    expect(sourceFromLink({ ...shared, timeField: null })?.timeField).toBeNull();
+  });
+
   it('drops secrets and the key ID, and never shares local files', () => {
     const s = shareableSource(url)!;
     expect(s.s3).toEqual({ ...url.s3, accessKeyId: '', secretAccessKey: '', sessionToken: '' });

@@ -31,6 +31,7 @@ export interface SourceConfig {
   maxFiles: number;
   /** values chosen for {name} tokens of the pattern (required before connecting) */
   tokenValues: Record<string, string[]>;
+  /** null: auto-detect; empty string: explicitly disable time filtering; otherwise a field name. */
   timeField: string | null;
   /** local sources: key of the file handles kept in IndexedDB (see localfiles.ts); `urls` then lists what was picked */
   localId?: string;
@@ -177,7 +178,7 @@ const str = (v: unknown, fallback = '') => (typeof v === 'string' ? v : fallback
 /** The source as a link carries it: no secrets, no key ID, and never a local one (its files are on this machine). */
 export function shareableSource(cfg: SourceConfig): SourceConfig | null {
   if (cfg.kind === 'local') return null;
-  if (cfg.kind === 'demo') return { ...DEFAULT_SOURCE, kind: 'demo', name: cfg.name || 'demo-logs' };
+  if (cfg.kind === 'demo') return { ...DEFAULT_SOURCE, kind: 'demo', name: cfg.name || 'demo-logs', timeField: cfg.timeField };
   return { ...cfg, s3: { ...cfg.s3, accessKeyId: '', secretAccessKey: '', sessionToken: '' } };
 }
 
@@ -253,7 +254,7 @@ const isTokenName = (k: string) => k !== '__proto__' && /^[A-Za-z_][A-Za-z0-9_]*
 /** A source from a link someone sent: every field checked, secrets and key IDs never taken; null when unusable. */
 export function sourceFromLink(raw: unknown): SourceConfig | null {
   if (!isObj(raw)) return null;
-  if (raw.kind === 'demo') return { ...DEFAULT_SOURCE, kind: 'demo', name: 'demo-logs' };
+  if (raw.kind === 'demo') return { ...DEFAULT_SOURCE, kind: 'demo', name: 'demo-logs', timeField: typeof raw.timeField === 'string' ? raw.timeField : null };
   if (raw.kind !== 'url' || typeof raw.urls !== 'string' || !raw.urls.trim()) return null;
   const s3 = isObj(raw.s3) ? raw.s3 : {};
   const o = isObj(raw.oidc) ? raw.oidc : {};

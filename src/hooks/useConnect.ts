@@ -182,7 +182,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
       if (stale()) return null;
       // The user already accepted this file set: do not ask again at query time.
       if (confirmedLarge) ackedFiles.current = a.files.join('\n');
-      const saved: SourceConfig = { ...cfg, timeField: a.timeField?.name ?? null };
+      const saved: SourceConfig = { ...cfg, timeField: a.timeField?.name ?? (cfg.timeField === '' ? '' : null) };
       if (cfg.kind === 'local' && sel.handles.length) {
         // picked with handles: keep them so the source can be reopened from the history
         saved.localId = cfg.localId ?? newId();
@@ -260,9 +260,10 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
     if (!attached) return;
     const f = name ? (findField(attached.fields, name) ?? null) : null;
     setAttached({ ...attached, timeField: f });
-    const cfg = { ...source, timeField: f?.name ?? null };
+    const cfg = { ...source, timeField: f?.name ?? '' };
     setSource(cfg);
     saveSource(cfg);
+    setHistory(rememberSource(cfg));
   };
 
   // Start-up: hydrate the saved source (or a known one from the link) with this session's secrets, start DuckDB, reconnect.

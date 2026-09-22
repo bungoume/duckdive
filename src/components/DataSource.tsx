@@ -6,7 +6,7 @@ import { t, tx } from '../i18n';
 import type { AttachProgress, Variables } from '../hooks/useConnect';
 import { NO_LOCAL, selectionNames, selectionTitle, type LocalSelection } from '../localfiles';
 import { hasHostPermissions, isExtension } from '../permissions';
-import { type SourceConfig, type SourceHistoryEntry } from '../sources';
+import { sourceKey, type SourceConfig, type SourceHistoryEntry } from '../sources';
 import { CachePanel } from './CachePanel';
 import { ConnectedCard } from './source/ConnectedCard';
 import { HistoryCard } from './source/HistoryCard';
@@ -216,7 +216,15 @@ export function DataSource(props: {
         </div>
       </div>
 
-      {props.attached && <ConnectedCard attached={props.attached} onTimeField={props.onTimeField} />}
+      {props.attached && (
+        <ConnectedCard
+          attached={props.attached}
+          onTimeField={(name) => {
+            if (cfg === props.config || (props.currentKey && sourceKey(cfg) === props.currentKey)) setCfg({ ...cfg, timeField: name ?? '' });
+            props.onTimeField(name);
+          }}
+        />
+      )}
       {props.history.length > 0 && <HistoryCard history={props.history} currentKey={props.currentKey} busy={props.busy} onUse={props.onUseHistory} onForget={props.onForgetHistory} />}
       <HostsCard refreshKey={props.attached} />
       <CachePanel />

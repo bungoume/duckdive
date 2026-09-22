@@ -51,6 +51,14 @@ describe('switching sources', () => {
     expect(attach.mock.lastCall?.[3]).toEqual({ from: new Date('2026-09-21T00:00:00Z'), to: new Date('2026-09-23T00:00:00Z') });
   });
 
+  it('remembers an explicit choice of no time field in both the source and history', async () => {
+    TestConnection().onTimeField(null);
+    expect(loadSource().timeField).toBe('');
+    expect(TestConnection().history[0].config.timeField).toBe('');
+    await TestConnection().connect(TestConnection().source);
+    expect(loadSource().timeField).toBe('');
+  });
+
   it('does not list or attach a URL source with an invalid restored range', async () => {
     attach.mockClear();
     await TestConnection({ ...url, search: { ...url.search, range: { from: 'now--1m', to: 'now' } } }).connect(sourceB);
