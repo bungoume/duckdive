@@ -10,7 +10,8 @@ import { findField } from '../fields';
 import { NO_LOCAL, type LocalSelection } from '../localfiles';
 import { withSecrets } from '../secrets';
 import { loadSource, sourceForKnownLink, sourceKey, type SourceConfig } from '../sources';
-import { loadSavedVis, savedVisRevision, type UrlState } from '../state';
+import { loadSavedVis, savedVisRevision } from '../savedViews';
+import { type UrlState } from '../state';
 import { useStore } from '../store';
 
 /** What a file resolution depends on: the time range and the captured-column filters of `cfg`, and the auto-refresh tick (new files may have arrived). */

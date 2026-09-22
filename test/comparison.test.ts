@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { fileWindow, needsComparison } from '../src/comparison';
 import { concretePatterns } from '../src/s3list';
-import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS, savedVisRevision, storeSavedVis, type SavedVis, type UrlState } from '../src/state';
+import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS, type SavedVis, type UrlState } from '../src/state';
+import { savedVisRevision, storeSavedVis } from '../src/savedViews';
 
 const range = { from: '2026-09-22T00:00:00Z', to: '2026-09-23T00:00:00Z' };
 const url: UrlState = { page: 'visualize', search: { ...DEFAULT_SEARCH, range }, discover: DEFAULT_DISCOVER, vis: { ...DEFAULT_VIS, compare: true } };

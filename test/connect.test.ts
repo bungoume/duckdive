@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AttachOptions, AttachedSource } from '../src/datasource';
 import { DEFAULT_SOURCE, loadSource, type SourceConfig } from '../src/sources';
-import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS, storeSavedVis, type UrlState } from '../src/state';
+import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS, type UrlState } from '../src/state';
+import { storeSavedVis } from '../src/savedViews';
 
 const attach = vi.hoisted(() => vi.fn());
 vi.mock('../src/datasource', async (original) => ({ ...(await original<object>()), attachSource: attach }));
@@ -12,7 +13,7 @@ vi.mock('../src/permissions', () => ({ ensureHostPermissions: async () => ({ ok:
 
 import { createConnection, valueFiltersFor } from '../src/connection';
 import { fileWindow, needsComparison } from '../src/comparison';
-import { loadSavedVis } from '../src/state';
+import { loadSavedVis } from '../src/savedViews';
 
 const url = { page: 'discover' as const, search: DEFAULT_SEARCH, discover: DEFAULT_DISCOVER, vis: DEFAULT_VIS };
 const sourceA = { ...DEFAULT_SOURCE, name: 'A' };

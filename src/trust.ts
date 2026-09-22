@@ -1,3 +1,5 @@
+import { sqlLabel, type Filter } from './sql';
+
 // Custom SQL filters travel inside shareable URLs, and a WHERE clause can read DuckDB settings
 // (the S3 credentials) and reach the network through httpfs. SQL that was typed in this browser
 // is remembered here; SQL arriving from anywhere else (a link someone sent) is restored disabled
@@ -30,4 +32,12 @@ export function isTrustedSql(sql: string): boolean {
 /** Remember `sql` as written or reviewed in this browser (most recent first, bounded). */
 export function trustSql(sql: string): void {
   store([sql, ...load().filter((s) => s !== sql)].slice(0, MAX));
+}
+
+/** Restored SQL is executable only after it was written or reviewed in this browser. */
+export function quarantineFilters(filters: Filter[]): Filter[] {
+  return filters.map((filter) => {
+    if (filter.op !== 'query' || isTrustedSql(filter.sql ?? '')) return filter;
+    return { ...filter, disabled: true, untrusted: true, label: sqlLabel(filter.sql ?? '') };
+  });
 }

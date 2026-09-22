@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_SOURCE, rememberSource, sourceKey, stripSecrets, loadSourceHistory } from '../src/sources';
 import { describeFilter } from '../src/sql';
-import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS, loadSavedSearches, loadSavedVis, readUrlState, storeSavedSearches, storeSavedVis, syncUrlStateFromLocation, writeUrlState } from '../src/state';
+import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS } from '../src/state';
+import { loadSavedSearches, loadSavedVis, storeSavedSearches, storeSavedVis } from '../src/savedViews';
+import { readUrlState, syncUrlStateFromLocation, writeUrlState } from '../src/urlState';
 import { trustSql } from '../src/trust';
 import { historyLog } from './setup';
 
@@ -218,5 +220,31 @@ describe('saved searches and visualizations', () => {
       },
     ]);
     expect(loadSavedVis()[0].pinned).toBe(true);
+  });
+});
+
+describe('versioned persistence', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('reads both legacy arrays and versioned saved views without losing search settings', () => {
+    const vis = { id: 'v', title: 'Saved', savedAt: '', vis: DEFAULT_VIS, search: DEFAULT_SEARCH };
+    localStorage.setItem('ddv.savedVis', JSON.stringify([vis]));
+    expect(loadSavedVis()).toEqual([{ ...vis, pinned: false }]);
+    storeSavedVis(loadSavedVis());
+    expect(JSON.parse(localStorage.getItem('ddv.savedVis')!).version).toBe(1);
+    expect(loadSavedVis()).toEqual([{ ...vis, pinned: false }]);
+    const search = { id: 's', title: 'Search', savedAt: '', search: DEFAULT_SEARCH, discover: DEFAULT_DISCOVER };
+    localStorage.setItem('ddv.savedSearches', JSON.stringify([search]));
+    expect(loadSavedSearches()).toEqual([search]);
+    storeSavedSearches(loadSavedSearches());
+    expect(JSON.parse(localStorage.getItem('ddv.savedSearches')!).version).toBe(1);
+    expect(loadSavedSearches()).toEqual([search]);
+  });
+
+  it('does not interpret an unknown storage or URL version as current state', () => {
+    localStorage.setItem('ddv.savedVis', JSON.stringify({ version: 99, items: [{ id: 'unknown' }] }));
+    expect(loadSavedVis()).toEqual([]);
+    setHash('discover', { version: 99, search: { query: 'unknown syntax' } });
+    expect(readUrlState().search).toEqual(DEFAULT_SEARCH);
   });
 });

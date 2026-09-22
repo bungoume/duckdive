@@ -2,7 +2,8 @@ import { useState } from 'preact/hooks';
 import { formatDate } from '../datefmt';
 import { t } from '../i18n';
 import { newId } from '../sql';
-import { loadSavedSearches, storeSavedSearches, type DiscoverState, type SavedSearch, type SearchState } from '../state';
+import { loadSavedSearches, storeSavedSearches } from '../savedViews';
+import { type DiscoverState, type SavedSearch, type SearchState } from '../state';
 import { Popover } from './ui';
 
 /** "Saved" on the Discover page: keep the query, filters, columns and sort under a name; load one back. */

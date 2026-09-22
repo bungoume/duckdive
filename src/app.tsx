@@ -17,7 +17,8 @@ import { useConnect } from './hooks/useConnect';
 import { useCredentialRefresh } from './hooks/useCredentialRefresh';
 import { useDownloadGate } from './hooks/useDownloadGate';
 import { describeSource, sourceKey } from './sources';
-import { DEFAULT_VIS, type VisState, readLinkSource, readUrlState, shareLink, syncUrlStateFromLocation, writeUrlState, type AppPage, type UrlState } from './state';
+import { DEFAULT_VIS, type VisState, type AppPage, type UrlState } from './state';
+import { readLinkSource, readUrlState, shareLink, syncUrlStateFromLocation, writeUrlState } from './urlState';
 
 export function App() {
   // Re-render the whole tree when the UI language changes (every t() call reads the current one).

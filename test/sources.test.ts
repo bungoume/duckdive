@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SOURCE, describeSource, shareableSource, sourceForKnownLink, sourceFromLink, type SourceConfig } from '../src/sources';
-import { readLinkSource, shareLink, type UrlState } from '../src/state';
+import { readLinkSource, shareLink } from '../src/urlState';
+import { type UrlState } from '../src/state';
 import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS } from '../src/state';
 
 const url: SourceConfig = {
