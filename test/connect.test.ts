@@ -1,29 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AttachOptions, AttachedSource } from '../src/datasource';
-import { DEFAULT_SOURCE, loadSource } from '../src/sources';
+import { DEFAULT_SOURCE, loadSource, type SourceConfig } from '../src/sources';
 import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS, storeSavedVis, type UrlState } from '../src/state';
 
-const hook = vi.hoisted(() => ({ slots: [] as unknown[], cursor: 0 }));
-// Drive connect's async transitions independently of the mount/auto-refresh effects.
-vi.mock('preact/hooks', () => ({
-  useState: <T>(initial: T | (() => T)) => {
-    const i = hook.cursor++;
-    if (!(i in hook.slots)) hook.slots[i] = typeof initial === 'function' ? (initial as () => T)() : initial;
-    return [hook.slots[i], (v: T | ((prev: T) => T)) => (hook.slots[i] = typeof v === 'function' ? (v as (prev: T) => T)(hook.slots[i] as T) : v)];
-  },
-  useRef: <T>(initial: T) => {
-    const i = hook.cursor++;
-    return (hook.slots[i] ??= { current: initial });
-  },
-  useEffect: () => undefined,
-}));
 const attach = vi.hoisted(() => vi.fn());
 vi.mock('../src/datasource', async (original) => ({ ...(await original<object>()), attachSource: attach }));
 vi.mock('../src/duck', () => ({ cancelAllQueries: async () => undefined }));
-vi.mock('../src/secrets', () => ({ withSecrets: async (cfg: unknown) => cfg, storeSecrets: async () => undefined }));
+const secrets = vi.hoisted(() => vi.fn());
+vi.mock('../src/secrets', () => ({ withSecrets: secrets, storeSecrets: async () => undefined }));
 vi.mock('../src/permissions', () => ({ ensureHostPermissions: async () => ({ ok: true }), originPattern: () => null }));
 
-import { useConnect } from '../src/hooks/useConnect';
+import { createConnection, valueFiltersFor } from '../src/connection';
+import { fileWindow, needsComparison } from '../src/comparison';
+import { loadSavedVis } from '../src/state';
 
 const url = { page: 'discover' as const, search: DEFAULT_SEARCH, discover: DEFAULT_DISCOVER, vis: DEFAULT_VIS };
 const sourceA = { ...DEFAULT_SOURCE, name: 'A' };
@@ -31,15 +20,32 @@ const sourceB = { ...DEFAULT_SOURCE, kind: 'url' as const, name: 'B', urls: 'htt
 const attachedA: AttachedSource = { fields: [], files: ['A'], fileSizes: [], captures: [], timeField: null, rowCount: 1, description: 'A', rangeDependent: false, totalBytes: null, warning: null };
 const attachedB = { ...attachedA, files: ['B'], description: 'B' };
 
+let connection: ReturnType<typeof createConnection>;
+const request = (config: SourceConfig = sourceB, state: UrlState = url) => ({
+  window: fileWindow(state.search.range, needsComparison(state, loadSavedVis())),
+  valueFilters: valueFiltersFor(config, state),
+});
 function TestConnection(state: UrlState = url) {
-  hook.cursor = 0;
-  return useConnect(state, () => undefined, { current: false });
+  const snapshot = connection.get();
+  return {
+    ...snapshot,
+    formSource: snapshot.pendingSource ?? snapshot.source,
+    attachError: snapshot.phase.status === 'failed' ? snapshot.phase.error : null,
+    connect: (config: typeof sourceA) => connection.connect(config, request(config, state)),
+    switchSource: (config: typeof sourceA) => connection.select(config, request(config, state)),
+    onTimeField: connection.onTimeField,
+  };
 }
 
 beforeEach(async () => {
-  hook.slots = [];
   localStorage.clear();
+  secrets.mockReset().mockImplementation(async (config) => config);
   attach.mockReset().mockResolvedValue(attachedA);
+  connection = createConnection(
+    sourceA,
+    () => undefined,
+    () => false,
+  );
   await TestConnection().connect(sourceA);
 });
 
@@ -98,5 +104,67 @@ describe('switching sources', () => {
     expect(TestConnection().formSource.name).toBe('B');
     expect(TestConnection().attached).toEqual(attachedB);
     expect(loadSource().name).toBe('B');
+  });
+});
+
+describe('connection lifecycle', () => {
+  it('ignores a superseded secret load before it can attach', async () => {
+    let finish!: (config: typeof sourceA) => void;
+    secrets.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const first = connection.select(sourceB, request());
+    await connection.connect(sourceA, request(sourceA));
+    finish(sourceB);
+    await first;
+    expect(connection.get().source.name).toBe('A');
+    expect(attach.mock.calls.map(([config]) => config.name)).toEqual(['A', 'A']);
+  });
+
+  it.each(['cancel', 'replace', 'dispose'] as const)('settles a pending confirmation on %s', async (action) => {
+    let waiting!: () => void;
+    const reached = new Promise<void>((resolve) => {
+      waiting = resolve;
+    });
+    attach.mockImplementationOnce(async (_cfg, _files, _creds, _range, _filters, opts: AttachOptions) => {
+      const answer = opts.confirmLarge!({ files: 2000, bytes: null, threshold: 1000 });
+      waiting();
+      expect(await answer).toBe(false);
+      return attachedB;
+    });
+    const first = connection.connect(sourceB, request());
+    await reached;
+    expect(connection.get().phase.status).toBe('confirming');
+    if (action === 'cancel') connection.cancel();
+    else if (action === 'dispose') connection.dispose();
+    else await connection.connect(sourceA, request(sourceA));
+    await first;
+    expect(connection.get().source.name).toBe('A');
+    expect(connection.get().attached).toEqual(attachedA);
+  });
+
+  it('does not let an old result replace a newer connection', async () => {
+    let finish!: (value: AttachedSource) => void;
+    let started!: () => void;
+    const reached = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    attach.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+          started();
+        }),
+    );
+    const first = connection.connect(sourceB, request());
+    await reached;
+    await connection.connect(sourceA, request(sourceA));
+    finish(attachedB);
+    await first;
+    expect(connection.get().source.name).toBe('A');
+    expect(connection.get().phase.status).toBe('idle');
   });
 });

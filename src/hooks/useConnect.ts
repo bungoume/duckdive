@@ -1,225 +1,64 @@
-// Everything about attaching a data source: the saved configuration and the history of recent
-// ones, the running connect attempt (cancellable while it lists or signs in), the large-source
-// confirmation, pattern-variable discovery, the start-up connect and the re-connects that a
-// changed time range or captured-column filter requires.
-
 import { useEffect, useRef, useState, type Dispatch, type StateUpdater } from 'preact/hooks';
-import { getCredentials, isUsable, loadCredentials, type AwsCredentials } from '../auth';
-import { attachSource, capturedColumns, discoverVariables, requiredOrigins, unselectedTokens, type AttachedSource, type LargeSourceInfo, type TimeWindow, type ValueFilters } from '../datasource';
+import { isUsable, loadCredentials } from '../auth';
+import type { TimeWindow } from '../datasource';
 import { fileWindow, needsComparison } from '../comparison';
+import { createConnection, valueFiltersFor } from '../connection';
 import { expose } from '../debug';
-import { setDiagnoseContext } from '../diagnose';
 import { describeError } from '../errors';
 import { DataProtocol, cancelAllQueries, getDB, getQueryLog, initDuckDB, queriesRunning, query } from '../duck';
 import { findField } from '../fields';
-import { t } from '../i18n';
-import { NO_LOCAL, forgetHandles, openLocal, storeHandles, type LocalSelection } from '../localfiles';
-import { CancelledError } from '../net';
-import { ensureHostPermissions } from '../permissions';
-import type { TokenValue } from '../s3list';
-import { forgetSecrets, storeSecrets, withSecrets } from '../secrets';
-import { forgetSource, loadSource, loadSourceHistory, rememberSource, saveSource, sourceForKnownLink, sourceKey, type SourceConfig, type SourceHistoryEntry } from '../sources';
-import { newId } from '../sql';
+import { NO_LOCAL, type LocalSelection } from '../localfiles';
+import { withSecrets } from '../secrets';
+import { loadSource, sourceForKnownLink, sourceKey, type SourceConfig } from '../sources';
 import { loadSavedVis, savedVisRevision, type UrlState } from '../state';
 import { useStore } from '../store';
-
-/** What the running connect is doing; `phase` decides whether Cancel is offered. */
-export interface AttachProgress {
-  message: string;
-  phase: 'auth' | 'list' | 'db';
-}
-
-/** Values found for the {name} tokens of the pattern being configured (Data source page). */
-export interface Variables {
-  pattern: string;
-  values: Record<string, TokenValue[]>;
-  listedFiles: number;
-}
-
-/** A large source waiting for the user's go-ahead before DuckDB is touched. */
-export interface LargeConfirm {
-  info: LargeSourceInfo;
-  resolve: (ok: boolean) => void;
-}
 
 /** What a file resolution depends on: the time range and the captured-column filters of `cfg`, and the auto-refresh tick (new files may have arrived). */
 function rangeKeyFor(cfg: SourceConfig, url: UrlState, tick: number, compare: boolean): string {
   return `${url.search.range.from}|${url.search.range.to}|${JSON.stringify(valueFiltersFor(cfg, url))}|${tick}|${compare}`;
 }
 
-/** Active "is" / "is one of" filters on columns captured from file names → file pruning. */
-export function valueFiltersFor(cfg: SourceConfig, url: UrlState): ValueFilters {
-  const names = capturedColumns(cfg);
-  const out: ValueFilters = {};
-  if (!names.length) return out;
-  for (const f of url.search.filters) {
-    if (f.disabled || f.negate || !names.includes(f.field)) continue;
-    const vals = f.op === 'is' && f.value !== undefined ? [f.value] : f.op === 'is_one_of' ? (f.values ?? []) : null;
-    if (!vals || !vals.length) continue;
-    out[f.field] = out[f.field] ? out[f.field].filter((v) => vals.includes(v)) : vals;
-  }
-  return out;
-}
-
-/**
- * @param url current URL state (time range and filters feed the file resolution)
- * @param setUrl for page switches and for dropping state that a new source cannot satisfy
- * @param queryBusy whether a Discover / Visualize query is in flight (DuckDB steps queue behind it)
- * @param linkSource the source a shared link carries: connected at start-up instead of the saved one when it is already known here
- * @param refreshTick advances on auto refresh: sources whose file list depends on the time range re-list it
- */
 export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState>>, queryBusy: { current: boolean }, linkSource: SourceConfig | null = null, refreshTick = 0) {
   useStore(savedVisRevision);
   const compare = needsComparison(url, loadSavedVis());
   const [ready, setReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
-  const [source, setSource] = useState<SourceConfig>(() => loadSource());
-  // A history/link selection remains editable if it fails, without relabelling the active data.
-  const [pendingSource, setPendingSource] = useState<SourceConfig | null>(null);
-  // Recently connected sources (newest first) for quick switching; bumped on every successful connect.
-  const [history, setHistory] = useState<SourceHistoryEntry[]>(() => loadSourceHistory());
-  // Incremented when a remembered source is loaded, so the Data source form picks up the new config.
-  const [switchSeq, setSwitchSeq] = useState(0);
-  const [attached, setAttached] = useState<AttachedSource | null>(null);
-  const [attachError, setAttachError] = useState<string | null>(null);
-  const [attaching, setAttaching] = useState(false);
-  const [attachProgress, setAttachProgress] = useState<AttachProgress | null>(null);
-  const [largeConfirm, setLargeConfirm] = useState<LargeConfirm | null>(null);
-  const [variables, setVariables] = useState<Variables | null>(null);
-  const [creds, setCreds] = useState<AwsCredentials | null>(null);
-  /** The file set (joined) the user accepted in the large-source confirmation: the download gate skips it. */
-  const ackedFiles = useRef('');
-  // The running connect attempt: its AbortController (listing / login can be cancelled) and a
-  // sequence number so a cancelled or superseded attempt never applies its result.
-  const attemptSeq = useRef(0);
-  const attemptCtl = useRef<AbortController | null>(null);
-  /** The range / filter key the last connect attempt resolved files for (see the effect below). */
+  const [connection] = useState(() =>
+    createConnection(
+      loadSource(),
+      () => setUrl((u) => ({ ...u, page: 'source' })),
+      () => queryBusy.current,
+    ),
+  );
+  const state = useStore(connection);
+  const { source, pendingSource, history, switchSeq, attached, phase, variables, creds } = state;
+  const attaching = phase.status === 'connecting' || phase.status === 'confirming';
+  const attachProgress = attaching ? phase.progress : null;
+  const attachError = phase.status === 'failed' ? phase.error : null;
+  const largeConfirm = phase.status === 'confirming' ? phase.confirmation : null;
+  const { setCreds, ackedFiles, forget, onTimeField } = connection;
   const attemptedKey = useRef('');
-
-  /** Credentials for cfg (null for static / none). Interactive login only when `interactive`. */
-  const resolveCreds = async (cfg: SourceConfig, interactive: boolean, isCurrent: () => boolean): Promise<AwsCredentials | null> => {
-    setCreds(null);
-    if (cfg.kind !== 'url' || cfg.authMode !== 'oidc') return null;
-    const c = await getCredentials(cfg.oidc, interactive, 300, isCurrent);
-    if (!isCurrent()) throw new CancelledError();
-    setCreds(c);
-    return c;
-  };
-
-  const currentWindow = (): TimeWindow | null => {
-    return fileWindow(url.search.range, compare);
-  };
-
-  const connect = async (cfg: SourceConfig, local: LocalSelection = NO_LOCAL, interactive = true, window: TimeWindow | null = currentWindow()): Promise<AttachedSource | null> => {
-    // Whatever was still connecting belongs to a file set nobody wants any more. Without this its
-    // listing runs to the end and then replaces the view with the older file set, because only
-    // the state updates check `stale()` while the DuckDB steps do not.
-    attemptCtl.current?.abort();
-    const attempt = ++attemptSeq.current;
-    const ctl = new AbortController();
-    attemptCtl.current = ctl;
+  const currentWindow = () => fileWindow(url.search.range, compare);
+  const request = (cfg: SourceConfig, local: LocalSelection, interactive: boolean, window: TimeWindow | null) => ({
+    local,
+    interactive,
+    window,
+    valueFilters: valueFiltersFor(cfg, url),
+  });
+  const connect = (cfg: SourceConfig, local: LocalSelection = NO_LOCAL, interactive = true, window: TimeWindow | null = currentWindow()) => {
     attemptedKey.current = rangeKeyFor(cfg, url, refreshTick, compare);
-    const stale = () => attemptSeq.current !== attempt;
-    const report = (message: string, phase: AttachProgress['phase']) => {
-      if (stale()) return;
-      // From the first DB mutation onward the old view/credentials may no longer be usable.
-      // Only a fully attached source can make the query pages available again.
-      if (phase === 'db') setAttached(null);
-      const note = phase === 'db' ? (queryBusy.current ? t('app.note.queued') : t('app.note.inDb')) : '';
-      setAttachProgress({ message: message + note, phase });
-    };
-    setAttaching(true);
-    setAttachError(null);
-    setAttachProgress(null);
-    let confirmedLarge = false;
-    const confirmLarge = (info: LargeSourceInfo) =>
-      new Promise<boolean>((resolve) => {
-        setLargeConfirm({
-          info,
-          resolve: (ok) => {
-            setLargeConfirm(null);
-            confirmedLarge = ok;
-            resolve(ok);
-          },
-        });
-      });
-    try {
-      if (cfg.kind === 'url' && !window) throw new Error(t('tp.invalid'));
-      // A remembered local source: its files come from the stored handles (the browser may ask for permission).
-      let sel = local;
-      if (cfg.kind === 'local' && !sel.files.length && cfg.localId) {
-        report(t('app.progress.openingLocal'), 'list');
-        const opened = await openLocal(cfg.localId, interactive);
-        if (stale()) return null;
-        if (!opened) {
-          setUrl((u) => ({ ...u, page: 'source' }));
-          return null;
-        }
-        sel = opened;
-      }
-      if (cfg.kind === 'url') {
-        const perm = await ensureHostPermissions(requiredOrigins(cfg));
-        if (!perm.ok) throw new Error(t('app.error.hostPermission', { origins: perm.missing.join(', ') }));
-      }
-      if (cfg.kind === 'url' && cfg.authMode === 'oidc') report(interactive ? t('app.progress.signingIn') : t('app.progress.refreshingCreds'), 'auth');
-      const c = await resolveCreds(cfg, interactive, () => !stale());
-      if (stale()) return null;
-      // Patterns with {name} tokens: list the values first and let the user choose before any file is read.
-      if (cfg.kind === 'url' && unselectedTokens(cfg).length) {
-        report(t('app.progress.listingVars'), 'list');
-        const found = await discoverVariables(cfg, c, window, { signal: ctl.signal, onProgress: report });
-        if (stale()) return null;
-        setVariables({ pattern: cfg.urls, ...found });
-        setUrl((u) => ({ ...u, page: 'source' }));
-        return null;
-      }
-      // Whatever is still running belongs to the previous file set: stop it so the new view
-      // is not queued behind it.
-      report(t('app.progress.stopping'), 'list');
-      await cancelAllQueries();
-      if (stale()) return null;
-      const a = await attachSource(cfg, sel.files, c, window, valueFiltersFor(cfg, url), { signal: ctl.signal, onProgress: report, confirmLarge });
-      if (stale()) return null;
-      // The user already accepted this file set: do not ask again at query time.
-      if (confirmedLarge) ackedFiles.current = a.files.join('\n');
-      const saved: SourceConfig = { ...cfg, timeField: a.timeField?.name ?? (cfg.timeField === '' ? '' : null) };
-      if (cfg.kind === 'local' && sel.handles.length) {
-        // picked with handles: keep them so the source can be reopened from the history
-        saved.localId = cfg.localId ?? newId();
-        await storeHandles(saved.localId, sel.handles);
-      }
-      if (stale()) return null;
-      expose({ attached: a });
-      setDiagnoseContext(cfg.kind === 'url' ? { files: a.files, fileSizes: a.fileSizes, format: cfg.format } : null);
-      setAttached(a);
-      setSource(saved);
-      setPendingSource(null);
-      saveSource(saved);
-      void storeSecrets(saved);
-      setHistory(rememberSource(saved));
-      return a;
-    } catch (e) {
-      if (stale()) return null;
-      setAttachError(e instanceof CancelledError ? t('app.error.cancelled') : describeError(e));
-      return null;
-    } finally {
-      if (!stale()) {
-        setAttaching(false);
-        setAttachProgress(null);
-        setLargeConfirm(null);
-      }
-    }
+    return connection.connect(cfg, request(cfg, local, interactive, window));
   };
-
   /**
    * Load a remembered source and connect to it. The time range and query are kept; filters,
    * columns, sorts and chart fields that name a field the new source does not have are dropped.
    */
   const switchSource = async (entry: SourceConfig) => {
-    const cfg = await withSecrets(entry);
-    setPendingSource(cfg);
-    setSwitchSeq((n) => n + 1);
-    const a = await connect(cfg, NO_LOCAL, true);
+    attemptedKey.current = rangeKeyFor(entry, url, refreshTick, compare);
+    const result = connection.select(entry, request(entry, NO_LOCAL, true, currentWindow()));
+    const selection = connection.generation.current;
+    const a = await result;
+    if (connection.generation.current !== selection) return;
     if (!a) {
       setUrl((u) => ({ ...u, page: 'source' }));
       return;
@@ -237,34 +76,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
       },
     }));
   };
-
-  const forget = (key: string) => {
-    const localId = history.find((h) => h.key === key)?.config.localId;
-    if (localId) void forgetHandles(localId);
-    setHistory(forgetSource(key));
-    void forgetSecrets(key);
-  };
-
-  /** Abandon the running connect. Only listing / login can be cut short; a DuckDB step runs on. */
-  const cancelConnect = () => {
-    if (!attaching || attachProgress?.phase === 'db') return;
-    largeConfirm?.resolve(false);
-    attemptSeq.current++;
-    attemptCtl.current?.abort();
-    setAttaching(false);
-    setAttachProgress(null);
-    setAttachError(t('app.error.cancelled'));
-  };
-
-  const onTimeField = (name: string | null) => {
-    if (!attached) return;
-    const f = name ? (findField(attached.fields, name) ?? null) : null;
-    setAttached({ ...attached, timeField: f });
-    const cfg = { ...source, timeField: f?.name ?? '' };
-    setSource(cfg);
-    saveSource(cfg);
-    setHistory(rememberSource(cfg));
-  };
+  useEffect(() => () => connection.dispose(), [connection]);
 
   // Start-up: hydrate the saved source (or a known one from the link) with this session's secrets, start DuckDB, reconnect.
   useEffect(() => {
@@ -272,8 +84,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
       try {
         const known = linkSource ? history.find((h) => h.key === sourceKey(linkSource)) : undefined;
         const cfg = await withSecrets(known && linkSource ? sourceForKnownLink(linkSource, known.config) : loadSource());
-        setSource(cfg);
-        setSwitchSeq((n) => n + 1);
+        connection.restore(cfg);
         await initDuckDB();
         expose({ query, cancelAllQueries, queriesRunning, getQueryLog, registerFileURL: (name: string, url: string) => getDB().registerFileURL(name, url, DataProtocol.HTTP, false) });
         setReady(true);
@@ -348,12 +159,12 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
     variables,
     creds,
     setCreds,
-    connectionGeneration: attemptSeq,
+    connectionGeneration: connection.generation,
     ackedFiles,
     connect,
     switchSource,
     forget,
-    cancelConnect,
+    cancelConnect: connection.cancel,
     onTimeField,
   };
 }

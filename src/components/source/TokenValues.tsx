@@ -1,5 +1,5 @@
 import { t } from '../../i18n';
-import type { Variables } from '../../hooks/useConnect';
+import type { Variables } from '../../connection';
 
 /** The {name} tokens of the pattern: which values were listed and which the user picked. */
 export function TokenValues(props: {

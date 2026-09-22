@@ -3,7 +3,7 @@ import type { AwsCredentials, OidcConfig } from '../auth';
 import { capturedColumns, requiredOrigins, unselectedTokens, type AttachedSource } from '../datasource';
 import { FORMATS, FORMAT_IDS, NAMING_IDS, TEMPLATES, formatLabel, hasOtel, namingLabel, templateLabel, templateNote } from '../formats';
 import { t, tx } from '../i18n';
-import type { AttachProgress, Variables } from '../hooks/useConnect';
+import type { AttachProgress, Variables } from '../connection';
 import { NO_LOCAL, selectionNames, selectionTitle, type LocalSelection } from '../localfiles';
 import { hasHostPermissions, isExtension } from '../permissions';
 import { sourceKey, type SourceConfig, type SourceHistoryEntry } from '../sources';
