@@ -235,6 +235,21 @@ export interface VisResult {
   sql: string;
 }
 
+/** The same search constraints over the preceding period; dashboard tiles add their saved search. */
+export function previousPeriodWhere(vis: VisState, compiled: Compiled, searches: SearchState[], fields: Field[], timeExpr: string | null): string | null {
+  const span = compiled.from && compiled.to ? compiled.to.getTime() - compiled.from.getTime() : 0;
+  if (!vis.compare || vis.x.kind !== 'date_histogram' || !['area', 'line', 'bar'].includes(vis.chart) || span <= 0 || !compiled.from || !compiled.to) return null;
+  const range = { from: new Date(compiled.from.getTime() - span).toISOString(), to: compiled.from.toISOString() };
+  return searches.map((search) => `(${compileSearch({ ...search, range }, fields, timeExpr).where})`).join(' AND ');
+}
+
+/** Move the preceding period's buckets onto the current chart without changing its result. */
+export function shiftVisResult(result: VisResult | null, ms: number): VisResult | null {
+  return result
+    ? { ...result, rows: result.rows.map((row) => ({ ...row, x: typeof row.x === 'number' ? row.x + ms : row.x })), xOrder: result.xOrder.map((x) => (typeof x === 'number' ? x + ms : x)) }
+    : null;
+}
+
 /** Internal visualization values. Raw strings are prefixed so they cannot collide with sentinels. */
 const VALUE_PREFIX = '\u{e000}value:';
 export const OTHER = '\u{e000}other';

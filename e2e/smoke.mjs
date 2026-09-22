@@ -482,6 +482,9 @@ await step('visualize', async () => {
   const svgText = readFileSync(await svg.path(), 'utf8');
   console.log(`     ${svg.suggestedFilename()}: ${svgText.length} chars`);
   if (!svgText.startsWith('<svg')) throw new Error('not an SVG file');
+  // These options must survive saving and opening the same chart on the Dashboard.
+  await page.fill('.vis-panel input[placeholder]', 'options regression');
+  await page.click('.vis-panel button:has-text("Save")');
   for (const l of ['100 %', 'Logarithmic', 'previous period']) await page.uncheck(`.cfg-section:has-text("Options") label:has-text("${l}") input`);
   await sections.first().locator('select').first().selectOption('count');
   await page.selectOption('.cfg-section:has-text("Break down by") select', '');
@@ -525,6 +528,22 @@ await step('dashboard', async () => {
   await settled(page);
   await page.click('.tile button[title="Remove from dashboard"]');
   if (await page.locator('.tile').count()) throw new Error('tile not removed');
+  await page.click('.dashboard button:has-text("Add visualization")');
+  await page.click('.popover .menu button:has-text("options regression")');
+  await settled(page);
+  const options = await page.evaluate(() => {
+    const tile = document.querySelector('.tile');
+    const plot = tile.querySelector('.chart-box > div').firstElementChild;
+    return {
+      scale: plot.scale('y').type,
+      percent: [...tile.querySelectorAll('svg')].some((svg) => svg.textContent.includes('(%)')),
+      dashed: tile.querySelectorAll('svg g[stroke-dasharray] path').length,
+      note: tile.querySelector('.legend-note')?.textContent,
+    };
+  });
+  console.log(`     saved options: ${JSON.stringify(options)}`);
+  if (options.scale !== 'symlog' || !options.percent || !options.dashed || !options.note) throw new Error('saved chart options lost on the Dashboard');
+  await page.click('.tile button[title="Remove from dashboard"]');
 });
 await step('sql-page', async () => {
   await page.click('.header nav button:has-text("SQL")');

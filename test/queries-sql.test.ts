@@ -1,12 +1,42 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Field } from '../src/fields';
-import { DEFAULT_VIS } from '../src/state';
+import { DEFAULT_SEARCH, DEFAULT_VIS } from '../src/state';
 import { intervalByKey } from '../src/sql';
 
 const run = vi.hoisted(() => vi.fn());
 vi.mock('../src/duck', () => ({ query: run }));
 
-import { NULL_GROUP, OTHER, encodeVisValue, fetchVis, groupLabel } from '../src/queries';
+import { NULL_GROUP, OTHER, compileSearch, encodeVisValue, fetchVis, groupLabel, previousPeriodWhere, shiftVisResult, type VisResult } from '../src/queries';
+
+describe('previous-period charts', () => {
+  const level: Field = { name: 'level', expr: '"level"', kind: 'string', duckType: 'VARCHAR', column: 'level', searchable: true };
+  const search = { ...DEFAULT_SEARCH, range: { from: '2026-09-22T01:00:00Z', to: '2026-09-22T02:00:00Z' }, query: 'level:error' };
+  const compiled = compileSearch(search, [level], '"ts"');
+
+  it('moves both dashboard and saved-search time constraints to the preceding period', () => {
+    const saved = { ...DEFAULT_SEARCH, filters: [{ id: 'f', field: 'level', op: 'is_not' as const, value: 'debug' }] };
+    const sql = previousPeriodWhere({ ...DEFAULT_VIS, compare: true }, compiled, [search, saved], [level], '"ts"')!;
+    expect(sql).toContain('error');
+    expect(sql).toContain('debug');
+    expect(sql.match(/2026-09-22 00:00:00/g)).toHaveLength(2);
+    expect(sql.match(/2026-09-22 01:00:00/g)).toHaveLength(2);
+    expect(sql).not.toContain('2026-09-22 02:00:00');
+  });
+
+  it('does not query a comparison for a disabled option or a non-time chart', () => {
+    expect(previousPeriodWhere(DEFAULT_VIS, compiled, [search], [level], '"ts"')).toBeNull();
+    expect(previousPeriodWhere({ ...DEFAULT_VIS, compare: true, chart: 'metric' }, compiled, [search], [level], '"ts"')).toBeNull();
+    expect(previousPeriodWhere({ ...DEFAULT_VIS, compare: true, x: { ...DEFAULT_VIS.x, kind: 'terms' } }, compiled, [search], [level], '"ts"')).toBeNull();
+  });
+
+  it('aligns previous buckets without mutating their original result', () => {
+    const result: VisResult = { rows: [{ x: 1000, g: null, m: [2] }], xOrder: [1000], groups: [], xKind: 'date_histogram', interval: null, tzOffset: 0, step: null, sql: '' };
+    const shifted = shiftVisResult(result, 3600000)!;
+    expect(shifted.rows[0].x).toBe(3601000);
+    expect(shifted.xOrder).toEqual([3601000]);
+    expect(result.rows[0].x).toBe(1000);
+  });
+});
 
 describe('visualization SQL', () => {
   beforeEach(() => run.mockReset().mockResolvedValue({ rows: [], columns: [], ms: 0 }));

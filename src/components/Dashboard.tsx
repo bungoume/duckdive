@@ -3,7 +3,7 @@ import { describeError } from '../errors';
 import type { Field } from '../fields';
 import { t } from '../i18n';
 import { CancelledError } from '../net';
-import { compileSearch, fetchVis, type Compiled, type VisResult } from '../queries';
+import { compileSearch, fetchVis, previousPeriodWhere, shiftVisResult, type Compiled, type VisResult } from '../queries';
 import { autoInterval, bucketOffsetMinutes, intervalByKey, type Interval } from '../sql';
 import { loadSavedVis, storeSavedVis, type SavedVis, type SearchState, type VisState } from '../state';
 import { Chart } from './Chart';
@@ -32,7 +32,7 @@ interface TileProps {
 
 function Tile(props: TileProps) {
   const { item, fields, timeExpr, compiled, tzOffset, paused, refreshTick } = props;
-  const vis: VisState = item.vis.chart === 'metric' ? { ...item.vis, x: { ...item.vis.x, kind: 'none' } } : item.vis;
+  const vis: VisState = useMemo(() => (item.vis.chart === 'metric' ? { ...item.vis, x: { ...item.vis.x, kind: 'none' } } : item.vis), [item.vis]);
   // the tile's own query and filters, over the page's time range
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const own = useMemo(() => compileSearch({ ...item.search, range: props.search.range }, fields, timeExpr), [item.search, props.search.range, fields, timeExpr, refreshTick]);
@@ -43,6 +43,8 @@ function Tile(props: TileProps) {
   }, [compiled.from, compiled.to, vis.x.interval]);
   const spanSec = compiled.from && compiled.to ? Math.max(0, (compiled.to.getTime() - compiled.from.getTime()) / 1000) : 0;
   const [result, setResult] = useState<VisResult | null>(null);
+  const [previous, setPrevious] = useState<VisResult | null>(null);
+  const previousWhere = useMemo(() => previousPeriodWhere(vis, compiled, [props.search, item.search], fields, timeExpr), [vis, compiled, props.search, item.search, fields, timeExpr]);
   const [error, setError] = useState<string | null>(null);
   const runId = useRef(0);
   const visKey = JSON.stringify(vis);
@@ -52,9 +54,14 @@ function Tile(props: TileProps) {
     const id = ++runId.current;
     props.onBusy(true);
     setError(null);
-    fetchVis(vis, where, timeExpr, fields, interval, tzOffset, spanSec)
-      .then((r) => {
-        if (id === runId.current) setResult(r);
+    Promise.all([
+      fetchVis(vis, where, timeExpr, fields, interval, tzOffset, spanSec),
+      previousWhere ? fetchVis(vis, previousWhere, timeExpr, fields, interval, tzOffset, spanSec) : Promise.resolve(null),
+    ])
+      .then(([r, p]) => {
+        if (id !== runId.current) return;
+        setResult(r);
+        setPrevious(shiftVisResult(p, spanSec * 1000));
       })
       .catch((e) => {
         if (id === runId.current && !(e instanceof CancelledError)) setError(describeError(e));
@@ -62,7 +69,7 @@ function Tile(props: TileProps) {
       .finally(() => props.onBusy(false));
     // the chart definition is compared by value; refreshTick re-runs an unchanged search on auto refresh
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [where, compiled.error, own.error, visKey, interval?.key, tzOffset, timeExpr, spanSec, paused, refreshTick]);
+  }, [where, previousWhere, compiled.error, own.error, visKey, interval?.key, tzOffset, timeExpr, spanSec, paused, refreshTick]);
 
   const chart = vis.chart;
   const err = compiled.error ?? own.error ?? error;
@@ -89,6 +96,9 @@ function Tile(props: TileProps) {
           metrics={vis.metrics}
           chart={chart}
           height={240}
+          percent={vis.percent}
+          log={vis.log}
+          compare={previousWhere ? previous : null}
           onBrush={(from, to) => props.onSearch({ ...props.search, range: { from: from.toISOString(), to: to.toISOString() } })}
           onPick={(pick) => {
             const next = searchAfterPick(vis, result.groups, pick, props.search);
@@ -96,6 +106,7 @@ function Tile(props: TileProps) {
           }}
         />
       )}
+      {previousWhere && previous && <div class="legend-note">{t('vis.previousNote')}</div>}
       {!result && !err && <div class="empty">{t('common.loading')}</div>}
     </div>
   );

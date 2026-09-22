@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { TimeRange } from '../datemath';
 import type { Field } from '../fields';
 import { findField } from '../fields';
-import { compileSearch, fetchVis, metricLabel, type VisResult } from '../queries';
+import { compileSearch, fetchVis, metricLabel, previousPeriodWhere, shiftVisResult, type VisResult } from '../queries';
 import { INTERVALS, autoInterval, bucketOffsetMinutes, intervalByKey, intervalLabel, newId, type Filter, type Interval } from '../sql';
 import { t } from '../i18n';
 import { MAX_BREAKDOWN_VALUES, MAX_TERM_VALUES, loadSavedVis, storeSavedVis, type ChartType, type MetricAgg, type MetricDef, type SavedVis, type SearchState, type VisState } from '../state';
@@ -122,11 +122,7 @@ export function Visualize(props: {
   const isTimeChart = vis.x.kind === 'date_histogram' && (vis.chart === 'area' || vis.chart === 'line' || vis.chart === 'bar');
   const compare = !!vis.compare && isTimeChart && spanMs > 0;
   // the same search over the period of the same length just before this one
-  const previousWhere = useMemo(() => {
-    if (!compare || !compiled.from || !compiled.to) return null;
-    const range = { from: new Date(compiled.from.getTime() - spanMs).toISOString(), to: new Date(compiled.to.getTime() - spanMs).toISOString() };
-    return compileSearch({ ...search, range }, fields, timeExpr).where;
-  }, [compare, compiled.from, compiled.to, spanMs, search, fields, timeExpr]);
+  const previousWhere = useMemo(() => previousPeriodWhere(vis, compiled, [search], fields, timeExpr), [vis, compiled, search, fields, timeExpr]);
 
   useEffect(() => {
     if (compiled.error || paused) return;
@@ -141,9 +137,7 @@ export function Visualize(props: {
       .then(([r, p]) => {
         if (id !== runId.current) return;
         setResult(r);
-        setPrevious(
-          p ? { ...p, rows: p.rows.map((row) => ({ ...row, x: typeof row.x === 'number' ? row.x + spanMs : row.x })), xOrder: p.xOrder.map((x) => (typeof x === 'number' ? x + spanMs : x)) } : null,
-        );
+        setPrevious(shiftVisResult(p, spanMs));
       })
       .catch((e) => {
         if (id === runId.current && !(e instanceof CancelledError)) setError(withCacheHint(describeError(e)));
