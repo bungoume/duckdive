@@ -4,7 +4,8 @@ import { describeError } from '../errors';
 import type { Field } from '../fields';
 import { createQueryScope } from '../queryScope';
 import { CancelledError } from '../net';
-import { fetchVis, previousPeriodWhere, shiftVisResult, type Compiled, type VisResult } from '../queries';
+import { fetchVis } from '../queries';
+import { previousPeriodWhere, shiftVisResult, type Compiled, type VisResult } from '../queryPlans';
 import { autoInterval, bucketOffsetMinutes, intervalByKey } from '../sql';
 import type { SearchState, VisState } from '../state';
 
@@ -59,8 +60,8 @@ export function useVisQuery({
     setBusy(true);
     setError(null);
     Promise.all([
-      fetchVis(effective, compiled.where, timeExpr, fields, interval, tzOffset, spanMs / 1000, run.signal),
-      previousWhere ? fetchVis(effective, previousWhere, timeExpr, fields, interval, tzOffset, spanMs / 1000, run.signal) : Promise.resolve(null),
+      fetchVis(effective, compiled.where, timeExpr, fields, interval, tzOffset, spanMs / 1000, run.signal, compiled.context),
+      previousWhere ? fetchVis(effective, previousWhere, timeExpr, fields, interval, tzOffset, spanMs / 1000, run.signal, compiled.context) : Promise.resolve(null),
     ])
       .then(([current, prior]) => {
         if (!run.isCurrent()) return;

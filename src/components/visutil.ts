@@ -1,7 +1,7 @@
 // Bits shared by the Visualize page and the dashboard tiles: what a click on a chart means for
 // the search, and the axis labels of a chart definition.
 import { t } from '../i18n';
-import { NULL_GROUP, OTHER, decodeVisValue } from '../queries';
+import { NULL_GROUP, OTHER, decodeVisValue } from '../queryPlans';
 import { intervalLabel, newId, type Interval } from '../sql';
 import type { SearchState, VisState } from '../state';
 import type { ChartPick } from './Chart';

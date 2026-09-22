@@ -3,7 +3,7 @@ import { t } from '../i18n';
 import { formatLocal } from '../datemath';
 import { findField } from '../fields';
 import type { Field } from '../fields';
-import type { Doc } from '../queries';
+import type { Doc } from '../queryPlans';
 import type { SortDir } from '../state';
 import { ContextView } from './ContextView';
 import { fmtField } from './ui';

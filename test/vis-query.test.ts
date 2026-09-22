@@ -1,7 +1,7 @@
 import { timeContext } from '../src/datemath';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SEARCH, DEFAULT_VIS } from '../src/state';
-import type { VisResult } from '../src/queries';
+import type { VisResult } from '../src/queryPlans';
 
 const hook = vi.hoisted(() => ({ slots: [] as unknown[], cursor: 0, cleanup: undefined as (() => void) | undefined, deps: undefined as unknown[] | undefined }));
 vi.mock('preact/hooks', () => ({

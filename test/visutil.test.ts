@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { searchAfterPick } from '../src/components/visutil';
-import { NULL_GROUP, OTHER, encodeVisValue } from '../src/queries';
+import { NULL_GROUP, OTHER, encodeVisValue } from '../src/queryPlans';
 import { DEFAULT_SEARCH, DEFAULT_VIS, type VisState } from '../src/state';
 
 const pick = (p: Partial<Parameters<typeof searchAfterPick>[2]>) => ({ x: 'a', series: 'Count', value: 1, isTime: false, intervalMs: 0, ...p });

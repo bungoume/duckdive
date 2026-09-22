@@ -2,7 +2,7 @@ import type { TimeContext } from '../datemath';
 import { useMemo, useState } from 'preact/hooks';
 import type { Field } from '../fields';
 import { t } from '../i18n';
-import { compileSearch, type Compiled } from '../queries';
+import { compileSearch, type Compiled } from '../queryPlans';
 import { useVisQuery } from '../hooks/useVisQuery';
 import { loadSavedVis, storeSavedVis } from '../savedViews';
 import { type SavedVis, type SearchState } from '../state';

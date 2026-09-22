@@ -4,7 +4,7 @@ import { useMemo, useState } from 'preact/hooks';
 import type { TimeRange } from '../datemath';
 import type { Field } from '../fields';
 import { findField } from '../fields';
-import { compileSearch, metricLabel } from '../queries';
+import { compileSearch, metricLabel } from '../queryPlans';
 import { INTERVALS, intervalLabel, newId, type Filter } from '../sql';
 import { t } from '../i18n';
 import { MAX_BREAKDOWN_VALUES, MAX_TERM_VALUES, type ChartType, type MetricAgg, type MetricDef, type SavedVis, type SearchState, type VisState } from '../state';

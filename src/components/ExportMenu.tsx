@@ -3,7 +3,7 @@ import { describeError } from '../errors';
 import { EXPORT_FORMATS, downloadBlob, exportFileName, exportToBlob, type ExportFormat } from '../export';
 import type { Field } from '../fields';
 import { t } from '../i18n';
-import { exportDocsSql } from '../queries';
+import { exportDocsSql } from '../queryPlans';
 import type { SortDir } from '../state';
 import { FormField, Popover } from './ui';
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Field } from '../src/fields';
-import { metricLabel, metricPlan } from '../src/queries';
+import { metricLabel, metricPlan } from '../src/queryPlans';
 import type { MetricDef } from '../src/state';
 
 const f = (name: string, kind: Field['kind']): Field => ({ name, expr: `"${name}"`, kind, duckType: kind.toUpperCase(), column: name, searchable: kind === 'string' });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { toSeries } from '../src/components/Chart';
-import { encodeVisValue, type VisResult } from '../src/queries';
+import { encodeVisValue, type VisResult } from '../src/queryPlans';
 import type { MetricDef } from '../src/state';
 
 describe('toSeries', () => {

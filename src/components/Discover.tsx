@@ -4,7 +4,8 @@ import type { TimeRange } from '../datemath';
 import { formatLocal } from '../datemath';
 import type { Field } from '../fields';
 import { findField } from '../fields';
-import { compileSearch, fetchCount, fetchDocs, fetchHistogram, fetchVis, type Bucket, type Doc, type VisResult } from '../queries';
+import { compileSearch, type Doc, type VisResult } from '../queryPlans';
+import { fetchCount, fetchDocs, fetchHistogram, fetchVis, type Bucket } from '../queries';
 import { INTERVALS, autoInterval, bucketOffsetMinutes, intervalByKey, intervalLabel, newId, type Filter, type Interval } from '../sql';
 import { t } from '../i18n';
 import type { DiscoverState, SavedSearch, SearchState, VisState } from '../state';
@@ -102,8 +103,8 @@ export function Discover(props: {
         const withSplit = withHistogram && !!breakdownField;
         const [n, b, v, d] = await Promise.all([
           withHistogram ? Promise.resolve(null) : fetchCount(compiled.where, run.signal),
-          withHistogram && !withSplit ? fetchHistogram(compiled.where, timeExpr!, interval!, tzOffset, run.signal) : Promise.resolve([]),
-          withSplit ? fetchVis(histVis, compiled.where, timeExpr, fields, interval, tzOffset, spanSec, run.signal) : Promise.resolve(null),
+          withHistogram && !withSplit ? fetchHistogram(compiled.where, timeExpr!, interval!, tzOffset, run.signal, compiled.context) : Promise.resolve([]),
+          withSplit ? fetchVis(histVis, compiled.where, timeExpr, fields, interval, tzOffset, spanSec, run.signal, compiled.context) : Promise.resolve(null),
           fetchDocs(compiled.where, timeExpr, fields, discover.sort, discover.columns, PAGE, 0, 'desc', run.signal),
         ]);
         if (!run.isCurrent()) return;

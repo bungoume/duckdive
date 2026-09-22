@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { formatBucket } from '../datefmt';
 import { useSettings } from '../settings';
 import { timeAxis } from '../ticks';
-import { NULL_GROUP, OTHER, groupLabel, metricLabel, type VisResult } from '../queries';
+import { NULL_GROUP, OTHER, groupLabel, metricLabel, type VisResult } from '../queryPlans';
 import { bucketStarts, nextBucketStart, type Interval } from '../sql';
 import type { ChartType, MetricDef } from '../state';
 import { fmtAxisNumber, fmtNum } from './ui';

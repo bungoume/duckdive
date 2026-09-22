@@ -7,7 +7,7 @@ import type { Field } from '../fields';
 import { t, tx } from '../i18n';
 import { createQueryScope } from '../queryScope';
 import { CancelledError } from '../net';
-import { compileSearch } from '../queries';
+import { compileSearch } from '../queryPlans';
 import { VIEW } from '../sql';
 import type { SearchState } from '../state';
 import { Popover, fmtValue } from './ui';

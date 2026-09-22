@@ -6,7 +6,8 @@ import { intervalByKey } from '../src/sql';
 const run = vi.hoisted(() => vi.fn());
 vi.mock('../src/duck', () => ({ query: run }));
 
-import { NULL_GROUP, OTHER, compileSearch, encodeVisValue, fetchVis, groupLabel, previousPeriodWhere, shiftVisResult, type VisResult } from '../src/queries';
+import { NULL_GROUP, OTHER, compileSearch, encodeVisValue, groupLabel, previousPeriodWhere, shiftVisResult, type VisResult } from '../src/queryPlans';
+import { fetchVis } from '../src/queries';
 
 describe('previous-period charts', () => {
   const level: Field = { name: 'level', expr: '"level"', kind: 'string', duckType: 'VARCHAR', column: 'level', searchable: true };

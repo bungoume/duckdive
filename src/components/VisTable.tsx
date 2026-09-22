@@ -3,7 +3,7 @@ import { useState } from 'preact/hooks';
 import { formatBucket, formatDate } from '../datefmt';
 import { downloadBlob } from '../export';
 import { t } from '../i18n';
-import { NULL_GROUP, groupLabel, metricLabel, type VisResult } from '../queries';
+import { NULL_GROUP, groupLabel, metricLabel, type VisResult } from '../queryPlans';
 import type { MetricDef } from '../state';
 import { fmtNum } from './ui';
 
