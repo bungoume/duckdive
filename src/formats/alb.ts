@@ -1,0 +1,109 @@
+import { typed, reqLine, addrOf, portOf, urlPart, RE_SCHEME, RE_DOMAIN, RE_PORT, RE_PATH_ABS, RE_QUERY, tlsName, tlsVersion, csvFixed, numericReplace } from './shared';
+import { type FormatDef } from './types';
+
+// ---- AWS ALB access logs: 34 fields as of 2026 (older files have fewer, new ones may append) ----
+const ALB_COLUMNS: [string, string][] = [
+  ['type', 'VARCHAR'],
+  ['time', 'TIMESTAMP'],
+  ['elb', 'VARCHAR'],
+  ['client_port', 'VARCHAR'],
+  ['target_port', 'VARCHAR'],
+  ['request_processing_time', 'DOUBLE'],
+  ['target_processing_time', 'DOUBLE'],
+  ['response_processing_time', 'DOUBLE'],
+  ['elb_status_code', 'INTEGER'],
+  ['target_status_code', 'VARCHAR'],
+  ['received_bytes', 'BIGINT'],
+  ['sent_bytes', 'BIGINT'],
+  ['request', 'VARCHAR'],
+  ['user_agent', 'VARCHAR'],
+  ['ssl_cipher', 'VARCHAR'],
+  ['ssl_protocol', 'VARCHAR'],
+  ['target_group_arn', 'VARCHAR'],
+  ['trace_id', 'VARCHAR'],
+  ['domain_name', 'VARCHAR'],
+  ['chosen_cert_arn', 'VARCHAR'],
+  ['matched_rule_priority', 'VARCHAR'],
+  ['request_creation_time', 'TIMESTAMP'],
+  ['actions_executed', 'VARCHAR'],
+  ['redirect_url', 'VARCHAR'],
+  ['error_reason', 'VARCHAR'],
+  ['target_port_list', 'VARCHAR'],
+  ['target_status_code_list', 'VARCHAR'],
+  ['classification', 'VARCHAR'],
+  ['classification_reason', 'VARCHAR'],
+  ['conn_trace_id', 'VARCHAR'],
+  ['transformed_host', 'VARCHAR'],
+  ['transformed_uri', 'VARCHAR'],
+  ['request_transform_status', 'VARCHAR'],
+  ['ip_address', 'VARCHAR'],
+];
+
+const alb = typed(ALB_COLUMNS);
+
+const ALB_URL = reqLine(alb('request'), 2);
+
+// type (1) is split: the scheme and the HTTP version come from the request line, so it is left
+// with the transport it names. ip_address (34) is the load balancer node, i.e. the local end of
+// both sockets; client (4) and target (5) are the two remote ends.
+const ALB_OTEL: [string, string][] = [
+  ['timestamp', alb('time')],
+  ['client.address', addrOf(alb('client_port'))],
+  ['client.port', portOf(alb('client_port'))],
+  ['destination.address', addrOf(alb('target_port'))],
+  ['destination.port', portOf(alb('target_port'))],
+  ['network.local.address', alb('ip_address')],
+  [
+    'network.protocol.name',
+    `CASE ${alb('type')} WHEN 'grpcs' THEN 'grpc' WHEN 'ws' THEN 'websocket' WHEN 'wss' THEN 'websocket' WHEN 'http' THEN 'http' WHEN 'https' THEN 'http' WHEN 'h2' THEN 'http' END`,
+  ],
+  ['network.protocol.version', reqLine(alb('request'), 4)],
+  ['http.request.method', reqLine(alb('request'), 1)],
+  ['url.full', ALB_URL],
+  ['url.scheme', urlPart(ALB_URL, RE_SCHEME)],
+  ['url.domain', urlPart(ALB_URL, RE_DOMAIN)],
+  ['url.port', `TRY_CAST(${urlPart(ALB_URL, RE_PORT)} AS INTEGER)`],
+  ['url.path', urlPart(ALB_URL, RE_PATH_ABS)],
+  ['url.query', urlPart(ALB_URL, RE_QUERY)],
+  ['server.address', alb('domain_name')],
+  ['http.response.status_code', alb('elb_status_code')],
+  ['http.request.size', alb('received_bytes')],
+  ['http.response.size', alb('sent_bytes')],
+  ['user_agent.original', alb('user_agent')],
+  ['error.type', alb('error_reason')],
+  ['tls.cipher', alb('ssl_cipher')],
+  ['tls.protocol.name', tlsName(alb('ssl_protocol'))],
+  ['tls.protocol.version', tlsVersion(alb('ssl_protocol'))],
+  ['aws.alb.type', alb('type')],
+  ['aws.alb.id', alb('elb')],
+  ['aws.alb.target_status_code', alb('target_status_code')],
+  ['aws.alb.request_processing_time', alb('request_processing_time')],
+  ['aws.alb.target_processing_time', alb('target_processing_time')],
+  ['aws.alb.response_processing_time', alb('response_processing_time')],
+  ['aws.alb.target_group.arn', alb('target_group_arn')],
+  ['aws.alb.trace_id', alb('trace_id')],
+  ['aws.alb.conn_trace_id', alb('conn_trace_id')],
+  ['aws.alb.chosen_cert.arn', alb('chosen_cert_arn')],
+  ['aws.alb.matched_rule_priority', alb('matched_rule_priority')],
+  ['aws.alb.request_creation_time', alb('request_creation_time')],
+  ['aws.alb.actions_executed', alb('actions_executed')],
+  ['aws.alb.redirect_url', alb('redirect_url')],
+  ['aws.alb.target_port_list', alb('target_port_list')],
+  ['aws.alb.target_status_code_list', alb('target_status_code_list')],
+  ['aws.alb.classification', alb('classification')],
+  ['aws.alb.classification_reason', alb('classification_reason')],
+  ['aws.alb.transformed_host', alb('transformed_host')],
+  ['aws.alb.transformed_uri', alb('transformed_uri')],
+  ['aws.alb.request_transform_status', alb('request_transform_status')],
+];
+
+export const albFormat: FormatDef = {
+  id: 'alb',
+  reader: (l, f) => csvFixed(l, f, ALB_COLUMNS, `delim = ' ', quote = '"', escape = '"', timestampformat = '%Y-%m-%dT%H:%M:%S.%fZ'`),
+  replace: numericReplace(ALB_COLUMNS),
+  timeField: 'time',
+  otel: { columns: ALB_OTEL },
+  // NLB writes into the same folder with _net. in the name and has other columns entirely,
+  // so the Application Load Balancer is recognised by _app. rather than by the folder
+  detect: /\/elasticloadbalancing\/.*_app\./,
+};

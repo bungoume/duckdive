@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { AwsCredentials, OidcConfig } from '../auth';
 import { capturedColumns, requiredOrigins, unselectedTokens, type AttachedSource } from '../datasource';
-import { FORMATS, FORMAT_IDS, NAMING_IDS, TEMPLATES, formatLabel, hasOtel, namingLabel, templateLabel, templateNote } from '../formats';
+import { FORMATS, FORMAT_IDS, NAMING_IDS, formatLabel, hasOtel, namingLabel } from '../formats';
+import { TEMPLATES, templateLabel, templateNote } from '../sourceTemplates';
 import { t, tx } from '../i18n';
 import type { AttachProgress, Variables } from '../connection';
 import { NO_LOCAL, selectionNames, selectionTitle, type LocalSelection } from '../localfiles';

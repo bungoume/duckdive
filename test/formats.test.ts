@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { FORMATS, FORMAT_IDS, TEMPLATES, detectFormat, hasOtel, otelRename, otelSelect, resolveFormat, timeFieldFor } from '../src/formats';
+import { FORMATS, FORMAT_IDS, detectFormat, hasOtel, otelRename, otelSelect, resolveFormat, timeFieldFor } from '../src/formats';
+import { TEMPLATES } from '../src/sourceTemplates';
 import { viewSelect } from '../src/datasource';
 
 describe('detectFormat', () => {
