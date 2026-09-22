@@ -612,24 +612,33 @@ await section('sts-credentials', async () => {
   const stsFile = `s3://bucket/AWSLogs/123456789012/parquet/ap-northeast-1/${dayPath(yesterday)}/part-${dayPath(yesterday).replace(/\//g, '')}.parquet`;
   await page.fill('.source-page textarea', stsFile);
   await page.selectOption('.source-page .field-row:has-text("Authentication") select', 'oidc');
-  await page.fill('.source-page .field-row:has-text("IAM role ARN") input', 'arn:aws:iam::123456789012:role/test');
-  await page.fill('.source-page .field-row:has-text("STS endpoint") input', `http://localhost:${dataPort}/sts`);
-  const creds = await page.evaluate(async (port) => {
-    const cfg = {
-      authUrl: '',
-      clientId: 'x',
-      scope: 'openid',
-      extraParams: '',
-      roleArn: 'arn:aws:iam::123456789012:role/test',
-      region: 'ap-northeast-1',
-      stsEndpoint: `http://localhost:${port}/sts`,
-      durationSeconds: 3600,
-      sessionName: 'e2e',
-    };
+  const oidc = {
+    authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+    clientId: 'e2e',
+    scope: 'openid',
+    extraParams: '',
+    roleArn: 'arn:aws:iam::123456789012:role/test',
+    region: 'ap-northeast-1',
+    stsEndpoint: `http://localhost:${dataPort}/sts`,
+    durationSeconds: 3600,
+    sessionName: 'e2e',
+  };
+  // Cached credentials are scoped to the OIDC settings; use the same values in the form.
+  for (const [label, key] of [
+    ['Authorization endpoint', 'authUrl'],
+    ['Client ID', 'clientId'],
+    ['Scope', 'scope'],
+    ['Extra parameters', 'extraParams'],
+    ['IAM role ARN', 'roleArn'],
+    ['STS endpoint', 'stsEndpoint'],
+  ]) {
+    await page.fill(`.source-page .field-row:has-text("${label}") input`, oidc[key]);
+  }
+  const creds = await page.evaluate(async (cfg) => {
     const c = await window.__ddv.assumeRoleWithWebIdentity(cfg, 'fake.id.token');
     await window.__ddv.storeCredentials(c, cfg);
     return c;
-  }, dataPort);
+  }, oidc);
   check(
     'STS AssumeRoleWithWebIdentity parsed',
     creds.accessKeyId.startsWith('ASIATEST') && creds.sessionToken === 'session-token-from-sts' && !!creds.expiration,
