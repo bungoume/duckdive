@@ -1,5 +1,5 @@
 import type { TimeRange } from './datemath';
-import { parseAbsolute, parseDateMath, resolveRange } from './datemath';
+import { parseAbsolute, parseDateMath, resolveRange, timeContext, type TimeContext } from './datemath';
 import { effectiveTimeZone, zonedParts } from './datefmt';
 import type { Field } from './fields';
 import { findField } from './fields';
@@ -97,13 +97,13 @@ export function intervalLabel(iv: Interval): string {
  * Offset (minutes east of UTC) of the display time zone at `at`. Bucket boundaries are aligned
  * with this one offset, so a range that spans a DST change is off by an hour on its far side.
  */
-export function bucketOffsetMinutes(at: Date = new Date()): number {
-  return zonedParts(at, effectiveTimeZone()).offset;
+export function bucketOffsetMinutes(at: Date = new Date(), timeZone = effectiveTimeZone()): number {
+  return zonedParts(at, timeZone).offset;
 }
 
 /** Origin for weekly buckets: a day in January 2000 that falls on the configured first day of the week. */
-function weekOrigin(): string {
-  const day = 3 + ((getSettings().dayOfWeek - 1 + 7) % 7); // 2000-01-03 is a Monday
+function weekOrigin(dayOfWeek: number): string {
+  const day = 3 + ((dayOfWeek - 1 + 7) % 7); // 2000-01-03 is a Monday
   return `TIMESTAMP '2000-01-${pad(day)} 00:00:00'`;
 }
 
@@ -112,10 +112,10 @@ function weekOrigin(): string {
  * that zone's midnight, weekly ones on the configured first day of the week, monthly ones on the
  * 1st). Returns epoch milliseconds as DOUBLE.
  */
-export function bucketExpr(timeExpr: string, iv: Interval, offsetMinutes: number = bucketOffsetMinutes()): string {
+export function bucketExpr(timeExpr: string, iv: Interval, offsetMinutes: number = bucketOffsetMinutes(), dayOfWeek = getSettings().dayOfWeek): string {
   const shift = offsetMinutes ? ` + to_minutes(${offsetMinutes})` : '';
   const unshift = offsetMinutes ? ` - to_minutes(${offsetMinutes})` : '';
-  const origin = iv.calendar === 'week' ? `, ${weekOrigin()}` : '';
+  const origin = iv.calendar === 'week' ? `, ${weekOrigin(dayOfWeek)}` : '';
   return `epoch_ms(time_bucket(INTERVAL '${iv.sql}', (${timeExpr})${shift}${origin})${unshift})::DOUBLE`;
 }
 
@@ -170,11 +170,11 @@ export function newId(): string {
 }
 
 /** SQL literal for a filter value; null when the value cannot be compared with the field (a word against a number). */
-function valueLiteral(f: Field, v: string): string | null {
+function valueLiteral(f: Field, v: string, context: TimeContext): string | null {
   if (f.kind === 'number') return numberLiteral(v);
   if (f.kind === 'boolean') return v.toLowerCase() === 'true' ? 'TRUE' : 'FALSE';
   if (f.kind === 'date') {
-    const d = v.startsWith('now') ? parseDateMath(v) : parseAbsolute(v);
+    const d = v.startsWith('now') ? parseDateMath(v, false, context.now, context) : parseAbsolute(v, context.timeZone);
     return d ? tsLit(d) : null;
   }
   return lit(v);
@@ -185,7 +185,7 @@ export function fieldCompareExpr(f: Field): string {
   return `(${f.expr})::VARCHAR`;
 }
 
-export function filterToSQL(fl: Filter, fields: Field[]): string | null {
+export function filterToSQL(fl: Filter, fields: Field[], context = timeContext()): string | null {
   if (fl.disabled) return null;
   let sql: string;
   if (fl.op === 'query') {
@@ -195,8 +195,8 @@ export function filterToSQL(fl: Filter, fields: Field[]): string | null {
     if (!f) return null;
     const e = fieldCompareExpr(f);
     // values that cannot be compared with the field match nothing (and "is not" then matches everything)
-    const one = (v: string | undefined) => (v === undefined ? null : valueLiteral(f, v));
-    const many = (vs: string[] | undefined) => (vs ?? []).map((v) => valueLiteral(f, v)).filter((x): x is string => x !== null);
+    const one = (v: string | undefined) => (v === undefined ? null : valueLiteral(f, v, context));
+    const many = (vs: string[] | undefined) => (vs ?? []).map((v) => valueLiteral(f, v, context)).filter((x): x is string => x !== null);
     switch (fl.op) {
       case 'is': {
         const v = one(fl.value);
@@ -275,12 +275,12 @@ export interface WhereParts {
   fields: Field[];
 }
 
-export function buildWhere(p: WhereParts): { sql: string; from: Date | null; to: Date | null } {
+export function buildWhere(p: WhereParts, context = timeContext()): { sql: string; from: Date | null; to: Date | null } {
   const conds: string[] = [];
   let from: Date | null = null;
   let to: Date | null = null;
   if (p.timeExpr) {
-    const r = resolveRange(p.range);
+    const r = resolveRange(p.range, context.now, context);
     if (!r) throw new Error(t('tp.invalid'));
     from = r.from;
     to = r.to;
@@ -289,7 +289,7 @@ export function buildWhere(p: WhereParts): { sql: string; from: Date | null; to:
   }
   if (p.querySql && p.querySql !== 'TRUE') conds.push(`(${p.querySql})`);
   for (const f of p.filters) {
-    const s = filterToSQL(f, p.fields);
+    const s = filterToSQL(f, p.fields, context);
     if (s) conds.push(s);
   }
   return { sql: conds.length ? conds.join(' AND ') : 'TRUE', from, to };

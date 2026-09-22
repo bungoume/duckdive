@@ -1,3 +1,4 @@
+import type { TimeContext } from '../datemath';
 import { useMemo, useState } from 'preact/hooks';
 import type { Field } from '../fields';
 import { t } from '../i18n';
@@ -32,8 +33,7 @@ function Tile(props: TileProps) {
   const { item, fields, timeExpr, compiled, paused, refreshTick } = props;
   const vis = item.vis;
   // the tile's own query and filters, over the page's time range
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const own = useMemo(() => compileSearch({ ...item.search, range: props.search.range }, fields, timeExpr), [item.search, props.search.range, fields, timeExpr, refreshTick]);
+  const own = useMemo(() => compileSearch({ ...item.search, range: props.search.range }, fields, timeExpr, compiled.context), [item.search, props.search.range, fields, timeExpr, compiled.context]);
   const { result, previous, error, interval, compare } = useVisQuery({
     vis,
     compiled: { ...compiled, where: `(${compiled.where}) AND (${own.where})`, error: compiled.error ?? own.error },
@@ -89,6 +89,7 @@ function Tile(props: TileProps) {
 
 /** Saved visualizations side by side over one search and time range. */
 export function Dashboard(props: {
+  evaluation: TimeContext;
   fields: Field[];
   timeField: Field | null;
   timeExpr: string | null;
@@ -103,9 +104,7 @@ export function Dashboard(props: {
   const [saved, setSaved] = useState<SavedVis[]>(() => loadSavedVis());
   const [adding, setAdding] = useState(false);
   const [running, setRunning] = useState(0);
-  // refreshTick re-resolves `now` in the range on auto refresh
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const compiled = useMemo(() => compileSearch(search, fields, timeExpr), [search, fields, timeExpr, refreshTick]);
+  const compiled = useMemo(() => compileSearch(search, fields, timeExpr, props.evaluation), [search, fields, timeExpr, props.evaluation]);
   const pinned = saved.filter((s) => s.pinned);
   const others = saved.filter((s) => !s.pinned);
 

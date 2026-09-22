@@ -1,3 +1,4 @@
+import { timeContext, type TimeContext } from './datemath';
 // Lucene query syntax → DuckDB SQL WHERE clause.
 //
 // Supported syntax (Lucene classic query parser, as used by the "query string" search of many log tools):
@@ -445,14 +446,14 @@ function stringExpr(f: Field): string {
 }
 
 /** A bound of a range. Dates accept date math (now-1h, now/d: `roundUp` picks the end of a rounded unit for an upper bound). */
-function scalarLiteral(f: Field, v: string, roundUp = false): string {
+function scalarLiteral(f: Field, v: string, roundUp = false, context: TimeContext = timeContext()): string {
   if (f.kind === 'number') {
     const n = numberLiteral(v);
     if (n === null) throw new SearchQueryError(`"${v}" is not a number (field ${f.name})`);
     return n;
   }
   if (f.kind === 'date') {
-    const d = v.startsWith('now') ? parseDateMath(v, roundUp) : parseAbsolute(v);
+    const d = v.startsWith('now') ? parseDateMath(v, roundUp, context.now, context) : parseAbsolute(v, context.timeZone);
     if (!d) throw new SearchQueryError(`"${v}" is not a date (field ${f.name})`);
     return tsLit(d);
   }
@@ -489,14 +490,14 @@ function searchTargets(fields: Field[]): Field[] {
   return fields.filter((f) => f.searchable && f.kind !== 'object');
 }
 
-export function nodeToSql(n: Node, fields: Field[]): string {
+export function nodeToSql(n: Node, fields: Field[], context = timeContext()): string {
   switch (n.t) {
     case 'and':
-      return '(' + n.a.map((x) => nodeToSql(x, fields)).join(' AND ') + ')';
+      return '(' + n.a.map((x) => nodeToSql(x, fields, context)).join(' AND ') + ')';
     case 'or':
-      return '(' + n.a.map((x) => nodeToSql(x, fields)).join(' OR ') + ')';
+      return '(' + n.a.map((x) => nodeToSql(x, fields, context)).join(' OR ') + ')';
     case 'not':
-      return notSql(nodeToSql(n.a, fields));
+      return notSql(nodeToSql(n.a, fields, context));
     case 'text': {
       const targets = searchTargets(fields);
       if (!targets.length) return 'FALSE';
@@ -517,21 +518,21 @@ export function nodeToSql(n: Node, fields: Field[]): string {
       return `${resolve(fields, n.field).expr} IS NOT NULL`;
     case 'range': {
       const f = resolve(fields, n.field);
-      return `(${f.expr} ${n.op} ${scalarLiteral(f, n.value, n.op === '<=')})`;
+      return `(${f.expr} ${n.op} ${scalarLiteral(f, n.value, n.op === '<=', context)})`;
     }
     case 'between': {
       const f = resolve(fields, n.field);
       const c: string[] = [];
-      if (n.lo !== null) c.push(`${f.expr} ${n.incLo ? '>=' : '>'} ${scalarLiteral(f, n.lo)}`);
-      if (n.hi !== null) c.push(`${f.expr} ${n.incHi ? '<=' : '<'} ${scalarLiteral(f, n.hi, n.incHi)}`);
+      if (n.lo !== null) c.push(`${f.expr} ${n.incLo ? '>=' : '>'} ${scalarLiteral(f, n.lo, false, context)}`);
+      if (n.hi !== null) c.push(`${f.expr} ${n.incHi ? '<=' : '<'} ${scalarLiteral(f, n.hi, n.incHi, context)}`);
       return c.length ? '(' + c.join(' AND ') + ')' : 'TRUE';
     }
   }
 }
 
 /** Compile a query string to SQL. Empty query → 'TRUE'. Throws SearchQueryError. */
-export function searchToSql(q: string, fields: Field[]): string {
+export function searchToSql(q: string, fields: Field[], context = timeContext()): string {
   const n = parseQuery(q);
   if (!n) return 'TRUE';
-  return nodeToSql(n, fields);
+  return nodeToSql(n, fields, context);
 }

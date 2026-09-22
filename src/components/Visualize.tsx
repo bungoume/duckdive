@@ -1,3 +1,4 @@
+import type { TimeContext } from '../datemath';
 import { formatDate } from '../datefmt';
 import { useMemo, useState } from 'preact/hooks';
 import type { TimeRange } from '../datemath';
@@ -80,6 +81,7 @@ function FieldSelect(props: { id?: string; fields: Field[]; value: string | null
 }
 
 export function Visualize(props: {
+  evaluation: TimeContext;
   fields: Field[];
   timeField: Field | null;
   timeExpr: string | null;
@@ -94,9 +96,7 @@ export function Visualize(props: {
   refreshTick?: number;
 }) {
   const { fields, timeExpr, search, vis, onBusy, paused, refreshTick } = props;
-  // refreshTick is not read: a new tick re-resolves `now` in the range
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const compiled = useMemo(() => compileSearch(search, fields, timeExpr), [search, fields, timeExpr, refreshTick]);
+  const compiled = useMemo(() => compileSearch(search, fields, timeExpr, props.evaluation), [search, fields, timeExpr, props.evaluation]);
   const { result, previous, busy, error: queryError, interval, compare } = useVisQuery({ vis, compiled, searches: [search], fields, timeExpr, targetBuckets: 50, onBusy, paused, refreshTick });
   const error = queryError ? withCacheHint(queryError) : null;
   const [showSql, setShowSql] = useState(false);

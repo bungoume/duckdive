@@ -119,3 +119,21 @@ describe('invalid time ranges', () => {
     expect(result.from).toBeNull();
   });
 });
+
+it('uses one explicit clock and calendar for the range, query, filters and comparison', () => {
+  const field: Field = { name: 'ts', column: 'ts', expr: '"ts"', kind: 'date', duckType: 'TIMESTAMP', searchable: false };
+  const context = { now: new Date('2026-09-22T12:00:00Z'), timeZone: 'Asia/Tokyo', dayOfWeek: 1 };
+  const search = {
+    query: 'ts:[now-1h TO now]',
+    range: { from: 'now-1h', to: 'now' },
+    filters: [{ id: 'time', field: 'ts', op: 'is' as const, value: 'now' }],
+  };
+  const compiled = compileSearch(search, [field], '"ts"', context);
+  expect(compiled.error).toBeNull();
+  expect(compiled.where.match(/2026-09-22 12:00:00.000/g)).toHaveLength(3);
+  const previous = previousPeriodWhere({ ...DEFAULT_VIS, compare: true }, compiled, [search], [field], '"ts"')!;
+  expect(previous).toContain('2026-09-22 10:00:00.000');
+  expect(previous.match(/2026-09-22 12:00:00.000/g)).toHaveLength(2);
+  const midnight = compileSearch({ ...search, query: 'ts:>"2026-09-22 00:00"', filters: [], range: { from: 'now/d', to: 'now' } }, [field], '"ts"', context);
+  expect(midnight.where.match(/2026-09-21 15:00:00.000/g)).toHaveLength(2);
+});

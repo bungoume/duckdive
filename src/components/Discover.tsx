@@ -1,3 +1,4 @@
+import type { TimeContext } from '../datemath';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { TimeRange } from '../datemath';
 import { formatLocal } from '../datemath';
@@ -26,6 +27,7 @@ import { CancelledError } from '../net';
 const PAGE = 100;
 
 export function Discover(props: {
+  evaluation: TimeContext;
   fields: Field[];
   timeField: Field | null;
   timeExpr: string | null;
@@ -41,16 +43,14 @@ export function Discover(props: {
   refreshTick?: number;
 }) {
   const { fields, timeExpr, search, discover, onBusy, paused, refreshTick } = props;
-  // refreshTick is not read: a new tick re-resolves `now` in the range
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const compiled = useMemo(() => compileSearch(search, fields, timeExpr), [search, fields, timeExpr, refreshTick]);
+  const compiled = useMemo(() => compileSearch(search, fields, timeExpr, props.evaluation), [search, fields, timeExpr, props.evaluation]);
   const interval: Interval | null = useMemo(() => {
     if (!compiled.from || !compiled.to) return null;
     return discover.interval === 'auto' ? autoInterval(compiled.from, compiled.to) : (intervalByKey(discover.interval) ?? autoInterval(compiled.from, compiled.to));
   }, [compiled, discover.interval]);
 
   // buckets are aligned with the display time zone (a settings change re-renders the app, so this follows it)
-  const tzOffset = bucketOffsetMinutes(compiled.to ?? undefined);
+  const tzOffset = bucketOffsetMinutes(compiled.to ?? compiled.context.now, compiled.context.timeZone);
   const spanSec = compiled.from && compiled.to ? Math.max(0, (compiled.to.getTime() - compiled.from.getTime()) / 1000) : 0;
   // a break-down turns the histogram into a stacked bar chart of the field's top values (the Visualize query)
   const breakdownField = discover.breakdown ? findField(fields, discover.breakdown) : undefined;

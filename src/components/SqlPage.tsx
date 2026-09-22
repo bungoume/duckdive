@@ -1,3 +1,4 @@
+import type { TimeContext } from '../datemath';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { cancelAllQueries, query, type Row } from '../duck';
 import { describeError } from '../errors';
@@ -33,7 +34,7 @@ interface Result {
 }
 
 /** The SQL page: one statement over the source view, its rows as a table, downloads of the result. */
-export function SqlPage(props: { fields: Field[]; timeExpr: string | null; search: SearchState; onBusy: (b: boolean) => void; paused?: boolean }) {
+export function SqlPage(props: { evaluation?: TimeContext; fields: Field[]; timeExpr: string | null; search: SearchState; onBusy: (b: boolean) => void; paused?: boolean }) {
   const [text, setText] = useState(loadText);
   const [history, setHistory] = useState(() => loadHistory(LS_SQL_HISTORY));
   const [result, setResult] = useState<Result | null>(null);
@@ -80,7 +81,7 @@ export function SqlPage(props: { fields: Field[]; timeExpr: string | null; searc
 
   /** The Discover / Visualize search (query, filters, time range) as a statement to start from. */
   const insertSearch = () => {
-    const c = compileSearch(props.search, props.fields, props.timeExpr);
+    const c = compileSearch(props.search, props.fields, props.timeExpr, props.evaluation);
     setText(`SELECT *\nFROM ${VIEW}\nWHERE ${c.where}\n${props.timeExpr ? `ORDER BY ${props.timeExpr} DESC\n` : ''}LIMIT 100`);
   };
 

@@ -9,7 +9,7 @@ import { SqlPage } from './components/SqlPage';
 import { Visualize } from './components/Visualize';
 import { Settings } from './components/Settings';
 import { fmtBytes } from './cache';
-import { resolveRange } from './datemath';
+import { resolveRange, timeContext } from './datemath';
 import { expose } from './debug';
 import { timeExprFor, type Field } from './fields';
 import { useAutoRefresh } from './hooks/useAutoRefresh';
@@ -77,6 +77,9 @@ export function App() {
   }, []);
 
   const refreshTick = useAutoRefresh(settings.autoRefreshMs, url.page === 'discover' || url.page === 'visualize' || url.page === 'dashboard', refreshBusyRef);
+  // Capture the clock once per search or refresh; unrelated renders keep the same instant.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const evaluation = useMemo(() => timeContext(), [url.search, refreshTick, settings.timeZone, settings.dayOfWeek]);
   const {
     ready,
     initError,
@@ -99,7 +102,7 @@ export function App() {
     forget,
     cancelConnect,
     onTimeField,
-  } = useConnect(url, setUrl, busyRef, linkSource, refreshTick);
+  } = useConnect(url, setUrl, busyRef, linkSource, refreshTick, evaluation);
   refreshBusyRef.current = busy || attaching;
   const { gate, runAnyway } = useDownloadGate(source, attached, ackedFiles);
   const { refreshError } = useCredentialRefresh(source, attached, setCreds, connectionGeneration, attaching);
@@ -274,6 +277,7 @@ export function App() {
           fields={fields}
           timeField={timeField}
           timeExpr={timeExpr}
+          evaluation={evaluation}
           search={url.search}
           discover={url.discover}
           onSearch={(search) => setUrl((u) => ({ ...u, search }))}
@@ -289,6 +293,7 @@ export function App() {
           fields={fields}
           timeField={timeField}
           timeExpr={timeExpr}
+          evaluation={evaluation}
           search={url.search}
           vis={url.vis}
           onSearch={(search) => setUrl((u) => ({ ...u, search }))}
@@ -303,6 +308,7 @@ export function App() {
           fields={fields}
           timeField={timeField}
           timeExpr={timeExpr}
+          evaluation={evaluation}
           search={url.search}
           onSearch={(search) => setUrl((u) => ({ ...u, search }))}
           onOpen={(s) => setUrl((u) => ({ ...u, page: 'visualize', vis: s.vis, search: { ...u.search, query: s.search.query, filters: s.search.filters } }))}
@@ -311,7 +317,7 @@ export function App() {
           refreshTick={refreshTick}
         />
       )}
-      {page === 'sql' && attached && <SqlPage fields={fields} timeExpr={timeExpr} search={url.search} onBusy={setBusy} paused={paused} />}
+      {page === 'sql' && attached && <SqlPage evaluation={evaluation} fields={fields} timeExpr={timeExpr} search={url.search} onBusy={setBusy} paused={paused} />}
       {!ready && !initError && (
         <div class="overlay">
           <div>

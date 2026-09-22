@@ -32,14 +32,14 @@ export function useVisQuery({
 }) {
   const effective: VisState = vis.chart === 'metric' ? { ...vis, x: { ...vis.x, kind: 'none' } } : vis;
   const interval = compiled.from && compiled.to ? (intervalByKey(vis.x.interval) ?? autoInterval(compiled.from, compiled.to, targetBuckets)) : null;
-  const tzOffset = bucketOffsetMinutes(compiled.to ?? undefined);
+  const tzOffset = bucketOffsetMinutes(compiled.to ?? compiled.context.now, compiled.context.timeZone);
   const spanMs = compiled.from && compiled.to ? Math.max(0, compiled.to.getTime() - compiled.from.getTime()) : 0;
   const compare = supportsComparison(vis);
   const searchKey = JSON.stringify(searches);
   const { from, to } = compiled;
   // Relative dates inside queries/filters must not advance on a busy-state render.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const previousWhere = useMemo(() => previousPeriodWhere(vis, compiled, searches, fields, timeExpr), [compare, from, to, searchKey, fields, timeExpr, refreshTick]);
+  const previousWhere = useMemo(() => previousPeriodWhere(vis, compiled, searches, fields, timeExpr), [compare, from, to, searchKey, fields, timeExpr, refreshTick, compiled.context]);
   // Presentation changes (title, labels, line/area style) do not change the aggregation.
   const queryKey = JSON.stringify([effective.x, effective.metrics.map((m) => [m.agg, m.field, m.param]), effective.breakdown]);
   const [result, setResult] = useState<VisResult | null>(null);

@@ -1,3 +1,4 @@
+import { timeContext, type TimeContext } from '../datemath';
 import { useEffect, useRef, useState, type Dispatch, type StateUpdater } from 'preact/hooks';
 import { isUsable, loadCredentials } from '../auth';
 import type { TimeWindow } from '../datasource';
@@ -15,11 +16,18 @@ import { type UrlState } from '../state';
 import { useStore } from '../store';
 
 /** What a file resolution depends on: the time range and the captured-column filters of `cfg`, and the auto-refresh tick (new files may have arrived). */
-function rangeKeyFor(cfg: SourceConfig, url: UrlState, tick: number, compare: boolean): string {
-  return `${url.search.range.from}|${url.search.range.to}|${JSON.stringify(valueFiltersFor(cfg, url))}|${tick}|${compare}`;
+function rangeKeyFor(cfg: SourceConfig, url: UrlState, tick: number, compare: boolean, evaluation: TimeContext): string {
+  return JSON.stringify([url.search.range, fileWindow(url.search.range, compare, evaluation), valueFiltersFor(cfg, url), tick]);
 }
 
-export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState>>, queryBusy: { current: boolean }, linkSource: SourceConfig | null = null, refreshTick = 0) {
+export function useConnect(
+  url: UrlState,
+  setUrl: Dispatch<StateUpdater<UrlState>>,
+  queryBusy: { current: boolean },
+  linkSource: SourceConfig | null = null,
+  refreshTick = 0,
+  evaluation = timeContext(),
+) {
   useStore(savedVisRevision);
   const compare = needsComparison(url, loadSavedVis());
   const [ready, setReady] = useState(false);
@@ -39,7 +47,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
   const largeConfirm = phase.status === 'confirming' ? phase.confirmation : null;
   const { setCreds, ackedFiles, forget, onTimeField } = connection;
   const attemptedKey = useRef('');
-  const currentWindow = () => fileWindow(url.search.range, compare);
+  const currentWindow = () => fileWindow(url.search.range, compare, evaluation);
   const request = (cfg: SourceConfig, local: LocalSelection, interactive: boolean, window: TimeWindow | null) => ({
     local,
     interactive,
@@ -47,7 +55,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
     valueFilters: valueFiltersFor(cfg, url),
   });
   const connect = (cfg: SourceConfig, local: LocalSelection = NO_LOCAL, interactive = true, window: TimeWindow | null = currentWindow()) => {
-    attemptedKey.current = rangeKeyFor(cfg, url, refreshTick, compare);
+    attemptedKey.current = rangeKeyFor(cfg, url, refreshTick, compare, evaluation);
     return connection.connect(cfg, request(cfg, local, interactive, window));
   };
   /**
@@ -55,7 +63,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
    * columns, sorts and chart fields that name a field the new source does not have are dropped.
    */
   const switchSource = async (entry: SourceConfig) => {
-    attemptedKey.current = rangeKeyFor(entry, url, refreshTick, compare);
+    attemptedKey.current = rangeKeyFor(entry, url, refreshTick, compare, evaluation);
     const result = connection.select(entry, request(entry, NO_LOCAL, true, currentWindow()));
     const selection = connection.generation.current;
     const a = await result;
@@ -120,8 +128,9 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
   // running is picked up as soon as that connect ends, because the effect also runs when
   // `attaching` flips; comparing against the attempted key (not the last successful one) keeps a
   // failing source from reconnecting in a loop.
-  const rangeKey = rangeKeyFor(source, url, refreshTick, compare);
+  const rangeKey = rangeKeyFor(source, url, refreshTick, compare, evaluation);
   if (!attemptedKey.current) attemptedKey.current = rangeKey;
+  const resolutionPending = !!attached && (attached.rangeDependent || attached.captures.length > 0) && attemptedKey.current !== rangeKey;
   useEffect(() => {
     if (attaching || attemptedKey.current === rangeKey) return;
     const dependent = attached?.rangeDependent || (attached?.captures.length ?? 0) > 0;
@@ -154,7 +163,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
     switchSeq,
     attached,
     attachError,
-    attaching,
+    attaching: attaching || resolutionPending,
     attachProgress,
     largeConfirm,
     variables,

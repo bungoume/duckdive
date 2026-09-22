@@ -8,6 +8,17 @@ import { effectiveTimeZone, formatDate, normalizeWall, zonedParts, zonedToUtc, t
 import { getSettings, type QuickRange } from './settings';
 import { pad } from './util';
 
+/** Capture once for a search, including all date filters and its preceding period. */
+export interface TimeContext {
+  now: Date;
+  timeZone: string;
+  dayOfWeek: number;
+}
+
+export function timeContext(now = new Date()): TimeContext {
+  return { now, timeZone: effectiveTimeZone(), dayOfWeek: getSettings().dayOfWeek };
+}
+
 const UNIT_MS: Record<string, number> = {
   s: 1000,
   m: 60_000,
@@ -20,7 +31,7 @@ const UNIT_MS: Record<string, number> = {
 };
 
 /** Start of the unit that contains `d` (wall clock of `tz`), and the start of the next one. */
-function bounds(d: Date, unit: string, tz: string): [Date, Date] | null {
+function bounds(d: Date, unit: string, tz: string, dayOfWeek: number): [Date, Date] | null {
   const p = zonedParts(d, tz);
   const w: WallTime = { year: p.year, month: p.month, day: p.day, hour: p.hour, minute: p.minute, second: p.second, ms: 0 };
   switch (unit) {
@@ -42,7 +53,7 @@ function bounds(d: Date, unit: string, tz: string): [Date, Date] | null {
       return [zonedToUtc(s, tz), zonedToUtc({ ...s, day: s.day + 1 }, tz)];
     }
     case 'w': {
-      const back = (p.weekday - getSettings().dayOfWeek + 7) % 7;
+      const back = (p.weekday - dayOfWeek + 7) % 7;
       const s = normalizeWall({ ...w, day: w.day - back, hour: 0, minute: 0, second: 0 });
       return [zonedToUtc(s, tz), zonedToUtc({ ...s, day: s.day + 7 }, tz)];
     }
@@ -59,8 +70,8 @@ function bounds(d: Date, unit: string, tz: string): [Date, Date] | null {
   }
 }
 
-function roundDate(d: Date, unit: string, roundUp: boolean, tz: string): Date {
-  const b = bounds(d, unit, tz);
+function roundDate(d: Date, unit: string, roundUp: boolean, tz: string, dayOfWeek: number): Date {
+  const b = bounds(d, unit, tz, dayOfWeek);
   if (!b) return d;
   return roundUp ? new Date(b[1].getTime() - 1) : b[0];
 }
@@ -81,30 +92,30 @@ const ABSOLUTE = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.
  * DuckDB-Wasm carries no ICU extension, so letting it cast the text would drop the offset and
  * read the rest as UTC. Returns null when the text is not a timestamp.
  */
-export function parseAbsolute(s: string): Date | null {
+export function parseAbsolute(s: string, tz = effectiveTimeZone()): Date | null {
   const m = ABSOLUTE.exec(s.trim());
   if (!m) return null;
   const [, y, mo, da, hh, mi, se, frac, zone] = m;
   const w: WallTime = { year: +y, month: +mo, day: +da, hour: +(hh ?? 0), minute: +(mi ?? 0), second: +(se ?? 0), ms: Number((frac ?? '').padEnd(3, '0')) };
   if (w.month < 1 || w.month > 12 || w.day < 1 || w.day > 31 || w.hour > 23 || w.minute > 59 || w.second > 59) return null;
-  if (!zone) return zonedToUtc(w, effectiveTimeZone());
+  if (!zone) return zonedToUtc(w, tz);
   const offset = zone.toUpperCase() === 'Z' ? 0 : (zone[0] === '-' ? -1 : 1) * (Number(zone.slice(1, 3)) * 60 + Number(zone.slice(3).replace(':', '') || 0));
   return new Date(Date.UTC(w.year, w.month - 1, w.day, w.hour, w.minute, w.second, w.ms) - offset * 60_000);
 }
 
 /** An absolute timestamp, falling back to whatever the browser makes of the text (RFC 2822 and such). */
-function absolute(s: string): Date | null {
-  const d = parseAbsolute(s);
+function absolute(s: string, tz = effectiveTimeZone()): Date | null {
+  const d = parseAbsolute(s, tz);
   if (d) return d;
   const loose = new Date(s);
   return isNaN(loose.getTime()) ? null : loose;
 }
 
-export function parseDateMath(expr: string, roundUp = false, now: Date = new Date()): Date | null {
+export function parseDateMath(expr: string, roundUp = false, now: Date = new Date(), context = timeContext(now)): Date | null {
   const s = expr.trim();
   if (!s) return null;
-  if (!s.startsWith('now')) return absolute(s);
-  const tz = effectiveTimeZone();
+  if (!s.startsWith('now')) return absolute(s, context.timeZone);
+  const tz = context.timeZone;
   let d = new Date(now);
   let rest = s.slice(3);
   const re = /^([+-]\d+[smhHdwMy]|\/[smhHdwMy])/;
@@ -113,7 +124,7 @@ export function parseDateMath(expr: string, roundUp = false, now: Date = new Dat
     if (!m) return null;
     const tok = m[1];
     if (tok.startsWith('/')) {
-      d = roundDate(d, tok[1], roundUp, tz);
+      d = roundDate(d, tok[1], roundUp, tz, context.dayOfWeek);
     } else {
       const sign = tok[0] === '-' ? -1 : 1;
       const n = parseInt(tok.slice(1, -1), 10);
@@ -131,10 +142,10 @@ export interface TimeRange {
   to: string;
 }
 
-export function resolveRange(r: TimeRange, now = new Date()): { from: Date; to: Date } | null {
+export function resolveRange(r: TimeRange, now = new Date(), context = timeContext(now)): { from: Date; to: Date } | null {
   try {
-    const from = parseDateMath(r.from, false, now);
-    const to = parseDateMath(r.to, true, now);
+    const from = parseDateMath(r.from, false, now, context);
+    const to = parseDateMath(r.to, true, now, context);
     if (!from || !to || !Number.isFinite(from.getTime()) || !Number.isFinite(to.getTime()) || from > to) return null;
     return { from, to };
   } catch (e) {

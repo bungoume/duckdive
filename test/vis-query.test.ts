@@ -1,3 +1,4 @@
+import { timeContext } from '../src/datemath';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SEARCH, DEFAULT_VIS } from '../src/state';
 import type { VisResult } from '../src/queries';
@@ -54,7 +55,7 @@ beforeEach(() => {
   fetch.mockReset();
   input = {
     vis: DEFAULT_VIS,
-    compiled: { where: 'TRUE', error: null, from: new Date('2026-09-22T01:00:00Z'), to: new Date('2026-09-22T02:00:00Z') },
+    compiled: { context: timeContext(), where: 'TRUE', error: null, from: new Date('2026-09-22T01:00:00Z'), to: new Date('2026-09-22T02:00:00Z') },
     searches: [DEFAULT_SEARCH],
     fields: [],
     timeExpr: 'ts',
@@ -126,7 +127,7 @@ describe('shared visualization queries', () => {
     vi.setSystemTime(new Date('2026-09-22T02:00:01Z'));
     TestQuery();
     expect(fetch).toHaveBeenCalledTimes(2);
-    TestQuery({ refreshTick: 1 });
+    TestQuery({ refreshTick: 1, compiled: { ...input.compiled, context: timeContext() } });
     await drain();
     expect(fetch).toHaveBeenCalledTimes(4);
   });

@@ -1,3 +1,4 @@
+import { timeContext, type TimeContext } from './datemath';
 import { query, type Row } from './duck';
 import type { Field } from './fields';
 import { findField, quoteIdent } from './fields';
@@ -10,19 +11,20 @@ import { t } from './i18n';
 import { supportsComparison } from './comparison';
 
 export interface Compiled {
+  context: TimeContext;
   where: string;
   from: Date | null;
   to: Date | null;
   error: string | null;
 }
 
-export function compileSearch(search: SearchState, fields: Field[], timeExpr: string | null): Compiled {
+export function compileSearch(search: SearchState, fields: Field[], timeExpr: string | null, context = timeContext()): Compiled {
   try {
-    const querySql = searchToSql(search.query, fields);
-    const w = buildWhere({ timeExpr, range: search.range, querySql, filters: search.filters, fields });
-    return { where: w.sql, from: w.from, to: w.to, error: null };
+    const querySql = searchToSql(search.query, fields, context);
+    const w = buildWhere({ timeExpr, range: search.range, querySql, filters: search.filters, fields }, context);
+    return { context, where: w.sql, from: w.from, to: w.to, error: null };
   } catch (e) {
-    return { where: 'FALSE', from: null, to: null, error: describeError(e) };
+    return { context, where: 'FALSE', from: null, to: null, error: describeError(e) };
   }
 }
 
@@ -239,7 +241,7 @@ export function previousPeriodWhere(vis: VisState, compiled: Compiled, searches:
   const span = compiled.from && compiled.to ? compiled.to.getTime() - compiled.from.getTime() : 0;
   if (!supportsComparison(vis) || span <= 0 || !compiled.from || !compiled.to) return null;
   const range = { from: new Date(compiled.from.getTime() - span).toISOString(), to: compiled.from.toISOString() };
-  return searches.map((search) => `(${compileSearch({ ...search, range }, fields, timeExpr).where})`).join(' AND ');
+  return searches.map((search) => `(${compileSearch({ ...search, range }, fields, timeExpr, compiled.context).where})`).join(' AND ');
 }
 
 /** Move the preceding period's buckets onto the current chart without changing its result. */
