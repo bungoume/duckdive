@@ -422,6 +422,7 @@ let compacting = false;
 
 /** Compact a little later, once the burst of writes that caused the evictions has passed. */
 function scheduleCompact() {
+  if (readOnly) return;
   if (compactTimer) return;
   compactTimer = setTimeout(() => {
     compactTimer = null;
@@ -532,7 +533,7 @@ async function clearAll() {
 let compactRun: Promise<void> | null = null;
 
 async function compact(): Promise<void> {
-  if (!dir || !slab) return;
+  if (!dir || !slab || readOnly) return;
   if (compactRun) return compactRun;
   compacting = true;
   compactRun = compactSlab().finally(() => {
@@ -546,7 +547,7 @@ async function compact(): Promise<void> {
 const settleCompaction = (): Promise<void> => compactRun ?? Promise.resolve();
 
 async function compactSlab(): Promise<void> {
-  if (!dir || !slab) return;
+  if (!dir || !slab || readOnly) return;
   try {
     const tmpFh = await dir.getFileHandle('slab.tmp', { create: true });
     const tmp = await openShared(tmpFh);
@@ -1030,6 +1031,7 @@ async function handleControl(data: unknown, reply: (payload: Record<string, unkn
         break;
       }
       case 'config': {
+        if (readOnly) throw new Error('the cache is read-only in this tab');
         const c = rest.config as Partial<typeof config>;
         if (typeof c.enabled === 'boolean') config.enabled = c.enabled;
         if (typeof c.chunkSize === 'number' && c.chunkSize >= 64 * 1024) config.chunkSize = c.chunkSize;

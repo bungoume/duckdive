@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { checksum, rawHeaders } from '../src/worker/cache-util';
 
 /** Boot the real cache worker against an in-memory OPFS slab and a controllable origin. */
-async function cachedRequest(status: number, body: string, etag: string) {
+async function bootCache(status: number, body: string, etag: string, readOnly = false) {
+  vi.useFakeTimers();
   vi.resetModules();
   const url = 'https://logs.example.com/data';
   const bytes = new TextEncoder().encode(body);
@@ -14,10 +15,10 @@ async function cachedRequest(status: number, body: string, etag: string) {
       buf.set(disk.subarray(at, at + buf.length));
       return buf.length;
     },
-    write: (buf: Uint8Array, { at }: { at: number }) => {
+    write: vi.fn((buf: Uint8Array, { at }: { at: number }) => {
       disk.set(buf, at);
       return buf.length;
-    },
+    }),
     flush: () => undefined,
   };
   const index = {
@@ -54,17 +55,32 @@ async function cachedRequest(status: number, body: string, etag: string) {
       return rawHeaders(this.headers);
     }
   }
-  const worker = { XMLHttpRequest: OriginXHR as unknown as typeof XMLHttpRequest, location: { origin: 'chrome-extension://test', href: 'chrome-extension://test/worker.js' } };
+  const worker = {
+    onmessage: null as ((event: MessageEvent) => void) | null,
+    XMLHttpRequest: OriginXHR as unknown as typeof XMLHttpRequest,
+    location: { origin: 'chrome-extension://test', href: 'chrome-extension://test/worker.js' },
+  };
   vi.stubGlobal('self', worker);
   vi.stubGlobal('navigator', {
-    locks: { request: (_name: string, _options: unknown, callback: (lock: object) => Promise<void>) => callback({}) },
+    locks: { request: (_name: string, _options: unknown, callback: (lock: object) => Promise<void>) => (readOnly ? Promise.reject(new Error('held by another tab')) : callback({})) },
     storage: { getDirectory: async () => ({ getDirectoryHandle: async () => dir }) },
   });
   const booted = vi.fn();
   vi.stubGlobal('importScripts', booted);
   await import('../src/worker/duckdb-cache-worker');
   await vi.waitFor(() => expect(booted).toHaveBeenCalledOnce());
-  vi.useFakeTimers(); // index persistence must not outlive this worker's stubbed globals
+  const control = (data: Record<string, unknown>) =>
+    new Promise<Record<string, unknown>>((resolve) => {
+      const port = { onmessage: null as ((event: MessageEvent) => void) | null, postMessage: resolve };
+      worker.onmessage!({ data: { type: 'ddv-cache-port' }, ports: [port] } as unknown as MessageEvent);
+      port.onmessage!({ data: { id: 'test', ...data } } as MessageEvent);
+    });
+  return { worker, control, slab };
+}
+
+async function cachedRequest(status: number, body: string, etag: string) {
+  const { worker } = await bootCache(status, body, etag);
+  const url = 'https://logs.example.com/data';
   const xhr = new worker.XMLHttpRequest();
   xhr.open('GET', url, false);
   xhr.responseType = 'arraybuffer';
@@ -95,4 +111,15 @@ describe('range cache object replacement', () => {
   it('passes an authorization failure through instead of returning cached success', async () => {
     expect((await cachedRequest(403, 'denied', 'error')).status).toBe(403);
   });
+});
+
+it('refuses cache mutations in a read-only tab, including a lower size limit', async () => {
+  const { control, slab } = await bootCache(206, 'AAAABBBB', 'old', true);
+  const before = await control({ type: 'files' });
+  for (const command of [{ type: 'config', config: { maxBytes: 1 } }, { type: 'compact' }, { type: 'clear' }, { type: 'purge', url: 'https://logs.example.com/data' }]) {
+    expect(await control(command)).toMatchObject({ ok: false, error: expect.stringContaining('read-only') });
+  }
+  await vi.advanceTimersByTimeAsync(20_000);
+  expect(await control({ type: 'files' })).toEqual(before);
+  expect(slab.write).not.toHaveBeenCalled();
 });

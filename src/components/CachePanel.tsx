@@ -85,7 +85,7 @@ export function CachePanel() {
       {readOnly && <div class="alert info cache-readonly">{t('cache.readOnly')}</div>}
       {config && (
         <>
-          <div class="grid2 mb8">
+          <fieldset class="grid2 mb8" disabled={readOnly} style="border:0;padding:0;margin-inline:0">
             <label class="row">
               <input type="checkbox" checked={config.enabled} onChange={(e) => run(cacheSetConfig({ enabled: e.currentTarget.checked }))} />
               {t('cache.enable')}
@@ -108,7 +108,7 @@ export function CachePanel() {
                 ))}
               </select>
             </div>
-          </div>
+          </fieldset>
           <table class="kv mb8">
             <tbody>
               <tr>
@@ -148,7 +148,7 @@ export function CachePanel() {
                     {summary.wasted > 0 ? t('cache.reclaimable', { bytes: fmtBytes(summary.wasted) }) : ''}
                     {stats && stats.evictions > 0 ? t('cache.evicted', { n: stats.evictions.toLocaleString() }) : ''}
                     {summary.wasted > 16 * 1024 * 1024 && (
-                      <button class="btn small ml8" onClick={() => run(cacheCompact())}>
+                      <button class="btn small ml8" disabled={readOnly} onClick={() => run(cacheCompact())}>
                         {t('cache.compact')}
                       </button>
                     )}
@@ -176,7 +176,7 @@ export function CachePanel() {
                       {fmtBytes(f.cachedBytes)} ({f.size ? Math.min(100, Math.round((f.cachedBytes / f.size) * 100)) : 0}%)
                     </td>
                     <td>
-                      <button class="btn small" onClick={() => run(cachePurge(f.url))}>
+                      <button class="btn small" disabled={readOnly} onClick={() => run(cachePurge(f.url))}>
                         {t('cache.drop')}
                       </button>
                     </td>
@@ -235,7 +235,7 @@ export function CachePanel() {
             <button class="btn small" onClick={refresh}>
               {t('common.refresh')}
             </button>
-            <button class="btn small danger" onClick={() => run(cacheClear())}>
+            <button class="btn small danger" disabled={readOnly} onClick={() => run(cacheClear())}>
               {t('cache.clear')}
             </button>
           </div>
