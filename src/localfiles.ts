@@ -13,6 +13,27 @@ export interface LocalSelection {
 
 export const NO_LOCAL: LocalSelection = { files: [], handles: [] };
 
+/** Stable registration names for a selection, including files picked from different folders. */
+export function uniqueLocalNames(files: Pick<File, 'name'>[]): string[] {
+  const reserved = new Set(files.map((f) => f.name));
+  const used = new Set<string>();
+  const next = new Map<string, number>();
+  return files.map(({ name }) => {
+    let candidate = name;
+    if (used.has(candidate)) {
+      const dot = name.indexOf('.', name.lastIndexOf('/') + 1);
+      const stem = dot < 0 ? name : name.slice(0, dot);
+      const ext = dot < 0 ? '' : name.slice(dot);
+      let n = next.get(name) ?? 2;
+      do candidate = `${stem} (${n++})${ext}`;
+      while (reserved.has(candidate) || used.has(candidate));
+      next.set(name, n);
+    }
+    used.add(candidate);
+    return candidate;
+  });
+}
+
 // WICG parts of the File System Access API that lib.dom does not declare
 type Permission = 'granted' | 'denied' | 'prompt';
 interface PermissionHandle {

@@ -605,6 +605,29 @@ await step('source-page', async () => {
   await page.waitForSelector('.source-page');
   await page.screenshot({ path: `${out}/10-source.png` });
 });
+await step('local-same-name', async () => {
+  await page.click('.kinds button:has-text("Local files")');
+  await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const handles = [];
+    for (const [dir, value] of [
+      ['A', 1],
+      ['B', 2],
+    ]) {
+      const d = await root.getDirectoryHandle(dir, { create: true });
+      const h = await d.getFileHandle('same.csv', { create: true });
+      const w = await h.createWritable();
+      await w.write(`value\n${value}\n`);
+      await w.close();
+      handles.push(h);
+    }
+    await window.__ddv.setLocalHandles(handles);
+  });
+  await page.click('.source-page button.connect');
+  await settled(page);
+  const result = await page.evaluate(() => window.__ddv.query('SELECT value, _file FROM src ORDER BY value'));
+  if (result.rows.map((r) => r.value).join(',') !== '1,2' || new Set(result.rows.map((r) => r._file)).size !== 2) throw new Error('same-name files lost: ' + JSON.stringify(result.rows));
+});
 await step('local-source', async () => {
   // A Parquet file written into OPFS stands in for a picked file: its handle can be stored and
   // reopened without a permission prompt, which the pickers themselves cannot be driven to do.

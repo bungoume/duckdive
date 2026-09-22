@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { isLogFile, selectionNames, selectionTitle, type LocalSelection } from '../src/localfiles';
+import { isLogFile, selectionNames, selectionTitle, uniqueLocalNames, type LocalSelection } from '../src/localfiles';
 import { DEFAULT_SOURCE, sourceKey } from '../src/sources';
 
 const handle = (kind: 'file' | 'directory', name: string) => ({ kind, name }) as FileSystemHandle;
+
+describe('local registration names', () => {
+  it('preserves unique paths and avoids collisions with names already in the selection', () => {
+    const files = ['same.csv.gz', 'same.csv.gz', 'same (2).csv.gz', 'dir/same.csv', 'dir/same.csv', 'plain', 'plain'].map((name) => ({ name }));
+    expect(uniqueLocalNames(files)).toEqual(['same.csv.gz', 'same (3).csv.gz', 'same (2).csv.gz', 'dir/same.csv', 'dir/same (2).csv', 'plain', 'plain (2)']);
+  });
+});
 
 describe('isLogFile', () => {
   it('accepts the readable formats, compressed or not, and skips hidden files', () => {

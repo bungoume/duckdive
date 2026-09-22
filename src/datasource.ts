@@ -27,6 +27,7 @@ import type { Field } from './fields';
 import { findField, introspectFields, isTimeCandidate, quoteIdent } from './fields';
 import { VIEW, lit } from './sql';
 import { sourceUrls, type SourceConfig } from './sources';
+import { uniqueLocalNames } from './localfiles';
 
 export interface AttachedSource {
   fields: Field[];
@@ -331,11 +332,10 @@ async function attachDemo(progress: Progress): Promise<ViewInfo> {
 async function attachLocal(cfg: SourceConfig, localFiles: File[], progress: Progress): Promise<ViewInfo> {
   if (!localFiles.length) throw new Error(t('src.local.none'));
   const db = getDB();
-  const names: string[] = [];
+  const names = uniqueLocalNames(localFiles);
   progress(t('src.local.progress'), 'db');
-  for (const f of localFiles) {
-    await db.registerFileHandle(f.name, f, DataProtocol.BROWSER_FILEREADER, true);
-    names.push(f.name);
+  for (const [i, f] of localFiles.entries()) {
+    await db.registerFileHandle(names[i], f, DataProtocol.BROWSER_FILEREADER, true);
   }
   await createView(cfg, resolveFormat(cfg.format, names), names, null);
   const description = t('src.local.description', { n: names.length, names: names.slice(0, 3).join(', '), more: names.length > 3 ? '…' : '' });
