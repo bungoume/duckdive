@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { forgetSecrets, storeSecrets, withSecrets } from '../src/secrets';
-import { DEFAULT_SOURCE, sourceKey } from '../src/sources';
+import { DEFAULT_SOURCE, sourceForKnownLink, sourceFromLink, sourceKey } from '../src/sources';
 
 const cfg = { ...DEFAULT_SOURCE, kind: 'url' as const, urls: 's3://b/x', authMode: 'static' as const, s3: { ...DEFAULT_SOURCE.s3, accessKeyId: 'AKIA', secretAccessKey: 'shh', sessionToken: 'tok' } };
 const bare = { ...cfg, s3: { ...cfg.s3, secretAccessKey: '', sessionToken: '' } };
@@ -13,6 +13,14 @@ describe('session-only secrets', () => {
     expect((await withSecrets(bare)).s3).toEqual(cfg.s3);
     expect((await withSecrets({ ...bare, s3: { ...bare.s3, accessKeyId: 'OTHER' } })).s3.secretAccessKey).toBe('');
     expect((await withSecrets({ ...bare, urls: 's3://b/y' })).s3.secretAccessKey).toBe('');
+  });
+
+  it('restores session secrets for a shared selection of a known source', async () => {
+    await storeSecrets(cfg);
+    const link = sourceFromLink({ ...cfg, tokenValues: { tenant: ['beta'] } })!;
+    const restored = await withSecrets(sourceForKnownLink(link, bare));
+    expect(restored.s3).toEqual(cfg.s3);
+    expect(restored.tokenValues).toEqual({ tenant: ['beta'] });
   });
 
   it('leaves a configuration that has its own secret alone', async () => {

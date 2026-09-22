@@ -18,7 +18,7 @@ import { CancelledError } from '../net';
 import { ensureHostPermissions } from '../permissions';
 import type { TokenValue } from '../s3list';
 import { forgetSecrets, storeSecrets, withSecrets } from '../secrets';
-import { forgetSource, loadSource, loadSourceHistory, rememberSource, saveSource, sourceKey, type SourceConfig, type SourceHistoryEntry } from '../sources';
+import { forgetSource, loadSource, loadSourceHistory, rememberSource, saveSource, sourceForKnownLink, sourceKey, type SourceConfig, type SourceHistoryEntry } from '../sources';
 import { newId } from '../sql';
 import { loadSavedVis, savedVisRevision, type UrlState } from '../state';
 import { useStore } from '../store';
@@ -269,7 +269,7 @@ export function useConnect(url: UrlState, setUrl: Dispatch<StateUpdater<UrlState
     void (async () => {
       try {
         const known = linkSource ? history.find((h) => h.key === sourceKey(linkSource)) : undefined;
-        const cfg = await withSecrets(known ? known.config : loadSource());
+        const cfg = await withSecrets(known && linkSource ? sourceForKnownLink(linkSource, known.config) : loadSource());
         setSource(cfg);
         setSwitchSeq((n) => n + 1);
         await initDuckDB();

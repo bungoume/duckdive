@@ -111,6 +111,12 @@ export function sourceKey(cfg: SourceConfig): string | null {
   return JSON.stringify(['url', sourceUrls(cfg).join('\n'), cfg.s3.endpoint, cfg.s3.region, cfg.s3.urlStyle, cfg.authMode]);
 }
 
+/** Use the link's data selection with this browser's already known authentication settings. */
+export function sourceForKnownLink(link: SourceConfig, known: SourceConfig): SourceConfig {
+  if (!sourceKey(known) || sourceKey(link) !== sourceKey(known)) return link;
+  return { ...link, s3: known.s3, oidc: known.oidc };
+}
+
 function normalizeEntry(o: unknown): SourceHistoryEntry | null {
   if (!o || typeof o !== 'object') return null;
   const e = o as Partial<SourceHistoryEntry>;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SOURCE, describeSource, shareableSource, sourceFromLink, type SourceConfig } from '../src/sources';
+import { DEFAULT_SOURCE, describeSource, shareableSource, sourceForKnownLink, sourceFromLink, type SourceConfig } from '../src/sources';
 import { readLinkSource, shareLink, type UrlState } from '../src/state';
 import { DEFAULT_DISCOVER, DEFAULT_SEARCH, DEFAULT_VIS } from '../src/state';
 
@@ -124,5 +124,23 @@ describe('shareLink', () => {
     expect(link).not.toMatch(/src=/);
     location.hash = link.slice(link.indexOf('#'));
     expect(readLinkSource()).toBeNull();
+  });
+});
+
+describe('known shared sources', () => {
+  it('uses the shared selection and schema options while keeping locally trusted credentials', () => {
+    const known = { ...url, oidc: { ...url.oidc, stsEndpoint: 'https://private.example/sts' } };
+    const link = sourceFromLink({
+      ...url,
+      name: 'shared',
+      tokenValues: { alb: ['other'] },
+      format: 'csv',
+      naming: 'otel',
+      timeField: 'ts',
+      maxFiles: 25,
+      oidc: { authUrl: 'https://different.example/auth' },
+    })!;
+    expect(sourceForKnownLink(link, known)).toEqual({ ...link, s3: known.s3, oidc: known.oidc });
+    expect(sourceForKnownLink({ ...link, urls: 's3://other/file' }, known).s3.accessKeyId).toBe('');
   });
 });
