@@ -61,7 +61,7 @@ export function SqlPage(props: { fields: Field[]; timeExpr: string | null; searc
 
   const run = async () => {
     const sql = text.trim();
-    if (!sql || busy) return;
+    if (!sql || busy || props.paused) return;
     const id = ++runId.current;
     setBusy(true);
     props.onBusy(true);
@@ -95,7 +95,7 @@ export function SqlPage(props: { fields: Field[]; timeExpr: string | null; searc
   };
 
   const download = async (format: ExportFormat) => {
-    if (!result) return;
+    if (!result || busy || props.paused) return;
     try {
       downloadBlob(await exportToBlob(result.sql, format), exportFileName(format));
     } catch (e) {
@@ -171,7 +171,7 @@ export function SqlPage(props: { fields: Field[]; timeExpr: string | null; searc
               <span class="hint">{t('sql.rows', { n: result.rows.length.toLocaleString(), ms: Math.round(result.ms) })}</span>
               <span class="grow" />
               {EXPORT_FORMATS.map((f) => (
-                <button key={f} class="btn small" onClick={() => void download(f)}>
+                <button key={f} class="btn small" disabled={busy || props.paused} onClick={() => void download(f)}>
                   {t(`exp.format.${f}`)}
                 </button>
               ))}
