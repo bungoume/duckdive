@@ -81,7 +81,7 @@ const MAX_INSPECT_BYTES = 32 * 1024 * 1024;
 
 function fromHex(h: string): Uint8Array {
   const out = new Uint8Array(h.length / 2);
-  for (let i = 0; i < out.length; i++) out[i] = parseInt(h.substr(i * 2, 2), 16);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(h.slice(i * 2, i * 2 + 2), 16);
   return out;
 }
 

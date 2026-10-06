@@ -36,7 +36,7 @@ export default defineConfig({
     // .map files next to the bundles for readable stack traces from bug reports; pack.mjs leaves them out of the store zip
     sourcemap: 'hidden',
     chunkSizeWarningLimit: 4000,
-    rollupOptions: {
+    rolldownOptions: {
       input: { main: 'index.html', background: 'src/background.ts' },
       output: {
         entryFileNames: (chunk) => (chunk.name === 'background' ? 'background.js' : 'assets/[name]-[hash].js'),

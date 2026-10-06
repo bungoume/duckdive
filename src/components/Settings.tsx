@@ -18,7 +18,7 @@ import { FormField } from './ui';
 
 const zoneNames = (): string[] => {
   try {
-    return (Intl as unknown as { supportedValuesOf?: (k: string) => string[] }).supportedValuesOf?.('timeZone') ?? [];
+    return Intl.supportedValuesOf?.('timeZone') ?? [];
   } catch {
     return [];
   }

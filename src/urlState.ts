@@ -3,14 +3,17 @@ import { shareableSource, sourceFromLink, type SourceConfig } from './sources';
 import { isObj, restoreSearch, sanitizeDiscover, sanitizeVis } from './stateCodec';
 
 function b64encode(s: string): string {
-  return btoa(unescape(encodeURIComponent(s)))
+  const bytes = new TextEncoder().encode(s);
+  return btoa(Array.from(bytes, (byte) => String.fromCharCode(byte)).join(''))
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=+$/, '');
 }
 function b64decode(s: string): string {
   const t = s.replace(/-/g, '+').replace(/_/g, '/');
-  return decodeURIComponent(escape(atob(t + '='.repeat((4 - (t.length % 4)) % 4))));
+  const bytes = Uint8Array.from(atob(t + '='.repeat((4 - (t.length % 4)) % 4)), (char) => char.charCodeAt(0));
+  // Preserve the old decoder's rejection of invalid UTF-8 and its handling of a leading BOM.
+  return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
 }
 
 export function readUrlState(): UrlState {

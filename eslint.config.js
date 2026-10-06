@@ -1,9 +1,10 @@
 import js from '@eslint/js';
+import { defineConfig } from 'eslint/config';
 import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
-export default tseslint.config(
+export default defineConfig(
   { ignores: ['dist/**', 'release/**', 'public/**', 'node_modules/**', '.claude/**', '**/*.d.ts'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -19,6 +20,7 @@ export default tseslint.config(
       '@typescript-eslint/no-non-null-assertion': 'off',
       // the chart code drives Observable Plot's untyped scale objects
       '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-deprecated': 'error',
       // a promise nobody awaits or catches becomes an unhandled rejection
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: false }],
