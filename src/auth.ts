@@ -81,7 +81,7 @@ export function buildAuthUrl(cfg: OidcConfig, interactive: boolean): { url: stri
   return { url: u.toString(), state, nonce };
 }
 
-function parseJwt(token: string): Record<string, unknown> {
+function parseJwt(token: string): unknown {
   const part = token.split('.')[1] ?? '';
   const json = decodeURIComponent(
     atob(part.replace(/-/g, '+').replace(/_/g, '/'))
@@ -89,7 +89,8 @@ function parseJwt(token: string): Record<string, unknown> {
       .map((c) => '%' + c.charCodeAt(0).toString(16).padStart(2, '0'))
       .join(''),
   );
-  return JSON.parse(json);
+  const claims: unknown = JSON.parse(json);
+  return claims;
 }
 
 /** Run the OIDC flow and return the id_token. */
@@ -108,7 +109,8 @@ export async function loginOidc(cfg: OidcConfig, interactive: boolean): Promise<
   if (!idToken) throw new Error('OIDC response did not contain an id_token');
   if (params.get('state') !== state) throw new Error('OIDC state mismatch');
   const claims = parseJwt(idToken);
-  if (claims.nonce !== nonce) throw new Error('OIDC nonce mismatch');
+  if (!claims || typeof claims !== 'object' || !('nonce' in claims) || claims.nonce !== nonce)
+    throw new Error('OIDC nonce mismatch');
   return idToken;
 }
 

@@ -2,7 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { checksum, rawHeaders } from '../src/worker/cache-util';
 
 /** Boot the real cache worker against an in-memory OPFS slab and a controllable origin. */
-async function bootCache(status: number, body: string, etag: string, readOnly = false) {
+async function bootCache(
+  status: number,
+  body: string,
+  etag: string,
+  readOnly = false,
+  transformIndex: (index: Record<string, unknown>) => unknown = (index) => index,
+) {
   vi.useFakeTimers();
   vi.resetModules();
   const url = 'https://logs.example.com/data';
@@ -11,6 +17,7 @@ async function bootCache(status: number, body: string, etag: string, readOnly = 
   disk.set(new TextEncoder().encode('AAAA'));
   const slab = {
     getSize: () => 4,
+    truncate: vi.fn((size: number) => disk.fill(0, size)),
     read: (buf: Uint8Array, { at }: { at: number }) => {
       buf.set(disk.subarray(at, at + buf.length));
       return buf.length;
@@ -43,7 +50,7 @@ async function bootCache(status: number, body: string, etag: string, readOnly = 
     getFileHandle: async (name: string) =>
       name === 'index.json'
         ? {
-            getFile: async () => ({ text: async () => JSON.stringify(index) }),
+            getFile: async () => ({ text: async () => JSON.stringify(transformIndex(index)) }),
             createWritable: async () => ({ write: async () => undefined, close: async () => undefined }),
           }
         : { createSyncAccessHandle: async () => slab },
@@ -112,6 +119,35 @@ afterEach(() => {
   vi.clearAllTimers();
   vi.useRealTimers();
   vi.unstubAllGlobals();
+});
+
+describe('cache index validation', () => {
+  it.each([
+    { name: 'null', change: () => null },
+    { name: 'invalid files', change: (index: Record<string, unknown>) => ({ ...index, files: [] }) },
+    { name: 'invalid slab size', change: (index: Record<string, unknown>) => ({ ...index, slabSize: 'four' }) },
+    {
+      name: 'invalid chunk size',
+      change: (index: Record<string, unknown>) => ({ ...index, config: { chunkSize: 0 } }),
+    },
+    {
+      name: 'invalid extension metadata',
+      change: (index: Record<string, unknown>) => ({ ...index, ext: { url: null } }),
+    },
+  ])('restarts an invalid cache without disabling OPFS: $name', async ({ change }) => {
+    const { control, slab } = await bootCache(206, 'BBBBBBBB', 'new', false, change);
+    expect(slab.truncate).toHaveBeenCalledWith(0);
+    expect(await control({ type: 'stats' })).toMatchObject({ opfsError: null });
+  });
+
+  it('accepts an older index without optional settings or extension entries', async () => {
+    const { control, slab } = await bootCache(206, 'AAAABBBB', 'old', false, (index) => {
+      const { config: _config, ext: _ext, wasted: _wasted, ...legacy } = index;
+      return legacy;
+    });
+    expect(slab.truncate).not.toHaveBeenCalled();
+    expect(await control({ type: 'files' })).toMatchObject({ summary: { cachedBytes: 4 } });
+  });
 });
 
 describe('range cache object replacement', () => {

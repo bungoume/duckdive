@@ -78,16 +78,7 @@ export const SOURCE_HISTORY_MAX = 20;
 export function loadSource(): SourceConfig {
   try {
     const raw = localStorage.getItem(LS_SOURCE);
-    if (raw) {
-      const o = JSON.parse(raw);
-      return {
-        ...DEFAULT_SOURCE,
-        ...o,
-        timeField: decodeTimeField(o.timeField),
-        s3: { ...DEFAULT_SOURCE.s3, ...(o.s3 ?? {}) },
-        oidc: { ...DEFAULT_OIDC, ...(o.oidc ?? {}) },
-      };
-    }
+    if (raw) return decodeStoredSource(JSON.parse(raw));
   } catch {
     /* ignore */
   }
@@ -156,27 +147,19 @@ export function sourceForKnownLink(link: SourceConfig, known: SourceConfig): Sou
 }
 
 function normalizeEntry(o: unknown): SourceHistoryEntry | null {
-  if (!o || typeof o !== 'object') return null;
-  const e = o as { config?: Partial<StoredSource>; lastUsed?: unknown };
-  if (!e.config || typeof e.config !== 'object') return null;
-  const c = e.config;
-  const config: SourceConfig = {
-    ...DEFAULT_SOURCE,
-    ...c,
-    timeField: decodeTimeField(c.timeField),
-    s3: { ...DEFAULT_SOURCE.s3, ...(c.s3 ?? {}) },
-    oidc: { ...DEFAULT_OIDC, ...(c.oidc ?? {}) },
-  };
+  if (!isObj(o) || !isObj(o.config)) return null;
+  if (o.config.kind !== undefined && !['demo', 'url', 'local'].includes(str(o.config.kind))) return null;
+  const config = decodeStoredSource(o.config);
   const key = sourceKey(config);
   if (!key) return null;
-  return { key, lastUsed: typeof e.lastUsed === 'string' ? e.lastUsed : '', config };
+  return { key, lastUsed: typeof o.lastUsed === 'string' ? o.lastUsed : '', config };
 }
 
 export function loadSourceHistory(): SourceHistoryEntry[] {
   try {
     const raw = localStorage.getItem(LS_SOURCES);
     if (raw) {
-      const list = JSON.parse(raw);
+      const list: unknown = JSON.parse(raw);
       if (Array.isArray(list))
         return list
           .map(normalizeEntry)
@@ -223,6 +206,44 @@ export function forgetSource(key: string): SourceHistoryEntry[] {
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const str = (v: unknown, fallback = '') => (typeof v === 'string' ? v : fallback);
+
+/** Validate persisted shapes while preserving locally configured endpoints and access key IDs. */
+function decodeStoredSource(raw: unknown): SourceConfig {
+  if (!isObj(raw)) return DEFAULT_SOURCE;
+  const s3 = isObj(raw.s3) ? raw.s3 : {};
+  const oidc = isObj(raw.oidc) ? raw.oidc : {};
+  return {
+    kind: raw.kind === 'url' || raw.kind === 'local' ? raw.kind : 'demo',
+    name: str(raw.name, DEFAULT_SOURCE.name),
+    urls: str(raw.urls),
+    format: FORMAT_IDS.includes(raw.format as FormatId) ? (raw.format as FormatId) : DEFAULT_SOURCE.format,
+    naming: NAMING_IDS.includes(raw.naming as Naming) ? (raw.naming as Naming) : DEFAULT_SOURCE.naming,
+    s3: {
+      region: str(s3.region, DEFAULT_SOURCE.s3.region),
+      accessKeyId: str(s3.accessKeyId),
+      secretAccessKey: str(s3.secretAccessKey),
+      sessionToken: str(s3.sessionToken),
+      endpoint: str(s3.endpoint),
+      urlStyle: s3.urlStyle === 'path' ? 'path' : 'vhost',
+    },
+    authMode: raw.authMode === 'none' || raw.authMode === 'oidc' ? raw.authMode : 'static',
+    oidc: {
+      authUrl: str(oidc.authUrl, DEFAULT_OIDC.authUrl),
+      clientId: str(oidc.clientId),
+      scope: str(oidc.scope, DEFAULT_OIDC.scope),
+      extraParams: str(oidc.extraParams),
+      roleArn: str(oidc.roleArn),
+      region: str(oidc.region, DEFAULT_OIDC.region),
+      stsEndpoint: str(oidc.stsEndpoint),
+      durationSeconds: typeof oidc.durationSeconds === 'number' ? oidc.durationSeconds : DEFAULT_OIDC.durationSeconds,
+      sessionName: str(oidc.sessionName, DEFAULT_OIDC.sessionName),
+    },
+    maxFiles: typeof raw.maxFiles === 'number' ? raw.maxFiles : DEFAULT_SOURCE.maxFiles,
+    tokenValues: decodeTokenValues(raw.tokenValues),
+    timeField: decodeTimeField(raw.timeField),
+    ...(typeof raw.localId === 'string' ? { localId: raw.localId } : {}),
+  };
+}
 
 /** The source as a link carries it: no secrets, no key ID, and never a local one (its files are on this machine). */
 export function shareableSource(cfg: SourceConfig): StoredSource | null {
@@ -292,7 +313,7 @@ export function checkedSourceItem(raw: unknown): unknown {
 /** The same, for the whole source history (`ddv.sources`). */
 export function checkedSourceHistory(raw: unknown): unknown {
   if (!Array.isArray(raw)) return raw;
-  return raw.map((e) => (isObj(e) ? { ...e, config: checkedSourceItem(e.config) } : e));
+  return raw.map((e: unknown) => (isObj(e) ? { ...e, config: checkedSourceItem(e.config) } : e));
 }
 
 /**
@@ -300,6 +321,14 @@ export function checkedSourceHistory(raw: unknown): unknown {
  * assigning it below would replace the prototype of the object instead of adding a key to it.
  */
 const isTokenName = (k: string) => k !== '__proto__' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(k);
+
+function decodeTokenValues(raw: unknown): Record<string, string[]> {
+  const values: Record<string, string[]> = {};
+  if (isObj(raw))
+    for (const [k, v] of Object.entries(raw))
+      if (isTokenName(k) && Array.isArray(v)) values[k] = v.filter((x): x is string => typeof x === 'string');
+  return values;
+}
 
 /** A source from a link someone sent: every field checked, secrets and key IDs never taken; null when unusable. */
 export function sourceFromLink(raw: unknown): SourceConfig | null {
@@ -309,10 +338,6 @@ export function sourceFromLink(raw: unknown): SourceConfig | null {
   if (raw.kind !== 'url' || typeof raw.urls !== 'string' || !raw.urls.trim()) return null;
   const s3 = isObj(raw.s3) ? raw.s3 : {};
   const o = isObj(raw.oidc) ? raw.oidc : {};
-  const tokenValues: Record<string, string[]> = {};
-  if (isObj(raw.tokenValues))
-    for (const [k, v] of Object.entries(raw.tokenValues))
-      if (isTokenName(k) && Array.isArray(v)) tokenValues[k] = v.filter((x): x is string => typeof x === 'string');
   return {
     kind: 'url',
     name: str(raw.name),
@@ -341,7 +366,7 @@ export function sourceFromLink(raw: unknown): SourceConfig | null {
       sessionName: str(o.sessionName, DEFAULT_OIDC.sessionName),
     },
     maxFiles: typeof raw.maxFiles === 'number' && raw.maxFiles >= 0 ? Math.floor(raw.maxFiles) : 0,
-    tokenValues,
+    tokenValues: decodeTokenValues(raw.tokenValues),
     timeField: decodeTimeField(raw.timeField),
   };
 }

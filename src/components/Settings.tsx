@@ -15,6 +15,7 @@ import {
   type QuickRange,
 } from '../settings';
 import { FormField } from './ui';
+import { isObj } from '../stateCodec';
 
 const zoneNames = (): string[] => {
   try {
@@ -48,7 +49,7 @@ const draftOf = (s: AppSettings): Draft => ({
 type Errors = Partial<Record<keyof Draft, string>>;
 
 /** Validate the text fields; returns the settings to store, or the per-field errors. */
-function parseDraft(d: Draft): { ok: true; value: Partial<AppSettings> } | { ok: false; errors: Errors } {
+export function parseDraft(d: Draft): { ok: true; value: Partial<AppSettings> } | { ok: false; errors: Errors } {
   const errors: Errors = {};
   const value: Partial<AppSettings> = {};
   if (!d.dateFormat.trim()) errors.dateFormat = t('settings.error.empty');
@@ -57,37 +58,39 @@ function parseDraft(d: Draft): { ok: true; value: Partial<AppSettings> } | { ok:
   if (tz && !isValidTimeZone(tz)) errors.timeZone = t('settings.error.tz', { value: tz });
   else value.timeZone = tz;
   try {
-    const arr = JSON.parse(d.scaled);
+    const arr: unknown = JSON.parse(d.scaled);
     const good =
       Array.isArray(arr) &&
       arr.length > 0 &&
       arr.every(
-        (e) =>
+        (e: unknown): e is [string, string] =>
           Array.isArray(e) &&
           e.length === 2 &&
           typeof e[0] === 'string' &&
           typeof e[1] === 'string' &&
           parseIsoDuration(e[0]) !== null &&
-          e[1].trim(),
+          e[1].trim() !== '',
       );
     if (!good) errors.scaled = t('settings.error.scaled');
-    else value.scaledDateFormat = arr as [string, string][];
+    else value.scaledDateFormat = arr;
   } catch (e) {
     errors.scaled = t('settings.error.json', { error: (e as Error).message });
   }
   try {
-    const arr = JSON.parse(d.quick);
+    const arr: unknown = JSON.parse(d.quick);
     if (!Array.isArray(arr) || !arr.length) errors.quick = t('settings.error.range', { value: d.quick.slice(0, 40) });
     else {
       const out: QuickRange[] = [];
-      for (const q of arr) {
-        const okShape =
-          q &&
-          typeof q === 'object' &&
-          typeof q.from === 'string' &&
-          typeof q.to === 'string' &&
-          (q.display === undefined || typeof q.display === 'string');
-        if (!okShape || !parseDateMath(q.from) || !parseDateMath(q.to, true)) {
+      const ranges: unknown[] = arr;
+      for (const q of ranges) {
+        if (
+          !isObj(q) ||
+          typeof q.from !== 'string' ||
+          typeof q.to !== 'string' ||
+          (q.display !== undefined && typeof q.display !== 'string') ||
+          !parseDateMath(q.from) ||
+          !parseDateMath(q.to, true)
+        ) {
           errors.quick = t('settings.error.range', { value: JSON.stringify(q) });
           break;
         }

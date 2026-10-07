@@ -225,7 +225,7 @@ export function namedTokens(pattern: string): string[] {
 
 /** Replace named tokens with '*' so the pattern can be listed like an ordinary glob. */
 export function namedToGlob(pattern: string): string {
-  return pattern.replace(NAMED_TOKEN, (all, name) => (DATE_TOKENS.has(name) ? all : '*'));
+  return pattern.replace(NAMED_TOKEN, (all: string, name: string) => (DATE_TOKENS.has(name) ? all : '*'));
 }
 
 /** The same bracket-class syntax is used for listing files and extracting their tokens. */

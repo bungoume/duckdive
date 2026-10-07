@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
   DEFAULT_SOURCE,
   describeSource,
+  loadSource,
+  loadSourceHistory,
+  rememberSource,
+  saveSource,
   shareableSource,
   sourceForKnownLink,
   sourceFromLink,
@@ -29,6 +33,74 @@ const url: SourceConfig = {
   tokenValues: { alb: ['a', 'b'] },
   timeField: { mode: 'field', name: 'time' },
 };
+
+describe('persisted source validation', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('preserves configured endpoints, local handles, token values and legacy time fields', () => {
+    const local: SourceConfig = {
+      ...url,
+      kind: 'local',
+      localId: 'picked-files',
+      oidc: { ...url.oidc, authUrl: 'http://localhost/auth', stsEndpoint: 'https://private.example/sts' },
+    };
+    saveSource(local);
+    const expected = { ...local, s3: { ...local.s3, secretAccessKey: '', sessionToken: '' } };
+    expect(loadSource()).toEqual(expected);
+    rememberSource(local);
+    expect(loadSourceHistory()[0].config).toEqual(expected);
+    saveSource({ ...local, timeField: { mode: 'none' } });
+    expect(loadSource().timeField).toEqual({ mode: 'none' });
+    saveSource({ ...local, timeField: { mode: 'auto' } });
+    expect(loadSource().timeField).toEqual({ mode: 'auto' });
+  });
+
+  it.each([null, [], 'bad', 42].map((raw) => ({ raw })))('falls back for a non-object source (case %#)', ({ raw }) => {
+    localStorage.setItem('ddv.source', JSON.stringify(raw));
+    expect(loadSource()).toEqual(DEFAULT_SOURCE);
+  });
+
+  it('defaults malformed fields without losing valid source settings', () => {
+    localStorage.setItem(
+      'ddv.source',
+      JSON.stringify({
+        kind: 'url',
+        name: 'saved',
+        urls: 42,
+        format: 'unsupported',
+        naming: null,
+        authMode: 'invalid',
+        s3: { region: 'us-east-1', accessKeyId: 'AKIA', endpoint: false },
+        oidc: { clientId: 'client', durationSeconds: 'bad' },
+        tokenValues: { tenant: ['a', 1], 'bad name': ['b'] },
+        timeField: false,
+        localId: 4,
+      }),
+    );
+    expect(loadSource()).toEqual({
+      ...DEFAULT_SOURCE,
+      kind: 'url',
+      name: 'saved',
+      s3: { ...DEFAULT_SOURCE.s3, region: 'us-east-1', accessKeyId: 'AKIA' },
+      oidc: { ...DEFAULT_SOURCE.oidc, clientId: 'client' },
+      tokenValues: { tenant: ['a'] },
+    });
+  });
+
+  it('keeps valid history entries when a neighboring entry is malformed', () => {
+    localStorage.setItem(
+      'ddv.sources',
+      JSON.stringify([
+        { config: { kind: 'url', urls: 42 } },
+        { config: { kind: 'invalid' } },
+        { config: null },
+        { config: { kind: 'url', name: 'valid', urls: 's3://bucket/logs' }, lastUsed: 'yesterday' },
+      ]),
+    );
+    expect(loadSourceHistory().some((e) => e.config.name === 'valid' && e.lastUsed === 'yesterday')).toBe(true);
+    expect(loadSourceHistory().every((e) => e.config.kind === 'url')).toBe(true);
+  });
+});
 
 describe('shareableSource', () => {
   it.each(['demo', 'url'] as const)('preserves explicit time filtering disablement for %s links', (kind) => {

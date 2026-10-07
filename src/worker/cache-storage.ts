@@ -33,11 +33,67 @@ export interface CacheEntry extends FileMeta {
 
 interface Index {
   version: number;
-  slabSize: number;
-  wasted: number;
-  files: Record<string, FileMeta & { chunks: [number, number, number, number?][] }>;
-  ext: Record<string, { name: string; size: number }>;
-  config: { enabled: boolean; chunkSize: number; maxBytes?: number };
+  slabSize?: number;
+  wasted?: number;
+  files: Record<string, FileMeta & { chunks?: [number, number, number, number?][] }>;
+  ext?: Record<string, { name: string; size: number }>;
+  config?: { enabled?: boolean; chunkSize?: number; maxBytes?: number };
+}
+
+const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+const isSize = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
+
+/** Corrupt metadata must not reach synchronous slab reads; absent legacy fields keep their defaults. */
+function assertIndex(raw: unknown): asserts raw is Index {
+  if (!isRecord(raw) || typeof raw.version !== 'number' || !isRecord(raw.files)) throw new Error('Invalid cache index');
+  const config = raw.config;
+  if (
+    (raw.slabSize !== undefined && !isSize(raw.slabSize)) ||
+    (raw.wasted !== undefined && !isSize(raw.wasted)) ||
+    (config !== undefined &&
+      (!isRecord(config) ||
+        (config.enabled !== undefined && typeof config.enabled !== 'boolean') ||
+        (config.chunkSize !== undefined && (!isSize(config.chunkSize) || config.chunkSize === 0)) ||
+        (config.maxBytes !== undefined && !isSize(config.maxBytes))))
+  )
+    throw new Error('Invalid cache index settings');
+  for (const meta of Object.values(raw.files)) {
+    if (
+      !isRecord(meta) ||
+      typeof meta.key !== 'string' ||
+      !isSize(meta.size) ||
+      typeof meta.etag !== 'string' ||
+      !isSize(meta.chunkSize) ||
+      meta.chunkSize === 0 ||
+      !isSize(meta.seenAt) ||
+      (meta.usedAt !== undefined && !isSize(meta.usedAt)) ||
+      (meta.lastModified !== undefined && typeof meta.lastModified !== 'string') ||
+      (meta.chunks !== undefined &&
+        (!Array.isArray(meta.chunks) ||
+          !meta.chunks.every(
+            (chunk: unknown) =>
+              Array.isArray(chunk) &&
+              (chunk.length === 3 || chunk.length === 4) &&
+              isSize(chunk[0]) &&
+              isSize(chunk[1]) &&
+              isSize(chunk[2]) &&
+              (chunk[3] === undefined || isSize(chunk[3])),
+          )))
+    )
+      throw new Error('Invalid cache index file');
+  }
+  if (
+    raw.ext !== undefined &&
+    (!isRecord(raw.ext) ||
+      !Object.values(raw.ext).every((e) => isRecord(e) && typeof e.name === 'string' && isSize(e.size)))
+  )
+    throw new Error('Invalid cache index extensions');
+}
+
+function parseIndex(text: string): Index {
+  const raw: unknown = JSON.parse(text);
+  assertIndex(raw);
+  return raw;
 }
 
 export function createCacheStorage(
@@ -111,7 +167,7 @@ export function createCacheStorage(
       let index: Index | null = null;
       try {
         const fh = await dir.getFileHandle('index.json');
-        index = JSON.parse(await (await fh.getFile()).text());
+        index = parseIndex(await (await fh.getFile()).text());
       } catch {
         index = null;
       }
@@ -211,7 +267,7 @@ export function createCacheStorage(
       const file = await (await dir.getFileHandle('index.json')).getFile();
       const stamp = `${file.lastModified}:${file.size}`;
       if (stamp === indexSeen) return;
-      index = JSON.parse(await file.text());
+      index = parseIndex(await file.text());
       indexSeen = stamp;
     } catch {
       return;
@@ -282,7 +338,8 @@ export function createCacheStorage(
     if (indexSaveTimer) clearTimeout(indexSaveTimer);
     indexSaveTimer = null;
     indexDirtySince = 0;
-    const index: Index = { version: INDEX_VERSION, slabSize, wasted, files: {}, ext: {}, config: { ...config } };
+    const ext: NonNullable<Index['ext']> = {};
+    const index: Index = { version: INDEX_VERSION, slabSize, wasted, files: {}, ext, config: { ...config } };
     for (const [k, e] of files) {
       if (!e.chunks.size) continue;
       const chunks: [number, number, number, number?][] = [];
@@ -298,7 +355,7 @@ export function createCacheStorage(
         chunks,
       };
     }
-    for (const [url, e] of extFiles) index.ext[url] = { name: e.name, size: e.size };
+    for (const [url, e] of extFiles) ext[url] = { name: e.name, size: e.size };
     try {
       const fh = await dir.getFileHandle('index.json', { create: true });
       const w = await fh.createWritable();

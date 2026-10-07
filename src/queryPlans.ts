@@ -72,7 +72,11 @@ export function buildDocsQuery(
       const docs = rows.map((row) => {
         let source: Record<string, unknown>;
         try {
-          source = JSON.parse(String(row.__src));
+          const parsed: unknown = JSON.parse(String(row.__src));
+          source =
+            parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+              ? (parsed as Record<string, unknown>)
+              : { _raw: row.__src };
         } catch {
           source = { _raw: row.__src };
         }

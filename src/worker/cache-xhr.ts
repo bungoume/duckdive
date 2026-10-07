@@ -62,7 +62,7 @@ export function createCachingXHR(NativeXHR: typeof XMLHttpRequest, origin: strin
     /** Fill in what the caller ends up seeing (status / size / first bytes) once an answer is known. */
     private describe(entry: LogEntry) {
       entry.status = this.status;
-      const r = this.native ? this.native.response : this.result?.body;
+      const r: unknown = this.native ? this.native.response : this.result?.body;
       if (r instanceof ArrayBuffer) {
         entry.bytes = r.byteLength;
         const range = this.reqHeaders['range'];
@@ -160,14 +160,18 @@ export function createCachingXHR(NativeXHR: typeof XMLHttpRequest, origin: strin
       return this.native ? this.native.statusText : (this.result?.statusText ?? '');
     }
     get response(): unknown {
-      if (this.native) return this.native.response;
+      if (this.native) {
+        const response: unknown = this.native.response;
+        return response;
+      }
       if (!this.result) return null;
       if (this.responseType === 'arraybuffer') return this.result.body;
       if (this.responseType === '' || this.responseType === 'text')
         return this.result.body ? new TextDecoder().decode(this.result.body) : '';
       if (this.responseType === 'json') {
         try {
-          return this.result.body ? JSON.parse(new TextDecoder().decode(this.result.body)) : null;
+          const response: unknown = this.result.body ? JSON.parse(new TextDecoder().decode(this.result.body)) : null;
+          return response;
         } catch {
           return null;
         }

@@ -10,7 +10,7 @@ const MAX = 200;
 
 function load(): string[] {
   try {
-    const list = JSON.parse(localStorage.getItem(LS_TRUSTED) ?? '[]');
+    const list: unknown = JSON.parse(localStorage.getItem(LS_TRUSTED) ?? '[]');
     return Array.isArray(list) ? list.filter((s): s is string => typeof s === 'string') : [];
   } catch {
     return [];

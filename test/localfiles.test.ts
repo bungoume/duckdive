@@ -1,8 +1,57 @@
-import { describe, expect, it } from 'vitest';
-import { isLogFile, selectionNames, selectionTitle, uniqueLocalNames, type LocalSelection } from '../src/localfiles';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  isLogFile,
+  loadHandles,
+  selectionNames,
+  selectionTitle,
+  uniqueLocalNames,
+  type LocalSelection,
+} from '../src/localfiles';
 import { DEFAULT_SOURCE, sourceKey } from '../src/sources';
 
 const handle = (kind: 'file' | 'directory', name: string) => ({ kind, name }) as FileSystemHandle;
+
+describe('persisted file handles', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function storedHandles(value: unknown) {
+    const request = (result: unknown) => {
+      const r = { result, onsuccess: null as (() => void) | null };
+      queueMicrotask(() => r.onsuccess?.());
+      return r;
+    };
+    const close = vi.fn();
+    vi.stubGlobal('indexedDB', {
+      open: () =>
+        request({
+          transaction: () => ({ objectStore: () => ({ get: () => request(value) }) }),
+          close,
+        }),
+    });
+    return close;
+  }
+
+  it('returns file and directory handles restored by the browser', async () => {
+    class Handle {
+      constructor(readonly kind: string) {}
+    }
+    vi.stubGlobal('FileSystemHandle', Handle);
+    const handles = [new Handle('file'), new Handle('directory')];
+    const close = storedHandles(handles);
+    expect(await loadHandles('picked-files')).toEqual(handles);
+    expect(close).toHaveBeenCalledOnce();
+  });
+
+  it.each([undefined, null, {}, [{ kind: 'file', name: 'forged' }]].map((raw) => ({ raw })))(
+    'ignores missing or invalid handles (case %#)',
+    async ({ raw }) => {
+      vi.stubGlobal('FileSystemHandle', class {});
+      const close = storedHandles(raw);
+      expect(await loadHandles('picked-files')).toBeUndefined();
+      expect(close).toHaveBeenCalledOnce();
+    },
+  );
+});
 
 describe('local registration names', () => {
   it('preserves unique paths and avoids collisions with names already in the selection', () => {

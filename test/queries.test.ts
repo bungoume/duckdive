@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Field } from '../src/fields';
-import { metricLabel, metricPlan } from '../src/queryPlans';
+import { buildDocsQuery, metricLabel, metricPlan } from '../src/queryPlans';
 import type { MetricDef } from '../src/state';
 
 const f = (name: string, kind: Field['kind']): Field => ({
@@ -13,6 +13,21 @@ const f = (name: string, kind: Field['kind']): Field => ({
 });
 const fields = [f('ms', 'number'), f('host', 'string')];
 const m = (patch: Partial<MetricDef>): MetricDef => ({ id: 'm0', agg: 'count', field: null, ...patch });
+
+describe('document source decoding', () => {
+  it.each(['null', '[]', '42', '"text"', '{broken'])('keeps unexpected JSON as raw text: %s', (raw) => {
+    const plan = buildDocsQuery('TRUE', null, [], [], [], 10, 0);
+    expect(plan.read([{ __ts: null, __src: raw }]).docs[0].source).toEqual({ _raw: raw });
+  });
+
+  it('keeps object fields intact', () => {
+    const plan = buildDocsQuery('TRUE', null, [], [], [], 10, 0);
+    expect(plan.read([{ __ts: null, __src: '{"message":"ログ","nested":{"a":1}}' }]).docs[0].source).toEqual({
+      message: 'ログ',
+      nested: { a: 1 },
+    });
+  });
+});
 
 describe('metricPlan', () => {
   it('counts without reading a column', () => {

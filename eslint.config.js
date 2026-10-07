@@ -31,6 +31,17 @@ export default defineConfig(
     },
   },
   {
+    // Validate application data boundaries without imposing these rules on test doubles.
+    files: ['src/**/*.{ts,tsx}', 'build/**/*.ts', 'vitest.config.ts', 'vite.config.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'error',
+      '@typescript-eslint/no-unsafe-argument': 'error',
+      '@typescript-eslint/no-unsafe-call': 'error',
+      '@typescript-eslint/no-unsafe-member-access': 'error',
+      '@typescript-eslint/no-unsafe-return': 'error',
+    },
+  },
+  {
     files: ['e2e/**/*.mjs', 'scripts/**/*.mjs'],
     languageOptions: { globals: { ...globals.node, ...globals.browser } },
   },

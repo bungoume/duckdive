@@ -164,7 +164,18 @@ async function withStore<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) =>
 
 export const storeHandles = (id: string, handles: FileSystemHandle[]) =>
   withStore('readwrite', (s) => s.put(handles, id));
-export const loadHandles = (id: string) => withStore<FileSystemHandle[] | undefined>('readonly', (s) => s.get(id));
+export async function loadHandles(id: string): Promise<FileSystemHandle[] | undefined> {
+  const stored = await withStore<unknown>('readonly', (s) => s.get(id));
+  if (
+    !Array.isArray(stored) ||
+    !stored.every(
+      (handle: unknown): handle is FileSystemHandle =>
+        typeof FileSystemHandle !== 'undefined' && handle instanceof FileSystemHandle,
+    )
+  )
+    return undefined;
+  return stored;
+}
 export const forgetHandles = (id: string) => withStore('readwrite', (s) => s.delete(id));
 
 /**
