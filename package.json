@@ -29,7 +29,7 @@
     "dev:edge": "pnpm run prepare:assets && VITE_DDV_DEBUG=1 DDV_BROWSER=edge vite build --watch",
     "build:e2e": "VITE_DDV_DEBUG=1 DDV_EXTRA_HOSTS=\"http://localhost/*\" pnpm run build:chrome",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . && prettier --check .",
+    "lint": "eslint . --max-warnings 0 && prettier --check .",
     "format": "prettier --write .",
     "pack": "pnpm run build && node scripts/pack.mjs",
     "test:unit": "vitest run",

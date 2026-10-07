@@ -3,4 +3,4 @@
 type WebExtensionGlobals = typeof globalThis & { browser?: typeof chrome; chrome?: typeof chrome };
 
 const globals = globalThis as WebExtensionGlobals;
-export const webext = (globals.browser ?? globals.chrome) as typeof chrome;
+export const webext = globals.browser ?? globals.chrome;

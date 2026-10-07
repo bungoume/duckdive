@@ -55,7 +55,7 @@ export function CachePanel() {
 
   useEffect(() => {
     void refresh();
-    const t = setInterval(refresh, 3000);
+    const t = setInterval(() => void refresh(), 3000);
     return () => clearInterval(t);
   }, [refresh]);
 

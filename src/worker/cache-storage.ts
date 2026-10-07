@@ -250,7 +250,7 @@ export function createCacheStorage(
     if (rec.opening) return rec.opening;
     rec.opening = (async () => {
       try {
-        const extDir = await dir!.getDirectoryHandle('ext', { create: true });
+        const extDir = await dir.getDirectoryHandle('ext', { create: true });
         const fh = await extDir.getFileHandle(rec.name, { create: true });
         rec.handle = await openShared(fh);
       } catch (e) {
@@ -273,7 +273,7 @@ export function createCacheStorage(
     if (!indexDirtySince) indexDirtySince = now;
     if (indexSaveTimer) clearTimeout(indexSaveTimer);
     const delay = Math.max(0, Math.min(INDEX_SAVE_DEBOUNCE_MS, indexDirtySince + INDEX_SAVE_MAX_DELAY_MS - now));
-    indexSaveTimer = setTimeout(saveIndex, delay);
+    indexSaveTimer = setTimeout(() => void saveIndex(), delay);
   }
 
   /** Persist the chunk map (only files that actually hold data; seeded metadata is transient). */

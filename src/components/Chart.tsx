@@ -55,7 +55,7 @@ export function toSeries(
     for (const mi of metricIdx) map.set(key(row.x, seriesName(row.g, mi)), row.m[mi]);
   }
   const data: Series[] = [];
-  const conv = (x: number | string) => (r.xKind === 'date_histogram' ? new Date(x as number) : x);
+  const conv = (x: number | string) => (r.xKind === 'date_histogram' ? new Date(x) : x);
   for (const x of xs) {
     const at: Series[] = [];
     for (const s of series) {

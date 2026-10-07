@@ -21,7 +21,7 @@ export function DataTable(props: { result: VisResult; metrics: MetricDef[]; xLab
   headers.push(...props.metrics.map(metricLabel));
   let rows = r.rows.map((row) => {
     const cells: (string | number)[] = [];
-    if (hasX) cells.push(row.x === null ? t('common.null') : isDate ? (row.x as number) : groupLabel(String(row.x)));
+    if (hasX) cells.push(row.x === null ? t('common.null') : isDate ? row.x : groupLabel(String(row.x)));
     if (hasG) cells.push(groupLabel(row.g ?? NULL_GROUP));
     cells.push(...row.m);
     return cells;

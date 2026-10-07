@@ -33,7 +33,7 @@ export function useCredentialRefresh(
     let live = true;
     let pending = false;
     const connectionCurrent = () => live && generation === connectionGeneration.current;
-    const timer = setInterval(async () => {
+    const refresh = async () => {
       if (pending || !connectionCurrent()) return;
       const isCurrent = credentialSessionGuard(connectionCurrent);
       pending = true;
@@ -55,7 +55,8 @@ export function useCredentialRefresh(
       } finally {
         pending = false;
       }
-    }, CHECK_EVERY_MS);
+    };
+    const timer = setInterval(() => void refresh(), CHECK_EVERY_MS);
     return () => {
       live = false;
       clearInterval(timer);

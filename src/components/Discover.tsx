@@ -127,7 +127,7 @@ export function Discover(props: {
         const [n, b, v, d] = await Promise.all([
           withHistogram ? Promise.resolve(null) : fetchCount(compiled.where, run.signal),
           withHistogram && !withSplit
-            ? fetchHistogram(compiled.where, timeExpr!, interval!, tzOffset, run.signal, compiled.context)
+            ? fetchHistogram(compiled.where, timeExpr, interval, tzOffset, run.signal, compiled.context)
             : Promise.resolve([]),
           withSplit
             ? fetchVis(

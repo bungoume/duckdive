@@ -84,11 +84,11 @@ export function FieldSidebar(props: {
         aria-expanded={open === f.name}
         draggable={true}
         onDragStart={(e) => e.dataTransfer?.setData('text/field', f.name)}
-        onClick={(e) => toggleDetails(f, e.currentTarget as HTMLElement)}
+        onClick={(e) => toggleDetails(f, e.currentTarget)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            toggleDetails(f, e.currentTarget as HTMLElement);
+            toggleDetails(f, e.currentTarget);
           } else if (e.key === 'Escape' && open === f.name) setOpen(null);
         }}
       >

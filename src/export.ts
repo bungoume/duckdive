@@ -40,7 +40,7 @@ export async function exportToBlob(sql: string, format: ExportFormat): Promise<B
     await query(`COPY (\n${statement}\n) TO ${lit(name)} (${COPY_OPTIONS[format]})`);
     const bytes = await db.copyFileToBuffer(name);
     // a copy: the worker's buffer may be a view into shared memory, which Blob does not accept
-    return new Blob([new Uint8Array(bytes).buffer as ArrayBuffer], { type: MIME[format] });
+    return new Blob([new Uint8Array(bytes).buffer], { type: MIME[format] });
   } finally {
     await db.dropFile(name).catch(() => undefined);
   }
