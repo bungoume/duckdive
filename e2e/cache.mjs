@@ -483,7 +483,7 @@ const connectTemplate = async (label, urlsFix, marker) => {
   const filled = urlsFix(await page.inputValue('.source-page textarea'));
   await page.fill('.source-page textarea', filled);
   await pressConnect();
-  // CloudFront and ALB connections open Discover as soon as the schema is ready.
+  // Recognized analysis templates open Discover as soon as the schema is ready.
   await connectDone(marker);
   const err = await errorAlert();
   const tf = err ? null : await page.evaluate(() => window.__ddv.attached.timeField?.name ?? '');

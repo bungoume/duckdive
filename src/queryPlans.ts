@@ -1,3 +1,4 @@
+import { flowCounterExpr } from './vpcFlowAnalysis';
 import { timeContext, type TimeContext } from './datemath';
 import { analysisTemplateFor, responseTimeExpr } from './analysisTemplates';
 import type { Row } from './duck';
@@ -102,9 +103,16 @@ export function docsOrder(
   for (const s of sort) {
     const f = findField(fields, s.field);
     if (!f) continue;
-    // Converted logs can store response times as strings. Use the template's numeric measurement
-    // for both the visible rows and exports, keeping unavailable timings after real values.
-    const expr = template?.duration.name === f.name ? responseTimeExpr(template) : fieldCompareExpr(f);
+    // Converted logs can store response times or byte counts as strings. Use numeric measurements
+    // for both visible rows and exports, keeping unavailable measurements after real values.
+    const expr =
+      template?.id === 'vpcflow'
+        ? template.bytes.name === f.name
+          ? flowCounterExpr(template.bytes)
+          : fieldCompareExpr(f)
+        : template?.duration.name === f.name
+          ? responseTimeExpr(template)
+          : fieldCompareExpr(f);
     order.push(`${expr} ${s.dir === 'asc' ? 'ASC' : 'DESC'} NULLS LAST`);
   }
   if (!order.length && timeExpr) order.push(`${timeExpr} ${timeDir === 'asc' ? 'ASC' : 'DESC'} NULLS LAST`);

@@ -442,3 +442,11 @@ kbd { font-family: var(--k-mono); font-size: 11px; border: 1px solid var(--k-bor
 .analysis-metrics.cloudfront { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 1200px) { .analysis-metrics.cloudfront { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 800px) { .analysis-metrics, .analysis-metrics.cloudfront { grid-template-columns: 1fr; } }
+
+.flow-rankings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.flow-ranking { min-width: 0; }
+.flow-port { grid-column: 1 / -1; }
+.flow-table .num, .flow-table .btn { white-space: nowrap; }
+.flow-address { overflow-wrap: anywhere; max-width: 250px; }
+.flow-ranking .analysis-table-scroll { max-height: 210px; }
+@media (max-width: 1200px) { .flow-rankings { grid-template-columns: 1fr; } }

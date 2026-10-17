@@ -1,3 +1,4 @@
+import { vpcFlowTemplateFor, type VpcFlowTemplate } from './vpcFlowAnalysis';
 import { findField, type Field } from './fields';
 import { reqLine } from './formats/shared';
 import type { Compiled, QueryPlan } from './queryPlans';
@@ -119,8 +120,10 @@ function cloudfrontTemplate(fields: Field[]): AnalysisTemplate | null {
   return null;
 }
 
-const TEMPLATES = [albTemplate, cloudfrontTemplate];
-export function analysisTemplateFor(fields: Field[]): AnalysisTemplate | null {
+export type LogAnalysisTemplate = AnalysisTemplate | VpcFlowTemplate;
+
+const TEMPLATES = [albTemplate, cloudfrontTemplate, vpcFlowTemplateFor];
+export function analysisTemplateFor(fields: Field[]): LogAnalysisTemplate | null {
   for (const match of TEMPLATES) {
     const template = match(fields);
     if (template) return template;

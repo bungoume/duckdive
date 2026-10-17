@@ -31,10 +31,16 @@ const otel = [
 const search: SearchState = { query: 'elb_status_code:>=200', filters: [], range: { from: 'now-1h', to: 'now' } };
 const compiled = compileSearch(search, native, '"time"', timeContext(new Date('2026-09-22T12:00:00Z')));
 
+function httpTemplate(fields: Field[]) {
+  const template = analysisTemplateFor(fields);
+  if (!template || template.id === 'vpcflow') throw new Error('Expected an HTTP template');
+  return template;
+}
+
 describe('built-in ALB analysis templates', () => {
   it('recognizes native, OpenTelemetry and converted ALB schemas without treating generic HTTP logs as ALB', () => {
     expect(analysisTemplateFor(native)?.id).toBe('alb');
-    expect(analysisTemplateFor(otel)?.duration.name).toBe('aws.alb.target_processing_time');
+    expect(httpTemplate(otel).duration.name).toBe('aws.alb.target_processing_time');
     expect(analysisTemplateFor(native.map((f) => ({ ...f, kind: 'string' })))?.id).toBe('alb');
     expect(analysisTemplateFor([field('status'), field('latency_ms'), field('url')])).toBeNull();
     expect(analysisTemplateFor(otel.filter((f) => !f.name.startsWith('aws.alb.')))).toBeNull();
@@ -43,13 +49,13 @@ describe('built-in ALB analysis templates', () => {
   });
 
   it('keeps query and time constraints on the source scan for both metrics and ranking', () => {
-    const plan = buildAnalysisQuery(analysisTemplateFor(native)!, compiled);
+    const plan = buildAnalysisQuery(httpTemplate(native), compiled);
     expect(plan.sql).toContain(`FROM src WHERE ${compiled.where}`);
     expect(plan.sql.match(/FROM src/g)).toHaveLength(1);
   });
 
   it('uses all logged requests for 5xx rate and reports unknown statuses separately', () => {
-    const plan = buildAnalysisQuery(analysisTemplateFor(native)!, compiled);
+    const plan = buildAnalysisQuery(httpTemplate(native), compiled);
     expect(plan.read([{ requests: 10, errors: 2, unknown_status: 1, measured: 8, p95: 1500, url: null }])).toEqual({
       requests: 10,
       errors: 2,
@@ -65,7 +71,7 @@ describe('built-in ALB analysis templates', () => {
   });
 
   it('distinguishes absent observations from measured zero latency and zero errors', () => {
-    const plan = buildAnalysisQuery(analysisTemplateFor(native)!, compiled);
+    const plan = buildAnalysisQuery(httpTemplate(native), compiled);
     expect(plan.read([])).toMatchObject({ requests: 0, errorRate: null, measured: 0, p95Ms: null, slowUrls: [] });
     expect(plan.read([{ requests: 3, errors: 0, unknown_status: 3, measured: 0, p95: null, url: null }])).toMatchObject(
       { errorRate: null, p95Ms: null },
@@ -77,7 +83,7 @@ describe('built-in ALB analysis templates', () => {
   });
 
   it('drills into the exact method and URL, escaping values and preserving existing filters', () => {
-    const template = analysisTemplateFor(native)!;
+    const template = httpTemplate(native);
     const filter = slowUrlFilter(template, {
       method: 'GET',
       url: "https://api.example/o'hare",
@@ -99,7 +105,7 @@ describe('built-in ALB analysis templates', () => {
   });
 
   it('keeps null methods addressable in an OpenTelemetry source', () => {
-    const template = analysisTemplateFor(otel.filter((f) => f.name !== 'http.request.method'))!;
+    const template = httpTemplate(otel.filter((f) => f.name !== 'http.request.method'));
     const filter = slowUrlFilter(template, {
       method: null,
       url: '/x',
@@ -137,7 +143,7 @@ const cloudfrontOtel = [
 describe('CloudFront analysis templates', () => {
   it('recognizes native, OpenTelemetry and original AWS column names, including numeric strings', () => {
     expect(analysisTemplateFor(cloudfront)?.id).toBe('cloudfront');
-    expect(analysisTemplateFor(cloudfrontOtel)?.duration.name).toBe('aws.cloudfront.time_taken');
+    expect(httpTemplate(cloudfrontOtel).duration.name).toBe('aws.cloudfront.time_taken');
     expect(analysisTemplateFor(cloudfront.map((f) => ({ ...f, kind: 'string' })))?.id).toBe('cloudfront');
     const awsNames = ['sc-status', 'time-taken', 'cs-uri-stem', 'x-edge-result-type', 'cs-method'];
     expect(analysisTemplateFor(awsNames.map((n) => field(n)))?.id).toBe('cloudfront');
@@ -149,7 +155,7 @@ describe('CloudFront analysis templates', () => {
   });
 
   it('uses one filtered source scan and keeps cache eligibility identical in drill-down', () => {
-    const template = analysisTemplateFor(cloudfront)!;
+    const template = httpTemplate(cloudfront);
     const plan = buildAnalysisQuery(template, compiled);
     expect(plan.sql.match(/FROM src/g)).toHaveLength(1);
     expect(plan.sql).toContain(`WHERE ${compiled.where}`);
@@ -163,7 +169,7 @@ describe('CloudFront analysis templates', () => {
   });
 
   it('uses all requests for error rates and only classified eligible requests for cache-hit rate', () => {
-    const plan = buildAnalysisQuery(analysisTemplateFor(cloudfront)!, compiled);
+    const plan = buildAnalysisQuery(httpTemplate(cloudfront), compiled);
     expect(
       plan.read([
         {
@@ -202,7 +208,7 @@ describe('CloudFront analysis templates', () => {
   });
 
   it('keeps the exact viewer host, scheme, path and method when filtering a quoted URL', () => {
-    const template = analysisTemplateFor(cloudfrontOtel)!;
+    const template = httpTemplate(cloudfrontOtel);
     const filter = slowUrlFilter(template, {
       method: 'GET',
       url: "https://cdn.example/o'hare",
