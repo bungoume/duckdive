@@ -346,6 +346,7 @@ export function Discover(props: {
           )}
           {template && (
             <AnalysisTemplatePanel
+              key={template.id}
               template={template}
               compiled={compiled}
               search={search}

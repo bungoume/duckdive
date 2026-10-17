@@ -483,17 +483,10 @@ const connectTemplate = async (label, urlsFix, marker) => {
   const filled = urlsFix(await page.inputValue('.source-page textarea'));
   await page.fill('.source-page textarea', filled);
   await pressConnect();
-  // wait for THIS connection's result (the previous source's card stays visible meanwhile)
-  await page.waitForFunction(
-    (m) =>
-      (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect' &&
-      ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) ||
-        !!document.querySelector('.alert.error')),
-    marker,
-    { timeout: 60000 },
-  );
+  // CloudFront and ALB connections open Discover as soon as the schema is ready.
+  await connectDone(marker);
   const err = await errorAlert();
-  const tf = err ? null : await page.inputValue('.source-page .field-row:has-text("Time field") select');
+  const tf = err ? null : await page.evaluate(() => window.__ddv.attached.timeField?.name ?? '');
   return { err, tf };
 };
 const bucketize = (u) => u.replace('<bucket>', 'bucket');

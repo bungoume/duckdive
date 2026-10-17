@@ -102,7 +102,7 @@ export function docsOrder(
   for (const s of sort) {
     const f = findField(fields, s.field);
     if (!f) continue;
-    // Converted logs can store ALB timings as strings. Use the template's numeric measurement
+    // Converted logs can store response times as strings. Use the template's numeric measurement
     // for both the visible rows and exports, keeping unavailable timings after real values.
     const expr = template?.duration.name === f.name ? responseTimeExpr(template) : fieldCompareExpr(f);
     order.push(`${expr} ${s.dir === 'asc' ? 'ASC' : 'DESC'} NULLS LAST`);

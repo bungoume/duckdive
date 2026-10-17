@@ -204,13 +204,21 @@ Filters of the type "custom SQL" run verbatim inside DuckDB. Because the URL car
 
 ## Log analysis templates
 
-Discover automatically shows an **ALB analysis template** when the connected fields identify ALB access logs. It works with native ALB names, the OpenTelemetry projection, and converted Parquet/CSV/JSON files retaining those columns. Connecting an ALB source from the Data source page opens Discover immediately. Saved charts and dashboards are left as they are; the template is built in and follows the current query, filters, time range and refresh.
+Discover automatically shows a built-in analysis template when the connected fields identify **ALB or CloudFront** access logs. It works with native log names, the OpenTelemetry projection, and converted Parquet/CSV/JSON files retaining those columns. Connecting either source from the Data source page opens Discover immediately. Saved charts and dashboards are left as they are; the template is built in and follows the current query, filters, time range and refresh.
+
+**ALB**
 
 - **5xx rate** is the number of `elb_status_code` values from 500 through 599 divided by all matching logged requests. Under OpenTelemetry it uses `http.response.status_code`. Unknown statuses are reported separately and still count in the denominator; when every status is unknown (or there are no requests), the rate is shown as unavailable.
 - **Response time p95 (target)** uses `target_processing_time` / `aws.alb.target_processing_time`, converted from seconds to milliseconds for display. This is time until the target starts returning response headers, matching the [ALB TargetResponseTime definition](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html). Missing, negative (`-1`) and non-finite measurements are excluded, with the measured and unavailable counts shown.
 - **Slow URLs** ranks the top ten method/URL combinations by p95. Hosts and methods remain distinct, while query strings and fragments are removed. Request and 5xx counts include unmeasured requests; p95 uses only valid timings. **View logs** filters that endpoint and sorts its requests by target response time, slowest first. The metric cards also open 5xx logs or requests at or above the overall p95.
 
-The metrics and ranking share one source scan. Collapsing the template stops its queries until it is expanded. Drill-down fixes the analyzed time range and uses locally trusted filters; shared or restored SQL filters still require review. Without a time field the panel explicitly reports that it covers all matching records.
+**CloudFront**
+
+- **4xx / 5xx rates** use `sc_status` / `http.response.status_code`, divided by all matching logged requests, with the same unknown-status handling as ALB.
+- **Cache hit rate** is a log-derived `(Hit + RefreshHit) / (Hit + RefreshHit + Miss)` using final `x_edge_result_type` / `aws.cloudfront.result_type`. Only GET, HEAD and OPTIONS with a 2xx or 3xx status and one of those three outcomes qualify. Errors (including interrupted downloads), other methods/results and missing values are excluded. The card shows the denominator, excluded count and RefreshHit count; no eligible requests shows “—”. Both hits and misses open their exact contributing logs. This logged-request ratio is not a reproduction of CloudWatch's CacheHitRate.
+- **Slow URLs** ranks the top ten method/URL combinations by p95 of `time_taken` / `aws.cloudfront.time_taken`. The [CloudFront log reference](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/standard-logs-reference.html) defines this as time from receiving a request to queuing its last response byte. Timings are converted from seconds and invalid measurements are excluded. URLs preserve protocol and viewer host (falling back to the distribution domain), with query strings omitted. 4xx/5xx counts, measured counts and exact endpoint drill-down are included; logs sort by numeric response time even in converted files with string timings.
+
+CloudFront detection also accepts original AWS field names such as `sc-status`, `time-taken` and `x-edge-result-type` in converted files. In all templates, the metrics and ranking share one source scan. Collapsing the template stops its queries until it is expanded. Drill-down fixes the analyzed time range and uses locally trusted filters; shared or restored SQL filters still require review. Without a time field the panel explicitly reports that it covers all matching records.
 
 ## Difference analysis
 
