@@ -704,4 +704,28 @@ export const de: Messages = {
   'diff.logs': 'Logs anzeigen',
   'diff.new': 'Neu',
   'diff.increased': 'Gestiegen',
+  'analysis.alb.title': 'ALB-Analysevorlage',
+  'analysis.scope': 'Aktuelle Suche und Zeitraum',
+  'analysis.expand': 'Analyse anzeigen',
+  'analysis.collapse': 'Analyse ausblenden',
+  'analysis.allTime': 'Kein Zeitfeld ausgewählt: Alle passenden Datensätze werden analysiert.',
+  'analysis.alb.errorRate': '5xx-Rate',
+  'analysis.alb.errorCount': '{errors} 5xx-Antworten / {total} protokollierte Anfragen',
+  'analysis.alb.errors': '5xx-Logs anzeigen',
+  'analysis.alb.p95': 'Antwortzeit p95 (Ziel)',
+  'analysis.alb.samples': '{n} Messungen · {skipped} nicht verfügbar',
+  'analysis.alb.slowest': 'Logs ab p95 anzeigen',
+  'analysis.alb.latencyHint':
+    'Die Antwortzeit endet, wenn das Ziel beginnt, Antwortheader zurückzugeben. Fehlende, negative und nicht endliche Werte werden ausgeschlossen.',
+  'analysis.alb.unknownStatus':
+    '{n} Anfragen haben keinen gültigen HTTP-Status. Sie zählen zur Gesamtzahl; ohne bekannte Statuswerte wird keine Rate angezeigt.',
+  'analysis.alb.slowUrls': 'Langsame URLs · Top 10 nach p95',
+  'analysis.alb.urlHint':
+    'Gruppiert nach Methode und URL ohne Abfrageparameter und Fragmente. Anfragen ohne Zeitmessung werden mitgezählt.',
+  'analysis.noMeasurements': 'Keine URLs mit gültigen Antwortzeitmessungen für diese Suche.',
+  'analysis.empty': 'Keine Anfragen für diese Suche und diesen Zeitraum.',
+  'analysis.method': 'Methode',
+  'analysis.requests': 'Anfragen',
+  'analysis.samples': 'Gemessen',
+  'analysis.logs': 'Logs anzeigen',
 };

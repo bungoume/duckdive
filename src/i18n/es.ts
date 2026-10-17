@@ -706,4 +706,28 @@ export const es: Messages = {
   'diff.logs': 'Ver logs',
   'diff.new': 'Nuevo',
   'diff.increased': 'En aumento',
+  'analysis.alb.title': 'Plantilla de análisis ALB',
+  'analysis.scope': 'Búsqueda e intervalo actuales',
+  'analysis.expand': 'Mostrar análisis',
+  'analysis.collapse': 'Ocultar análisis',
+  'analysis.allTime': 'Sin campo de tiempo: se analizan todos los registros coincidentes.',
+  'analysis.alb.errorRate': 'Tasa de 5xx',
+  'analysis.alb.errorCount': '{errors} respuestas 5xx / {total} solicitudes registradas',
+  'analysis.alb.errors': 'Ver logs 5xx',
+  'analysis.alb.p95': 'Tiempo de respuesta p95 (destino)',
+  'analysis.alb.samples': '{n} mediciones · {skipped} no disponibles',
+  'analysis.alb.slowest': 'Ver logs desde p95',
+  'analysis.alb.latencyHint':
+    'El tiempo de respuesta termina cuando el destino comienza a enviar las cabeceras. Se excluyen valores ausentes, negativos o no finitos.',
+  'analysis.alb.unknownStatus':
+    '{n} solicitudes no tienen estado HTTP válido. Se incluyen en el total; no se muestra la tasa si todos los estados son desconocidos.',
+  'analysis.alb.slowUrls': 'URL lentas · 10 primeras por p95',
+  'analysis.alb.urlHint':
+    'Agrupadas por método y URL, sin parámetros ni fragmentos. El recuento incluye solicitudes sin medición de tiempo.',
+  'analysis.noMeasurements': 'No hay URL con tiempos de respuesta válidos para esta búsqueda.',
+  'analysis.empty': 'No hay solicitudes para esta búsqueda e intervalo.',
+  'analysis.method': 'Método',
+  'analysis.requests': 'Solicitudes',
+  'analysis.samples': 'Medidas',
+  'analysis.logs': 'Ver logs',
 };

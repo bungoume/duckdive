@@ -701,4 +701,28 @@ export const en = {
   'diff.logs': 'View logs',
   'diff.new': 'New',
   'diff.increased': 'Increased',
+  'analysis.alb.title': 'ALB analysis template',
+  'analysis.scope': 'Current search and time range',
+  'analysis.expand': 'Show analysis',
+  'analysis.collapse': 'Hide analysis',
+  'analysis.allTime': 'No time field selected: analyzing all matching records.',
+  'analysis.alb.errorRate': '5xx rate',
+  'analysis.alb.errorCount': '{errors} 5xx responses / {total} logged requests',
+  'analysis.alb.errors': 'View 5xx logs',
+  'analysis.alb.p95': 'Response time p95 (target)',
+  'analysis.alb.samples': '{n} measurements · {skipped} unavailable',
+  'analysis.alb.slowest': 'View logs at or above p95',
+  'analysis.alb.latencyHint':
+    'Response time is the time until the target starts returning response headers. Missing, negative and non-finite timings are excluded.',
+  'analysis.alb.unknownStatus':
+    '{n} requests have no valid HTTP status. They are included in the total; the rate is unavailable when all statuses are unknown.',
+  'analysis.alb.slowUrls': 'Slow URLs · top 10 by p95',
+  'analysis.alb.urlHint':
+    'Grouped by method and URL, without query strings or fragments. Counts include requests without a timing.',
+  'analysis.noMeasurements': 'No URLs with valid response-time measurements match this search.',
+  'analysis.empty': 'No requests match this search and time range.',
+  'analysis.method': 'Method',
+  'analysis.requests': 'Requests',
+  'analysis.samples': 'Measured',
+  'analysis.logs': 'View logs',
 } as const;

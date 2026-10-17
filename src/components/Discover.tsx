@@ -27,6 +27,8 @@ import { Histogram, fillBuckets } from './Histogram';
 import { DiagnosePanel } from './DiagnosePanel';
 import { ExportMenu } from './ExportMenu';
 import { QueryBar } from './QueryBar';
+import { analysisTemplateFor } from '../analysisTemplates';
+import { AnalysisTemplatePanel } from './AnalysisTemplatePanel';
 import { DiffPanel } from './DiffPanel';
 import { PatternsPanel, defaultPatternField } from './PatternsPanel';
 import { SavedSearches } from './SavedSearches';
@@ -99,7 +101,18 @@ export function Discover(props: {
   const [resultSeq, setResultSeq] = useState(0);
   const [busy, setBusy] = useState(false);
   const [diffBusy, setDiffBusy] = useState(false);
-  useEffect(() => onBusy(busy || diffBusy), [busy, diffBusy, onBusy]);
+  const [analysisBusy, setAnalysisBusy] = useState(false);
+  const template = useMemo(() => analysisTemplateFor(fields), [fields]);
+  const anyBusy = busy || diffBusy || analysisBusy;
+  useEffect(() => onBusy(anyBusy), [anyBusy, onBusy]);
+  const docsElement = useRef<HTMLDivElement>(null);
+  const jumpToLogs = useRef(false);
+  useEffect(() => {
+    if (jumpToLogs.current) {
+      jumpToLogs.current = false;
+      docsElement.current?.scrollIntoView({ block: 'start' });
+    }
+  }, [resultSeq]);
   useEffect(() => () => onBusy(false), [onBusy]);
   const [error, setError] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
@@ -259,14 +272,14 @@ export function Discover(props: {
           query={search.query}
           range={search.range}
           error={compiled.error ?? error}
-          busy={busy || diffBusy}
+          busy={anyBusy}
           fields={fields}
           onSubmit={submit}
         />
         <DiagnosePanel error={error} />
         <FilterBar filters={search.filters} fields={fields} onChange={setFilters} />
       </div>
-      {(busy || diffBusy) && <div class="loading-bar" />}
+      {anyBusy && <div class="loading-bar" />}
       <div class="discover">
         <FieldSidebar
           fields={fields}
@@ -330,6 +343,26 @@ export function Discover(props: {
             <div style="padding:0 16px">
               <div class="sql-box">{docsSql}</div>
             </div>
+          )}
+          {template && (
+            <AnalysisTemplatePanel
+              template={template}
+              compiled={compiled}
+              search={search}
+              paused={paused}
+              refreshTick={refreshTick}
+              onBusy={setAnalysisBusy}
+              onExplore={(next, sortField) => {
+                jumpToLogs.current = true;
+                props.onSearch(next);
+                props.onDiscover({
+                  ...discover,
+                  diff: undefined,
+                  sort: sortField ? [{ field: sortField, dir: 'desc' }] : discover.sort,
+                });
+                setShowPatterns(false);
+              }}
+            />
           )}
           {timeExpr && interval && compiled.from && compiled.to && (
             <div class="chart-panel">
@@ -425,7 +458,7 @@ export function Discover(props: {
               />
             </div>
           )}
-          <div class="doc-wrap">
+          <div class="doc-wrap" ref={docsElement}>
             {docs.length === 0 && !busy ? (
               <div class="empty">
                 <h3>{t('disc.empty.title')}</h3>

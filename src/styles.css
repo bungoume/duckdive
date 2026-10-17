@@ -424,3 +424,18 @@ kbd { font-family: var(--k-mono); font-size: 11px; border: 1px solid var(--k-bor
 .diff-badge.new { color: var(--k-primary); border-color: currentColor; }
 
 .diff-table .nowrap { white-space: nowrap; }
+
+/* Built-in log analysis templates, shown as soon as their source is connected. */
+.analysis-template { margin: 0 16px 12px; padding: 14px; background: var(--k-panel); border: 1px solid var(--k-border); border-radius: var(--k-radius); flex-shrink: 0; }
+.analysis-template h3 { margin: 0; font-size: 15px; }
+.analysis-template > .row { flex-wrap: wrap; }
+.analysis-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+.analysis-metric { padding: 12px 14px; border: 1px solid var(--k-border-light); border-radius: var(--k-radius); }
+.analysis-value { display: block; font-size: 30px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.analysis-metric .btn { margin-top: 8px; }
+.analysis-ranking-head { margin: 10px 0 6px; flex-wrap: wrap; }
+.analysis-table-scroll { max-height: 250px; overflow: auto; }
+.analysis-urls th { position: sticky; top: 0; background: var(--k-panel); }
+.analysis-url { min-width: 180px; max-width: 480px; overflow-wrap: anywhere; }
+.analysis-duration { white-space: nowrap; }
+@media (max-width: 800px) { .analysis-metrics { grid-template-columns: 1fr; } }

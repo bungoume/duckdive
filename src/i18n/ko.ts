@@ -697,4 +697,28 @@ export const ko: Messages = {
   'diff.logs': '로그 보기',
   'diff.new': '신규',
   'diff.increased': '증가',
+  'analysis.alb.title': 'ALB 분석 템플릿',
+  'analysis.scope': '현재 검색 및 시간 범위',
+  'analysis.expand': '분석 표시',
+  'analysis.collapse': '분석 닫기',
+  'analysis.allTime': '시간 필드가 선택되지 않아 일치하는 모든 기록을 분석합니다.',
+  'analysis.alb.errorRate': '5xx 비율',
+  'analysis.alb.errorCount': '5xx 응답 {errors}건 / 기록된 요청 {total}건',
+  'analysis.alb.errors': '5xx 로그 보기',
+  'analysis.alb.p95': '응답 시간 p95 (대상)',
+  'analysis.alb.samples': '측정 {n}건 · 측정 불가 {skipped}건',
+  'analysis.alb.slowest': 'p95 이상 로그 보기',
+  'analysis.alb.latencyHint':
+    '응답 시간은 대상이 응답 헤더를 보내기 시작할 때까지입니다. 누락, 음수, 유효하지 않은 수치는 제외합니다.',
+  'analysis.alb.unknownStatus':
+    '유효한 HTTP 상태가 없는 요청이 {n}건입니다. 전체 수에는 포함하며 모든 상태가 불명확하면 비율을 표시하지 않습니다.',
+  'analysis.alb.slowUrls': '느린 URL · p95 상위 10개',
+  'analysis.alb.urlHint':
+    '메서드와 URL로 묶고 쿼리 문자열과 프래그먼트를 제외합니다. 요청 수에는 미측정 요청도 포함합니다.',
+  'analysis.noMeasurements': '검색 조건에 맞는 유효한 응답 시간의 URL이 없습니다.',
+  'analysis.empty': '현재 검색과 시간 범위에 맞는 요청이 없습니다.',
+  'analysis.method': '메서드',
+  'analysis.requests': '요청 수',
+  'analysis.samples': '측정 수',
+  'analysis.logs': '로그 보기',
 };

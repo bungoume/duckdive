@@ -202,6 +202,16 @@ Filters of the type "custom SQL" run verbatim inside DuckDB. Because the URL car
 
 "Patterns" on the Discover page groups the values of a text field by their template: numbers, IP addresses, long hex ids and UUIDs are replaced by `<n>`, `<ip>`, `<hex>` and `<uuid>` inside DuckDB (`regexp_replace`), and the rows are counted per remaining text, most frequent first, with an example each. "+" adds a custom SQL filter (`regexp_matches` with the template turned back into an anchored expression) that keeps the lines of that pattern.
 
+## Log analysis templates
+
+Discover automatically shows an **ALB analysis template** when the connected fields identify ALB access logs. It works with native ALB names, the OpenTelemetry projection, and converted Parquet/CSV/JSON files retaining those columns. Connecting an ALB source from the Data source page opens Discover immediately. Saved charts and dashboards are left as they are; the template is built in and follows the current query, filters, time range and refresh.
+
+- **5xx rate** is the number of `elb_status_code` values from 500 through 599 divided by all matching logged requests. Under OpenTelemetry it uses `http.response.status_code`. Unknown statuses are reported separately and still count in the denominator; when every status is unknown (or there are no requests), the rate is shown as unavailable.
+- **Response time p95 (target)** uses `target_processing_time` / `aws.alb.target_processing_time`, converted from seconds to milliseconds for display. This is time until the target starts returning response headers, matching the [ALB TargetResponseTime definition](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html). Missing, negative (`-1`) and non-finite measurements are excluded, with the measured and unavailable counts shown.
+- **Slow URLs** ranks the top ten method/URL combinations by p95. Hosts and methods remain distinct, while query strings and fragments are removed. Request and 5xx counts include unmeasured requests; p95 uses only valid timings. **View logs** filters that endpoint and sorts its requests by target response time, slowest first. The metric cards also open 5xx logs or requests at or above the overall p95.
+
+The metrics and ranking share one source scan. Collapsing the template stops its queries until it is expanded. Drill-down fixes the analyzed time range and uses locally trusted filters; shared or restored SQL filters still require review. Without a time field the panel explicitly reports that it covers all matching records.
+
 ## Difference analysis
 
 On Discover, **Difference analysis** compares the selected time range with the immediately preceding period of the same length, keeping the current query and filters. Sources with date partitions include both periods while the panel is open. The boundary between periods belongs only to the current period; the selected end time is included, as in Discover.

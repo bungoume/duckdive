@@ -1,4 +1,5 @@
 import { timeContext, type TimeContext } from './datemath';
+import { analysisTemplateFor, responseTimeExpr } from './analysisTemplates';
 import type { Row } from './duck';
 import type { Field } from './fields';
 import { findField, quoteIdent } from './fields';
@@ -97,9 +98,14 @@ export function docsOrder(
   timeDir: SortDir = 'desc',
 ): string {
   const order: string[] = [];
+  const template = analysisTemplateFor(fields);
   for (const s of sort) {
     const f = findField(fields, s.field);
-    if (f) order.push(`${fieldCompareExpr(f)} ${s.dir === 'asc' ? 'ASC' : 'DESC'} NULLS LAST`);
+    if (!f) continue;
+    // Converted logs can store ALB timings as strings. Use the template's numeric measurement
+    // for both the visible rows and exports, keeping unavailable timings after real values.
+    const expr = template?.duration.name === f.name ? responseTimeExpr(template) : fieldCompareExpr(f);
+    order.push(`${expr} ${s.dir === 'asc' ? 'ASC' : 'DESC'} NULLS LAST`);
   }
   if (!order.length && timeExpr) order.push(`${timeExpr} ${timeDir === 'asc' ? 'ASC' : 'DESC'} NULLS LAST`);
   return order.length ? ' ORDER BY ' + order.join(', ') : '';

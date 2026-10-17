@@ -699,4 +699,28 @@ export const ja: Messages = {
   'diff.logs': 'ログを見る',
   'diff.new': '新規',
   'diff.increased': '増加',
+  'analysis.alb.title': 'ALB分析テンプレート',
+  'analysis.scope': '現在の検索・時間範囲で集計',
+  'analysis.expand': '分析を表示',
+  'analysis.collapse': '分析を閉じる',
+  'analysis.allTime': '時間フィールドが未設定のため、一致する全期間のログを集計しています。',
+  'analysis.alb.errorRate': '5xx率',
+  'analysis.alb.errorCount': '5xx応答 {errors}件 / 記録されたリクエスト {total}件',
+  'analysis.alb.errors': '5xxログを見る',
+  'analysis.alb.p95': '応答時間p95（ターゲット）',
+  'analysis.alb.samples': '計測済み {n}件 · 未計測 {skipped}件',
+  'analysis.alb.slowest': 'p95以上のログを見る',
+  'analysis.alb.latencyHint':
+    '応答時間はターゲットが応答ヘッダーを返し始めるまでの時間です。欠損・負値・無効な数値は除外します。',
+  'analysis.alb.unknownStatus':
+    '有効なHTTPステータスがないリクエストが{n}件あります。総件数には含め、すべて不明の場合は率を表示しません。',
+  'analysis.alb.slowUrls': '遅いURL · p95上位10件',
+  'analysis.alb.urlHint':
+    'メソッドとURLで集計し、クエリ文字列・フラグメントは除きます。リクエスト数には未計測のものも含みます。',
+  'analysis.noMeasurements': 'この検索に一致する、応答時間を計測できたURLはありません。',
+  'analysis.empty': 'この検索・時間範囲に一致するリクエストはありません。',
+  'analysis.method': 'メソッド',
+  'analysis.requests': 'リクエスト数',
+  'analysis.samples': '計測数',
+  'analysis.logs': 'ログを見る',
 };

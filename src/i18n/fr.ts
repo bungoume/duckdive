@@ -712,4 +712,28 @@ export const fr: Messages = {
   'diff.logs': 'Voir les logs',
   'diff.new': 'Nouveau',
   'diff.increased': 'En hausse',
+  'analysis.alb.title': 'Modèle d’analyse ALB',
+  'analysis.scope': 'Recherche et période actuelles',
+  'analysis.expand': 'Afficher l’analyse',
+  'analysis.collapse': 'Masquer l’analyse',
+  'analysis.allTime': 'Aucun champ temporel : analyse de tous les enregistrements correspondants.',
+  'analysis.alb.errorRate': 'Taux de 5xx',
+  'analysis.alb.errorCount': '{errors} réponses 5xx / {total} requêtes enregistrées',
+  'analysis.alb.errors': 'Voir les logs 5xx',
+  'analysis.alb.p95': 'Temps de réponse p95 (cible)',
+  'analysis.alb.samples': '{n} mesures · {skipped} indisponibles',
+  'analysis.alb.slowest': 'Voir les logs à partir de p95',
+  'analysis.alb.latencyHint':
+    'Le temps de réponse s’arrête quand la cible commence à renvoyer les en-têtes. Les valeurs absentes, négatives ou non finies sont exclues.',
+  'analysis.alb.unknownStatus':
+    '{n} requêtes sans statut HTTP valide sont incluses dans le total. Le taux est indisponible si tous les statuts sont inconnus.',
+  'analysis.alb.slowUrls': 'URL lentes · top 10 par p95',
+  'analysis.alb.urlHint':
+    'Regroupées par méthode et URL, sans paramètres ni fragments. Le nombre de requêtes inclut celles sans mesure de durée.',
+  'analysis.noMeasurements': 'Aucune URL avec une mesure de temps de réponse valide pour cette recherche.',
+  'analysis.empty': 'Aucune requête pour cette recherche et cette période.',
+  'analysis.method': 'Méthode',
+  'analysis.requests': 'Requêtes',
+  'analysis.samples': 'Mesurées',
+  'analysis.logs': 'Voir les logs',
 };

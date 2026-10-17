@@ -404,9 +404,11 @@ const srcRows = () =>
 const connectDone = (marker) =>
   page.waitForFunction(
     (m) =>
-      (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect' &&
-      ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) ||
-        !!document.querySelector('.alert.error')),
+      !window.__ddv?.attaching &&
+      ((document.querySelector('.analysis-template') && window.__ddv?.attached?.description.includes(m)) ||
+        ((document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect' &&
+          ([...document.querySelectorAll('.alert.ok')].some((e) => (e.textContent ?? '').includes(m)) ||
+            !!document.querySelector('.alert.error')))),
     marker,
     { timeout: 60000 },
   );
@@ -803,15 +805,10 @@ await section('named-wildcards', async () => {
   );
   await page.click('.variables-box button:has-text("Select all values")');
   await page.click('.source-page button:has-text("Connect")');
-  await page.waitForFunction(
-    () =>
-      [...document.querySelectorAll('.alert.ok')].some((e) => /matched/.test(e.textContent ?? '')) ||
-      document.querySelector('.alert.error'),
-    null,
-    { timeout: 60000 },
-  );
+  await connectDone('log.gz');
+  await runQuery(''); // the previous query may reference fields of another source
   const nErr = await errorAlert();
-  const nOk = nErr ? '' : await page.locator('.alert.ok', { hasText: 'matched' }).textContent();
+  const nOk = nErr ? '' : await page.evaluate(() => window.__ddv.attached.description);
   const albs = nErr
     ? []
     : await page.evaluate(() =>
@@ -915,19 +912,23 @@ await section('alb-logs', async () => {
     '.source-page textarea',
     's3://bucket/AWSLogs/123456789012/elasticloadbalancing/ap-northeast-1/{yyyy}/{MM}/{dd}/123456789012_elasticloadbalancing_ap-northeast-1_app.alb-app-dev.*.log.gz',
   );
-  const srvC0 = await serverStats();
   await page.click('.source-page button:has-text("Connect")');
-  await page.waitForFunction(
-    () =>
-      [...document.querySelectorAll('.alert.ok')].some((e) => /log\.gz/.test(e.textContent ?? '')) ||
-      document.querySelector('.alert.error'),
-    null,
-    { timeout: 60000 },
-  );
+  await connectDone('log.gz');
+  await settled(page);
+  check('ALB connection opens the analysis template', await page.locator('.analysis-template').isVisible());
+  // Interactive connects now query the analysis immediately. Reconnect non-interactively on
+  // the source page with a fresh worker and empty cache to isolate the listing-only contract.
+  await openSource();
+  await page.evaluate(() => window.__ddv.cacheClear());
+  await settled(page);
+  const srvC0 = await serverStats();
+  await page.reload();
+  await waitReady(page);
+  await connectDone('log.gz');
   const albErr = await errorAlert();
   const srvC1 = await serverStats();
   check(
-    'connect reads no log data (listing only)',
+    'source-page reconnect reads no log data (listing only)',
     srvC1.bytesSent === srvC0.bytesSent,
     `data bytes during connect: ${srvC1.bytesSent - srvC0.bytesSent}, requests: ${srvC1.requests - srvC0.requests}`,
   );
@@ -1037,13 +1038,7 @@ await section('large-source-confirmation', async () => {
   await banner.waitFor({ timeout: 60000 });
   // the banner unmounts as soon as the click is handled: do not wait for it afterwards
   await banner.locator('button', { hasText: 'Continue' }).click({ noWaitAfter: true });
-  await page.waitForFunction(
-    () =>
-      (document.querySelector('.source-page button.connect')?.textContent ?? '').trim() === 'Connect' &&
-      [...document.querySelectorAll('.alert.ok')].some((e) => /3 file\(s\)/.test(e.textContent ?? '')),
-    null,
-    { timeout: 60000 },
-  );
+  await connectDone('log.gz');
   await page.click('.header nav button:has-text("Discover")');
   await page.waitForFunction(() => !(document.querySelector('.hits .n')?.textContent ?? '…').includes('…'), null, {
     timeout: 60000,

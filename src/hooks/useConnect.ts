@@ -1,3 +1,4 @@
+import { analysisTemplateFor } from '../analysisTemplates';
 import { timeContext, type TimeContext } from '../datemath';
 import { useEffect, useRef, useState, type Dispatch, type StateUpdater } from 'preact/hooks';
 import { isUsable, loadCredentials } from '../auth';
@@ -65,14 +66,20 @@ export function useConnect(
     window,
     valueFilters: valueFiltersFor(cfg, url),
   });
-  const connect = (
+  const connect = async (
     cfg: SourceConfig,
     local: LocalSelection = NO_LOCAL,
     interactive = true,
     window: TimeWindow | null = currentWindow(),
   ) => {
     attemptedKey.current = rangeKeyFor(cfg, url, refreshTick, compare, evaluation);
-    return connection.connect(cfg, request(cfg, local, interactive, window));
+    const pending = connection.connect(cfg, request(cfg, local, interactive, window));
+    const attempt = connection.generation.current;
+    const result = await pending;
+    if (interactive && result && connection.generation.current === attempt && analysisTemplateFor(result.fields)) {
+      setUrl((u) => (u.page === 'source' ? { ...u, page: 'discover' } : u));
+    }
+    return result;
   };
   /**
    * Load a remembered source and connect to it. The time range and query are kept; filters,
@@ -91,6 +98,7 @@ export function useConnect(
     const has = (name: string | null | undefined) => !name || !!findField(a.fields, name);
     setUrl((u) => ({
       ...u,
+      page: u.page === 'source' && analysisTemplateFor(a.fields) ? 'discover' : u.page,
       search: { ...u.search, filters: u.search.filters.filter((f) => f.op === 'query' || has(f.field)) },
       discover: {
         ...u.discover,
