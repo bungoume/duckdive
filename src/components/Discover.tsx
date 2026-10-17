@@ -27,6 +27,7 @@ import { Histogram, fillBuckets } from './Histogram';
 import { DiagnosePanel } from './DiagnosePanel';
 import { ExportMenu } from './ExportMenu';
 import { QueryBar } from './QueryBar';
+import { DiffPanel } from './DiffPanel';
 import { PatternsPanel, defaultPatternField } from './PatternsPanel';
 import { SavedSearches } from './SavedSearches';
 import { withCacheHint } from '../diagnose';
@@ -97,6 +98,9 @@ export function Discover(props: {
   // bumped for every fresh result (not for "load more"): the table's expanded rows are reset with it
   const [resultSeq, setResultSeq] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [diffBusy, setDiffBusy] = useState(false);
+  useEffect(() => onBusy(busy || diffBusy), [busy, diffBusy, onBusy]);
+  useEffect(() => () => onBusy(false), [onBusy]);
   const [error, setError] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [showSql, setShowSql] = useState(false);
@@ -114,7 +118,7 @@ export function Discover(props: {
       setBusy(false);
       return;
     }
-    const run = scope.start(onBusy);
+    const run = scope.start(setBusy);
     setBusy(true);
     setError(null);
     const t0 = performance.now();
@@ -178,7 +182,6 @@ export function Discover(props: {
     breakdownField?.name,
     timeExpr,
     paused,
-    onBusy,
     refreshTick,
   ]);
 
@@ -186,7 +189,7 @@ export function Discover(props: {
     // The next page belongs to the search that is on screen. Changing the sort while it is being
     // fetched starts a new search, and appending this page to it afterwards would mix two orders
     // and report the new search as finished.
-    const run = scope.start(onBusy);
+    const run = scope.start(setBusy);
     setBusy(true);
     try {
       const more = await fetchDocs(
@@ -256,14 +259,14 @@ export function Discover(props: {
           query={search.query}
           range={search.range}
           error={compiled.error ?? error}
-          busy={busy}
+          busy={busy || diffBusy}
           fields={fields}
           onSubmit={submit}
         />
         <DiagnosePanel error={error} />
         <FilterBar filters={search.filters} fields={fields} onChange={setFilters} />
       </div>
-      {busy && <div class="loading-bar" />}
+      {(busy || diffBusy) && <div class="loading-bar" />}
       <div class="discover">
         <FieldSidebar
           fields={fields}
@@ -289,6 +292,25 @@ export function Discover(props: {
               aria-pressed={showPatterns}
             >
               {t('pat.button')}
+            </button>
+            <button
+              class={'sql-toggle' + (discover.diff ? ' on' : '')}
+              aria-pressed={!!discover.diff}
+              onClick={() =>
+                props.onDiscover({
+                  ...discover,
+                  diff: discover.diff
+                    ? undefined
+                    : {
+                        mode: 'patterns',
+                        field: null,
+                        errorsOnly: true,
+                        newOnly: false,
+                      },
+                })
+              }
+            >
+              {t('diff.title')}
             </button>
             <SavedSearches search={search} discover={discover} onLoad={loadSaved} />
             <ExportMenu
@@ -373,7 +395,25 @@ export function Discover(props: {
               )}
             </div>
           )}
-          {showPatterns && (
+          {discover.diff && (
+            <DiffPanel
+              settings={discover.diff}
+              fields={fields}
+              timeExpr={timeExpr}
+              search={search}
+              compiled={compiled}
+              paused={paused}
+              refreshTick={refreshTick}
+              onBusy={setDiffBusy}
+              onSettings={(diff) => props.onDiscover({ ...discover, diff })}
+              onDrillDown={(next) => {
+                props.onSearch(next);
+                props.onDiscover({ ...discover, diff: undefined });
+                setShowPatterns(false);
+              }}
+            />
+          )}
+          {showPatterns && !discover.diff && (
             <div class="doc-wrap">
               <PatternsPanel
                 fields={fields}

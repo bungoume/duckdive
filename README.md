@@ -202,6 +202,15 @@ Filters of the type "custom SQL" run verbatim inside DuckDB. Because the URL car
 
 "Patterns" on the Discover page groups the values of a text field by their template: numbers, IP addresses, long hex ids and UUIDs are replaced by `<n>`, `<ip>`, `<hex>` and `<uuid>` inside DuckDB (`regexp_replace`), and the rows are counted per remaining text, most frequent first, with an example each. "+" adds a custom SQL filter (`regexp_matches` with the template turned back into an anchored expression) that keeps the lines of that pattern.
 
+## Difference analysis
+
+On Discover, **Difference analysis** compares the selected time range with the immediately preceding period of the same length, keeping the current query and filters. Sources with date partitions include both periods while the panel is open. The boundary between periods belongs only to the current period; the selected end time is included, as in Discover.
+
+- **Log patterns** groups messages with numbers, addresses and IDs replaced by placeholders. **Errors only**, enabled initially, selects error/fatal severity or HTTP 5xx. If the source has neither severity nor status fields, it looks for `error`, `exception`, `fatal`, `panic`, `failed`, `failure` or `timeout` in the message. Clear it to compare all logs.
+- **URL paths** groups paths after removing hosts, query strings and fragments; it also reads ALB-style request lines. The field can be changed, and **Errors only** can also be applied here.
+- Results show new and increasing groups, ordered by added log count, with previous/current counts, percentage increase and each group's share of the matching, non-empty values in that period. **New only** filters before selecting the top 50. Counts are aggregated across both periods before ranking, so a previously rare group is not mislabeled as new. A missing baseline is called out: “new” only means absent from the loaded comparison data.
+- **View logs** closes the panel, fixes the current period to its analyzed timestamps and adds the exact grouping and error conditions to Discover. The generated filter is trusted locally; shared or restored filters still require review. Panel settings travel with saved searches and shared views.
+
 ## Saved searches, visualizations and the dashboard
 
 "Saved searches" on the Discover page keeps the query, filters, columns, sort and histogram interval under a name (`localStorage`, key `ddv.savedSearches`); loading one restores them and keeps the current time range. Custom SQL filters are checked against the trusted-SQL list when a saved search or visualization is read back, just as they are for a link, because `localStorage` can be restored from a backup file. "Save" on the Visualize page keeps the chart definition together with the query and filters (`ddv.savedVis`). The Dashboard page shows the saved visualizations that were added to it, each running its own query and filters on top of the page's search and time range; a click on a chart filters or zooms every tile, "Open" takes the tile to the Visualize page. Everything saved is in this browser only; see Settings for the backup file.

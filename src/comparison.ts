@@ -7,6 +7,7 @@ export function supportsComparison(vis: VisState): boolean {
 }
 
 export function needsComparison(url: UrlState, saved: SavedVis[]): boolean {
+  if (url.page === 'discover') return !!url.discover.diff;
   return url.page === 'visualize'
     ? supportsComparison(url.vis)
     : url.page === 'dashboard' && saved.some((s) => s.pinned && supportsComparison(s.vis));

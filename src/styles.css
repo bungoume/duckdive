@@ -407,3 +407,20 @@ kbd { font-family: var(--k-mono); font-size: 11px; border: 1px solid var(--k-bor
 .cache-log { max-height: 320px; overflow: auto; }
 .cache-log td { font-size: 11px; padding: 2px 6px; white-space: nowrap; }
 .cache-log td.url { max-width: 420px; overflow: hidden; text-overflow: ellipsis; }
+
+/* Difference analysis shares Discover's filters and document table. */
+.diff-panel {
+  padding: 16px;
+  border-bottom: 1px solid var(--k-border);
+}
+.diff-controls { flex-wrap: wrap; gap: 12px; }
+.diff-controls select { max-width: 240px; }
+.diff-periods { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.diff-table-scroll { overflow-x: auto; }
+.diff-table { width: 100%; }
+.diff-value { min-width: 220px; max-width: 480px; overflow-wrap: anywhere; }
+.diff-example { margin-top: 4px; max-height: 3em; overflow: hidden; }
+.diff-badge { display: inline-block; padding: 2px 7px; border: 1px solid var(--k-border); border-radius: 4px; white-space: nowrap; }
+.diff-badge.new { color: var(--k-primary); border-color: currentColor; }
+
+.diff-table .nowrap { white-space: nowrap; }

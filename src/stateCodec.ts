@@ -105,6 +105,16 @@ export function sanitizeDiscover(raw: unknown): DiscoverState {
     sort,
     interval: isStr(r.interval) ? r.interval : DEFAULT_DISCOVER.interval,
     breakdown: strOrNull(r.breakdown),
+    ...(isObj(r.diff)
+      ? {
+          diff: {
+            mode: oneOf(r.diff.mode, ['patterns', 'urls'] as const, 'patterns'),
+            field: strOrNull(r.diff.field),
+            errorsOnly: r.diff.errorsOnly !== false,
+            newOnly: r.diff.newOnly === true,
+          },
+        }
+      : {}),
   };
 }
 

@@ -94,6 +94,14 @@ export function useConnect(
       search: { ...u.search, filters: u.search.filters.filter((f) => f.op === 'query' || has(f.field)) },
       discover: {
         ...u.discover,
+        ...(u.discover.diff
+          ? {
+              diff: {
+                ...u.discover.diff,
+                field: has(u.discover.diff.field) ? u.discover.diff.field : null,
+              },
+            }
+          : {}),
         columns: u.discover.columns.filter((c) => has(c)),
         sort: u.discover.sort.filter((s) => has(s.field)),
       },

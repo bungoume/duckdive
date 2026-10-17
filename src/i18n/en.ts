@@ -672,4 +672,33 @@ export const en = {
   'src.tooManyPrefixes': 'Time range expands to too many prefixes',
   'src.warning.many':
     '{files} files ({mb} MB) match this time range, above the warning threshold of {max}. Connecting reads nothing, but text / gzip files are fetched whole and one after another, so the first query over this range will be slow. Narrow the time range (hours rather than days), or convert wide ranges to hourly Parquet with scripts/alb-to-parquet.sh.',
+  'diff.title': 'Difference analysis',
+  'diff.mode': 'Compare by',
+  'diff.patterns': 'Log patterns',
+  'diff.urls': 'URL paths',
+  'diff.field': 'Comparison field',
+  'diff.noField': 'No text field',
+  'diff.errorsOnly': 'Errors only',
+  'diff.newOnly': 'New only',
+  'diff.patternHint':
+    'Compare with the immediately preceding period of the same length, using the current query and filters. Numbers and IDs in messages are grouped into patterns.',
+  'diff.urlHint':
+    'Compare URL paths with the preceding period. Hosts, query strings and fragments are removed; request lines are supported.',
+  'diff.errorHint':
+    'Errors: error/fatal severity or HTTP 5xx. Without these fields, match error, exception, fatal, panic, failed, failure or timeout in the message.',
+  'diff.previous': 'Previous',
+  'diff.current': 'Current',
+  'diff.unavailable': 'Choose a time field, a text field and a non-empty time range to compare.',
+  'diff.summary':
+    'Previous: {previous} logs · Current: {current} logs · Showing {shown} of {total} increases, ordered by added logs.',
+  'diff.noBaseline':
+    'No matching logs in the previous period. “New” means absent from the loaded comparison data; check that the source covers both periods.',
+  'diff.empty': 'No new or increasing values match these conditions.',
+  'diff.change': 'Change',
+  'diff.delta': 'Added',
+  'diff.growth': 'Increase',
+  'diff.share': 'Share: previous → current',
+  'diff.logs': 'View logs',
+  'diff.new': 'New',
+  'diff.increased': 'Increased',
 } as const;

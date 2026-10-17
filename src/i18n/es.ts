@@ -677,4 +677,33 @@ export const es: Messages = {
   'src.tooManyPrefixes': 'El rango de tiempo se expande a demasiados prefijos',
   'src.warning.many':
     '{files} archivos ({mb} MB) coinciden con este rango de tiempo, por encima del umbral de aviso de {max}. Conectar no lee nada, pero los archivos de texto / gzip se descargan completos y uno tras otro, así que la primera consulta sobre este rango será lenta. Reduzca el rango de tiempo (horas en lugar de días) o convierta los rangos amplios a Parquet por horas con scripts/alb-to-parquet.sh.',
+  'diff.title': 'Análisis de diferencias',
+  'diff.mode': 'Comparar por',
+  'diff.patterns': 'Patrones de logs',
+  'diff.urls': 'Rutas URL',
+  'diff.field': 'Campo de comparación',
+  'diff.noField': 'Sin campo de texto',
+  'diff.errorsOnly': 'Solo errores',
+  'diff.newOnly': 'Solo nuevos',
+  'diff.patternHint':
+    'Compara con el período inmediatamente anterior de igual duración, usando la búsqueda y los filtros actuales. Los números e identificadores se agrupan en patrones.',
+  'diff.urlHint':
+    'Compara rutas URL con el período anterior. Se eliminan hosts, parámetros y fragmentos; se admiten líneas de solicitud.',
+  'diff.errorHint':
+    'Errores: nivel error/fatal o HTTP 5xx. Sin esos campos, se buscan error, exception, fatal, panic, failed, failure o timeout en el mensaje.',
+  'diff.previous': 'Anterior',
+  'diff.current': 'Actual',
+  'diff.unavailable': 'Elige un campo de tiempo, un campo de texto y un intervalo de duración positiva.',
+  'diff.summary':
+    'Anterior: {previous} logs · Actual: {current} logs · {shown} de {total} aumentos, ordenados por logs añadidos.',
+  'diff.noBaseline':
+    'No hay logs coincidentes en el período anterior. «Nuevo» significa ausente de los datos comparados cargados; comprueba que la fuente cubre ambos períodos.',
+  'diff.empty': 'No hay valores nuevos ni en aumento con estas condiciones.',
+  'diff.change': 'Cambio',
+  'diff.delta': 'Añadidos',
+  'diff.growth': 'Aumento',
+  'diff.share': 'Proporción: anterior → actual',
+  'diff.logs': 'Ver logs',
+  'diff.new': 'Nuevo',
+  'diff.increased': 'En aumento',
 };

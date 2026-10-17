@@ -683,4 +683,33 @@ export const fr: Messages = {
   'src.tooManyPrefixes': 'La plage de temps produit trop de préfixes',
   'src.warning.many':
     "{files} fichiers ({mb} Mo) correspondent à cette plage de temps, au-delà du seuil d'avertissement de {max}. La connexion ne lit rien, mais les fichiers texte / gzip sont récupérés en entier et l'un après l'autre, donc la première requête sur cette plage sera lente. Réduisez la plage de temps (des heures plutôt que des jours), ou convertissez les plages larges en Parquet horaire avec scripts/alb-to-parquet.sh.",
+  'diff.title': 'Analyse des différences',
+  'diff.mode': 'Comparer par',
+  'diff.patterns': 'Modèles de logs',
+  'diff.urls': 'Chemins URL',
+  'diff.field': 'Champ de comparaison',
+  'diff.noField': 'Aucun champ texte',
+  'diff.errorsOnly': 'Erreurs uniquement',
+  'diff.newOnly': 'Nouveaux uniquement',
+  'diff.patternHint':
+    'Compare à la période précédente de même durée, avec la recherche et les filtres actuels. Les nombres et identifiants sont regroupés en modèles.',
+  'diff.urlHint':
+    'Compare les chemins URL à la période précédente. Hôtes, paramètres et fragments sont retirés ; les lignes de requête sont prises en charge.',
+  'diff.errorHint':
+    'Erreurs : niveau erreur/fatal ou HTTP 5xx. Sans ces champs, recherche error, exception, fatal, panic, failed, failure ou timeout dans le message.',
+  'diff.previous': 'Précédent',
+  'diff.current': 'Actuel',
+  'diff.unavailable': 'Choisissez un champ temporel, un champ texte et une période de durée positive.',
+  'diff.summary':
+    'Précédent : {previous} logs · Actuel : {current} logs · {shown} hausses sur {total}, triées par nombre de logs ajoutés.',
+  'diff.noBaseline':
+    'Aucun log correspondant dans la période précédente. « Nouveau » signifie absent des données comparées chargées ; vérifiez la couverture des deux périodes.',
+  'diff.empty': 'Aucune valeur nouvelle ou en hausse pour ces conditions.',
+  'diff.change': 'Évolution',
+  'diff.delta': 'Ajoutés',
+  'diff.growth': 'Hausse',
+  'diff.share': 'Part : précédent → actuel',
+  'diff.logs': 'Voir les logs',
+  'diff.new': 'Nouveau',
+  'diff.increased': 'En hausse',
 };

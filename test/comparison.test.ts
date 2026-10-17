@@ -34,6 +34,21 @@ describe('comparison file coverage', () => {
     expect(needsComparison(dashboard, [{ ...tile, vis: DEFAULT_VIS }])).toBe(false);
   });
 
+  it('loads the baseline only while Discover difference analysis is open', () => {
+    const discover = {
+      ...url,
+      page: 'discover' as const,
+      discover: {
+        ...DEFAULT_DISCOVER,
+        diff: { mode: 'patterns' as const, field: null, errorsOnly: true, newOnly: false },
+      },
+    };
+    expect(needsComparison(discover, [])).toBe(true);
+    expect(fileWindow(range, needsComparison(discover, []))?.from.toISOString()).toBe('2026-09-21T00:00:00.000Z');
+    expect(needsComparison({ ...discover, page: 'sql' }, [])).toBe(false);
+    expect(needsComparison({ ...discover, discover: DEFAULT_DISCOVER }, [])).toBe(false);
+  });
+
   it('notifies file selection when a saved tile is pinned or edited', () => {
     let notifications = 0;
     const unsubscribe = savedVisRevision.subscribe(() => notifications++);

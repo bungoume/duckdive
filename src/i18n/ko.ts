@@ -670,4 +670,31 @@ export const ko: Messages = {
   'src.tooManyPrefixes': '시간 범위가 너무 많은 접두사로 확장됩니다',
   'src.warning.many':
     '{files}개 파일({mb} MB)이 이 시간 범위에 일치하며, 경고 임계값 {max}를 초과합니다. 연결 자체는 아무것도 읽지 않지만 텍스트 / gzip 파일은 전체를 하나씩 순서대로 가져오므로 이 범위의 첫 쿼리는 느립니다. 시간 범위를 좁히거나(일 단위보다 시간 단위) 넓은 범위는 scripts/alb-to-parquet.sh로 시간별 Parquet으로 변환하세요.',
+  'diff.title': '차이 분석',
+  'diff.mode': '비교 기준',
+  'diff.patterns': '로그 패턴',
+  'diff.urls': 'URL 경로',
+  'diff.field': '비교 필드',
+  'diff.noField': '텍스트 필드 없음',
+  'diff.errorsOnly': '오류만',
+  'diff.newOnly': '신규만',
+  'diff.patternHint':
+    '현재 검색과 필터를 사용하여 같은 길이의 직전 기간과 비교합니다. 메시지의 숫자와 ID는 패턴으로 묶습니다.',
+  'diff.urlHint': '직전 기간과 URL 경로를 비교합니다. 호스트, 쿼리 문자열, 프래그먼트를 제외하며 요청 행을 지원합니다.',
+  'diff.errorHint':
+    '오류: 오류/치명적 수준 또는 HTTP 5xx. 해당 필드가 없으면 메시지의 error, exception, fatal, panic, failed, failure, timeout을 찾습니다.',
+  'diff.previous': '이전 기간',
+  'diff.current': '현재 기간',
+  'diff.unavailable': '시간 필드, 텍스트 필드와 길이가 있는 시간 범위를 선택하세요.',
+  'diff.summary': '이전: {previous}건 · 현재: {current}건 · 증가량순으로 {total}개 중 {shown}개 표시',
+  'diff.noBaseline':
+    '이전 기간에 일치하는 로그가 없습니다. “신규”는 불러온 비교 데이터에 없다는 뜻입니다. 두 기간의 데이터가 포함되는지 확인하세요.',
+  'diff.empty': '조건에 맞는 신규 또는 증가 항목이 없습니다.',
+  'diff.change': '변화',
+  'diff.delta': '증가 수',
+  'diff.growth': '증가율',
+  'diff.share': '비중: 이전 → 현재',
+  'diff.logs': '로그 보기',
+  'diff.new': '신규',
+  'diff.increased': '증가',
 };

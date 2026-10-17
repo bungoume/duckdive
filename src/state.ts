@@ -5,12 +5,21 @@ export type AppPage = 'discover' | 'visualize' | 'dashboard' | 'sql' | 'source' 
 
 export type SortDir = 'asc' | 'desc';
 
+export interface DiffState {
+  mode: 'patterns' | 'urls';
+  field: string | null;
+  errorsOnly: boolean;
+  newOnly: boolean;
+}
+
 export interface DiscoverState {
   columns: string[];
   sort: { field: string; dir: SortDir }[];
   interval: string; // 'auto' or Interval.key
   /** field whose top values split the histogram bars (null = plain count) */
   breakdown: string | null;
+  /** Present while the difference analysis panel is open. */
+  diff?: DiffState;
 }
 
 export type MetricAgg =

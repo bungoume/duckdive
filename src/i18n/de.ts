@@ -675,4 +675,33 @@ export const de: Messages = {
   'src.tooManyPrefixes': 'Der Zeitraum ergibt zu viele Präfixe',
   'src.warning.many':
     '{files} Dateien ({mb} MB) passen zu diesem Zeitraum, mehr als der Warnschwellenwert von {max}. Das Verbinden liest nichts, aber Text-/gzip-Dateien werden vollständig und nacheinander geladen, daher wird die erste Abfrage über diesen Zeitraum langsam sein. Grenzen Sie den Zeitraum ein (Stunden statt Tage) oder wandeln Sie große Zeiträume mit scripts/alb-to-parquet.sh in stündliches Parquet um.',
+  'diff.title': 'Differenzanalyse',
+  'diff.mode': 'Vergleichen nach',
+  'diff.patterns': 'Logmuster',
+  'diff.urls': 'URL-Pfade',
+  'diff.field': 'Vergleichsfeld',
+  'diff.noField': 'Kein Textfeld',
+  'diff.errorsOnly': 'Nur Fehler',
+  'diff.newOnly': 'Nur neue',
+  'diff.patternHint':
+    'Vergleicht mit dem unmittelbar vorherigen, gleich langen Zeitraum unter Verwendung der aktuellen Suche und Filter. Zahlen und IDs werden zu Mustern zusammengefasst.',
+  'diff.urlHint':
+    'Vergleicht URL-Pfade mit dem vorherigen Zeitraum. Hosts, Abfrageparameter und Fragmente werden entfernt; Anfragezeilen werden unterstützt.',
+  'diff.errorHint':
+    'Fehler: Fehler-/Fatal-Schweregrad oder HTTP 5xx. Ohne diese Felder werden error, exception, fatal, panic, failed, failure oder timeout in der Nachricht gesucht.',
+  'diff.previous': 'Vorher',
+  'diff.current': 'Aktuell',
+  'diff.unavailable': 'Wählen Sie ein Zeitfeld, ein Textfeld und einen Zeitraum mit positiver Dauer.',
+  'diff.summary':
+    'Vorher: {previous} Logs · Aktuell: {current} Logs · {shown} von {total} Anstiegen, nach zusätzlichen Logs sortiert.',
+  'diff.noBaseline':
+    'Keine passenden Logs im vorherigen Zeitraum. „Neu“ bedeutet, dass der Wert in den geladenen Vergleichsdaten fehlt. Prüfen Sie, ob beide Zeiträume abgedeckt sind.',
+  'diff.empty': 'Keine neuen oder steigenden Werte für diese Bedingungen.',
+  'diff.change': 'Änderung',
+  'diff.delta': 'Zusätzlich',
+  'diff.growth': 'Anstieg',
+  'diff.share': 'Anteil: vorher → aktuell',
+  'diff.logs': 'Logs anzeigen',
+  'diff.new': 'Neu',
+  'diff.increased': 'Gestiegen',
 };

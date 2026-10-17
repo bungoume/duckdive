@@ -671,4 +671,32 @@ export const ja: Messages = {
   'src.tooManyPrefixes': '時間範囲の展開結果のプレフィックスが多すぎます',
   'src.warning.many':
     '{files} ファイル({mb} MB)がこの時間範囲に一致し、警告しきい値 {max} を超えています。接続時には何も読みませんが、テキスト / gzip ファイルは全体を 1 つずつ取得するため、この範囲での最初のクエリは遅くなります。時間範囲を(日単位ではなく時間単位に)狭めるか、広い範囲は scripts/alb-to-parquet.sh で 1 時間ごとの Parquet に変換してください。',
+  'diff.title': '差分分析',
+  'diff.mode': '比較する対象',
+  'diff.patterns': 'ログパターン',
+  'diff.urls': 'URLパス',
+  'diff.field': '比較フィールド',
+  'diff.noField': 'テキストフィールドなし',
+  'diff.errorsOnly': 'エラーのみ',
+  'diff.newOnly': '新規のみ',
+  'diff.patternHint':
+    '現在の検索・フィルターを使い、直前の同じ長さの期間と比較します。メッセージ内の数値やIDはパターンにまとめます。',
+  'diff.urlHint':
+    '直前の期間とURLパスを比較します。ホスト・クエリ文字列・フラグメントを除き、リクエスト行にも対応します。',
+  'diff.errorHint':
+    'エラー判定：エラー・致命的エラーのレベル、またはHTTP 5xx。該当フィールドがない場合はメッセージ内のerror・exception・fatal・panic・failed・failure・timeoutを使います。',
+  'diff.previous': '比較期間',
+  'diff.current': '対象期間',
+  'diff.unavailable': '時間フィールド・テキストフィールド・長さのある時間範囲を選択してください。',
+  'diff.summary': '比較期間：{previous}件 · 対象期間：{current}件 · 増加した{total}件中{shown}件を増加数順に表示',
+  'diff.noBaseline':
+    '比較期間に一致するログがありません。「新規」は読み込んだ比較データに存在しないという意味です。両期間のログが含まれるか確認してください。',
+  'diff.empty': 'この条件では新規・増加した値はありません。',
+  'diff.change': '変化',
+  'diff.delta': '増加数',
+  'diff.growth': '増加率',
+  'diff.share': '構成比：比較 → 対象',
+  'diff.logs': 'ログを見る',
+  'diff.new': '新規',
+  'diff.increased': '増加',
 };
