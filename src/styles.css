@@ -450,3 +450,10 @@ kbd { font-family: var(--k-mono); font-size: 11px; border: 1px solid var(--k-bor
 .flow-address { overflow-wrap: anywhere; max-width: 250px; }
 .flow-ranking .analysis-table-scroll { max-height: 210px; }
 @media (max-width: 1200px) { .flow-rankings { grid-template-columns: 1fr; } }
+
+.trail-rankings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.trail-ranking { min-width: 0; }
+.trail-important { grid-column: 1 / -1; }
+.trail-ranking .analysis-table-scroll { max-height: 210px; }
+.trail-identity { max-width: 340px; overflow-wrap: anywhere; white-space: normal; }
+@media (max-width: 1200px) { .trail-rankings { grid-template-columns: minmax(0, 1fr); } }

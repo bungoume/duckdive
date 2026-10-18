@@ -1,3 +1,4 @@
+import { cloudTrailTemplateFor, type CloudTrailTemplate } from './cloudTrailAnalysis';
 import { vpcFlowTemplateFor, type VpcFlowTemplate } from './vpcFlowAnalysis';
 import { findField, type Field } from './fields';
 import { reqLine } from './formats/shared';
@@ -120,9 +121,9 @@ function cloudfrontTemplate(fields: Field[]): AnalysisTemplate | null {
   return null;
 }
 
-export type LogAnalysisTemplate = AnalysisTemplate | VpcFlowTemplate;
+export type LogAnalysisTemplate = AnalysisTemplate | VpcFlowTemplate | CloudTrailTemplate;
 
-const TEMPLATES = [albTemplate, cloudfrontTemplate, vpcFlowTemplateFor];
+const TEMPLATES = [albTemplate, cloudfrontTemplate, vpcFlowTemplateFor, cloudTrailTemplateFor];
 export function analysisTemplateFor(fields: Field[]): LogAnalysisTemplate | null {
   for (const match of TEMPLATES) {
     const template = match(fields);

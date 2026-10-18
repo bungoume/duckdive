@@ -204,7 +204,7 @@ Filters of the type "custom SQL" run verbatim inside DuckDB. Because the URL car
 
 ## Log analysis templates
 
-Discover automatically shows a built-in analysis template when the connected fields identify **ALB, CloudFront or VPC Flow Logs** access logs. It works with native log names, the OpenTelemetry projection, and converted Parquet/CSV/JSON files retaining those columns. Connecting a recognized source from the Data source page opens Discover immediately. Saved charts and dashboards are left as they are; the template is built in and follows the current query, filters, time range and refresh.
+Discover automatically shows a built-in analysis template when the connected fields identify **ALB, CloudFront, VPC Flow Logs or CloudTrail** logs. It works with native log names, the OpenTelemetry projection, and converted Parquet/CSV/JSON files retaining those columns. Connecting a recognized source from the Data source page opens Discover immediately. Saved charts and dashboards are left as they are; the template is built in and follows the current query, filters, time range and refresh.
 
 **ALB**
 
@@ -226,6 +226,14 @@ Discover automatically shows a built-in analysis template when the connected fie
 - **Ports** groups by destination port **and IANA protocol number**, keeping TCP and UDP separate. It shows bytes, packets, ACCEPT/REJECT counts and REJECT rate. Unknown/invalid ports and protocols remain addressable as “—”; zero is a valid recorded port value. Each group has a log button and clickable REJECT count for its rejected subset.
 
 VPC templates recognize standard text/gzip, Parquet field names and the OTel projection, including converted files with numeric strings. Detection needs action, bytes, source/destination, destination port and protocol, plus a VPC marker (log status, interface ID or the OTel namespace). All three rankings and their summary share one filtered source scan.
+
+**CloudTrail**
+
+- **API error rate** is the proportion of matching `AwsApiCall` records with a nonempty top-level `errorCode` or `errorMessage` (OTel `error.type` / `aws.cloudtrail.error_message`). Console sign-ins, service events, network activity events and missing/unknown event types are excluded and counted separately. No API calls shows “—”; absent error fields mean no recorded errors. As the [AWS event reference](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html) explains, some services put errors inside `responseElements`; those service-specific errors are not inferred by this template. Counts are log records and do not deduplicate calls across accounts or duplicate files.
+- **Top users / APIs** shows the ten largest call counts with error counts. Users prefer the caller ARN (keeping role sessions separate), then account plus principal ID or user name; missing identities remain an addressable group. APIs are grouped by service **and** operation name. Every row opens all its logs or just its errors.
+- **Important operations** includes successful and failed attempts for explicit service/API pairs: IAM policy attachment, inline policies, policy versions, trust policies, group membership and permission boundaries; KMS policies/grants; IAM credentials, password policies and MFA; CloudTrail trail/event-store settings; EC2 security-group rules and network ACL entries. Other root API calls have their own category. Each record contributes once, with a named category taking precedence over root. The count and its log button cover every matching important operation; the table shows the top ten service/API/category groups. The built-in list is a review aid, not an exhaustive detector of security changes.
+
+CloudTrail detection requires event source, event name and event type in native or OTel naming, including converted files. Optional identity and error fields may be absent. It does not require a timestamp column.
 
 CloudFront detection also accepts original AWS field names such as `sc-status`, `time-taken` and `x-edge-result-type` in converted files. In all templates, the metrics and ranking share one source scan. Collapsing the template stops its queries until it is expanded. Drill-down fixes the analyzed time range and uses locally trusted filters; shared or restored SQL filters still require review. Without a time field the panel explicitly reports that it covers all matching records.
 

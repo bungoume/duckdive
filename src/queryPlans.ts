@@ -110,7 +110,7 @@ export function docsOrder(
         ? template.bytes.name === f.name
           ? flowCounterExpr(template.bytes)
           : fieldCompareExpr(f)
-        : template?.duration.name === f.name
+        : (template?.id === 'alb' || template?.id === 'cloudfront') && template.duration.name === f.name
           ? responseTimeExpr(template)
           : fieldCompareExpr(f);
     order.push(`${expr} ${s.dir === 'asc' ? 'ASC' : 'DESC'} NULLS LAST`);

@@ -33,7 +33,8 @@ const compiled = compileSearch(search, native, '"time"', timeContext(new Date('2
 
 function httpTemplate(fields: Field[]) {
   const template = analysisTemplateFor(fields);
-  if (!template || template.id === 'vpcflow') throw new Error('Expected an HTTP template');
+  if (!template || (template.id !== 'alb' && template.id !== 'cloudfront'))
+    throw new Error('Expected an HTTP template');
   return template;
 }
 

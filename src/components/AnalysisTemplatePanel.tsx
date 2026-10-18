@@ -12,9 +12,11 @@ import { t } from '../i18n';
 import { newId, type Filter } from '../sql';
 import { fmtDuration } from './ui';
 import { AnalysisPanel, type AnalysisPanelProps } from './AnalysisPanel';
+import { CloudTrailAnalysisPanel } from './CloudTrailAnalysisPanel';
 import { VpcFlowAnalysisPanel } from './VpcFlowAnalysisPanel';
 
 export function AnalysisTemplatePanel(props: AnalysisPanelProps & { template: LogAnalysisTemplate }) {
+  if (props.template.id === 'cloudtrail') return <CloudTrailAnalysisPanel {...props} template={props.template} />;
   return props.template.id === 'vpcflow' ? (
     <VpcFlowAnalysisPanel {...props} template={props.template} />
   ) : (
