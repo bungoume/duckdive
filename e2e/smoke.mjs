@@ -296,6 +296,9 @@ await step('field-sidebar', async () => {
   await page.waitForSelector('.topval', { timeout: 10000 });
   const n = await page.locator('.topval').count();
   console.log(`     topvalues=${n}`);
+  const anchor = await page.locator('.field-details').evaluate((el) => ({ left: el.style.left, top: el.style.top }));
+  assert.match(anchor.left, /px$/);
+  assert.match(anchor.top, /px$/);
   await page.screenshot({ path: `${out}/04-field.png` });
   await page.click('.field-item:has-text("http.method") .act');
   await settled(page);
@@ -350,6 +353,7 @@ await step('patterns', async () => {
 await step('saved-search', async () => {
   // save the current query with its column, load it back after changing the query
   await page.click('.hits button:has-text("Saved searches")');
+  assert.equal(await page.locator('.popover').evaluate((el) => getComputedStyle(el).width), '360px');
   await page.fill('.popover input', 'smoke search');
   await page.click('.popover .btn.primary');
   const items = await page.locator('.popover .saved-list .item .t').allTextContents();
@@ -420,6 +424,8 @@ await step('brush', async () => {
   await page.mouse.move(box.x + box.width * 0.3, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width * 0.5, box.y + box.height / 2, { steps: 5 });
+  const selection = await page.locator('.chart-panel .brush').boundingBox();
+  assert.ok(selection && selection.width > box.width * 0.15, 'the selected range is visibly highlighted');
   await page.mouse.up();
   await settled(page);
   const label = await page.textContent('.timepicker .btn');
@@ -459,6 +465,9 @@ await step('visualize', async () => {
   }
   console.log(`     tooltip: ${tip.replace(/\s+/g, ' ').slice(0, 100)}`);
   if (!/click to filter/.test(tip)) throw new Error('no tooltip with filter hint: ' + tip);
+  const tipPosition = await page.locator('.chart-tip').evaluate((el) => ({ left: el.style.left, top: el.style.top }));
+  assert.match(tipPosition.left, /px$/);
+  assert.match(tipPosition.top, /px$/);
   await page.mouse.down();
   await page.mouse.up();
   await settled(page);

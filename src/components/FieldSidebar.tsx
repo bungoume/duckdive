@@ -110,7 +110,7 @@ export function FieldSidebar(props: {
         {open === f.name && (
           <div
             class="field-details"
-            style={anchor ? { left: anchor.left, top: anchor.top } : undefined}
+            style={anchor ? { left: `${anchor.left}px`, top: `${anchor.top}px` } : undefined}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => {
               // the row above treats Enter and Space as "open / close me" and calls preventDefault

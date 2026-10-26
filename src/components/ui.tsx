@@ -35,7 +35,7 @@ export function Popover(props: {
       {props.open && (
         <div
           class={'popover' + (props.align === 'right' ? ' right' : '')}
-          style={props.width ? { width: props.width } : undefined}
+          style={props.width ? { width: `${props.width}px` } : undefined}
         >
           {props.children}
         </div>

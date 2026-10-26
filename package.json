@@ -16,7 +16,7 @@
   "engines": {
     "node": ">=26"
   },
-  "packageManager": "pnpm@12.4.0+sha512.37536c26ed40ab4134b6511e09f6b27f3ebb45687468f2406ca3805279a4e5ca158c1931350ad9774d6ab2108d71b3dbaeb39943159294375e4d053e8e05685c",
+  "packageManager": "pnpm@12.15.0+sha512.b3951d6d6ff4a9f13dc7cf56cd28d2b8eb37dbcc9c68e52e1e1191873ea9f82a017287ab50baadc5ccc494f036c67c0e47eb13608c2fa36f47711b61ea128e61",
   "scripts": {
     "prepare:assets": "node scripts/prepare-duckdb.mjs && node scripts/third-party-licenses.mjs",
     "icons": "node scripts/make-icons.mjs",
@@ -41,26 +41,26 @@
     "test:all": "pnpm run test && pnpm run build:e2e && pnpm run test:e2e && pnpm run test:cache"
   },
   "dependencies": {
-    "@duckdb/duckdb-wasm": "1.32.0",
+    "@duckdb/duckdb-wasm": "1.33.1-dev65.0",
     "@observablehq/plot": "0.6.17",
-    "pako": "3.0.1",
-    "preact": "10.29.8"
+    "pako": "3.0.2",
+    "preact": "11.0.1"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@preact/preset-vite": "2.10.6",
-    "@types/chrome": "0.2.9",
-    "@types/node": "^26.5.1",
-    "@vitest/coverage-v8": "5.0.0",
-    "eslint": "10.10.0",
+    "@types/chrome": "0.3.6",
+    "@types/node": "26.6.5",
+    "@vitest/coverage-v8": "5.0.5",
+    "eslint": "10.13.0",
     "eslint-plugin-react-hooks": "7.1.1",
-    "globals": "17.12.0",
-    "playwright": "1.63.0",
-    "prettier": "3.9.6",
+    "globals": "17.13.0",
+    "playwright": "1.64.1",
+    "prettier": "3.9.10",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.70.0",
-    "vite": "8.2.2",
-    "vitest": "5.0.0"
+    "typescript-eslint": "8.72.0",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
   },
   "prettier": {
     "printWidth": 120,

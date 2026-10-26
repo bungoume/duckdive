@@ -29,6 +29,11 @@ if (!existsSync(parquet) || Date.now() - statSync(parquet).mtimeMs > 24 * 3600_0
 
 import { copyFileSync, writeFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
+// Always generate this with the current CLI, even when the large fixture is reused.
+execSync(
+  `duckdb -c "COPY (SELECT 42::BIGINT AS id, 12.34::DECIMAL(10,2) AS amount, TIMESTAMP '2026-10-21 12:34:56' AS ts, ['json','parquet'] AS tags) TO '${join(dataDir, 'compatibility.parquet')}' (FORMAT PARQUET)"`,
+  { stdio: 'inherit' },
+);
 copyFileSync(parquet, join(dataDir, 'bucket', 'logs.parquet'));
 // Date-partitioned layout (UTC), like AWS log delivery: today and yesterday.
 const pad = (n) => String(n).padStart(2, '0');
@@ -508,20 +513,21 @@ const connectPattern = async (urls, marker) => {
   return { err, tf };
 };
 
-// The duckdb CLI writes the fixtures and duckdb-wasm reads them back, and they are separate
-// releases: the CLI is pinned in .github/workflows/ci.yml, the engine comes with
-// @duckdb/duckdb-wasm (1.32.0 runs DuckDB 1.4.3). A minor gap is fine, a major one means the
-// fixture may use a format the engine cannot open — which would otherwise surface halfway
-// through a section as an unreadable file rather than as a version problem.
+// The CLI and Wasm engine are independent releases. Native database storage can change
+// across majors, but these fixtures are Parquet: verify the actual interchange format,
+// including decimals, timestamps and lists, instead of requiring matching version numbers.
 await section('duckdb-versions', async () => {
   await openSource();
   const engine = String((await q('SELECT version() AS v'))[0]?.v ?? '');
   const cli = execSync('duckdb --version', { encoding: 'utf8' }).trim().split(/\s+/)[0];
-  const major = (v) => v.replace(/^v/, '').split('.')[0];
+  const rows = await q(
+    `SELECT id, amount::VARCHAR AS amount, ts::VARCHAR AS ts, tags FROM read_parquet('http://localhost:${dataPort}/compatibility.parquet')`,
+  );
   check(
-    'the duckdb CLI and duckdb-wasm share a major version',
-    !!engine && major(cli) === major(engine),
-    `CLI ${cli} writes, engine ${engine} reads`,
+    'the Wasm engine reads Parquet written by the CLI',
+    JSON.stringify(rows) ===
+      JSON.stringify([{ id: 42, amount: '12.34', ts: '2026-10-21 12:34:56', tags: ['json', 'parquet'] }]),
+    `CLI ${cli} writes, engine ${engine} reads: ${JSON.stringify(rows)}`,
   );
 });
 

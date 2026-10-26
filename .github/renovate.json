@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Dependency updates with the same 7-day cooldown as pnpm-workspace.yaml (minimumReleaseAge), exact versions in package.json and GitHub Actions pinned to commit SHAs with a version comment.",
+  "description": "Dependency updates with the same 3-day cooldown as pnpm-workspace.yaml (minimumReleaseAge), exact versions in package.json and GitHub Actions pinned to commit SHAs with a version comment.",
   "extends": ["config:best-practices", ":pinAllExceptPeerDependencies"],
   "timezone": "Asia/Tokyo",
   "internalChecksFilter": "strict",
@@ -10,40 +10,35 @@
   },
   "packageRules": [
     {
-      "description": "release-please reads the Conventional Commit subjects on main to decide the next version and to write the changelog. config:best-practices would label dependency updates `fix(deps)`, which would make every one of them a patch release listed under Fixed; `chore` keeps them out of both. The preset's rules are resolved before this list, so one rule here beats them; it comes first among the local rules so that the cooldown exceptions below still override the 7 days it states for everything.",
+      "description": "release-please reads the Conventional Commit subjects on main to decide the next version and to write the changelog. config:best-practices would label dependency updates `fix(deps)`, which would make every one of them a patch release listed under Fixed; `chore` keeps them out of both. The preset's rules are resolved before this list, so one rule here beats them; it comes first among the local rules so that the cooldown exceptions below still override the 3 days it states for everything.",
       "matchPackageNames": ["*"],
       "semanticCommitType": "chore",
-      "minimumReleaseAge": "7 days"
+      "minimumReleaseAge": "3 days"
     },
     {
-      "description": "Wait 7 days after a release before proposing it (npm packages, the pnpm version in packageManager, GitHub Actions and the pinned CLI tools alike). Placed after config:best-practices so it overrides the preset's 3-day npm rule; the update types without a release timestamp keep the preset's opt-out. Security updates bypass the wait.",
+      "description": "Apply the base 3-day cooldown to npm packages, the pnpm version in packageManager, GitHub Actions, Docker Hub images and pinned CLI tools. Update types without a release timestamp keep the preset opt-out. Security updates bypass the wait.",
       "matchUpdateTypes": ["major", "minor", "patch", "digest", "pinDigest"],
-      "minimumReleaseAge": "7 days"
+      "minimumReleaseAge": "3 days"
     },
     {
       "description": "typescript-eslint declares the TypeScript majors it supports as a peer range; land TypeScript majors together with it.",
       "matchPackageNames": ["typescript", "typescript-eslint"],
       "matchUpdateTypes": ["major"],
-      "minimumReleaseAge": "7 days",
+      "minimumReleaseAge": "3 days",
       "groupName": "TypeScript major"
     },
     {
       "description": "Everything the workflows run: the actions themselves and the CLI tools pinned by version and sha256 in them. None of it ships in the extension, so one PR that merges itself once CI is green is enough.",
       "matchManagers": ["github-actions", "custom.regex"],
-      "minimumReleaseAge": "7 days",
+      "minimumReleaseAge": "3 days",
       "groupName": "CI tools",
       "automerge": true
-    },
-    {
-      "description": "A docker tag carries no release timestamp, so the cooldown would leave it pending forever. The image is pinned by digest, and the tag only moves when this rule proposes it.",
-      "matchDatasources": ["docker"],
-      "minimumReleaseAge": null
     },
     {
       "description": "Library updates that keep the major version: one PR, merged once CI is green. Majors stay on their own so the change can be read.",
       "matchManagers": ["npm"],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "minimumReleaseAge": "7 days",
+      "minimumReleaseAge": "3 days",
       "groupName": "npm dependencies",
       "automerge": true
     },
@@ -53,6 +48,11 @@
       "minimumReleaseAge": null,
       "groupName": "lock file maintenance",
       "automerge": true
+    },
+    {
+      "description": "Explicitly approved DuckDB updates may bypass the base 3-day cooldown. Keep the npm exception in sync with pnpm-workspace.yaml; other libraries and transitive dependencies retain the cooldown.",
+      "matchPackageNames": ["@duckdb/duckdb-wasm", "duckdb/duckdb"],
+      "minimumReleaseAge": "0 days"
     }
   ],
   "semanticCommits": "enabled",

@@ -33,7 +33,7 @@ jobs:
           persist-credentials: false
       # Installs the pnpm release pinned in package.json#packageManager plus Node, restores the
       # store cache and runs `pnpm install --frozen-lockfile`.
-      - uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+      - uses: pnpm/setup@a0881977cd8ea73b1ed212236c99ca10dcc80cf4 # v3.1.1
         with:
           runtime: node@26
           cache: true
@@ -52,7 +52,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+      - uses: pnpm/setup@a0881977cd8ea73b1ed212236c99ca10dcc80cf4 # v3.1.1
         with:
           runtime: node@26
           cache: true
@@ -68,7 +68,7 @@ jobs:
       - run: node e2e/cloudfront-analysis.mjs
       - run: node e2e/vpc-flow-analysis.mjs
       - run: node e2e/cloudtrail-analysis.mjs
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: smoke-screenshots
@@ -84,7 +84,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+      - uses: pnpm/setup@a0881977cd8ea73b1ed212236c99ca10dcc80cf4 # v3.1.1
         with:
           runtime: node@26
           cache: true
@@ -94,23 +94,23 @@ jobs:
       # A pinned release asset verified against its sha256, instead of `curl | sh` of the
       # unversioned installer. Renovate refreshes the tag and the digest together
       # (customManagers in .github/renovate.json). This CLI writes the fixtures that duckdb-wasm reads
-      # back; the `duckdb-versions` section of e2e/cache.mjs compares the two.
+      # back; the `duckdb-versions` section of e2e/cache.mjs checks Parquet interoperability.
       - name: Install the duckdb CLI
         env:
           # renovate: datasource=github-release-attachments depName=duckdb/duckdb
-          DUCKDB_VERSION: 'v1.5.5'
-          DUCKDB_CLI_SHA256: '08c0ca117111fcede14239d0093792352befdc174218c344d232c13279643d05'
+          DUCKDB_VERSION: 'v2.0.0'
+          DUCKDB_CLI_SHA256: 'c6507206baf7793c6013dbd82368469a45f20dc0e17a6f92f204602f652ed2bc'
         run: |
-          curl -fsSL --retry 3 -o duckdb_cli-linux-amd64.zip \
-            "https://github.com/duckdb/duckdb/releases/download/${DUCKDB_VERSION}/duckdb_cli-linux-amd64.zip"
-          echo "${DUCKDB_CLI_SHA256}  duckdb_cli-linux-amd64.zip" | sha256sum -c -
+          curl -fsSL --retry 3 -o duckdb-cli-linux-amd64.tar.gz \
+            "https://github.com/duckdb/duckdb/releases/download/${DUCKDB_VERSION}/duckdb-cli-linux-amd64.tar.gz"
+          echo "${DUCKDB_CLI_SHA256}  duckdb-cli-linux-amd64.tar.gz" | sha256sum -c -
           mkdir -p "$HOME/.local/bin"
-          unzip -q -o duckdb_cli-linux-amd64.zip -d "$HOME/.local/bin"
-          rm duckdb_cli-linux-amd64.zip
+          tar -xzf duckdb-cli-linux-amd64.tar.gz -C "$HOME/.local/bin" duckdb
+          rm duckdb-cli-linux-amd64.tar.gz
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - run: duckdb --version
       - run: node e2e/cache.mjs
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: cache-screenshots
@@ -126,7 +126,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+      - uses: pnpm/setup@a0881977cd8ea73b1ed212236c99ca10dcc80cf4 # v3.1.1
         with:
           runtime: node@26
           cache: true
@@ -134,7 +134,7 @@ jobs:
       # The checks scripts/pack.mjs makes for all browser packages are what the release depends on,
       # so they run on every push rather than for the first time at the tag.
       - run: pnpm run pack
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: store-zips
           path: release/*.zip

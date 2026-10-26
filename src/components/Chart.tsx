@@ -529,10 +529,13 @@ export function Chart(props: {
     >
       <div ref={ref} />
       {brush && (
-        <div class="brush" style={{ left: Math.min(brush.x0, brush.x1), width: Math.abs(brush.x1 - brush.x0) }} />
+        <div
+          class="brush"
+          style={{ left: `${Math.min(brush.x0, brush.x1)}px`, width: `${Math.abs(brush.x1 - brush.x0)}px` }}
+        />
       )}
       {hover && (
-        <div class="chart-tip" style={{ left: tipLeft, top: tipTop }}>
+        <div class="chart-tip" style={{ left: `${tipLeft}px`, top: `${tipTop}px` }}>
           <div class="chart-tip-x">
             {fmtX(hover.x)}
             {hover.isTime && hover.intervalMs
